@@ -63,3 +63,6 @@ site/
 **/*.db.bak
 **/*.sqlite
 **/*.sqlite3
+
+# Per-user Claude Code config (never publish)
+.claude/settings.local.json
