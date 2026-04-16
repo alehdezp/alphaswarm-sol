@@ -1,0 +1,18 @@
+id: arith-012
+vulndoc: arithmetic/general
+name: Loop Counter Overflow
+description: Loop counters using small integer types.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 190
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: loop_counter_small_type
+    op: eq
+    value: true

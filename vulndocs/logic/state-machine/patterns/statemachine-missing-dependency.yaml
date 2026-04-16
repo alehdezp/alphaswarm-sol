@@ -1,0 +1,25 @@
+id: statemachine-missing-dependency
+vulndoc: logic/state-machine
+name: Missing Function Dependency
+description: 'Function should be called after another but dependency not enforced.
+
+  E.g., withdraw() callable before deposit(), or claim() before stake().
+
+
+  Risk: Functions called out of order can bypass intended logic,
+
+  leading to unauthorized withdrawals or state corruption.
+
+  '
+severity: high
+scope: Function
+lens:
+- StateIntegrity
+- Logic
+aggregation_mode: tier_abc_all
+match:
+  tier_c:
+    all:
+    - type: has_label
+      value: temporal.must_call_after
+      min_confidence: medium

@@ -1,0 +1,16 @@
+id: ext-038
+vulndoc: access-control/external-call
+name: Calldata Slice Without Length Check
+description: Calldata slicing without explicit length validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: uses_calldata_slice
+    op: eq
+    value: true
+  - property: has_calldata_length_check
+    op: eq
+    value: false

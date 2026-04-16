@@ -1,0 +1,52 @@
+workflow_id: skill-vrs-tool-coordinator
+category: skill
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- TOOL-FIDELITY
+reasoning_dimensions:
+- tool_selection
+- coordination_quality
+- result_interpretation
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: tools_selected
+  description: Appropriate tools selected for analysis type
+  expected_behavior: Tool selection justified by analysis goals in response
+  grader_type: model
+- id: tools_invoked
+  description: Selected tools were invoked
+  expected_behavior: Bash tool calls for each selected analysis tool
+  grader_type: code
+- id: results_merged
+  description: Results from multiple tools were merged
+  expected_behavior: Response integrates findings across tool outputs with deduplication
+  grader_type: model
+evidence_requirements:
+- type: tool_output
+  description: Output from each coordinated tool
+hooks:
+- Stop
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Skill selects tools based on contract characteristics and analysis
+  goals. Skill configures each tool appropriately for the target. Skill merges results
+  across tools, deduplicating overlapping findings. Skill resolves conflicts between
+  tool outputs by evaluating evidence strength. Skill produces a unified result set
+  that is more informative than any single tool.
+active_dimensions:
+- tool_selection
+- coordination_quality
+- result_interpretation
+- error_handling
+- completeness
+- rubric_coverage
+- task_completion
+- evidence_quality

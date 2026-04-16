@@ -1,0 +1,16 @@
+id: merkle-leaf-without-domain-separation
+vulndoc: crypto/merkle
+name: Merkle Leaf Without Domain Separation
+description: Merkle leaf hashing without a domain separator can permit leaf/node collision attacks.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: uses_merkle_proof
+      op: eq
+      value: true
+    - property: merkle_leaf_domain_separated
+      op: eq
+      value: false

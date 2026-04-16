@@ -1,0 +1,22 @@
+# Arithmetic Issues - Subcategory Index
+
+id: arithmetic
+name: Arithmetic Issues
+parent_category: logic
+
+description: |
+  Overflow, underflow, and precision loss in arithmetic calculations
+  that can lead to incorrect values or fund loss.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - logic-001
+
+relevant_properties:
+  - has_arithmetic_operations
+  - solidity_version
+
+token_estimate: 400

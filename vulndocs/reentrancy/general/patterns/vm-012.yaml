@@ -1,0 +1,19 @@
+id: vm-012
+vulndoc: reentrancy/general
+name: Balance vs Internal Accounting
+description: Uses token balance directly without internal tracking.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: uses_balance_of
+    op: eq
+    value: true
+  - property: balance_of_used_for_state_mutation
+    op: eq
+    value: true
+  - property: contract_has_balance_tracking
+    op: eq
+    value: false

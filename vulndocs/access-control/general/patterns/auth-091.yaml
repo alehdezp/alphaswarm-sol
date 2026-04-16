@@ -1,0 +1,16 @@
+id: auth-091
+vulndoc: access-control/general
+name: Timelock Admin Without Timelock Check
+description: Timelock admin functions that lack timelock checks.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_timelock_admin_function
+    op: eq
+    value: true
+  - property: has_timelock_check
+    op: eq
+    value: false

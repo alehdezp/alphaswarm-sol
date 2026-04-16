@@ -1,0 +1,16 @@
+id: ext-062
+vulndoc: access-control/external-call
+name: Oracle Aggregation Time Alignment Missing
+description: Aggregation without time alignment checks across sources.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_time_alignment
+    op: eq
+    value: false

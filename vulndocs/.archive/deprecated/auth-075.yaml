@@ -1,0 +1,13 @@
+id: auth-075
+vulndoc: access-control/general
+name: Multisig Signer Change Without Validation
+description: Multisig signer changes without validation.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: multisig_signer_change_without_validation
+    op: eq
+    value: true

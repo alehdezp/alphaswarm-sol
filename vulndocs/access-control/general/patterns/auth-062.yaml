@@ -1,0 +1,44 @@
+id: auth-062
+vulndoc: access-control/general
+name: Reinitializer Without Guard
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `upgrade-004-unprotected-reinitializer` instead.
+
+
+  Location: `patterns/semantic/upgradeability/upgrade-004-unprotected-reinitializer.yaml`
+
+
+  The semantic pattern uses `is_initializer_function` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Reinitializer functions without initializer modifier or guard.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: upgrade-004-unprotected-reinitializer
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)^reinit
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: has_initializer_modifier
+    op: eq
+    value: false
+  - property: checks_initialized_flag
+    op: eq
+    value: false

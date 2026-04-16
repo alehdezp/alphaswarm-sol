@@ -1,0 +1,16 @@
+id: ext-015
+vulndoc: access-control/external-call
+name: Chainlink Decimals Not Queried
+description: latestRoundData used without querying decimals for normalization.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: calls_chainlink_latest_round_data
+    op: eq
+    value: true
+  - property: calls_chainlink_decimals
+    op: eq
+    value: false

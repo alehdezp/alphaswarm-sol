@@ -1,0 +1,3023 @@
+metadata:
+  source: CGT
+  repository: https://github.com/gsalzer/cgt
+  commit: f8cd72cf7fbbfebc809c454667eee271706a4b2b
+  imported_date: '2026-01-30T12:07:54.567056+00:00'
+  description: Consolidated Ground Truth for Weaknesses of Ethereum Smart Contracts
+  paper: https://arxiv.org/pdf/2304.11624
+  citation: Consolidation of Ground Truth Sets for Weakness Detection in Smart Contracts
+  integrated_datasets:
+  - CodeSmells
+  - ContractFuzzer
+  - Doublade
+  - eThor
+  - EthRacer
+  - Ever Evolving Game
+  - JiuZhou
+  - Not So Smart Contracts
+  - NPChecker
+  - SmartBugs curated
+  - SolidiFI
+  - SWC registry
+  - Zeus
+  external_ground_truth: true
+  no_manual_labels: true
+statistics:
+  total_contracts: 50
+  total_findings: 207
+  by_category:
+    unchecked_calls:
+      contracts: 48
+      findings: 48
+    time_manipulation:
+      contracts: 36
+      findings: 36
+    code_quality:
+      contracts: 15
+      findings: 15
+    arithmetic:
+      contracts: 45
+      findings: 45
+    front_running:
+      contracts: 43
+      findings: 43
+    reentrancy:
+      contracts: 18
+      findings: 18
+    tx_origin:
+      contracts: 2
+      findings: 2
+contracts:
+- path: cgt/ad32d63f634422902e7c4c39b9aecdfe.sol
+  file_hash: ad32d63f634422902e7c4c39b9aecdfe
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xd79b4c6791784184e2755b2fc1659eaab0f80456'
+    contract_name: HonestDice
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Block Info Dependency
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: CodeSmells
+    chain_address: '0xd79b4c6791784184e2755b2fc1659eaab0f80456'
+    contract_name: HonestDice
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xd79b4c6791784184e2755b2fc1659eaab0f80456'
+    contract_name: HonestDice
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xd79b4c6791784184e2755b2fc1659eaab0f80456'
+    contract_name: HonestDice
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xd79b4c6791784184e2755b2fc1659eaab0f80456'
+    contract_name: HonestDice
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/3d785ae7e0626b359cf96138d1ad01d0.sol
+  file_hash: 3d785ae7e0626b359cf96138d1ad01d0
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0x446d1696a5527018453cda3d67aa4c2cd189b9f6'
+    contract_name: GreedPit
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0x446d1696a5527018453cda3d67aa4c2cd189b9f6'
+    contract_name: GreedPit
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x446d1696a5527018453cda3d67aa4c2cd189b9f6'
+    contract_name: GreedPit
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x446d1696a5527018453cda3d67aa4c2cd189b9f6'
+    contract_name: GreedPit
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x446d1696a5527018453cda3d67aa4c2cd189b9f6'
+    contract_name: GreedPit
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/c73fa27f9ce017c02dd2e11d0ba91ff4.sol
+  file_hash: c73fa27f9ce017c02dd2e11d0ba91ff4
+  datasets:
+  - CodeSmells
+  - Zeus
+  - eThor
+  findings:
+  - property: Reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: CodeSmells
+    chain_address: '0x45d147c800d401350b24fc1cd5fbc98040b177c8'
+    contract_name: NinjaToken
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Block Info Dependency
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: CodeSmells
+    chain_address: '0x45d147c800d401350b24fc1cd5fbc98040b177c8'
+    contract_name: NinjaToken
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0x45d147c800d401350b24fc1cd5fbc98040b177c8'
+    contract_name: NinjaToken
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/5060fb699df2243a31ad4202d46bf609.sol
+  file_hash: 5060fb699df2243a31ad4202d46bf609
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xba69e7c96e9541863f009e713caf26d4ad2241a0'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xba69e7c96e9541863f009e713caf26d4ad2241a0'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xba69e7c96e9541863f009e713caf26d4ad2241a0'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xba69e7c96e9541863f009e713caf26d4ad2241a0'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xba69e7c96e9541863f009e713caf26d4ad2241a0'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/d8f1c6f2d5f7cef31d80bf62f1702376.sol
+  file_hash: d8f1c6f2d5f7cef31d80bf62f1702376
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x9f1d916a456b96146e9f0dbbd0e107a1f389a061'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x9f1d916a456b96146e9f0dbbd0e107a1f389a061'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: Zeus
+    chain_address: '0x9f1d916a456b96146e9f0dbbd0e107a1f389a061'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x9f1d916a456b96146e9f0dbbd0e107a1f389a061'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/5a00d369ef786eed405c4cdb06cda240.sol
+  file_hash: 5a00d369ef786eed405c4cdb06cda240
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x0807a2d6a675e7196a3d9b1910700cae9795b72a'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x0807a2d6a675e7196a3d9b1910700cae9795b72a'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x0807a2d6a675e7196a3d9b1910700cae9795b72a'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x0807a2d6a675e7196a3d9b1910700cae9795b72a'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x0807a2d6a675e7196a3d9b1910700cae9795b72a'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/8d48645daadbca28270db15fc340f2db.sol
+  file_hash: 8d48645daadbca28270db15fc340f2db
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x362bb67f7fdbdd0dbba4bce16da6a284cf484ed6'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x362bb67f7fdbdd0dbba4bce16da6a284cf484ed6'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x362bb67f7fdbdd0dbba4bce16da6a284cf484ed6'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x362bb67f7fdbdd0dbba4bce16da6a284cf484ed6'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x362bb67f7fdbdd0dbba4bce16da6a284cf484ed6'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/5249d54436355e974f98dbed02349d5d.sol
+  file_hash: 5249d54436355e974f98dbed02349d5d
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xf66ca56fc0cf7b5d9918349150026be80b327892'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xf66ca56fc0cf7b5d9918349150026be80b327892'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xf66ca56fc0cf7b5d9918349150026be80b327892'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xf66ca56fc0cf7b5d9918349150026be80b327892'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0xf66ca56fc0cf7b5d9918349150026be80b327892'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/840803c55ad7b1e34edef816669f128d.sol
+  file_hash: 840803c55ad7b1e34edef816669f128d
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0x007d42b9192b8c087b0d3e6ef73aae48e74b41c1'
+    contract_name: EthVentures4
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0x007d42b9192b8c087b0d3e6ef73aae48e74b41c1'
+    contract_name: EthVentures4
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x007d42b9192b8c087b0d3e6ef73aae48e74b41c1'
+    contract_name: EthVentures4
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x007d42b9192b8c087b0d3e6ef73aae48e74b41c1'
+    contract_name: EthVentures4
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/7074e9cce1838b560f9504f60e5dcdf5.sol
+  file_hash: 7074e9cce1838b560f9504f60e5dcdf5
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0x5a5eff38da95b0d58b6c616f2699168b480953c9'
+    contract_name: CharlyLifeLog
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x5a5eff38da95b0d58b6c616f2699168b480953c9'
+    contract_name: CharlyLifeLog
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x5a5eff38da95b0d58b6c616f2699168b480953c9'
+    contract_name: CharlyLifeLog
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x5a5eff38da95b0d58b6c616f2699168b480953c9'
+    contract_name: CharlyLifeLog
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x5a5eff38da95b0d58b6c616f2699168b480953c9'
+    contract_name: CharlyLifeLog
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/72c1b33723843471843e4445a2dca0da.sol
+  file_hash: 72c1b33723843471843e4445a2dca0da
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xa9e4e3b1da2462752aea980698c335e70e9ab26c'
+    contract_name: DynamicPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xa9e4e3b1da2462752aea980698c335e70e9ab26c'
+    contract_name: DynamicPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa9e4e3b1da2462752aea980698c335e70e9ab26c'
+    contract_name: DynamicPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa9e4e3b1da2462752aea980698c335e70e9ab26c'
+    contract_name: DynamicPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/60d71b649e000c57f3c5121227b77c82.sol
+  file_hash: 60d71b649e000c57f3c5121227b77c82
+  datasets:
+  - CodeSmells
+  - Zeus
+  - eThor
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xbf4ed7b27f1d666546e30d74d50d173d20bca754'
+    contract_name: WithdrawDAO
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xbf4ed7b27f1d666546e30d74d50d173d20bca754'
+    contract_name: WithdrawDAO
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xbf4ed7b27f1d666546e30d74d50d173d20bca754'
+    contract_name: WithdrawDAO
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0xbf4ed7b27f1d666546e30d74d50d173d20bca754'
+    contract_name: WithdrawDAO
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/8662fef1948bea2ef74ad42a86b9429f.sol
+  file_hash: 8662fef1948bea2ef74ad42a86b9429f
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xfd2487cc0e5dce97f08be1bc8ef1dce8d5988b4d'
+    contract_name: Doubler
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xfd2487cc0e5dce97f08be1bc8ef1dce8d5988b4d'
+    contract_name: Doubler
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xfd2487cc0e5dce97f08be1bc8ef1dce8d5988b4d'
+    contract_name: Doubler
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xfd2487cc0e5dce97f08be1bc8ef1dce8d5988b4d'
+    contract_name: Doubler
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/168c5801595d4c0592a76a52a2638e0e.sol
+  file_hash: 168c5801595d4c0592a76a52a2638e0e
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x723dff0e27cc38b80556f5e05dfdbdcb721654d7'
+    contract_name: DFS
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x723dff0e27cc38b80556f5e05dfdbdcb721654d7'
+    contract_name: DFS
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x723dff0e27cc38b80556f5e05dfdbdcb721654d7'
+    contract_name: DFS
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x723dff0e27cc38b80556f5e05dfdbdcb721654d7'
+    contract_name: DFS
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/30f36f4741cfe247d1c569e71d93415f.sol
+  file_hash: 30f36f4741cfe247d1c569e71d93415f
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa39394d3447c1dbd386b92b4d1fcc22ca85eae67'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa39394d3447c1dbd386b92b4d1fcc22ca85eae67'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa39394d3447c1dbd386b92b4d1fcc22ca85eae67'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa39394d3447c1dbd386b92b4d1fcc22ca85eae67'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0xf0d8af9125de2761b42dbb0b1014bf232219a1c5'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/2bcb11f8da4cb197ceabe27ebb71ccef.sol
+  file_hash: 2bcb11f8da4cb197ceabe27ebb71ccef
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x65bbc91459aaad9603ef1345c6bb6396dd6772b9'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x65bbc91459aaad9603ef1345c6bb6396dd6772b9'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x65bbc91459aaad9603ef1345c6bb6396dd6772b9'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x65bbc91459aaad9603ef1345c6bb6396dd6772b9'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/0ba1a56bedc9564da325d5d04b095dda.sol
+  file_hash: 0ba1a56bedc9564da325d5d04b095dda
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xf2b8e10e7b230cc55040a7a90be75c933719c507'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xf2b8e10e7b230cc55040a7a90be75c933719c507'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xf2b8e10e7b230cc55040a7a90be75c933719c507'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xf2b8e10e7b230cc55040a7a90be75c933719c507'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0xf2b8e10e7b230cc55040a7a90be75c933719c507'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/a63c47b8aab1e40492cf6dd521957a74.sol
+  file_hash: a63c47b8aab1e40492cf6dd521957a74
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x7be89db09b0c1023fd0407b24b98810ae97f61c1'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x7be89db09b0c1023fd0407b24b98810ae97f61c1'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x7be89db09b0c1023fd0407b24b98810ae97f61c1'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x7be89db09b0c1023fd0407b24b98810ae97f61c1'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x7be89db09b0c1023fd0407b24b98810ae97f61c1'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/e3c01148d63bfec52aaa64f137e02d6f.sol
+  file_hash: e3c01148d63bfec52aaa64f137e02d6f
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x9bf233b2f9eea51708c0b345f28fc621f83daa78'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x9bf233b2f9eea51708c0b345f28fc621f83daa78'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x9bf233b2f9eea51708c0b345f28fc621f83daa78'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x9bf233b2f9eea51708c0b345f28fc621f83daa78'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x9bf233b2f9eea51708c0b345f28fc621f83daa78'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/889466336997b9c74eb1bed8a69ddeb5.sol
+  file_hash: 889466336997b9c74eb1bed8a69ddeb5
+  datasets:
+  - Zeus
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x98f0485cdd22710a9a923e616567eadfe62e258e'
+    contract_name: TradeFinancing
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x98f0485cdd22710a9a923e616567eadfe62e258e'
+    contract_name: TradeFinancing
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x98f0485cdd22710a9a923e616567eadfe62e258e'
+    contract_name: TradeFinancing
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_State_Dep
+    swc_id: SWC-115
+    category: tx_origin
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x98f0485cdd22710a9a923e616567eadfe62e258e'
+    contract_name: TradeFinancing
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/73a8debe2e975aeae26930f89ecb0a61.sol
+  file_hash: 73a8debe2e975aeae26930f89ecb0a61
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x7753a9d834844cfde5c211ec3912b49f0d8b8e11'
+    contract_name: BetOnHashV81
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x7753a9d834844cfde5c211ec3912b49f0d8b8e11'
+    contract_name: BetOnHashV81
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x7753a9d834844cfde5c211ec3912b49f0d8b8e11'
+    contract_name: BetOnHashV81
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x7753a9d834844cfde5c211ec3912b49f0d8b8e11'
+    contract_name: BetOnHashV81
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/35b21b461e50781587417a04b42439f7.sol
+  file_hash: 35b21b461e50781587417a04b42439f7
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x615d2c5155ea9841f2a926c3a4953d140d407c99'
+    contract_name: BetOnHashV82
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x615d2c5155ea9841f2a926c3a4953d140d407c99'
+    contract_name: BetOnHashV82
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x615d2c5155ea9841f2a926c3a4953d140d407c99'
+    contract_name: BetOnHashV82
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x615d2c5155ea9841f2a926c3a4953d140d407c99'
+    contract_name: BetOnHashV82
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/2875fe0a098b5e5ae7c8eb2f73651ff5.sol
+  file_hash: 2875fe0a098b5e5ae7c8eb2f73651ff5
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x63dd6f40007731eb7e70a7ae43b55c0fb2090c99'
+    contract_name: Token_Offer
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x63dd6f40007731eb7e70a7ae43b55c0fb2090c99'
+    contract_name: Token_Offer
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x63dd6f40007731eb7e70a7ae43b55c0fb2090c99'
+    contract_name: Token_Offer
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_State_Dep
+    swc_id: SWC-115
+    category: tx_origin
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x63dd6f40007731eb7e70a7ae43b55c0fb2090c99'
+    contract_name: Token_Offer
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x63dd6f40007731eb7e70a7ae43b55c0fb2090c99'
+    contract_name: Token_Offer
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/b67a25e0444c0cd7a57823c4384550b0.sol
+  file_hash: b67a25e0444c0cd7a57823c4384550b0
+  datasets:
+  - CodeSmells
+  - Zeus
+  - eThor
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0x32bacc8b241fb172fee18bda32527126c6f3c5f7'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0x32bacc8b241fb172fee18bda32527126c6f3c5f7'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x32bacc8b241fb172fee18bda32527126c6f3c5f7'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x32bacc8b241fb172fee18bda32527126c6f3c5f7'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/5fe73d9c557aac78b6ede1e2bb107834.sol
+  file_hash: 5fe73d9c557aac78b6ede1e2bb107834
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0x709c7134053510fce03b464982eab6e3d89728a5'
+    contract_name: PixelSelling
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x709c7134053510fce03b464982eab6e3d89728a5'
+    contract_name: PixelSelling
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x709c7134053510fce03b464982eab6e3d89728a5'
+    contract_name: PixelSelling
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x709c7134053510fce03b464982eab6e3d89728a5'
+    contract_name: PixelSelling
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/02acbeead59dad91370efebd635b0f1a.sol
+  file_hash: 02acbeead59dad91370efebd635b0f1a
+  datasets:
+  - CodeSmells
+  - Zeus
+  - eThor
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xab7c74abc0c4d48d1bdad5dcb26153fc8780f83e'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xab7c74abc0c4d48d1bdad5dcb26153fc8780f83e'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x2b534780e30d87a299ec8ce8e5b4ca62f25a3957'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x36e7e06e0bdc5c632fe7cd349f94c7dd03525aa2'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/ea2c99b932523910c5a1773c40e48fe6.sol
+  file_hash: ea2c99b932523910c5a1773c40e48fe6
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xcd6608b1291d4307652592c29bff7d51f1ad83d7'
+    contract_name: DepositHolder
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xcd6608b1291d4307652592c29bff7d51f1ad83d7'
+    contract_name: DepositHolder
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xcd6608b1291d4307652592c29bff7d51f1ad83d7'
+    contract_name: DepositHolder
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xcd6608b1291d4307652592c29bff7d51f1ad83d7'
+    contract_name: DepositHolder
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/e35ff142af0bda886bfa941faf169e28.sol
+  file_hash: e35ff142af0bda886bfa941faf169e28
+  datasets:
+  - CodeSmells
+  - Zeus
+  - eThor
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xda4a4626d3e16e094de3225a751aab7128e96526'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xda4a4626d3e16e094de3225a751aab7128e96526'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x50f54ed2cafd4b7245e60557a6b56d9ac9193025'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0x50f54ed2cafd4b7245e60557a6b56d9ac9193025'
+    contract_name: Wallet
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/c319c9d07786ccad13bb3b2ff947583d.sol
+  file_hash: c319c9d07786ccad13bb3b2ff947583d
+  datasets:
+  - CodeSmells
+  - Zeus
+  findings:
+  - property: Unchecked External Call
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: CodeSmells
+    chain_address: '0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359'
+    contract_name: Congress
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: CodeSmells
+    chain_address: '0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359'
+    contract_name: Congress
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Compiler Version not fixed
+    swc_id: SWC-103
+    category: code_quality
+    severity: low
+    dataset: CodeSmells
+    chain_address: '0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359'
+    contract_name: Congress
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: CodeSmells
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x89205a3a3b2a69de6dbf7f01ed13b2108b2c43e7'
+    contract_name: MyToken
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/e365fc620ffdc25af2c43e3ce84909da.sol
+  file_hash: e365fc620ffdc25af2c43e3ce84909da
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa864694cacdf27900afb3c32b1b07aea3c465dde'
+    contract_name: timegame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa864694cacdf27900afb3c32b1b07aea3c465dde'
+    contract_name: timegame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa864694cacdf27900afb3c32b1b07aea3c465dde'
+    contract_name: timegame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa864694cacdf27900afb3c32b1b07aea3c465dde'
+    contract_name: timegame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/652686c608ec7ca2db6321d1dce79846.sol
+  file_hash: 652686c608ec7ca2db6321d1dce79846
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x748defc02aa6221ae4db129bbe7e6a97537a6f45'
+    contract_name: Lottery
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x748defc02aa6221ae4db129bbe7e6a97537a6f45'
+    contract_name: Lottery
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x748defc02aa6221ae4db129bbe7e6a97537a6f45'
+    contract_name: Lottery
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x748defc02aa6221ae4db129bbe7e6a97537a6f45'
+    contract_name: Lottery
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/3977b3894efec88035adacf3b63382b4.sol
+  file_hash: 3977b3894efec88035adacf3b63382b4
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xca16790e9bb125392960e78befff1d4df4cb5b58'
+    contract_name: dgame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xca16790e9bb125392960e78befff1d4df4cb5b58'
+    contract_name: dgame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xca16790e9bb125392960e78befff1d4df4cb5b58'
+    contract_name: dgame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xca16790e9bb125392960e78befff1d4df4cb5b58'
+    contract_name: dgame
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/a87c8e51e5f0c64df777eba7683d75d4.sol
+  file_hash: a87c8e51e5f0c64df777eba7683d75d4
+  datasets:
+  - Zeus
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x8710a2e3a868076114590373888fe99ab71d3001'
+    contract_name: KobyShop
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x8710a2e3a868076114590373888fe99ab71d3001'
+    contract_name: KobyShop
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x8710a2e3a868076114590373888fe99ab71d3001'
+    contract_name: KobyShop
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/a5f04d41762c71456886d3e25214e51e.sol
+  file_hash: a5f04d41762c71456886d3e25214e51e
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x6a6581a884c4729586479307e5694bf836617517'
+    contract_name: Dao9000
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x6a6581a884c4729586479307e5694bf836617517'
+    contract_name: Dao9000
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x6a6581a884c4729586479307e5694bf836617517'
+    contract_name: Dao9000
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x6a6581a884c4729586479307e5694bf836617517'
+    contract_name: Dao9000
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/39968c382922c919505ac243f2e65dbb.sol
+  file_hash: 39968c382922c919505ac243f2e65dbb
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xb0ceaa9cc523332cbef9fc606221cc0bc2d0872d'
+    contract_name: Mattew
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xb0ceaa9cc523332cbef9fc606221cc0bc2d0872d'
+    contract_name: Mattew
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xb0ceaa9cc523332cbef9fc606221cc0bc2d0872d'
+    contract_name: Mattew
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xb0ceaa9cc523332cbef9fc606221cc0bc2d0872d'
+    contract_name: Mattew
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/31d0a0874d5faaeb58db022b9954898a.sol
+  file_hash: 31d0a0874d5faaeb58db022b9954898a
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xd2f7bba33a3b81792c0f9cc2de6d9266002a5591'
+    contract_name: CampaignBeneficiary
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: Zeus
+    chain_address: '0xd2f7bba33a3b81792c0f9cc2de6d9266002a5591'
+    contract_name: CampaignBeneficiary
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xd2f7bba33a3b81792c0f9cc2de6d9266002a5591'
+    contract_name: CampaignBeneficiary
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/c554ed403e9609df3a72dcd0f374da03.sol
+  file_hash: c554ed403e9609df3a72dcd0f374da03
+  datasets:
+  - Zeus
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xe19e5f100d6a31169b5dca265c9285059c41d4f6'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xe19e5f100d6a31169b5dca265c9285059c41d4f6'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xe19e5f100d6a31169b5dca265c9285059c41d4f6'
+    contract_name: NanoPyramid
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/31edd1b73db76886f34194790a97c086.sol
+  file_hash: 31edd1b73db76886f34194790a97c086
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x8aa0a9166218ad9c2a34a6ea018772c3336b0261'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x8aa0a9166218ad9c2a34a6ea018772c3336b0261'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x8aa0a9166218ad9c2a34a6ea018772c3336b0261'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x8aa0a9166218ad9c2a34a6ea018772c3336b0261'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/84e39141cd356c3e782cc12a99eaf28a.sol
+  file_hash: 84e39141cd356c3e782cc12a99eaf28a
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa623bca1460bb9207aa8b4ad00faea3f30f0c549'
+    contract_name: CSGOBets
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa623bca1460bb9207aa8b4ad00faea3f30f0c549'
+    contract_name: CSGOBets
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xa623bca1460bb9207aa8b4ad00faea3f30f0c549'
+    contract_name: CSGOBets
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xa623bca1460bb9207aa8b4ad00faea3f30f0c549'
+    contract_name: CSGOBets
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/a29571389af834c5e3db3618ac949cee.sol
+  file_hash: a29571389af834c5e3db3618ac949cee
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x498e950892260b0e9dfd5895d7501f340e92d263'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x498e950892260b0e9dfd5895d7501f340e92d263'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x498e950892260b0e9dfd5895d7501f340e92d263'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x498e950892260b0e9dfd5895d7501f340e92d263'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/2f895057b49b82af631136ee5fc9895d.sol
+  file_hash: 2f895057b49b82af631136ee5fc9895d
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x49c3019b7a83b3c77a823255533975969027308d'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x49c3019b7a83b3c77a823255533975969027308d'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x49c3019b7a83b3c77a823255533975969027308d'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x49c3019b7a83b3c77a823255533975969027308d'
+    contract_name: SmartRevshare
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/65dac7037f5d9cfbbcea9804ca0228fa.sol
+  file_hash: 65dac7037f5d9cfbbcea9804ca0228fa
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xf9735dc96a98f68ac8fe6fccf1e7b9876ddb6b47'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xf9735dc96a98f68ac8fe6fccf1e7b9876ddb6b47'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xf9735dc96a98f68ac8fe6fccf1e7b9876ddb6b47'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xf9735dc96a98f68ac8fe6fccf1e7b9876ddb6b47'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/ab0e2ea9e14512594f714bc485a94361.sol
+  file_hash: ab0e2ea9e14512594f714bc485a94361
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xfeeb8a968f0d7fd58e29fbfc525051f50ee2fedc'
+    contract_name: Etheramid2
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xfeeb8a968f0d7fd58e29fbfc525051f50ee2fedc'
+    contract_name: Etheramid2
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0xfeeb8a968f0d7fd58e29fbfc525051f50ee2fedc'
+    contract_name: Etheramid2
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/ba75b4fb49ecaa23db361c050e1082da.sol
+  file_hash: ba75b4fb49ecaa23db361c050e1082da
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xd2d765a9d924e201e2ea270fee2d8b6237a5dc55'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xd2d765a9d924e201e2ea270fee2d8b6237a5dc55'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xd2d765a9d924e201e2ea270fee2d8b6237a5dc55'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Unchkd_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xd2d765a9d924e201e2ea270fee2d8b6237a5dc55'
+    contract_name: Crowdsale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/3e3c80f5ce4abf4ca163f731f2b8b08d.sol
+  file_hash: 3e3c80f5ce4abf4ca163f731f2b8b08d
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xb3f2d5f68fb7171fddb3488f25582df57ed63080'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xb3f2d5f68fb7171fddb3488f25582df57ed63080'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xb3f2d5f68fb7171fddb3488f25582df57ed63080'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xb3f2d5f68fb7171fddb3488f25582df57ed63080'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/28c6c43a8b56f1bb8e68a71e1b248780.sol
+  file_hash: 28c6c43a8b56f1bb8e68a71e1b248780
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xaa93338ef3b64a50dcfb2eba57a1eb4ad59d955b'
+    contract_name: PPBC_Ether_Claim
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0xaa93338ef3b64a50dcfb2eba57a1eb4ad59d955b'
+    contract_name: PPBC_Ether_Claim
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xaa93338ef3b64a50dcfb2eba57a1eb4ad59d955b'
+    contract_name: PPBC_Ether_Claim
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xaa93338ef3b64a50dcfb2eba57a1eb4ad59d955b'
+    contract_name: PPBC_Ether_Claim
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/8bccc51179bd6a4072074711617d1abb.sol
+  file_hash: 8bccc51179bd6a4072074711617d1abb
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x4fd997ed7c10dbd04e95d3730cd77d79513076f2'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x4fd997ed7c10dbd04e95d3730cd77d79513076f2'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x4fd997ed7c10dbd04e95d3730cd77d79513076f2'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x4fd997ed7c10dbd04e95d3730cd77d79513076f2'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/6fe1e693bfa68d5712c8076451fa5951.sol
+  file_hash: 6fe1e693bfa68d5712c8076451fa5951
+  datasets:
+  - Zeus
+  - eThor
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xd8d4e59fabb7d8a1d013d577689cb612a8e5f826'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0xd8d4e59fabb7d8a1d013d577689cb612a8e5f826'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0xd8d4e59fabb7d8a1d013d577689cb612a8e5f826'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: reentrancy
+    swc_id: SWC-107
+    category: reentrancy
+    severity: critical
+    dataset: eThor
+    chain_address: '0xd8d4e59fabb7d8a1d013d577689cb612a8e5f826'
+    contract_name: GSI
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: eThor
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/4eb8f879ea15f24bb24b6027728131b1.sol
+  file_hash: 4eb8f879ea15f24bb24b6027728131b1
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x1e797ce986c3cff4472f7d38d5c4aba55dfefe40'
+    contract_name: blockcdn
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x1e797ce986c3cff4472f7d38d5c4aba55dfefe40'
+    contract_name: blockcdn
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x1e797ce986c3cff4472f7d38d5c4aba55dfefe40'
+    contract_name: blockcdn
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x1e797ce986c3cff4472f7d38d5c4aba55dfefe40'
+    contract_name: blockcdn
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+- path: cgt/5013c5070384de60c0e95b1810f0c5eb.sol
+  file_hash: 5013c5070384de60c0e95b1810f0c5eb
+  datasets:
+  - Zeus
+  findings:
+  - property: Blk_State_Dep
+    swc_id: SWC-116
+    category: time_manipulation
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x60b1bfaa999ab532df3ab804b43ed549a8636501'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Failed_send
+    swc_id: SWC-104
+    category: unchecked_calls
+    severity: high
+    dataset: Zeus
+    chain_address: '0x60b1bfaa999ab532df3ab804b43ed549a8636501'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Int_overflow
+    swc_id: SWC-101
+    category: arithmetic
+    severity: high
+    dataset: Zeus
+    chain_address: '0x60b1bfaa999ab532df3ab804b43ed549a8636501'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)
+  - property: Tx_Order_Dep
+    swc_id: SWC-114
+    category: front_running
+    severity: medium
+    dataset: Zeus
+    chain_address: '0x60b1bfaa999ab532df3ab804b43ed549a8636501'
+    contract_name: Presale
+    provenance:
+      source: CGT
+      external_label: true
+      dataset_origin: Zeus
+      paper_citation: Consolidation of Ground Truth Sets for Weakness Detection in
+        Smart Contracts (arXiv:2304.11624)

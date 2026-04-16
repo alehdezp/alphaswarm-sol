@@ -1,0 +1,30 @@
+id: erc1155-callback-reentrancy
+vulndoc: reentrancy/classic
+name: ERC1155 Callback Reentrancy
+description: ERC1155 safe transfer/mint with post-call state writes.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  any:
+  - property: uses_erc1155_safe_transfer
+    op: eq
+    value: true
+  - property: uses_erc1155_safe_batch_transfer
+    op: eq
+    value: true
+  - property: uses_erc1155_mint
+    op: eq
+    value: true
+  - property: uses_erc1155_mint_batch
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

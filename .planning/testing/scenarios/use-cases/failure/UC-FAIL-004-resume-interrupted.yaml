@@ -1,0 +1,66 @@
+id: UC-FAIL-004
+name: "Resume interrupted audit from checkpoint"
+workflow: failure
+category: failure
+tier: mechanical
+
+input:
+  contract: "examples/damm-vuln-defi/"
+  command: "/vrs-audit examples/damm-vuln-defi/ --resume"
+  context: >
+    A previous audit was interrupted (timeout, user cancel, or crash). The
+    workflow must detect existing checkpoint data, determine what was already
+    analyzed, and resume from the last checkpoint without repeating completed
+    work. This tests the orchestration's state persistence and resume logic.
+
+expected_behavior:
+  summary: |
+    The workflow should detect existing checkpoint or state files from the
+    previous interrupted run, determine which contracts/analyses were
+    completed, resume analysis from the point of interruption, and merge
+    new findings with previously saved partial results.
+  must_happen:
+    - "Detect existing checkpoint or state from previous run"
+    - "Report what was previously completed"
+    - "Resume analysis from the interruption point"
+    - "Avoid repeating already-completed analysis"
+    - "Merge new findings with previously saved results"
+    - "Final output includes both previous and new findings"
+  must_not_happen:
+    - "Start analysis from scratch ignoring previous progress"
+    - "Crash when no checkpoint exists (should start fresh)"
+    - "Duplicate findings from re-analyzed contracts"
+    - "Corrupt or overwrite previous partial results"
+  expected_tools:
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 45
+  key_dimensions:
+    - name: checkpoint_detection
+      description: "Did the workflow detect and load existing checkpoint data?"
+    - name: resume_accuracy
+      description: "Did the workflow correctly identify where to resume?"
+    - name: deduplication
+      description: "Were duplicate findings avoided for already-analyzed contracts?"
+    - name: result_merging
+      description: "Were previous and new findings correctly merged?"
+  regression_signals:
+    - "Full restart ignoring checkpoint -> REGRESSION: resume logic broken"
+    - "Checkpoint corruption -> CRITICAL REGRESSION: state persistence broken"
+    - "Duplicate findings -> REGRESSION: deduplication broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  related_scenarios:
+    - "UC-FAIL-003"
+    - "UC-AUDIT-008"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Mechanical tier. Tests state persistence and resume, which is an advanced
+  orchestration feature. Lowest threshold (45) because resume logic is
+  complex and still under development.

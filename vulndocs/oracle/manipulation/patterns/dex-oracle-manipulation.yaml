@@ -1,0 +1,52 @@
+id: dex-oracle-manipulation
+vulndoc: oracle/manipulation
+name: DEX Price Oracle Manipulation
+description: |
+  Collateral or pricing calculations that use DEX reserve data as an oracle
+  without protection against flash loan manipulation.
+
+  Attack Pattern:
+  1. Attacker flash loans tokens
+  2. Manipulates DEX pool reserves via large swap
+  3. Calls vulnerable contract while price is skewed
+  4. Profits from distorted collateral requirements
+  5. Reverses swap and repays flash loan
+
+  Indicators:
+  - Uses balance/reserves for collateral calculation
+  - Reads from DEX as price source
+  - No flash loan protection
+  - No time-weighted average (TWAP)
+  - No deviation check from secondary source
+
+  Real-world examples: DVDeFi puppet, puppet-v2, puppet-v3 challenges.
+
+scope: Function
+lens:
+  - ExternalInfluence
+  - Oracle
+severity: critical
+
+match:
+  all:
+    - property: balance_used_for_collateralization
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  none:
+    - property: flash_loan_guard
+      op: eq
+      value: true
+    - property: uses_historical_snapshot
+      op: eq
+      value: true
+    - property: has_twap_window_parameter
+      op: eq
+      value: true
+
+references:
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/puppet"
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/puppet-v2"
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/puppet-v3"

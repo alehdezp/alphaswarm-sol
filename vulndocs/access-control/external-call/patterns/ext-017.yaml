@@ -1,0 +1,19 @@
+id: ext-017
+vulndoc: access-control/external-call
+name: Cross-Chain Oracle Missing Validation
+description: Cross-chain price reads without proof or message validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_cross_chain_validation
+    op: eq
+    value: false

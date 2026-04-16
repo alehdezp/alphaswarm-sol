@@ -1,0 +1,13 @@
+{
+    "contract_id": "cal-02",
+    "contract_name": "NoAccessGate",
+    "expected_findings": [
+        {
+            "vulnerability_class": "access-control",
+            "severity": "high",
+            "function_name": "setOwner",
+            "description": "Missing access control on setOwner — any address can call setOwner(newOwner) to take ownership, no require(msg.sender == owner) or onlyOwner modifier present",
+            "key_indicators": ["no modifier on setOwner", "no require(msg.sender == owner)", "unrestricted ownership transfer"]
+        }
+    ]
+}

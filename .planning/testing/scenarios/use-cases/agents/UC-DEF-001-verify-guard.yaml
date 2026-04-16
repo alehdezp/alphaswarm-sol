@@ -1,0 +1,73 @@
+id: UC-DEF-001
+name: "Defender verifies reentrancy guard is effective"
+workflow: vrs-defender
+category: agents
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyWithGuard.sol"
+  command: "/vrs-audit tests/contracts/ReentrancyWithGuard.sol --agent defender"
+  context: >
+    ReentrancyWithGuard.sol has the CEI violation pattern but is protected
+    by a nonReentrant modifier from OpenZeppelin's ReentrancyGuard. The
+    defender agent must find this guard, verify it covers the vulnerable
+    function, and confirm that the reentrancy is effectively mitigated.
+
+expected_behavior:
+  summary: |
+    The defender agent should build a BSKG, identify the CHECKS_PERMISSION
+    operations (including the nonReentrant modifier), trace the guard coverage
+    to the vulnerable function, and produce a defense report confirming the
+    reentrancy is mitigated. The defender must not just say "guard exists" but
+    verify it covers the right entry points.
+  must_happen:
+    - "Agent builds BSKG from ReentrancyWithGuard.sol"
+    - "Agent queries graph for CHECKS_PERMISSION and guard-related operations"
+    - "Agent identifies the nonReentrant modifier on the vulnerable function"
+    - "Agent verifies the guard covers the function with the external call"
+    - "Agent produces a defense report confirming mitigation"
+    - "Report includes specific guard location and coverage analysis"
+  must_not_happen:
+    - "Agent claims vulnerability without examining guards"
+    - "Agent says 'guard exists' without verifying coverage"
+    - "Agent skips graph queries and only reads code"
+    - "Agent misidentifies a different modifier as the reentrancy guard"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: guard_identification
+      description: "Did the defender correctly identify the ReentrancyGuard and nonReentrant modifier?"
+    - name: coverage_analysis
+      description: "Did the defender verify the guard covers the specific vulnerable function?"
+    - name: graph_first_compliance
+      description: "Did the defender use BSKG queries to find the guard, not just code search?"
+    - name: defense_report_quality
+      description: "Is the defense report specific about what is mitigated and how?"
+  regression_signals:
+    - "Defender misses the guard -> CRITICAL REGRESSION: guard detection broken"
+    - "Defender says 'guard exists' without coverage analysis -> REGRESSION: shallow defense"
+    - "Defender skips graph queries -> REGRESSION: graph-first violated"
+
+links:
+  workflow_doc: "docs/reference/graph-first-template.md"
+  test_contract: "tests/contracts/ReentrancyWithGuard.sol"
+  related_scenarios:
+    - "UC-ATK-001"
+    - "UC-VER-003"
+    - "UC-DEF-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Core tier because guard verification is the defender agent's primary
+  function. Paired with UC-DEF-002 (partial guard) to test both complete
+  and incomplete protection scenarios.

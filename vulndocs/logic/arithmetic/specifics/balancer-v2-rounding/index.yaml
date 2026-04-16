@@ -1,0 +1,485 @@
+# Balancer V2 Rounding Exploit - Specific Vulnerability
+
+id: balancer-v2-rounding
+name: Balancer V2 ComposableStablePool Rounding Error
+parent_category: logic
+parent_subcategory: arithmetic
+
+description: |
+  Arithmetic precision loss in ComposableStablePool invariant calculations
+  combined with atomic batch swap operations enables attackers to artificially
+  suppress BPT pricing and extract value through repeated arbitrage cycles.
+
+  The vulnerability affects the _upscaleArray function which performs integer
+  division rounding down. When token balances reach critical wei thresholds
+  (8-9 wei), relative precision loss can reach 10% per operation. Since BPT
+  price is calculated as invariant D / totalSupply, underestimated D values
+  directly lead to artificial price suppression.
+
+  When 65+ micro-swaps are executed atomically within a single batchSwap,
+  precision losses compound catastrophically, enabling multi-million dollar
+  value extraction per pool.
+
+severity: critical
+exploit_severity: critical
+confidence_score: 0.98
+
+# Related VKG Properties for Detection
+detection:
+  graph_signals:
+    - property: has_division
+      expected: true
+      critical: true
+      description: "Invariant calculation performs integer division with rounding"
+      confidence: 0.95
+
+    - property: uses_scaling_factors
+      expected: true
+      critical: true
+      description: "Token amounts scaled by decimal-related scaling factors"
+      confidence: 0.92
+
+    - property: reads_balance_state
+      expected: true
+      critical: true
+      description: "Reads token balances for invariant computation"
+      confidence: 0.95
+
+    - property: modifies_critical_state
+      expected: true
+      critical: true
+      description: "Updates pool reserves and state after swaps"
+      confidence: 0.93
+
+    - property: loops_over_array
+      expected: true
+      critical: false
+      description: "Iterates over token balances in scaling/unscaling"
+      confidence: 0.85
+
+    - property: arithmetic_operations_on_balances
+      expected: true
+      critical: true
+      description: "Performs multiplication and division on balance values"
+      confidence: 0.94
+
+    - property: has_external_call_to_vault
+      expected: true
+      critical: false
+      description: "Calls or is called by Vault contract for batchSwap"
+      confidence: 0.88
+
+  semantic_operations:
+    - READS_USER_BALANCE
+    - PERFORMS_DIVISION
+    - PERFORMS_MULTIPLICATION
+    - MODIFIES_CRITICAL_STATE
+    - LOOPS_OVER_ARRAY
+
+  behavioral_signatures:
+    # Vulnerable: precision loss due to rounding during balance scaling
+    - vulnerable: "R:bal -> A:div -> A:mul -> M:crit"
+      description: "Read balance, divide (rounding down), multiply, modify critical state"
+
+    - vulnerable: "A:div R:bal A:div A:div L:arr M:crit"
+      description: "Division operations with looped balance reads and state modification"
+
+    # Safe: explicit precision checks and rounding prevention
+    - safe: "R:bal -> V:in -> A:div -> A:mul -> M:crit"
+      description: "Input validation before precision-affecting arithmetic"
+
+    - safe: "R:bal -> (roundUp for D or ceilingDiv) -> A:mul -> M:crit"
+      description: "Use of ceiling division or upRound for safety"
+
+  operation_sequences:
+    vulnerable:
+      # Compounding precision loss pattern
+      - "R:bal[i] -> A:div (rounding down) -> R:bal[i+1] -> A:div -> ... -> M:crit"
+      - "L:arr(R:bal) -> A:div (divDown) -> A:mul (mulDown) -> M:crit"
+      - "A:div -> REPEAT(65x in atomic tx) -> M:crit (D underestimated)"
+
+    safe:
+      # Precision-safe operations with rounding control
+      - "R:bal[i] -> V:in(check thresholds) -> A:div(divUp or explicit round) -> A:mul -> M:crit"
+      - "R:bal -> Validate(no critical wei boundaries) -> A:div -> A:mul -> M:crit"
+      - "R:bal -> RecalculateD(high precision) -> Compare(before/after) -> M:crit"
+
+  false_positive_indicators:
+    - "Division operations on large, well-separated balance values (> 10^12 wei)"
+    - "Scaling factors that compensate for rounding (mulUp paired with divDown)"
+    - "Explicit rounding direction checks or safeguards before state modification"
+    - "Invariant validation that detects and prevents dramatic changes (delta checks)"
+    - "Usage of FixedPoint.divUp or explicit ceiling division for invariant calculation"
+    - "Atomic operation count limited to prevent compounding (< 10 ops per tx)"
+    - "Price oracle validation that detects artificially suppressed prices"
+    - "Rate limiting or cooldown on repeated swap patterns"
+
+# Attack Mechanism Details
+attack_mechanism:
+  preconditions:
+    - "Access to batchSwap functionality within the Vault"
+    - "Ability to execute multiple swap operations atomically (65+ ops in single tx)"
+    - "Sufficient capital to execute adjustment swaps and mint BPT"
+    - "Knowledge of exact balance thresholds triggering maximum rounding errors"
+    - "ComposableStablePool deployment with vulnerable _upscaleArray implementation"
+    - "Multiple pools across different chains or assets to maximize extraction"
+
+  attack_steps:
+    - step: 1
+      phase: "Adjustment Phase"
+      description: |
+        Execute large BPT-to-token swaps to push one asset balance to the critical
+        rounding boundary. Position the balance at a threshold where integer division
+        rounding produces maximum relative error (8-9 wei threshold).
+      operations:
+        - "Large swap: BPT -> underlying token (e.g., cbETH)"
+        - "Precision: Push target balance to near rounding boundary"
+        - "Effect: Set up conditions for maximum rounding error"
+
+    - step: 2
+      phase: "Precision Loss Trigger (Compounding)"
+      description: |
+        Execute 65+ small swaps involving the boundary-positioned token within
+        a single atomic batchSwap transaction. Each swap triggers _upscaleArray
+        which rounds down, underestimating the invariant D. Losses compound
+        within the atomic context since state isn't committed between ops.
+      operations:
+        - "Small swap: token A <-> token B (involving boundary-positioned token)"
+        - "Effect: _upscaleArray divides and rounds down"
+        - "Result: D (invariant) is underestimated by accumulated error"
+        - "Repeat: 65+ times, errors compound catastrophically"
+
+    - step: 3
+      phase: "Value Extraction"
+      description: |
+        After precision loss has suppressed the invariant D, mint BPT at the
+        artificially deflated price. Then redeem the BPT for underlying assets.
+        Since the price is artificially low during minting, the attacker receives
+        more shares than fair value. Redemption extracts the difference.
+      operations:
+        - "Mint BPT: Cost suppressed due to underestimated D"
+        - "Redeem BPT: Receive underlying assets at full value"
+        - "Profit: Difference between deflated mint and fair redeem prices"
+
+    - step: 4
+      phase: "Scale Attack"
+      description: |
+        Repeat the three-phase pattern across multiple ComposableStablePools
+        on multiple chains (Ethereum, Base, Polygon, Arbitrum, etc.) within
+        a coordinated timeframe to extract maximum value before detection.
+      operations:
+        - "Attack Pool 1 (Ethereum, $99M extracted)"
+        - "Attack Pool 2 (Base, $15M extracted)"
+        - "Attack Pool 3-6 (Other chains, remaining $14M)"
+        - "Coordinate extraction within 30-minute window before circuit breakers"
+
+  exploitation_difficulty: "high"
+  exploitation_notes: |
+    While the root cause (rounding in _upscaleArray) seems simple, exploitation
+    required sophisticated understanding of:
+
+    1. Exact wei-level balance thresholds triggering maximum rounding errors
+    2. Curve's StableSwap invariant (D) calculation and its relationship to BPT pricing
+    3. How to craft 65+ operations to compound precision loss atomically
+    4. MEV/sandwich resistance strategies to prevent frontrunning
+    5. Multi-chain coordination to maximize extraction before detection
+
+    The attacker demonstrated advanced understanding of DeFi mathematics and
+    institutional-grade execution capabilities.
+
+# Real-World Exploits
+exploits:
+  - id: balancer-nov-2025-eth
+    name: "Balancer V2 ComposableStablePool Exploit - Ethereum"
+    date: "2025-11-03"
+    loss_usd: 99000000
+    protocol: "Balancer"
+    chain: ethereum
+    category: logic
+    subcategory: arithmetic
+    description: |
+      Ethereum deployment of Balancer V2 ComposableStablePool suffered the largest
+      loss in the coordinated exploit. Attacker drained approximately $99 million
+      through precision loss in invariant calculations combined with atomic batch
+      swap operations. The exploit targeted wstETH/rETH/cbETH pools.
+    attack_flow: |
+      1. Position cbETH balance at rounding boundary (≈8-9 wei) via large BPT->cbETH swap
+      2. Execute 65+ micro-swaps in atomic batchSwap, each triggering rounding down
+      3. Precision losses compound: D (invariant) becomes underestimated by cumulative error
+      4. BPT price = D / totalSupply becomes artificially deflated
+      5. Mint BPT at suppressed price (costs less than fair value)
+      6. Redeem BPT for underlying assets at full/fair value
+      7. Extract difference: artificially low mint cost minus fair redeem value
+    tx_hash: "0x..." # Would need specific tx hash from Ethereum block data
+    block_height: 21199999
+    postmortem_url: "https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation"
+    vulnerable_code_url: "https://github.com/balancer-labs/balancer-v2-monorepo/blob/main/pkg/pool-stable-composite/contracts/ComposableStablePool.sol#L450"
+    pattern_ids:
+      - logic-002-balancer-rounding
+
+  - id: balancer-nov-2025-base
+    name: "Balancer V2 ComposableStablePool Exploit - Base"
+    date: "2025-11-03"
+    loss_usd: 15000000
+    protocol: "Balancer"
+    chain: base
+    category: logic
+    subcategory: arithmetic
+    description: |
+      Base deployment affected in the same coordinated attack. Approximately $15
+      million extracted through identical precision loss mechanics as Ethereum.
+    postmortem_url: "https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation"
+    pattern_ids:
+      - logic-002-balancer-rounding
+
+  - id: balancer-nov-2025-multi-chain
+    name: "Balancer V2 ComposableStablePool Exploit - Multi-Chain"
+    date: "2025-11-03"
+    loss_usd: 14640000
+    protocol: "Balancer"
+    chain: "multiple (Polygon, Arbitrum, Avalanche, Berachain)"
+    category: logic
+    subcategory: arithmetic
+    description: |
+      Additional $14.64 million extracted across Polygon, Arbitrum, Avalanche,
+      and Berachain deployments. Berachain validators coordinated an emergency
+      halt of the blockchain and planned hard fork to rollback exploit.
+    attack_impact: |
+      - Berachain halted to coordinate emergency hard fork
+      - Balancer TVL dropped 46% ($338.6M remaining within 24 hours)
+      - Partial recovery: 5,041 osETH (~$19M) and 13,495 osGNO (~$2M) frozen/recovered
+      - Balancer offered 20% white-hat bounty for fund recovery
+    postmortem_url: "https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation"
+    pattern_ids:
+      - logic-002-balancer-rounding
+
+# False Positive Management
+false_positive_analysis:
+  categories:
+    - category: "Legitimate scaling operations"
+      indicators:
+        - "Scaling factors consistently >= 10^6 (avoiding wei-level operations)"
+        - "Well-tested pool implementations with established track records"
+        - "Invariant validation that detects dramatic changes"
+        - "No evidence of compounding precision loss (sequential swaps, not atomic 65+)"
+      confidence: "High - Low false positive risk"
+
+    - category: "Division in safe contexts"
+      indicators:
+        - "Division by constants known at compile time"
+        - "Division results stored in variables with explicit rounding checks"
+        - "No subsequent use of divided values in state modification"
+      confidence: "Medium - Requires code inspection"
+
+    - category: "High-precision implementations"
+      indicators:
+        - "Uses FixedPoint.divUp or explicit ceiling division for critical calculations"
+        - "Delta checks comparing D before/after operations"
+        - "Rate limiting on swap counts per transaction"
+        - "Sanity checks on BPT price changes between operations"
+      confidence: "High - Low false positive risk"
+
+# Remediation Guidance
+fixes:
+  root_cause:
+    description: |
+      The root cause is the asymmetry between upscaling (mulDown only) and
+      downscaling (both divUp and divDown variants). This allows precision loss
+      during scaling when balances are at critical wei thresholds, which compounds
+      when multiple operations are chained atomically.
+
+  recommended:
+    - fix_id: "use-consistent-rounding"
+      name: "Ensure Consistent Rounding Direction in Scaling"
+      priority: critical
+      description: |
+        Implement both mulDown and mulUp variants for upscaling to provide
+        consistent rounding control. For critical invariant calculations,
+        prefer rounding up (divUp, mulUp) to overestimate rather than
+        underestimate the invariant.
+      code_pattern: |
+        // VULNERABLE
+        amounts[i] = FixedPoint.mulDown(amounts[i], scalingFactors[i]);
+
+        // SAFE - Use mulUp for invariant preservation
+        amounts[i] = FixedPoint.mulUp(amounts[i], scalingFactors[i]);
+      effectiveness: "Very High - Eliminates precision loss direction"
+
+    - fix_id: "prevent-compounding"
+      name: "Limit Atomic Operations Count"
+      priority: critical
+      description: |
+        Implement a hard limit on the number of swap operations per batchSwap
+        transaction. The Balancer exploit required 65+ operations to compound
+        precision losses sufficiently. Limiting to < 10-20 ops per transaction
+        dramatically reduces exploitation window.
+      code_pattern: |
+        // VULNERABLE - No limit on operation count
+        function batchSwap(...) external {
+            for (uint i = 0; i < swaps.length; i++) {
+                _swap(swaps[i]);
+            }
+        }
+
+        // SAFE - Enforce operation count limit
+        function batchSwap(...) external {
+            require(swaps.length <= 20, "Too many operations per batch");
+            for (uint i = 0; i < swaps.length; i++) {
+                _swap(swaps[i]);
+            }
+        }
+      effectiveness: "High - Prevents compounding effect"
+
+    - fix_id: "validate-invariant-stability"
+      name: "Validate Invariant Stability After Operations"
+      priority: high
+      description: |
+        Implement checks that verify the invariant (D) doesn't change dramatically
+        between operations. A sudden drop in D indicates precision loss or
+        manipulation. Flag or revert operations that cause > 0.5% invariant change.
+      code_pattern: |
+        // SAFE - Validate invariant before and after
+        uint256 D_before = _calculateInvariant(balances);
+        _performSwap(swap);
+        uint256 D_after = _calculateInvariant(balances);
+
+        // Check for dramatic changes indicating precision issues
+        require(
+            D_after >= D_before * 995 / 1000,  // Allow 0.5% deviation maximum
+            "Invariant dropped unexpectedly - possible precision loss"
+        );
+      effectiveness: "High - Detects and prevents precision manipulation"
+
+    - fix_id: "price-oracle-validation"
+      name: "Validate BPT Price Against External Oracle"
+      priority: high
+      description: |
+        Implement BPT price validation against an external price source (e.g.,
+        previous block price, external oracle). Artificially suppressed BPT
+        prices will deviate from expected ranges, allowing detection.
+      code_pattern: |
+        // SAFE - Validate BPT price reasonableness
+        uint256 current_bpt_price = D / totalBPTSupply;
+        uint256 expected_bpt_price = _getExternalPrice();
+
+        require(
+            current_bpt_price > expected_bpt_price * 99 / 100,  // Allow 1% variance max
+            "BPT price artificially suppressed"
+        );
+      effectiveness: "High - Detects artificial price manipulation"
+
+    - fix_id: "use-higher-precision"
+      name: "Increase Precision for Invariant Calculations"
+      priority: medium
+      description: |
+        Use higher-precision arithmetic for invariant calculations to reduce
+        relative rounding error. For example, use 256-bit values or external
+        decimal upscaling before division.
+      code_pattern: |
+        // VULNERABLE - Low precision enables high relative error
+        uint256 invariant = (balance_A * balance_B) / constant;
+
+        // SAFE - Higher precision with proper scaling
+        uint256 scaled = (balance_A * 1e18) * (balance_B * 1e18);
+        uint256 invariant = scaled / (constant * 1e18);
+      effectiveness: "Medium - Reduces but doesn't eliminate rounding error"
+
+    - fix_id: "implement-rate-limiting"
+      name: "Implement Rate Limiting on Swap Patterns"
+      priority: medium
+      description: |
+        Implement rate limits that throttle repeated swap patterns targeting
+        specific balance boundaries. This prevents rapid compounding of
+        precision losses in short timeframes.
+      code_pattern: |
+        // SAFE - Rate limit swap patterns
+        mapping(address => uint256) lastSwapTime;
+        mapping(address => uint256) swapCountInPeriod;
+
+        function batchSwap(...) external {
+            address msgSender = msg.sender;
+
+            require(
+                block.timestamp >= lastSwapTime[msgSender] + cooldownPeriod,
+                "Swap rate limit - cooldown required"
+            );
+
+            // ... perform swaps ...
+
+            lastSwapTime[msgSender] = block.timestamp;
+        }
+      effectiveness: "Medium - Provides time-based protection"
+
+# Related Patterns and Documentation
+related_patterns:
+  - pattern_id: "logic-002"
+    name: "Rounding Direction Bias"
+    linkage_type: "exact_match"
+    coverage: "General rounding vulnerability class"
+    notes: "Balancer exploit is a specific instance of rounding direction bias"
+
+  - pattern_id: "arith-overflow-underflow"
+    name: "Arithmetic Overflow/Underflow"
+    linkage_type: "partial_match"
+    coverage: "Related precision loss through arithmetic"
+    notes: "Precision loss shares similarity with overflow/underflow but is distinct"
+
+related_vulnerabilities:
+  - "Curve StableSwap precision loss (different root cause)"
+  - "Uniswap V3 rounding in fee calculations"
+  - "AAVE precision loss in interest rate calculations"
+
+# References and Sources
+references:
+  - title: "How an Attacker Drained $128M from Balancer Through Rounding Error Exploitation"
+    url: "https://research.checkpoint.com/2025/how-an-attacker-drained-128m-from-balancer-through-rounding-error-exploitation/"
+    source: "Check Point Research"
+    date: "2025-11-03"
+    type: "technical_analysis"
+
+  - title: "In-Depth Analysis: The Balancer V2 Exploit"
+    url: "https://blocksec.com/blog/in-depth-analysis-the-balancer-v2-exploit"
+    source: "BlockSec"
+    date: "2025-11-03"
+    type: "technical_analysis"
+
+  - title: "Explained: The Balancer Hack (November 2025)"
+    url: "https://www.halborn.com/blog/post/explained-the-balancer-hack-november-2025"
+    source: "Halborn"
+    date: "2025-11"
+    type: "postmortem"
+
+  - title: "Balancer V2 Vulnerability Disclosure and Mitigation"
+    url: "https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation"
+    source: "Balancer Team"
+    date: "2025-11-03"
+    type: "official_disclosure"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "Solidity Security Documentation Architect"
+  token_estimate: 2800
+  context_cache_key: "balancer-v2-rounding-v1"
+  severity_assessment: |
+    CRITICAL - This is one of the most impactful DeFi exploits of 2025. The
+    $128.64M loss across multiple chains demonstrates the catastrophic impact
+    of seemingly subtle precision loss when combined with atomic batch operations.
+
+  detection_readiness: |
+    VKG detection approach:
+    1. Flag functions performing PERFORMS_DIVISION on balances
+    2. Check for PERFORMS_MULTIPLICATION immediately after division
+    3. Detect LOOPS_OVER_ARRAY combined with precision-affecting arithmetic
+    4. Flag functions modifying MODIFIES_CRITICAL_STATE without invariant validation
+    5. Alert on patterns involving 10+ atomic operations modifying same state
+
+  research_notes: |
+    This vulnerability demonstrates the critical importance of:
+    - Understanding mathematical properties of pricing formulas
+    - Considering compounding effects of operations in atomic contexts
+    - Testing with boundary values and edge case balances
+    - Validating invariants don't deviate unexpectedly
+    - Being aware of asymmetries in rounding implementations

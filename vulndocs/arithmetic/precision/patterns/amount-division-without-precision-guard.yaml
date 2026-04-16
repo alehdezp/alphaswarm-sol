@@ -1,0 +1,16 @@
+id: amount-division-without-precision-guard
+vulndoc: arithmetic/precision
+name: Amount Division Without Precision Guard
+description: Amount division without precision/rounding guards can leak value or cause accounting drift.
+scope: Function
+lens:
+  - Token
+severity: medium
+match:
+  all:
+    - property: uses_amount_division
+      op: eq
+      value: true
+    - property: has_precision_guard
+      op: eq
+      value: false

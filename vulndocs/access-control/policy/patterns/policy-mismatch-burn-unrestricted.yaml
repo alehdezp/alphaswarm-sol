@@ -1,0 +1,38 @@
+id: policy-mismatch-burn-unrestricted
+vulndoc: access-control/policy
+name: Unrestricted Token Burning
+description: 'Function can burn tokens but allows burning others'' tokens without
+  approval.
+
+  Token burning should only affect sender or have approval.
+
+
+  Risk: Attacker can burn other users'' tokens, causing loss of funds.
+
+  '
+severity: high
+scope: Function
+lens:
+- TokenSecurity
+- AccessControl
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+  tier_c:
+    all:
+    - type: has_label
+      value: value_handling.burns_tokens
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: access_control.checks_allowance
+    - type: has_label
+      value: access_control.owner_only_burn
+required_labels:
+- value_handling.burns_tokens

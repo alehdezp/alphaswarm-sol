@@ -1,0 +1,22 @@
+# ERC20 Compliance Issues - Subcategory Index
+
+id: erc20-compliance
+name: ERC20 Compliance Issues
+parent_category: token
+
+description: |
+  Tokens not following the ERC20 specification exactly, causing
+  integration issues with protocols assuming standard behavior.
+
+severity_range:
+  - low
+  - high
+
+patterns:
+  - tok-001
+
+relevant_properties:
+  - uses_erc20_transfer
+  - token_return_guarded
+
+token_estimate: 400

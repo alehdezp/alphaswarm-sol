@@ -1,0 +1,20 @@
+id: dos-strict-equality
+vulndoc: dos/general
+name: DoS via Strict Equality (Gridlock)
+description: |
+  Function uses strict equality check (==) on contract balance, which can be manipulated via
+  selfdestruct to cause permanent DoS. Known as "Gridlock" attack. Maps to CWE-1077
+  (Floating Point Comparison with Incorrect Operator) and dangerous-strict-equalities detector.
+scope: Function
+lens:
+  - DoS
+  - Arithmetic
+severity: medium
+match:
+  all:
+    - property: has_strict_equality_check
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]

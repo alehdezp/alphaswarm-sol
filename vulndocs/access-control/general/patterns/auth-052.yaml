@@ -1,0 +1,16 @@
+id: auth-052
+vulndoc: access-control/general
+name: Delegatecall Context Sensitive Without Access Gate
+description: Delegatecall relies on msg.sender/tx.origin without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: delegatecall_context_sensitive
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

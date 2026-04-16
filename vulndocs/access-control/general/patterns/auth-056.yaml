@@ -1,0 +1,16 @@
+id: auth-056
+vulndoc: access-control/general
+name: Low-Level Call Without Access Control
+description: Low-level call usage without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_call
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

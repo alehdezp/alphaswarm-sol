@@ -1,0 +1,31 @@
+# Hook Permission Mismatch - Subcategory Index
+# Tier 8/10 Finding: Uniswap V4 Hook Security
+
+id: hook-permission
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Hook Permission Mismatch
+category: access-control
+severity: critical
+emerging: true
+protocols: ["uniswap-v4"]
+
+description: |
+  Hook addresses encode permissions in lower bits. When implemented functions
+  don't match encoded permissions, hooks silently fail or revert unexpectedly.
+
+operations:
+  - CHECKS_PERMISSION
+  - IMPLEMENTS_FUNCTION
+  - CALLS_EXTERNAL
+
+behavioral_signature: "ENCODES_PERMISSION(missing) -> IMPLEMENTS_FUNCTION -> SKIP_EXECUTION"
+
+related_cwes:
+  - CWE-284  # Improper Access Control
+  - CWE-665  # Improper Initialization
+
+pattern_ids:
+  - hook-001
+  - hook-002

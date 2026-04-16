@@ -1,0 +1,28 @@
+name: "defi-lending-protocol-01"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "lending"
+tier: 2
+adversarial_categories: ["A"]
+pattern_count: 8
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/CreditFacility.sol"
+    - "contracts/periphery/RiskEngine.sol"
+    - "contracts/libraries/PositionMath.sol"
+    - "contracts/interfaces/IAssetOracle.sol"
+  safe:
+    - "contracts/core/CreditFacility_safe.sol"
+    - "contracts/periphery/RiskEngine_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

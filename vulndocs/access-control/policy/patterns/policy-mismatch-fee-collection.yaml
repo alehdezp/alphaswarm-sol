@@ -1,0 +1,42 @@
+id: policy-mismatch-fee-collection
+vulndoc: access-control/policy
+name: Missing Fee Collection Protection
+description: 'Function collects fees but lacks proper access control or validation.
+
+  Fee collection is a value-handling operation that needs protection.
+
+
+  Risk: Fee parameters can be manipulated or fees stolen.
+
+  '
+severity: medium
+scope: Function
+lens:
+- ValueTransfer
+- AccessControl
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    any:
+    - property: reads_msg_value
+      op: eq
+      value: true
+    - has_operation: RECEIVES_VALUE_IN
+  tier_c:
+    all:
+    - type: has_label
+      value: value_handling.collects_fees
+      min_confidence: medium
+    any:
+    - type: missing_label
+      value: access_control.owner_only
+    - type: missing_label
+      value: invariants.enforces_fee_validation
+required_labels:
+- value_handling.collects_fees

@@ -1,0 +1,32 @@
+# Plausibility Scores Ledger (Phase 7.2 Innovation I6)
+#
+# Exploit plausibility scoring for finding prioritization.
+#
+# CRITICAL: Scores are for PRIORITIZATION ONLY - they NEVER hide findings.
+#
+# Score factors:
+# - liquidity_depth: 0-1 (higher = more liquid, easier to exploit)
+# - capital_requirement: 0-1 (higher = less capital needed)
+# - time_window: 0-1 (higher = longer window)
+# - access_barrier: 0-1 (higher = lower barrier)
+# - complexity: 0-1 (higher = less complex attack)
+#
+# Priority tiers:
+# - P0: score >= 0.8 (immediate review)
+# - P1: score >= 0.6 (high priority)
+# - P2: score >= 0.4 (normal priority)
+# - P3: score < 0.4 (lower priority - still reviewed!)
+
+plausibility_scores:
+  generated_at: "2026-01-29T13:40:46Z"
+  summary:
+    total_scored: 0
+    by_priority_tier:
+      P0: 0
+      P1: 0
+      P2: 0
+      P3: 0
+    avg_score: 0.0
+    avg_confidence: 0.0
+  note: "Scores are for PRIORITIZATION ONLY - they NEVER hide findings"
+  scores: {}

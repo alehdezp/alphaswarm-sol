@@ -1,0 +1,125 @@
+project:
+  name: inherited-token-hierarchy-02
+  theme: token_sale
+  tier: 2
+  adversarial_categories:
+  - B
+  description: 'Three-level token inheritance: BaseToken -> MintableToken -> RewardToken.
+    Category B: inherited vulnerability (B4) + library-mediated (B5).'
+findings:
+- pattern_id: token-006-approval-race-condition
+  contract: BaseToken
+  function: approve
+  line_range: 26-30
+  severity: medium
+  adversarial_techniques:
+  - B4-inherited-vulnerability
+  expected_reasoning_chain:
+  - Identify approve directly sets allowance to new amount
+  - No check that current allowance is 0 or being reset
+  - 'Race condition: spender can front-run allowance change to spend both old and
+    new'
+  - 'Conclude: approval race condition in base token inherited by all children'
+- pattern_id: auth-001
+  contract: MintableToken
+  function: setMinter
+  line_range: 38-40
+  severity: critical
+  adversarial_techniques:
+  - B4-inherited-vulnerability
+  expected_reasoning_chain:
+  - Identify setMinter changes minter address
+  - No access control modifier
+  - This vulnerability is INHERITED by RewardToken
+  - Attacker can set themselves as minter in RewardToken via inherited function
+  - 'Conclude: inherited missing access control on minter role'
+- pattern_id: token-001-unhandled-fee-on-transfer
+  contract: RewardToken
+  function: transfer
+  line_range: 30-42
+  severity: medium
+  adversarial_techniques:
+  - B4-inherited-vulnerability
+  expected_reasoning_chain:
+  - Identify transfer deducts fee from amount before sending
+  - External contracts receiving tokens get less than expected
+  - Protocols integrating this token may have accounting errors
+  - 'Conclude: fee-on-transfer token incompatible with protocols expecting exact amounts'
+- pattern_id: auth-002
+  contract: RewardToken
+  function: setFeeExempt
+  line_range: 45-47
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setFeeExempt changes fee exemption status
+  - No access control
+  - Anyone can exempt themselves from transfer fees
+  - 'Conclude: missing access control on fee exemption'
+- pattern_id: auth-003
+  contract: RewardToken
+  function: setFeeCollector
+  line_range: 50-52
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setFeeCollector changes fee recipient
+  - No access control
+  - Attacker redirects all transfer fees to themselves
+  - 'Conclude: missing access control on fee collector'
+- pattern_id: auth-004
+  contract: RewardToken
+  function: setTransferFee
+  line_range: 55-57
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setTransferFee changes fee rate with no upper bound
+  - No access control
+  - Attacker can set fee to 100% (10000 bps), stealing all transfers
+  - 'Conclude: missing access control + no fee cap'
+- pattern_id: token-003-infinite-approval
+  contract: BaseToken
+  function: approve
+  line_range: 26-30
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify approve sets _allowances[msg.sender][spender] = amount with no cap or type(uint256).max handling
+  - Notice transferFrom only decrements allowance by the transferred amount
+  - If a user approves type(uint256).max, the allowance effectively never decreases due to underflow protection
+  - Protocols or users setting max approval grant permanent unlimited spending power to the spender
+  - 'Conclude: infinite approval risk — no special handling of max uint256 allowance means revocation requires explicit zero-set'
+- pattern_id: cross-function-inheritance-reentrancy
+  contract: RewardToken
+  function: transfer
+  line_range: 30-42
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify RewardToken.transfer calls _safeTransfer twice — once for netAmount to recipient, once for fee to feeCollector
+  - Notice _safeTransfer modifies _balances (inherited from BaseToken) for both from and to addresses
+  - If feeCollector is a contract, the second _safeTransfer could trigger a receive/fallback callback
+  - During callback, attacker can re-enter via transferFrom (which also uses _safeTransfer and _allowances from BaseToken)
+  - The inheritance chain BaseToken -> MintableToken -> RewardToken means shared _balances state is vulnerable across all entry points
+  - 'Conclude: cross-function reentrancy via inherited _balances — transfer fee payment to a contract recipient enables re-entry into transferFrom'
+- pattern_id: token-005-unchecked-return
+  contract: RewardToken
+  function: transfer
+  line_range: 30-42
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify RewardToken.transfer returns bool but callers may not check the return value
+  - Notice _safeTransfer uses require for balance checks, so internal failures revert
+  - However, external callers using transfer() without checking the bool return get no indication of failure if the function signature changes
+  - The ERC-20 standard requires callers to check return values, but this token provides no revert-on-failure guarantee at the interface level
+  - 'Conclude: unchecked return value risk — callers integrating RewardToken.transfer may silently ignore failures if they do not check the bool return'
+safe_patterns: []
+summary:
+  total_findings: 9
+  total_safe_patterns: 0
+  difficulty: medium
+  notes: 'Category B: three-level inheritance chain where MintableToken.setMinter
+    vulnerability propagates to RewardToken. Token-specific patterns (fee-on-transfer,
+    approval race).'

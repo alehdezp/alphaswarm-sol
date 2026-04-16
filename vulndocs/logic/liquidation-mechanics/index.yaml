@@ -1,0 +1,118 @@
+# Liquidation Mechanics Vulnerabilities - Subcategory Index
+# NEW SUBCATEGORY - Created via Task 17.3a: Solodit/Exploit DB Crawl
+#
+# This subcategory covers vulnerabilities in lending protocol liquidation
+# systems including LTV gaps, liquidation timing, and threshold configuration.
+
+id: liquidation-mechanics
+name: Liquidation Mechanics Flaws
+parent_category: logic
+
+description: |
+  Vulnerabilities specific to lending protocol liquidation systems. These
+  include configuration issues like missing LTV gaps, liquidation timing
+  attacks, threshold manipulation, and bad debt accumulation patterns.
+
+  This subcategory emerged from analysis of 2024-2025 DeFi exploits and
+  audit findings, particularly the Euler V2 LTV gap finding and related
+  lending protocol vulnerabilities.
+
+severity_range:
+  - medium
+  - high
+  - critical
+
+# Associated patterns (to be created)
+patterns:
+  - logic-liq-001  # LTV Gap Missing
+  - logic-liq-002  # Liquidation Timing Attack
+  - logic-liq-003  # Bad Debt Accumulation
+
+# VKG graph signals for detection
+graph_signals:
+  - property: is_lending_protocol
+    expected: true
+    critical: true
+    description: "Contract is part of lending protocol"
+    confidence: 0.90
+
+  - property: has_borrow_function
+    expected: true
+    critical: true
+    description: "Protocol allows borrowing against collateral"
+    confidence: 0.95
+
+  - property: has_liquidation_function
+    expected: true
+    critical: true
+    description: "Protocol supports liquidation of undercollateralized positions"
+    confidence: 0.95
+
+  - property: ltv_configuration
+    expected: true
+    critical: true
+    description: "LTV thresholds configurable or hardcoded"
+    confidence: 0.85
+
+  - property: has_health_factor_check
+    expected: true
+    critical: false
+    description: "Protocol calculates health factor for positions"
+    confidence: 0.90
+
+# Semantic operations relevant to this subcategory
+semantic_operations:
+  - READS_COLLATERAL_RATIO
+  - MODIFIES_CRITICAL_STATE
+  - PERFORMS_LIQUIDATION
+  - READS_ORACLE
+  - TRANSFERS_VALUE_OUT
+
+# Behavioral signatures for pattern matching
+behavioral_signatures:
+  vulnerable:
+    - "C:ltv{==liquidation_threshold}->W:borrow"
+    - "R:health{=1.0}->W:borrow{allowed}"
+    - "W:borrow->!C:buffer{ltv_gap}"
+  safe:
+    - "C:ltv{<liquidation_threshold-gap}->W:borrow"
+    - "R:health{>1.0+buffer}->W:borrow{allowed}"
+    - "W:borrow->V:cooloff->C:health"
+
+# False positive indicators
+false_positive_indicators:
+  - "Explicit LTV gap between borrow LTV and liquidation threshold"
+  - "Cool-off period after health check"
+  - "Governor-configurable liquidation parameters"
+  - "Maximum liquidation discount factor limits"
+  - "Gradual liquidation with partial repayment"
+
+# Navigation hints for LLM agents
+navigation:
+  hints:
+    - "Check for LTV gap configuration in protocol parameters"
+    - "Look for cool-off periods between borrow and liquidation eligibility"
+    - "Analyze liquidation discount factors for profitability edge cases"
+    - "Verify health factor calculations include proper buffers"
+  related_categories:
+    - oracle
+    - flash-loan
+    - governance
+
+# Token estimates for context retrieval
+token_estimates:
+  index: 300
+  overview: 500
+  detection: 700
+  patterns: 900
+  exploits: 700
+  full: 2500
+
+# Cache configuration
+context_cache_key: "liquidation-mechanics-v1"
+
+# Specifics included
+specifics:
+  - id: euler-ltv-gap
+    name: "Euler V2 LTV Gap Vulnerability"
+    description: "Missing gap between borrow LTV and liquidation threshold"

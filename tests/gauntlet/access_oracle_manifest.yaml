@@ -1,0 +1,315 @@
+# Access Control & Oracle Gauntlet Manifest
+#
+# Defines 10 test cases for access control and oracle vulnerability classification.
+# Binary scoring: PASS (correct classification) or FAIL (incorrect).
+#
+# Reference:
+#   - .planning/phases/07.3.3-adversarial-gauntlet/07.3.3-GAUNTLET-SPEC.md
+#   - configs/gauntlet_scoring.yaml
+
+version: "1.0.0"
+suite_id: gauntlet-access-oracle
+description: |
+  Access control and oracle gauntlet with 10 contracts covering authorization
+  bypasses, upgrade vulnerabilities, oracle manipulation, and decimal mismatches.
+  Includes safe controls for negative testing and cross-contract reasoning traps.
+
+# =============================================================================
+# SCORING CONFIG REFERENCE
+# =============================================================================
+
+scoring:
+  config_file: configs/gauntlet_scoring.yaml
+  thresholds:
+    pass_rate: 1.0              # 100% accuracy required (10/10)
+    max_false_positives: 0      # Zero FPs allowed
+    max_false_negatives: 0      # Zero FNs allowed
+    min_score: 10               # Minimum point total (all correct)
+
+# =============================================================================
+# REQUIRED GATES
+# =============================================================================
+
+required_gates:
+  - G0   # Preflight (environment validation)
+  - G1   # Evidence integrity (proof tokens)
+  - G2   # Graph soundness (BSKG valid)
+  - G4   # Mutation robustness (detection threshold)
+
+# =============================================================================
+# TEST CASES
+# =============================================================================
+#
+# Each case defines:
+#   - id: Unique identifier for tracking
+#   - contract: Contract name (file in tests/gauntlet/access_oracle/)
+#   - expected: VULNERABLE or SAFE
+#   - vuln_type: Specific vulnerability type (for VULNERABLE cases)
+#   - rationale: Why this classification is correct
+#   - detection_signals: What the system should detect
+#   - false_positive_traps: Patterns that might cause FP (for SAFE cases)
+
+cases:
+
+  # ---------------------------------------------------------------------------
+  # ACCESS CONTROL - VULNERABLE CASES (3 contracts)
+  # ---------------------------------------------------------------------------
+
+  - id: AC-VULN-001
+    contract: AccessVault_01.sol
+    expected: VULNERABLE
+    vuln_type: missing-auth-on-upgrade
+    rationale: |
+      Critical upgrade function (upgradeTo) lacks onlyOwner or onlyRole modifier.
+      Anyone can call upgradeTo() and point the proxy to a malicious implementation,
+      taking over the entire contract.
+    detection_signals:
+      - upgrade_function_public
+      - no_access_control_on_critical
+      - modifies_implementation_slot
+      - proxy_pattern_detected
+    evidence_required:
+      - function: upgradeTo
+        pattern: no_access_modifier
+        line_range: [25, 35]
+
+  - id: AC-VULN-002
+    contract: AccessVault_02.sol
+    expected: VULNERABLE
+    vuln_type: delegatecall-target-control
+    rationale: |
+      User-controlled address passed to delegatecall. Attacker can pass a malicious
+      contract address and execute arbitrary code in the context of this contract,
+      potentially draining all funds or modifying critical state.
+    detection_signals:
+      - delegatecall_with_user_input
+      - no_target_validation
+      - has_value_storage
+    evidence_required:
+      - function: execute
+        pattern: delegatecall_untrusted_target
+        line_range: [18, 28]
+
+  - id: AC-VULN-003
+    contract: AccessVault_03.sol
+    expected: VULNERABLE
+    vuln_type: ownership-manipulation
+    rationale: |
+      renounceOwnership() or transferOwnership() is public without additional
+      safeguards. Front-running or social engineering can transfer ownership
+      to attacker-controlled address.
+    detection_signals:
+      - public_ownership_transfer
+      - no_two_step_transfer
+      - single_owner_model
+    evidence_required:
+      - function: transferOwnership
+        pattern: no_two_step_verification
+        line_range: [30, 40]
+
+  # ---------------------------------------------------------------------------
+  # ORACLE - VULNERABLE CASES (4 contracts)
+  # ---------------------------------------------------------------------------
+
+  - id: OR-VULN-001
+    contract: OracleVault_01.sol
+    expected: VULNERABLE
+    vuln_type: oracle-staleness
+    rationale: |
+      Chainlink oracle price used without checking updatedAt timestamp.
+      Stale prices can be exploited during oracle downtime or congestion,
+      allowing arbitrage against outdated values.
+    detection_signals:
+      - chainlink_price_feed
+      - no_staleness_check
+      - price_used_in_calculation
+    evidence_required:
+      - function: getPrice
+        pattern: no_updatedAt_validation
+        line_range: [20, 30]
+
+  - id: OR-VULN-002
+    contract: OracleVault_02.sol
+    expected: VULNERABLE
+    vuln_type: oracle-decimal-mismatch
+    rationale: |
+      Oracle returns 8 decimals but contract assumes 18 decimals. This 10^10
+      difference causes massive over/under-valuation of assets, enabling
+      arbitrage attacks.
+    detection_signals:
+      - hardcoded_decimal_assumption
+      - no_decimals_call
+      - price_calculation_mismatch
+    evidence_required:
+      - function: calculateValue
+        pattern: decimal_mismatch
+        line_range: [25, 38]
+
+  - id: OR-VULN-003
+    contract: OracleVault_03.sol
+    expected: VULNERABLE
+    vuln_type: single-oracle-source
+    rationale: |
+      Single Chainlink feed with no fallback. If the oracle is compromised,
+      deprecated, or returns bad data, the entire protocol is at risk.
+      No circuit breaker or secondary oracle.
+    detection_signals:
+      - single_price_source
+      - no_fallback_oracle
+      - no_circuit_breaker
+    evidence_required:
+      - function: getLatestPrice
+        pattern: single_oracle_dependency
+        line_range: [15, 25]
+
+  - id: OR-VULN-004
+    contract: OracleVault_04.sol
+    expected: VULNERABLE
+    vuln_type: l2-sequencer-grace
+    rationale: |
+      On L2 (Arbitrum, Optimism), missing sequencer uptime feed check. After
+      sequencer comes back online, stale prices persist for a grace period.
+      Attacker can exploit this window for arbitrage.
+    detection_signals:
+      - l2_deployment_detected
+      - no_sequencer_uptime_check
+      - no_grace_period_handling
+    evidence_required:
+      - function: getPrice
+        pattern: missing_sequencer_check
+        line_range: [20, 35]
+
+  # ---------------------------------------------------------------------------
+  # SAFE CASES (3 contracts) - Negative Controls
+  # ---------------------------------------------------------------------------
+
+  - id: AC-SAFE-001
+    contract: AccessVault_04.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Uses OpenZeppelin OwnableUpgradeable with proper access control on all
+      critical functions. Upgrade functions require onlyOwner. Two-step
+      ownership transfer via Ownable2Step pattern.
+    detection_signals:
+      - openzeppelin_ownable
+      - all_critical_functions_protected
+      - two_step_ownership
+    false_positive_traps:
+      - has_upgrade_function         # But properly protected
+      - has_delegatecall            # But target is whitelisted
+    evidence_required:
+      - function: upgradeTo
+        pattern: has_onlyOwner_modifier
+        line_range: [35, 45]
+
+  - id: OR-SAFE-001
+    contract: OracleVault_05.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Proper oracle implementation with staleness check (updatedAt validation),
+      correct decimal handling (calls decimals()), and circuit breaker for
+      anomalous price deviations.
+    detection_signals:
+      - staleness_check_present
+      - decimals_call_present
+      - circuit_breaker_implemented
+    false_positive_traps:
+      - uses_chainlink_oracle         # But with proper validation
+      - external_price_dependency     # But validated
+    evidence_required:
+      - function: getPrice
+        pattern: staleness_and_decimals_validated
+        line_range: [25, 50]
+
+  - id: OR-SAFE-002
+    contract: OracleVault_06.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Multi-oracle aggregation with fallback. Primary Chainlink feed with
+      Uniswap TWAP fallback. Median price from 3 sources. L2 sequencer
+      uptime check included with grace period handling.
+    detection_signals:
+      - multi_oracle_aggregation
+      - fallback_oracle_present
+      - sequencer_check_present
+      - grace_period_implemented
+    false_positive_traps:
+      - external_calls_to_oracles    # But properly aggregated
+      - complex_price_logic          # But correct implementation
+    evidence_required:
+      - function: getAggregatedPrice
+        pattern: multi_oracle_with_fallback
+        line_range: [30, 60]
+
+# =============================================================================
+# CROSS-CONTRACT REASONING TRAPS
+# =============================================================================
+#
+# These cases are designed to test cross-contract reasoning capabilities.
+# Simple pattern matching will fail; genuine understanding is required.
+
+cross_contract_traps:
+  - case_id: AC-VULN-001
+    trap_type: upgrade-in-proxy
+    description: |
+      Upgrade logic split across proxy and implementation. Pattern must
+      trace proxy → implementation delegatecall to detect missing auth.
+
+  - case_id: OR-VULN-002
+    trap_type: decimal-propagation
+    description: |
+      Decimal value comes from external oracle call. Pattern must trace
+      value flow to detect mismatch between oracle.decimals() and usage.
+
+  - case_id: AC-SAFE-001
+    trap_type: inherited-protection
+    description: |
+      Access control comes from inherited OwnableUpgradeable. Pattern must
+      resolve inheritance to avoid false positive on upgrade function.
+
+# =============================================================================
+# GROUND TRUTH VERIFICATION
+# =============================================================================
+#
+# Ground truth is external and pre-defined (not derived from system output).
+# Each case has been manually verified against known vulnerability patterns.
+
+ground_truth:
+  source: manual_audit
+  verified_by: "AlphaSwarm.sol development team"
+  verification_date: "2026-01-31"
+  methodology: |
+    Each contract was manually reviewed for access control and oracle patterns:
+    1. Identified all critical functions (upgrade, admin, price-affecting)
+    2. Verified access control modifiers (onlyOwner, onlyRole, require checks)
+    3. Checked delegatecall targets for user input validation
+    4. Analyzed oracle integrations for staleness, decimals, and fallbacks
+    5. Verified L2-specific considerations (sequencer, grace period)
+    6. Traced inheritance chains for inherited protections
+
+# =============================================================================
+# EXECUTION METADATA
+# =============================================================================
+
+metadata:
+  total_cases: 10
+  vulnerable_count: 7
+  safe_count: 3
+  max_score: 10
+  vuln_types:
+    access_control:
+      - missing-auth-on-upgrade
+      - delegatecall-target-control
+      - ownership-manipulation
+    oracle:
+      - oracle-staleness
+      - oracle-decimal-mismatch
+      - single-oracle-source
+      - l2-sequencer-grace
+  safe_patterns:
+    - openzeppelin-ownable
+    - proper-oracle-validation
+    - multi-oracle-aggregation

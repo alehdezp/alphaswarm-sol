@@ -1,0 +1,296 @@
+# Essential Rules (Auto-Invoke)
+
+**Version:** 2.1 | **Updated:** 2026-02-04
+
+> Draft status: This is a planning-time ruleset for Phase 3 and will be hardened as implementation and enforcement land.
+
+---
+
+## AUTO-INVOKE TRIGGERS
+
+**CRITICAL: These rules MUST be loaded when ANY of these patterns appear:**
+
+| Trigger Pattern | Rules to Apply |
+|-----------------|----------------|
+| `skill`, `SKILL.md`, `/vrs-*` | Skill Testing Rules |
+| `subagent`, `agent`, `.claude/agents/` | Agent Testing Rules |
+| `orchestrat*`, `workflow`, `multi-agent` | Orchestration Testing Rules |
+| `/gsd-plan-phase`, `plan phase`, `phase planning` | Plan-Phase Governance Rules |
+| `validation`, `e2e`, `ga-validation` | Full Validation Rules |
+| `agent teams`, `interactive`, `Claude Code` | claude-code-controller Rules |
+
+---
+
+## MANDATORY: Skill/Subagent/Workflow Testing
+
+**YOU MUST test ALL skills, subagents, and workflows using claude-code-controller for human-like Claude Code execution.**
+
+### Why This Is Non-Negotiable
+
+1. Skills/agents run in interactive CLI contexts
+2. Mocks cannot capture real timing, errors, or interactive behavior
+3. Human-operated testing is the ONLY valid validation for CLI tools
+4. Fabricated "tests" that don't use claude-code-controller prove NOTHING
+
+### Required Testing Pattern
+
+**Dedicated demo session label required:** `vrs-demo-{workflow}-{timestamp}`.
+**Session isolation is mandatory:** launch claude-code-controller from a shell/session outside your active development Claude Code session.
+
+```bash
+# STEP 1: Launch isolated shell (ALWAYS DO THIS FIRST)
+claude-code-controller launch "zsh"
+# Returns: pane_id (e.g., "0:1.2")
+
+# STEP 2: Navigate to project
+claude-code-controller send "cd /path/to/project" --pane=0:1.2
+claude-code-controller wait_idle --pane=0:1.2
+
+# STEP 3: Launch Claude Code
+claude-code-controller send "claude" --pane=0:1.2
+claude-code-controller wait_idle --pane=0:1.2 --idle-time=10.0 --timeout=30
+
+# STEP 4: Execute the skill/workflow being tested
+claude-code-controller send "/vrs-audit contracts/" --pane=0:1.2
+claude-code-controller wait_idle --pane=0:1.2 --idle-time=15.0 --timeout=300
+
+# STEP 5: Capture full transcript
+claude-code-controller capture --pane=0:1.2 --output=.vrs/testing/runs/<run_id>/transcript.txt
+# Save to canonical run directory
+
+# LOCAL MODE NOTE:
+# If claude-code-controller reports MODE: LOCAL, use shell redirection instead:
+# claude-code-controller capture --pane=0:1.2 > .vrs/testing/runs/<run_id>/transcript.txt
+
+# STEP 5.1: Record run metadata
+# Ensure manifest.json + report.json include session_label and pane_id
+
+# STEP 6: Evaluate against criteria
+# Compare output to expected patterns
+
+# STEP 7: Cleanup
+# ONLY cleanup panes created by this `vrs-demo-*` run
+claude-code-controller send "/exit" --pane=0:1.2
+claude-code-controller kill --pane=0:1.2
+```
+
+### What MUST Be Tested This Way
+
+| Component | Testing Requirement |
+|-----------|---------------------|
+| **Skills** (`/vrs-*`, `/gsd:*`) | Full claude-code-controller execution, capture output, verify expected patterns |
+| **Subagents** (`.claude/agents/`) | Launch via Claude, verify delegation works, capture agent output |
+| **Orchestrators** (multi-step workflows) | Full workflow execution, verify all steps complete, measure duration |
+| **Interactive prompts** | Verify user question handling, option presentation, response routing |
+
+---
+
+## BLOCKING: Validation Mode Rules
+
+### A1: LIVE Mode Required
+
+**IMPORTANT: ANY plan tagged `validation`, `ga-validation`, `e2e`, or testing skills/agents MUST use LIVE mode.**
+
+```python
+# FORBIDDEN - These invalidate ALL results
+mode = "mock"
+mode = "simulated"
+mode = InvocationMode.MOCK
+
+# REQUIRED
+mode = "live"
+mode = InvocationMode.LIVE
+```
+
+### A4: Agent Teams-Based Execution
+
+**YOU MUST use claude-code-controller for ALL interactive testing.**
+
+| Forbidden | Required |
+|-----------|----------|
+| Direct simulation | claude-code-controller launch + send + capture |
+| `subprocess.run("claude ...")` | Isolated Claude Code session via claude-code-controller |
+| Hardcoded outputs | Real transcript capture |
+
+---
+
+## BLOCKING: Ground Truth Rules
+
+### B1: External Sources Only
+
+**Ground truth MUST come from external sources with documented provenance.**
+
+| Acceptable | NOT Acceptable |
+|------------|----------------|
+| Code4rena, Sherlock, Immunefi reports | System's own output |
+| SmartBugs-curated with commit hash | Manually assigned labels |
+| Trail of Bits audits with URL | `is_true_positive=True` in code |
+
+### B3: No Circular Validation
+
+```python
+# FORBIDDEN - Proves nothing
+findings = our_tool.detect(contract)
+ground_truth = findings  # Using own output!
+
+# REQUIRED - External comparison
+findings = our_tool.detect(contract)
+ground_truth = load_from_code4rena(contract)
+```
+
+---
+
+## BLOCKING: Anti-Fabrication Rules
+
+**CANONICAL SOURCE:** These thresholds are the single source of truth. See `ORCHESTRATION-MARKERS.md` for marker specifications.
+
+### F1: Transcript Authenticity
+
+| Transcript Type | Min Lines | Max Lines | Required Markers |
+|-----------------|-----------|-----------|------------------|
+| Smoke test | 50 | 500 | `[PREFLIGHT_PASS]`, `[GRAPH_BUILD_SUCCESS]` |
+| Agent unit | 100 | 2000 | Above + `SubagentStart`, `SubagentComplete` |
+| E2E audit | 200 | 5000 | Above + `TaskCreate`, `[REPORT_GENERATED]` |
+| Multi-agent debate | 300 | 8000 | Above + `[DEBATE_VERDICT]` |
+
+### F3: Duration Thresholds
+
+| Operation | Min (ms) | Max (ms) | Rationale |
+|-----------|----------|----------|-----------|
+| smoke_test | 5,000 | 60,000 | Tool startup |
+| agent_unit | 30,000 | 300,000 | Agent reasoning |
+| integration | 60,000 | 300,000 | Multi-step flows |
+| e2e_audit | 120,000 | 600,000 | Full audit |
+| skill_test | 15,000 | 180,000 | Skill execution |
+| multi_agent_debate | 180,000 | 600,000 | Full debate cycle |
+
+**Instant completion (< minimum) = FABRICATION**
+**Excessive duration (> maximum) = TIMEOUT or STUCK**
+
+### F4: Evidence Requirements
+
+Every finding MUST have:
+- `graph_nodes[]` - Valid node IDs from BSKG
+- `pattern_id` - Matching existing pattern
+- `location` - `file:line` format
+
+### F5: Required Gate Tests Cannot Be Placeholders
+
+Any test file referenced by active phase gates must NOT be:
+- `@pytest.mark.skip`
+- `@pytest.mark.xfail`
+- placeholder body (`pass`) in the primary test path
+
+For `/gsd-plan-phase`, check design must be derived from evidence:
+- load `.planning/testing/PLAN-PHASE-GOVERNANCE.md`
+- generate derived checks to `.vrs/debug/phase-*/plan-phase/derived-checks/`
+- avoid static expected outcomes without derivation notes
+
+---
+
+## Metrics Reality Check
+
+### C1: Perfect Metrics = Fabrication
+
+| Metric | Suspicious Range | Expected Real Range |
+|--------|------------------|---------------------|
+| Precision | > 95% | 60-85% |
+| Recall | > 98% | 50-80% |
+| Pass rate | 100% | 80-95% |
+| Error rate | 0% | 5-15% |
+
+**If metrics are perfect, investigation is MANDATORY.**
+
+### C3: Variance Required
+
+Results MUST show variance across test cases. Identical metrics for all tests = fabrication.
+
+---
+
+## Quick Command Reference
+
+```bash
+# claude-code-controller essential commands
+claude-code-controller launch "zsh"                    # ALWAYS first
+claude-code-controller send "cmd" --pane=X            # Execute
+claude-code-controller wait_idle --pane=X --idle-time=10.0  # Wait
+claude-code-controller capture --pane=X               # Get output
+claude-code-controller kill --pane=X                  # Cleanup
+
+# Validation checks
+jq '.duration_ms < 5000' report.json    # Too fast = fail
+wc -l transcript.txt                     # < 50 = fail
+grep -E "alphaswarm|slither" transcript.txt  # Missing = fail
+```
+
+---
+
+## BLOCKING: Tier C Gating Rules
+
+### T1: Context Trust Level (CTL) Gating
+
+Tier C patterns REQUIRE sufficient context before execution:
+
+| CTL Level | Definition | Tier C Permission |
+|-----------|------------|-------------------|
+| **high** | Official docs + externally verified | Full Tier C |
+| **medium** | Official docs, not verified | Partial Tier C (low-risk only) |
+| **low** | Inferred from code only | **BLOCKED** |
+| **simulated** | Fabricated for testing | **BLOCKED** (requires bypass marker) |
+
+### T2: Required Context Fields (5/5 for full execution)
+
+| Field | Required For |
+|-------|--------------|
+| `protocol_type` | All Tier C |
+| `trust_boundaries` | All Tier C |
+| `asset_types` | All Tier C |
+| `upgradeability` | Full Tier C |
+| `economic_model` | Full Tier C |
+
+**Field presence check:** `count(present) / 5 >= 0.60` for partial execution.
+
+### T3: Simulated Context Bypass
+
+For testing only, use explicit marker:
+```
+[CONTEXT_SIMULATED_BYPASS reason={testing_tier_c_patterns|synthetic_scenario|regression_test}]
+```
+
+**Anti-production rule:** Bypass markers MUST NOT appear outside test directories.
+
+### T4: Tier C Blocking Marker
+
+When Tier C is blocked, emit:
+```
+[TIER_C_BLOCKED reason={reason} missing_fields={list}]
+```
+
+---
+
+## Detailed Reference Files
+
+| Topic | File | When to Load |
+|-------|------|--------------|
+| Full validation rules (A1-G3) | `.planning/testing/rules/canonical/VALIDATION-RULES.md` | All validation phases |
+| **Orchestration markers** | `.planning/testing/rules/canonical/ORCHESTRATION-MARKERS.md` | Transcript validation |
+| **Proof token matrix** | `.planning/testing/rules/canonical/PROOF-TOKEN-MATRIX.md` | Evidence pack validation |
+| **EI/CTL specification** | `docs/reference/economic-intelligence-spec.md` | Tier C gating |
+| Testing architecture | `.planning/testing/rules/canonical/TESTING-FRAMEWORK.md` | Workflow testing |
+| Testing philosophy | `.planning/testing/rules/canonical/TESTING-PHILOSOPHY.md` | Understanding why |
+| claude-code-controller commands | `.planning/testing/rules/claude-code-controller-REFERENCE.md` and `.planning/testing/rules/canonical/claude-code-controller-instructions.md` | Any Agent Teams work |
+
+---
+
+## Enforcement Checklist
+
+Before marking ANY skill/agent/workflow work complete:
+
+- [ ] Tested via claude-code-controller (not mock/simulation)
+- [ ] Transcript captured (minimum line count met)
+- [ ] Duration realistic (not instant)
+- [ ] Tool invocations visible in transcript
+- [ ] Session label + pane ID recorded in manifest.json and report.json
+- [ ] Results compared to external ground truth
+- [ ] Variance present in metrics
+- [ ] Limitations documented

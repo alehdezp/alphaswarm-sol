@@ -1,0 +1,16 @@
+id: auth-055
+vulndoc: access-control/general
+name: Delegatecall Without Access Control
+description: Delegatecall usage without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

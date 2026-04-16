@@ -1,0 +1,74 @@
+id: UC-DEB-002
+name: "Quick convergence when both sides agree"
+workflow: vrs-debate
+category: debate
+tier: important
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-debate tests/contracts/ReentrancyClassic.sol --finding reentrancy"
+  context: >
+    ReentrancyClassic.sol has an obvious reentrancy vulnerability with no
+    mitigating guards. Both attacker and defender should quickly agree that
+    the vulnerability exists. This tests the debate workflow's ability to
+    converge efficiently when there is no genuine disagreement, avoiding
+    unnecessary rounds.
+
+expected_behavior:
+  summary: |
+    The debate workflow should recognize that both sides agree on the finding
+    and converge quickly (1-2 rounds max). The attacker presents CEI violation
+    evidence, the defender confirms it is unguarded, and the verdict is
+    produced without unnecessary back-and-forth.
+  must_happen:
+    - "Attacker presents CEI violation evidence from graph"
+    - "Defender confirms absence of guards from graph"
+    - "Debate converges in 1-2 rounds"
+    - "Final verdict is CONFIRMED with high confidence"
+    - "Verdict includes combined evidence from both sides"
+  must_not_happen:
+    - "Debate runs more than 2 rounds on an uncontested finding"
+    - "Defender fabricates disagreement when none exists"
+    - "Unnecessary repetition of the same arguments"
+    - "Debate workflow times out or fails to converge"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "reentrancy"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: convergence_speed
+      description: "Did the debate converge quickly (1-2 rounds) when both sides agreed?"
+    - name: agreement_recognition
+      description: "Did the workflow recognize that no genuine disagreement existed?"
+    - name: evidence_quality
+      description: "Did both sides still provide graph-based evidence despite agreement?"
+    - name: verdict_confidence
+      description: "Is the verdict high-confidence given mutual agreement?"
+  regression_signals:
+    - "Debate runs 3+ rounds on agreed finding -> REGRESSION: convergence too slow"
+    - "Defender fabricates disagreement -> REGRESSION: defender role misunderstood"
+    - "No verdict produced -> CRITICAL REGRESSION: debate convergence broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-DEB-001"
+    - "UC-AUDIT-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier. Tests efficiency: a good debate workflow should not waste
+  rounds when both sides agree. Paired with UC-DEB-001 (contested) to ensure
+  the workflow adapts to different agreement levels.

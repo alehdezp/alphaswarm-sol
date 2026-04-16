@@ -1,0 +1,22 @@
+# Weak Randomness - Subcategory Index
+
+id: weak-randomness
+name: Weak Randomness
+parent_category: crypto
+
+description: |
+  Using predictable on-chain values like block.timestamp or blockhash
+  for randomness that can be manipulated or predicted.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - crypto-003
+
+relevant_properties:
+  - uses_block_timestamp
+  - uses_blockhash
+
+token_estimate: 400

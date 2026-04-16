@@ -1,0 +1,2002 @@
+{
+  "generated_at": "2026-02-11T06:59:20.815406+00:00",
+  "phase_filter": null,
+  "summary": {
+    "plans_total": 62,
+    "plans_by_status": {
+      "untracked": 46,
+      "planned": 15,
+      "in_progress": 1
+    },
+    "required_artifacts_found": 0,
+    "required_artifacts_total": 248,
+    "declared_created_artifacts_found": 1,
+    "declared_created_artifacts_total": 37
+  },
+  "plans": [
+    {
+      "plan_id": "1-01",
+      "title": "Write Failing Regression Tests First",
+      "phase_key": "1",
+      "context_file": ".planning/phases/1-emergency-triage-p0-fixes/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-1/gates/1-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-1/hitl/1-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-1/plan-phase/derived-checks/1-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-1/plan-phase/research/1-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "1-02",
+      "title": "Add CLI and Skill Contract Tests",
+      "phase_key": "1",
+      "context_file": ".planning/phases/1-emergency-triage-p0-fixes/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-1/gates/1-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-1/hitl/1-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-1/plan-phase/derived-checks/1-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-1/plan-phase/research/1-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "1-03",
+      "title": "Implement the P0 Fixes",
+      "phase_key": "1",
+      "context_file": ".planning/phases/1-emergency-triage-p0-fixes/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-1/gates/1-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-1/hitl/1-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-1/plan-phase/derived-checks/1-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-1/plan-phase/research/1-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "1-04",
+      "title": "Add Marker and Proof-Token Checks",
+      "phase_key": "1",
+      "context_file": ".planning/phases/1-emergency-triage-p0-fixes/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-1/gates/1-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-1/hitl/1-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-1/plan-phase/derived-checks/1-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-1/plan-phase/research/1-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "1-05",
+      "title": "Evidence Audit",
+      "phase_key": "1",
+      "context_file": ".planning/phases/1-emergency-triage-p0-fixes/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-1/gates/1-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-1/hitl/1-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-1/plan-phase/derived-checks/1-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-1/plan-phase/research/1-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "2-01",
+      "title": "Build Failing Detection Tests for Priority Gaps",
+      "phase_key": "2",
+      "context_file": ".planning/phases/2-property-gap-quick-wins/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-2/gates/2-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-2/hitl/2-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-2/plan-phase/derived-checks/2-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-2/plan-phase/research/2-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "2-02",
+      "title": "Add Property Correctness Tests",
+      "phase_key": "2",
+      "context_file": ".planning/phases/2-property-gap-quick-wins/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-2/gates/2-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-2/hitl/2-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-2/plan-phase/derived-checks/2-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-2/plan-phase/research/2-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "2-03",
+      "title": "Implement Missing Properties by ROI",
+      "phase_key": "2",
+      "context_file": ".planning/phases/2-property-gap-quick-wins/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-2/gates/2-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-2/hitl/2-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-2/plan-phase/derived-checks/2-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-2/plan-phase/research/2-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "2-04",
+      "title": "Re-run Detection and Ratchet Baselines",
+      "phase_key": "2",
+      "context_file": ".planning/phases/2-property-gap-quick-wins/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-2/gates/2-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-2/hitl/2-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-2/plan-phase/derived-checks/2-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-2/plan-phase/research/2-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "2-05",
+      "title": "Runtime Safety and Transparency",
+      "phase_key": "2",
+      "context_file": ".planning/phases/2-property-gap-quick-wins/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-2/gates/2-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-2/hitl/2-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-2/plan-phase/derived-checks/2-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-2/plan-phase/research/2-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-01",
+      "title": "Import Graph Analysis + Delete Dead Testing Code",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 2,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1-02",
+      "title": "Delete Legacy Testing Infrastructure Files",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-03",
+      "title": "Update Testing Rules for Agent Teams + Controller",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-04",
+      "title": "Implement Rule Enforcement (Automated)",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 4,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1-05",
+      "title": "Make Documentation Honest",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-06",
+      "title": "Clean Up Testing Test Files",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-06.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-06.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-06.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-06.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-07",
+      "title": "Verify Clean State",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-07.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-07.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-07.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-07.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-01",
+      "title": "Create Test Project Corpus (100 projects)",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 1,
+      "overall_status": "in_progress"
+    },
+    {
+      "plan_id": "3.1b-02",
+      "title": "Install claude-code-controller + Enable Agent Teams",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 6,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-03",
+      "title": "Build Core Harness",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 4,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-04",
+      "title": "Implement Scenario DSL",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-05",
+      "title": "Skill Invocation Tests (all 30 shipped skills)",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 3,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-06",
+      "title": "Agent Behavioral Tests (all 21 shipped agents)",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-06.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-06.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-06.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-06.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 3,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-07",
+      "title": "Orchestrator Flow Tests",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-07.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-07.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-07.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-07.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1b-08",
+      "title": "Regression Baseline",
+      "phase_key": "3.1b",
+      "context_file": ".planning/phases/3.1b-workflow-testing-harness/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1b/gates/3.1b-08.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1b/hitl/3.1b-08.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/derived-checks/3.1b-08.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1b/plan-phase/research/3.1b-08.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 3,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.2-01",
+      "title": "Re-Verify Integration Points and Fix",
+      "phase_key": "3.2",
+      "context_file": ".planning/phases/3.2-first-working-audit/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.2/gates/3.2-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.2/hitl/3.2-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.2/plan-phase/derived-checks/3.2-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.2/plan-phase/research/3.2-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 2,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.2-02",
+      "title": "Fix Handler API Mismatches",
+      "phase_key": "3.2",
+      "context_file": ".planning/phases/3.2-first-working-audit/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.2/gates/3.2-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.2/hitl/3.2-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.2/plan-phase/derived-checks/3.2-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.2/plan-phase/research/3.2-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.2-03",
+      "title": "Run MVP Pipeline on DVDeFi Challenge #1 (Unstoppable)",
+      "phase_key": "3.2",
+      "context_file": ".planning/phases/3.2-first-working-audit/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.2/gates/3.2-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.2/hitl/3.2-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.2/plan-phase/derived-checks/3.2-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.2/plan-phase/research/3.2-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 2,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.2-04",
+      "title": "Capture Transcript and Deterministic Replay",
+      "phase_key": "3.2",
+      "context_file": ".planning/phases/3.2-first-working-audit/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.2/gates/3.2-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.2/hitl/3.2-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.2/plan-phase/derived-checks/3.2-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.2/plan-phase/research/3.2-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 2,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.2-05",
+      "title": "Create E2E Regression + Negative Control",
+      "phase_key": "3.2",
+      "context_file": ".planning/phases/3.2-first-working-audit/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.2/gates/3.2-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.2/hitl/3.2-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.2/plan-phase/derived-checks/3.2-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.2/plan-phase/research/3.2-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "4-01",
+      "title": "Add Failing Tests for Debate Contracts and Markers",
+      "phase_key": "4",
+      "context_file": ".planning/phases/4-agent-teams-debate/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4/gates/4-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4/hitl/4-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4/plan-phase/derived-checks/4-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4/plan-phase/research/4-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4-02",
+      "title": "Add Hook Tests for Graph-First Enforcement",
+      "phase_key": "4",
+      "context_file": ".planning/phases/4-agent-teams-debate/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4/gates/4-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4/hitl/4-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4/plan-phase/derived-checks/4-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4/plan-phase/research/4-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4-03",
+      "title": "Implement Agent Teams Wiring",
+      "phase_key": "4",
+      "context_file": ".planning/phases/4-agent-teams-debate/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4/gates/4-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4/hitl/4-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4/plan-phase/derived-checks/4-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4/plan-phase/research/4-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4-04",
+      "title": "Extend Evidence Schema and Validators",
+      "phase_key": "4",
+      "context_file": ".planning/phases/4-agent-teams-debate/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4/gates/4-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4/hitl/4-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4/plan-phase/derived-checks/4-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4/plan-phase/research/4-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4-05",
+      "title": "Run Three Real Debate Scenarios",
+      "phase_key": "4",
+      "context_file": ".planning/phases/4-agent-teams-debate/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4/gates/4-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4/hitl/4-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4/plan-phase/derived-checks/4-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4/plan-phase/research/4-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4-06",
+      "title": "Multi-run Stability Check",
+      "phase_key": "4",
+      "context_file": ".planning/phases/4-agent-teams-debate/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4/gates/4-06.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4/hitl/4-06.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4/plan-phase/derived-checks/4-06.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4/plan-phase/research/4-06.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4.1-01",
+      "title": "Full Audit Pipeline Test",
+      "phase_key": "4.1",
+      "context_file": ".planning/phases/4.1-scripted-workflow-testing/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4.1/gates/4.1-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4.1/hitl/4.1-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4.1/plan-phase/derived-checks/4.1-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4.1/plan-phase/research/4.1-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4.1-02",
+      "title": "Agent Behavior Verification with Hook Enforcement",
+      "phase_key": "4.1",
+      "context_file": ".planning/phases/4.1-scripted-workflow-testing/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4.1/gates/4.1-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4.1/hitl/4.1-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4.1/plan-phase/derived-checks/4.1-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4.1/plan-phase/research/4.1-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4.1-03",
+      "title": "Multi-Agent Debate Scenario",
+      "phase_key": "4.1",
+      "context_file": ".planning/phases/4.1-scripted-workflow-testing/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4.1/gates/4.1-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4.1/hitl/4.1-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4.1/plan-phase/derived-checks/4.1-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4.1/plan-phase/research/4.1-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "4.1-04",
+      "title": "Full Coverage & Regression Verification",
+      "phase_key": "4.1",
+      "context_file": ".planning/phases/4.1-scripted-workflow-testing/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-4.1/gates/4.1-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-4.1/hitl/4.1-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-4.1/plan-phase/derived-checks/4.1-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-4.1/plan-phase/research/4.1-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "5-01",
+      "title": "Ground-Truth Contract and Matching Tests",
+      "phase_key": "5",
+      "context_file": ".planning/phases/5-benchmark-reality/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-5/gates/5-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-5/hitl/5-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-5/plan-phase/derived-checks/5-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-5/plan-phase/research/5-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "5-02",
+      "title": "Build Minimal Runtime Benchmark Loop",
+      "phase_key": "5",
+      "context_file": ".planning/phases/5-benchmark-reality/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-5/gates/5-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-5/hitl/5-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-5/plan-phase/derived-checks/5-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-5/plan-phase/research/5-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "5-03",
+      "title": "Add Safe-Set False-Positive Harness",
+      "phase_key": "5",
+      "context_file": ".planning/phases/5-benchmark-reality/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-5/gates/5-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-5/hitl/5-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-5/plan-phase/derived-checks/5-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-5/plan-phase/research/5-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "5-04",
+      "title": "Expand Dataset Coverage",
+      "phase_key": "5",
+      "context_file": ".planning/phases/5-benchmark-reality/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-5/gates/5-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-5/hitl/5-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-5/plan-phase/derived-checks/5-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-5/plan-phase/research/5-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "5-05",
+      "title": "Head-to-Head and Ablation",
+      "phase_key": "5",
+      "context_file": ".planning/phases/5-benchmark-reality/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-5/gates/5-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-5/hitl/5-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-5/plan-phase/derived-checks/5-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-5/plan-phase/research/5-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "5-06",
+      "title": "Publish Reproducible Results",
+      "phase_key": "5",
+      "context_file": ".planning/phases/5-benchmark-reality/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-5/gates/5-06.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-5/hitl/5-06.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-5/plan-phase/derived-checks/5-06.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-5/plan-phase/research/5-06.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "6-01",
+      "title": "Build Live Test Harness and Contracts",
+      "phase_key": "6",
+      "context_file": ".planning/phases/6-test-framework-overhaul/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-6/gates/6-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-6/hitl/6-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-6/plan-phase/derived-checks/6-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-6/plan-phase/research/6-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "6-02",
+      "title": "Add Five Live E2E Tests First",
+      "phase_key": "6",
+      "context_file": ".planning/phases/6-test-framework-overhaul/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-6/gates/6-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-6/hitl/6-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-6/plan-phase/derived-checks/6-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-6/plan-phase/research/6-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "6-03",
+      "title": "Add Twenty Detection Regressions",
+      "phase_key": "6",
+      "context_file": ".planning/phases/6-test-framework-overhaul/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-6/gates/6-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-6/hitl/6-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-6/plan-phase/derived-checks/6-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-6/plan-phase/research/6-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "6-04",
+      "title": "Audit Existing Tests with Signal Score",
+      "phase_key": "6",
+      "context_file": ".planning/phases/6-test-framework-overhaul/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-6/gates/6-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-6/hitl/6-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-6/plan-phase/derived-checks/6-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-6/plan-phase/research/6-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "6-05",
+      "title": "Rewrite/Remove Top Mock-Heavy Offenders",
+      "phase_key": "6",
+      "context_file": ".planning/phases/6-test-framework-overhaul/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-6/gates/6-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-6/hitl/6-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-6/plan-phase/derived-checks/6-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-6/plan-phase/research/6-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "6-06",
+      "title": "Optimize with Graph Cache",
+      "phase_key": "6",
+      "context_file": ".planning/phases/6-test-framework-overhaul/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-6/gates/6-06.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-6/hitl/6-06.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-6/plan-phase/derived-checks/6-06.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-6/plan-phase/research/6-06.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "7-01",
+      "title": "Create Hook Test Harness First",
+      "phase_key": "7",
+      "context_file": ".planning/phases/7-documentation-honesty-hooks/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-7/gates/7-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-7/hitl/7-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-7/plan-phase/derived-checks/7-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-7/plan-phase/research/7-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "7-02",
+      "title": "Implement and Wire Hooks",
+      "phase_key": "7",
+      "context_file": ".planning/phases/7-documentation-honesty-hooks/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-7/gates/7-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-7/hitl/7-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-7/plan-phase/derived-checks/7-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-7/plan-phase/research/7-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "7-03",
+      "title": "Add Evidence Schema Gates",
+      "phase_key": "7",
+      "context_file": ".planning/phases/7-documentation-honesty-hooks/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-7/gates/7-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-7/hitl/7-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-7/plan-phase/derived-checks/7-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-7/plan-phase/research/7-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "7-04",
+      "title": "Docs Honesty Sweep",
+      "phase_key": "7",
+      "context_file": ".planning/phases/7-documentation-honesty-hooks/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-7/gates/7-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-7/hitl/7-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-7/plan-phase/derived-checks/7-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-7/plan-phase/research/7-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "7-05",
+      "title": "Skill/Registry Consistency Pass",
+      "phase_key": "7",
+      "context_file": ".planning/phases/7-documentation-honesty-hooks/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-7/gates/7-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-7/hitl/7-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-7/plan-phase/derived-checks/7-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-7/plan-phase/research/7-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "8-01",
+      "title": "Lock GA Gate Contract",
+      "phase_key": "8",
+      "context_file": ".planning/phases/8-ship-what-works/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-8/gates/8-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-8/hitl/8-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-8/plan-phase/derived-checks/8-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-8/plan-phase/research/8-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "8-02",
+      "title": "Run Pre-Ship Validation Sweep",
+      "phase_key": "8",
+      "context_file": ".planning/phases/8-ship-what-works/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-8/gates/8-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-8/hitl/8-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-8/plan-phase/derived-checks/8-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-8/plan-phase/research/8-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "8-03",
+      "title": "Reconcile Skill and Registry Reality",
+      "phase_key": "8",
+      "context_file": ".planning/phases/8-ship-what-works/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-8/gates/8-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-8/hitl/8-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-8/plan-phase/derived-checks/8-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-8/plan-phase/research/8-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "8-04",
+      "title": "Publish Honest Release Artifacts",
+      "phase_key": "8",
+      "context_file": ".planning/phases/8-ship-what-works/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-8/gates/8-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-8/hitl/8-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-8/plan-phase/derived-checks/8-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-8/plan-phase/research/8-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "8-05",
+      "title": "Final Demo and Dossier",
+      "phase_key": "8",
+      "context_file": ".planning/phases/8-ship-what-works/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-8/gates/8-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-8/hitl/8-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-8/plan-phase/derived-checks/8-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-8/plan-phase/research/8-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    }
+  ]
+}

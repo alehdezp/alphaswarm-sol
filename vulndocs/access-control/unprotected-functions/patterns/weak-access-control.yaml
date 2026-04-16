@@ -1,0 +1,19 @@
+id: weak-access-control
+vulndoc: access-control/unprotected-functions
+name: Weak Access Control on State Writes
+description: Public/external functions that write state without access gates.
+scope: Function
+lens:
+  - Authority
+severity: high
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: writes_state
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false

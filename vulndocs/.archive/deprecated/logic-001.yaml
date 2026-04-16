@@ -1,0 +1,22 @@
+id: logic-001
+vulndoc: logic/general
+name: Invalid State Transition
+description: State machine variable modified without validation.
+scope: Function
+lens:
+- LogicState
+severity: high
+cwe:
+- 840
+match:
+  all:
+  - property: modifies_state_machine_variable
+    op: eq
+    value: true
+  any:
+  - property: allows_invalid_transition
+    op: eq
+    value: true
+  - property: validates_current_state
+    op: eq
+    value: false

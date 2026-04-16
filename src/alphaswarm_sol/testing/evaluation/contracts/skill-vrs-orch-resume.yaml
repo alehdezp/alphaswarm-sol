@@ -1,0 +1,30 @@
+workflow_id: skill-vrs-orch-resume
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+reasoning_dimensions:
+- task_completion
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: session_completed
+  description: Skill session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+- id: workflow_resumed
+  description: 'TODO: validate against real run - Suspended workflow resumed'
+  expected_behavior: Previous bead state loaded and investigation continued
+  grader_type: code
+evidence_requirements: []
+hooks:
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: important

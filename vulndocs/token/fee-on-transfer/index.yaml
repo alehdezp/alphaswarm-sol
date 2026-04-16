@@ -1,0 +1,22 @@
+# Fee-on-Transfer Tokens - Subcategory Index
+
+id: fee-on-transfer
+name: Fee-on-Transfer Tokens
+parent_category: token
+
+description: |
+  Tokens that deduct fees during transfer operations, causing received
+  amounts to differ from sent amounts.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - tok-002
+
+relevant_properties:
+  - uses_erc20_transfer
+  - checks_balance_diff
+
+token_estimate: 400

@@ -1,0 +1,149 @@
+# gate_runner.yaml - Configuration for All-Gates Validator (G0-G7)
+#
+# Used by: scripts/e2e/validate_all_gates.py, scripts/e2e/validate_gates_cli.sh
+# Reference: .planning/phases/07.3.2-execution-evidence-protocol/07.3.2-GATES.md
+#
+# Schema version: 1.0.0
+
+# =============================================================================
+# GATE DEFINITIONS
+# =============================================================================
+#
+# Each gate can be enabled/disabled and configured independently.
+# Gate validators are invoked in order; fail_fast=true stops on first failure.
+
+gates:
+  # G0: Preflight - toolchain + dataset integrity
+  - gate_id: G0
+    enabled: true
+    validator: preflight
+    fail_fast: true  # G0 must pass for other gates to run meaningfully
+    description: |
+      Ensure alphaswarm CLI version matches expected,
+      evidence pack manifest exists, and proofs directory present.
+
+  # G1: Evidence Integrity - proof tokens + schema validation
+  - gate_id: G1
+    enabled: true
+    validator: evidence_integrity
+    description: |
+      Evidence pack schema validates, proof tokens exist for all stages,
+      transcript hashes match, nonce echoed in transcripts.
+
+  # G2: Graph Soundness - hash + property coverage
+  - gate_id: G2
+    enabled: true
+    validator: graph_soundness
+    description: |
+      Graph hash matches canonical, node/edge counts non-zero,
+      required semantic operations detected.
+
+  # G3: Ground Truth Coverage - category thresholds + provenance
+  - gate_id: G3
+    enabled: true
+    validator: ground_truth
+    extra_args:
+      - "--manifest"
+      - "configs/ground_truth_manifest.yaml"
+    description: |
+      Coverage >= thresholds per category, provenance recorded,
+      all sources external (B1 compliance).
+
+  # G4: Mutation Robustness - detection rate + negative controls
+  - gate_id: G4
+    enabled: true
+    validator: mutation_robustness
+    description: |
+      Mutation detection rate >= target (75%),
+      negative controls remain clean (no FPs on safe variants).
+
+  # G5: Consensus & Variance - multi-seed stability
+  - gate_id: G5
+    enabled: true
+    validator: consensus_variance
+    description: |
+      Multi-seed variance within tolerance,
+      attacker/defender/verifier disagreement below threshold.
+
+  # G6: Regression Baseline - precision/recall vs locked baseline
+  - gate_id: G6
+    enabled: true
+    validator: regression_baseline
+    description: |
+      No drop in precision/recall beyond tolerance,
+      no new critical false positives.
+
+  # G7: Continuous Health - CI/CD pipeline status
+  - gate_id: G7
+    enabled: true
+    validator: continuous_health
+    description: |
+      Nightly + weekly suites pass,
+      trend report generated.
+
+# =============================================================================
+# RUNNER BEHAVIOR
+# =============================================================================
+
+# Stop execution on first gate failure
+fail_fast: false
+
+# Report output directory (relative to project root)
+report_output_dir: .vrs/validation/reports
+
+# Output formats
+json_output: true
+markdown_output: true
+
+# =============================================================================
+# REQUIRED GATES
+# =============================================================================
+#
+# Gates that MUST pass for overall validation to succeed.
+# Non-required gates can fail without failing the entire run.
+# Skipped gates (missing data) don't count as failures.
+
+required_gates:
+  - G0  # Preflight - infrastructure must work
+  - G1  # Evidence Integrity - execution proof required
+  - G2  # Graph Soundness - core BSKG must be valid
+  - G3  # Ground Truth - external validation required
+
+# =============================================================================
+# THRESHOLDS
+# =============================================================================
+#
+# Gate-specific thresholds (can be overridden per-run)
+
+thresholds:
+  # G4: Mutation Robustness
+  mutation_detection_rate: 0.75
+  max_false_positives_safe: 0
+
+  # G5: Consensus & Variance
+  max_variance_coefficient: 0.15
+  max_findings_delta: 2
+  max_token_delta_pct: 25.0
+  max_timing_delta_pct: 30.0
+  min_agent_agreement_rate: 0.80
+  max_disagreement_rate: 0.20
+
+  # G6: Regression Baseline
+  max_precision_drop: 0.05
+  max_recall_drop: 0.05
+  max_new_critical_fps: 0
+
+# =============================================================================
+# VALIDATION RULES REFERENCE
+# =============================================================================
+#
+# This config enforces VALIDATION-RULES.md compliance:
+#
+# A1 (LIVE Mode): Gates validate real execution, not mocks
+# A2 (Real Execution): Metrics from actual Claude Code CLI sessions
+# A3 (Non-Zero Duration): Evidence pack duration > 5000ms
+# B1 (External Ground Truth): G3 enforces external sources only
+# C1 (No Perfect Metrics): 100% triggers investigation
+# D1 (Use Testing Skills): Skills generate evidence packs validated here
+#
+# See: .planning/VALIDATION-RULES.md

@@ -1,0 +1,19 @@
+id: ext-081
+vulndoc: access-control/external-call
+name: Cross-Chain Oracle Freshness Missing
+description: Cross-chain oracle usage without freshness checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_staleness_check
+    op: eq
+    value: false

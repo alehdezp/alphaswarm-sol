@@ -1,0 +1,13 @@
+id: cross-function-reentrancy
+vulndoc: reentrancy/cross-function
+name: Cross-Function Reentrancy
+description: Shared state reentrancy across functions.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: cross_function_reentrancy_surface
+    op: eq
+    value: true

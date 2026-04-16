@@ -1,0 +1,18 @@
+id: balance-manipulation
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Balance Manipulation
+category: logic
+severity: medium-high
+description: Vulnerabilities arising from assumptions about contract balance that can be violated through forced ether reception or incorrect balance accounting
+tags:
+  - balance
+  - accounting
+  - selfdestruct
+  - forced-ether
+detection_properties:
+  - has_strict_equality_check
+  - checks_balance
+  - uses_balance_in_logic
+  - reads_balance_in_payable

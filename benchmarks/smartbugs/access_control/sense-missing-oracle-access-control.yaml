@@ -1,0 +1,22 @@
+# Sense Missing Oracle Access Control
+id: smartbugs-sense-missing-oracle-access-control
+name: Sense Protocol Missing Oracle Access Control
+category: access_control
+source: examples/semgrep-smart-contracts/solidity/security/sense-missing-oracle-access-control.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: access-control-missing
+  description: Oracle price update function lacks access control
+  severity: critical
+  cwe: CWE-284
+
+expected_detections:
+  - pattern: auth-001
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: auth-001
+  secondary: [oracle-access-control]
+
+status: pending

@@ -1,0 +1,41 @@
+# Evaluation enforcement config (3.1c.2-01)
+# Activated by: _GUARD_PROFILE=strict + DELEGATE_GUARD_CONFIG=/path/to/this
+#
+# Blocks: Python imports, direct file reads, project context access,
+#         directory listing (Glob), content search (Grep), file editing (Edit)
+# Allows: alphaswarm CLI commands (via allowed_bash_commands prefix match),
+#         Read/Grep of contract files only (via allowed_file_reads)
+
+blocked_tools:
+  - Read
+  - Write
+  - Glob
+  - Edit
+  - Grep
+
+blocked_patterns:
+  - "python "
+  - "python3"
+  - "import "
+  - "from alphaswarm"
+  - "cat "
+  - ".planning/"
+  - "CLAUDE.md"
+  - "docs/"
+  - "git "
+  - "base64"
+  - "eval "
+  - "exec "
+  - "perl "
+  - "ruby "
+  - "node "
+  - "EVAL_MODE"
+  - "GUARD_PROFILE"
+  - "ALPHASWARM_EVAL"
+
+allowed_file_reads:
+  - "contracts/"
+  - "tests/contracts/"
+
+allowed_bash_commands:
+  - "uv run alphaswarm"

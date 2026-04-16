@@ -1,0 +1,1 @@
+../../../src/alphaswarm_sol/shipping/skills/debate.md

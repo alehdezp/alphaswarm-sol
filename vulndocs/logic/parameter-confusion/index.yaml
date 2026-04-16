@@ -1,0 +1,40 @@
+name: Parameter Confusion
+category: logic
+severity: high
+description: Logic errors arising from incorrect parameter ordering or swapping in function calls, mapping access, or data structure operations
+
+common_patterns:
+  - Swapped parameters in nested mapping access
+  - Reversed arguments in function calls
+  - Confused parameter positions in access control checks
+  - Misaligned parameter order in delegation patterns
+
+key_indicators:
+  - Nested mapping access with swapped keys
+  - Parameter order doesn't match business logic intent
+  - Allowance/approval checks using wrong parameter positions
+  - Role checks with reversed user/role parameters
+
+detection_signals:
+  operations:
+    - READS_MAPPING_WITH_WRONG_KEY
+    - CHECKS_PERMISSION_WRONG_ORDER
+    - CALLS_WITH_SWAPPED_PARAMS
+
+  properties:
+    - has_nested_mapping_access
+    - parameter_order_mismatch
+    - incorrect_key_usage
+
+real_world_impact:
+  - DeusDao ($6.5M, 2023)
+
+specifics:
+  - nested-mapping-parameter-swap
+
+pattern_ids:
+  - logic-001-parameter-confusion
+
+created: "2026-01-09"
+last_updated: "2026-01-09"
+source: "DeusDao exploit analysis - Consensys Diligence"

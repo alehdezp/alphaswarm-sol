@@ -1,0 +1,16 @@
+id: value-movement-flash-loan-callback
+vulndoc: reentrancy/general
+name: Flash Loan Callback Safety
+description: Flash loan callbacks without validation.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: flash_loan_callback
+    op: eq
+    value: true
+  - property: flash_loan_validation
+    op: eq
+    value: false

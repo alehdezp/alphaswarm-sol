@@ -1,0 +1,52 @@
+workflow_id: skill-vrs-tool-slither
+category: skill
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- TOOL-FIDELITY
+reasoning_dimensions:
+- tool_selection
+- result_interpretation
+- error_handling
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: slither_invoked
+  description: Slither was invoked on target contracts
+  expected_behavior: Bash tool call with slither command
+  grader_type: code
+- id: results_structured
+  description: Slither output was parsed into structured format
+  expected_behavior: Response organizes tool output by severity or category
+  grader_type: model
+- id: error_handled
+  description: Compilation or tool errors handled gracefully
+  expected_behavior: If slither fails, agent reports error and suggests fixes
+  grader_type: model
+evidence_requirements:
+- type: tool_output
+  description: Raw slither output
+hooks:
+- Stop
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Skill invokes slither with appropriate configuration for the
+  target contracts. Skill parses tool output into structured categories rather than
+  passing raw output. Skill distinguishes meaningful results from noise or false positives
+  in tool output. Skill handles compilation errors by diagnosing the issue and suggesting
+  remediation. Skill contextualizes tool results against the contract's expected behavior.
+active_dimensions:
+- tool_selection
+- result_interpretation
+- error_handling
+- completeness
+- rubric_coverage
+- task_completion
+- conclusion_support
+- reasoning_depth

@@ -1,0 +1,32 @@
+# flash-loan Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: flash-loan
+name: Flash Loan
+description: 'Vulnerability subcategories for flash-loan domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: attacks
+  name: Attacks
+  path: attacks/
+- id: collateral-drain
+  name: Collateral Drain
+  path: collateral-drain/
+- id: defi
+  name: Defi
+  path: defi/
+- id: economics
+  name: Economics
+  path: economics/
+- id: governance-attack
+  name: Flash Loan Governance
+  path: governance-attack/
+- id: price-oracle
+  name: Price Oracle Manipulation
+  path: price-oracle/
+statistics:
+  subcategory_count: 6
+  last_updated: '2026-02-18'

@@ -1,0 +1,106 @@
+name: Benchmark Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/true_vkg/**'
+      - 'patterns/**'
+      - 'benchmarks/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/true_vkg/**'
+      - 'patterns/**'
+
+jobs:
+  benchmark-dvd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run DVDeFi benchmark
+        run: |
+          uv run alphaswarm benchmark run --suite dvd --output benchmark_results.json --verbose
+
+      - name: Check detection rate
+        run: |
+          EXPECTED_RATE="0.80"
+          ACTUAL_RATE=$(cat benchmark_results.json | jq -r '.summary.detection_rate')
+
+          echo "Detection Rate: $ACTUAL_RATE (minimum: $EXPECTED_RATE)"
+
+          if (( $(echo "$ACTUAL_RATE < $EXPECTED_RATE" | bc -l) )); then
+            echo "ERROR: Detection rate $ACTUAL_RATE below minimum $EXPECTED_RATE"
+            exit 1
+          fi
+
+          echo "SUCCESS: Detection rate meets minimum threshold"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark_results.json
+
+  benchmark-comparison:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout baseline (main)
+        run: |
+          git checkout main -- benchmarks/baseline_results.json || echo "No baseline found"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run current benchmark
+        run: |
+          git checkout ${{ github.head_ref }}
+          uv run alphaswarm benchmark run --suite dvd --output current_results.json
+
+      - name: Compare to baseline
+        run: |
+          if [ -f benchmarks/baseline_results.json ]; then
+            uv run alphaswarm benchmark compare current_results.json benchmarks/baseline_results.json
+          else
+            echo "No baseline to compare - first run"
+          fi
+
+  update-baseline:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: benchmark-dvd
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-results
+
+      - name: Update baseline
+        run: |
+          mkdir -p benchmarks
+          cp benchmark_results.json benchmarks/baseline_results.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/baseline_results.json
+          git diff --cached --quiet || git commit -m "Update benchmark baseline"
+          git push

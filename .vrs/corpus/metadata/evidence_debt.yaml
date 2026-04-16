@@ -1,0 +1,23 @@
+# Evidence Debt Ledger (Phase 7.2 Innovation I4)
+#
+# Tracks patterns that rely on weak evidence and blocks promotion until debt is paid.
+#
+# Rules:
+# - Each finding must link to evidence IDs
+# - If >25% of a pattern's findings lack high-confidence evidence IDs -> evidence debt
+# - Evidence debt blocks promotion to "ready/excellent" status
+#
+# IMPORTANT: Evidence debt blocks PROMOTION, not FINDINGS
+# Findings are still reported; they just can't promote patterns to higher tiers.
+
+evidence_debt_ledger:
+  generated_at: "2026-01-29T13:40:46Z"
+  summary:
+    total_patterns_tracked: 0
+    patterns_with_debt: 0
+    total_findings: 0
+    weak_evidence_findings: 0
+    overall_weak_ratio: 0.0
+    debt_threshold: 0.25
+    blocked_patterns: []
+  patterns: {}

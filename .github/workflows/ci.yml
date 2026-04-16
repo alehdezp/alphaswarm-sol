@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --python ${{ matrix.python-version }}
+
+      - name: Verify package import
+        run: |
+          uv run python -c "import alphaswarm_sol; print(f'Version: {alphaswarm_sol.__version__}')"
+          uv run alphaswarm --version
+
+      - name: Run tests
+        run: |
+          uv run pytest tests/ -n auto --dist loadfile -v --tb=short
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            .pytest_cache/
+          retention-days: 7
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Check imports sortable
+        run: |
+          uv run python -c "import alphaswarm_sol"
+        continue-on-error: true
+
+  build-check:
+    name: Build verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build package
+        run: uv build
+
+      - name: Check wheel contents
+        run: |
+          pip install pkginfo
+          pkginfo dist/*.whl
+
+      - name: Verify wheel installable
+        run: |
+          uv venv /tmp/test-install
+          . /tmp/test-install/bin/activate
+          pip install dist/*.whl
+          python -c "import alphaswarm_sol; print(alphaswarm_sol.__version__)"
+          alphaswarm --version

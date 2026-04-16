@@ -1,0 +1,16 @@
+id: ext-053
+vulndoc: access-control/external-call
+name: TWAP Timestamp Validation Missing
+description: TWAP usage without timestamp consistency checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_twap
+    op: eq
+    value: true
+  - property: has_twap_timestamp_check
+    op: eq
+    value: false

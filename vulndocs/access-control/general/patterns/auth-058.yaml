@@ -1,0 +1,16 @@
+id: auth-058
+vulndoc: access-control/general
+name: Role Grant Without Access Control
+description: Role grant functions without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: role_grant_like
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

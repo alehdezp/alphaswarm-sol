@@ -1,0 +1,153 @@
+project:
+  name: dex-amm-pool-02
+  theme: dex
+  tier: 2
+  adversarial_categories:
+  - A
+  description: Constant-product AMM with liquidity provision, swaps, and flash loans.
+    Category A obfuscation via business-domain naming.
+findings:
+- pattern_id: balance-update-after-transfer
+  contract: LiquidityEngine
+  function: removeLiquidity
+  line_range: 66-78
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amountA + amountB}'
+  - Notice LP token balance update occurs AFTER external call
+  - No reentrancy guard present
+  - 'Conclude: reentrancy allows draining liquidity pool'
+- pattern_id: mev-missing-slippage-parameter
+  contract: LiquidityEngine
+  function: executeSwap
+  line_range: 82-104
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify swap function calculates output amount from reserves
+  - No minimum output parameter or slippage check
+  - 'Attacker can sandwich: front-run to move price, back-run to profit'
+  - 'Conclude: missing slippage protection enables sandwich attacks'
+- pattern_id: missing-access-control
+  contract: LiquidityEngine
+  function: collectFees
+  line_range: 108-112
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify collectFees sends accumulatedFees to msg.sender
+  - No access control check for protocolTreasury
+  - Anyone can call collectFees and steal protocol revenue
+  - 'Conclude: missing access control on fee collection'
+- pattern_id: missing-access-control
+  contract: LiquidityEngine
+  function: adjustFeeStructure
+  line_range: 115-118
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify adjustFeeStructure changes swapFeeBps
+  - No access control modifier
+  - Attacker can set fees to 0 or maximum to extract value
+  - 'Conclude: missing access control on swap fee configuration'
+- pattern_id: flash-loan-callback-safety
+  contract: LiquidityEngine
+  function: flashProvision
+  line_range: 121-131
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify flash loan sends funds to arbitrary recipient
+  - Repayment check only verifies balance >= balanceBefore
+  - No fee charged on flash loan (free capital)
+  - 'Conclude: flash loan without fee enables cost-free attacks'
+- pattern_id: precision-loss-rounding
+  contract: SwapMath
+  function: constantProductOut
+  line_range: 8-14
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify integer division: numerator / denominator'
+  - Small swaps relative to reserves can yield zero output
+  - Repeated small swaps can extract value via rounding
+  - 'Conclude: precision loss in constant-product calculation'
+- pattern_id: amm-sandwich-vulnerability
+  contract: LiquidityEngine
+  function: executeSwap
+  line_range: 82-104
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify executeSwap calculates amountOut via constantProductOut using current reserves without any minimum output parameter
+  - Notice the comment at line 101 explicitly flags "No minimum output check - sandwich vulnerable"
+  - Recognize attacker can front-run a large swap to shift reserves, then back-run after the victim trade executes at a worse rate
+  - 'Conclude: constant-product AMM without minAmountOut parameter is directly exploitable via sandwich attack on every swap'
+- pattern_id: mev-002
+  contract: LiquidityEngine
+  function: executeSwap
+  line_range: 82-104
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify executeSwap accepts amountIn and aToB direction but has no deadline or minOutput parameter
+  - Notice swap output is computed from reserves at execution time via constantProductOut, so mempool-visible pending swaps can be exploited
+  - Recognize MEV searchers can reorder transactions to extract value — front-run to move price, let victim swap at worse rate, back-run to capture profit
+  - 'Conclude: missing slippage protection and deadline makes every swap a MEV extraction opportunity via transaction reordering'
+- pattern_id: missing-slippage-protection
+  contract: LiquidityEngine
+  function: executeSwap
+  line_range: 82-104
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify executeSwap function signature takes (uint256 amountIn, bool aToB) with no minAmountOut parameter
+  - Notice amountOut is calculated from current reserves and sent directly via msg.sender.call{value: amountOut} at line 102
+  - Recognize there is no comparison between computed amountOut and any user-specified minimum — user accepts any output amount
+  - 'Conclude: executeSwap lacks slippage protection parameter, so users cannot enforce minimum acceptable output on their swaps'
+- pattern_id: defi-001
+  contract: LiquidityEngine
+  function: flashProvision
+  line_range: 121-131
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify flashProvision sends amount to arbitrary recipient via recipient.call{value: amount} at line 131 with onFlashProvision callback
+  - Notice repayment check at line 137 only verifies address(this).balance >= balanceBefore — no fee is required
+  - Recognize attacker gets free flash capital to manipulate reserves, sandwich swaps, or exploit other protocols, then return exact amount
+  - 'Conclude: flash loan without fee requirement provides free attack capital for pool manipulation and cross-protocol exploits'
+- pattern_id: auth-003
+  contract: LiquidityEngine
+  function: collectFees
+  line_range: 108-112
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify collectFees reads accumulatedFees, zeros it, then sends full amount via msg.sender.call{value: fees} at line 114
+  - Notice no require(msg.sender == protocolTreasury) or onlyOwner modifier — any caller receives the fees
+  - Recognize protocolTreasury is stored but never checked, so accumulated swap fees are claimable by anyone
+  - 'Conclude: missing access control on collectFees allows any address to steal all accumulated protocol fees'
+- pattern_id: price-sensitive-frontrun
+  contract: LiquidityEngine
+  function: executeSwap
+  line_range: 82-104
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify executeSwap updates reserves.tokenA and reserves.tokenB in-place at lines 93-98, directly moving the price curve
+  - Notice swap output depends entirely on current reserve ratio with no oracle or TWAP reference price
+  - Recognize a large pending swap visible in mempool reveals price direction, allowing front-runner to trade ahead and profit from the price impact
+  - 'Conclude: price-sensitive swap with no slippage guard or commit-reveal scheme is directly front-runnable for MEV extraction'
+safe_patterns: []
+summary:
+  total_findings: 12
+  total_safe_patterns: 0
+  difficulty: medium
+  notes: 'Category A: functions named provideLiquidity, removeLiquidity, executeSwap,
+    flashProvision rather than deposit, withdraw, swap, flashLoan'

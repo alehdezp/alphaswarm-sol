@@ -1,0 +1,78 @@
+{
+  "plan_id": "3.1-06",
+  "title": "Test File Cleanup for Removed Infrastructure",
+  "execution_date": "2026-02-11T17:55:53Z",
+  "baseline_test_count": 10801,
+  "final_test_count": 10801,
+  "delta": 0,
+  "deleted_files": [],
+  "already_deleted_in_prior_plans": [
+    {
+      "file": "tests/test_component_runner.py",
+      "deleted_by": "3.1-01",
+      "reason": "All imports from deleted flexible/component_runner.py"
+    },
+    {
+      "file": "tests/test_flexible_integration.py",
+      "deleted_by": "3.1-01",
+      "reason": "All imports from deleted flexible/ package"
+    },
+    {
+      "file": "tests/test_parallel_runner.py",
+      "deleted_by": "3.1-01",
+      "reason": "All imports from deleted flexible/parallel_runner.py"
+    },
+    {
+      "file": "tests/test_self_improving_runner.py",
+      "deleted_by": "3.1-01",
+      "reason": "All imports from deleted workflow/self_improving_runner.py"
+    },
+    {
+      "file": "tests/test_session_state.py",
+      "deleted_by": "3.1-01",
+      "reason": "All imports from deleted flexible/session_state.py"
+    }
+  ],
+  "preserved_living_tests": [
+    "tests/test_skills_package.py",
+    "tests/e2e/test_workflow_infrastructure.py"
+  ],
+  "commands_executed": [
+    {
+      "command": "pytest tests/ --collect-only -q",
+      "result": "10801 tests collected in 14.51s",
+      "import_errors": 0
+    },
+    {
+      "command": "pytest tests/ -n auto --dist loadfile -q",
+      "result": "891 failed, 9843 passed, 54 skipped, 13 xfailed (pre-existing failures)",
+      "total": 10801
+    },
+    {
+      "command": "grep for deleted module imports in tests/",
+      "result": "Zero matches for tmux, flexible, full_testing, master_orchestrator, proof_tokens, evidence_pack, failure_catalog, supervision_loop"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "Zero import errors in test collection",
+      "result": "PASS",
+      "detail": "0 ImportError/ModuleNotFoundError in --collect-only output"
+    },
+    {
+      "check": "Test count delta matches deleted test function count",
+      "result": "PASS",
+      "detail": "Delta = 0, deleted test functions = 0 (all already removed in 3.1-01)"
+    },
+    {
+      "check": "Living-module tests preserved",
+      "result": "PASS",
+      "detail": "test_skills_package.py and test_workflow_infrastructure.py both exist"
+    },
+    {
+      "check": "No new test failures introduced",
+      "result": "PASS",
+      "detail": "891 failures are pre-existing, total count unchanged at 10801"
+    }
+  ]
+}

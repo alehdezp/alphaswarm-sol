@@ -1,0 +1,22 @@
+# Slippage Exploitation - Subcategory Index
+
+id: slippage
+name: Slippage Exploitation
+parent_category: mev
+
+description: |
+  Exploiting missing or excessively loose slippage tolerances to
+  execute swaps at unfavorable rates.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - mev-004
+
+relevant_properties:
+  - risk_missing_slippage_parameter
+  - risk_missing_deadline_check
+
+token_estimate: 400

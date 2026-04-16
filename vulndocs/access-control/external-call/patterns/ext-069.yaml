@@ -1,0 +1,16 @@
+id: ext-069
+vulndoc: access-control/external-call
+name: Oracle Source Health Check Missing
+description: Aggregation without source health checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_source_health_check
+    op: eq
+    value: false

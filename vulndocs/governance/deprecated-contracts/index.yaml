@@ -1,0 +1,60 @@
+id: deprecated-contracts
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Deprecated Contracts
+parent: governance
+severity_range: [MEDIUM, CRITICAL]
+description: |
+  Vulnerabilities arising from deprecated contracts that remain accessible
+  and functional despite being unmaintained or superseded by newer versions.
+  These contracts may lack security patches, audits, or access controls
+  that were implemented in successor contracts.
+
+risk_factors:
+  - No recent audits or security updates
+  - Functionality that should be disabled but remains active
+  - Ability to mint unbacked tokens or manipulate state
+  - Lack of access controls present in newer versions
+  - Users/attackers can interact with old contracts
+
+attack_scenarios:
+  - Exploit old contract to mint unbacked assets
+  - Bypass restrictions added in new contract versions
+  - Access functionality that should be sunset
+  - Leverage outdated oracle integrations
+  - Abuse deprecated reward mechanisms
+
+detection_signals:
+  operations:
+    - MINTS_UNBACKED_TOKENS
+    - WRITES_PRIVILEGED_STATE
+    - TRANSFERS_VALUE_OUT
+
+  properties:
+    - is_deprecated: true
+    - no_access_control: true
+    - last_audit_date: old
+    - has_successor_contract: true
+
+mitigation:
+  - Explicitly disable or pause deprecated contracts
+  - Implement sunset mechanisms with timelocks
+  - Transfer critical functionality atomically
+  - Add circuit breakers to old contracts
+  - Monitor for unexpected activity on deprecated addresses
+  - Document deprecation status clearly
+
+real_world_impact:
+  - Abracadabra (2025): $1.8M via deprecated CauldronV4
+  - Multiple DeFi protocols with "zombie" contracts
+
+related_categories:
+  - access-control/missing-modifier
+  - upgrade/delegatecall-context
+  - governance/flash-loan-voting
+
+pattern_id: gov-deprecated-001
+
+created: 2026-01-09
+source: "Rekt News 2025 analysis"

@@ -1,0 +1,439 @@
+# =============================================================================
+# PATTERN: logic-tierb-001-business-logic-violation
+# Business Logic Violations (Intent Deviation)
+# Tier B - LLM/Semantic Detection with Intent Annotation
+# =============================================================================
+
+id: logic-tierb-001-business-logic-violation
+vulndoc: logic/business-logic
+name: "Business Logic Violation (Intent Deviation)"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Functions where the actual implementation diverges from documented intent or
+  business requirements in ways that deterministic (Tier A) detection cannot catch.
+  This pattern identifies:
+
+  1. **Intent Deviation**: NatSpec/comments promise certain behavior but code
+     implements something different. Examples:
+     - Documentation claims "send all remaining balance" but code sends 90%
+     - Function marked as "withdrawal" but doesn't transfer value in some paths
+     - Comments describe protection against MEV but no slippage check exists
+     - NatSpec says "authorized users only" but visibility is public
+
+  2. **Missing Invariant Validation**: Code modifies related state variables
+     without validating business invariants that must hold afterward. Examples:
+     - Modifies user balance without checking total_balance >= sum(user_balances)
+     - Transfers value without verifying reserve ratio remains stable
+     - Mints tokens without checking supply cap or max_user_balance constraints
+     - Updates interest rates without validating rates are within bounds
+
+  3. **Undocumented Edge Cases**: Behavior undefined in NatSpec but present in code:
+     - Rounding behavior not documented (rounds down vs up? truncates decimals?)
+     - Atomic vs non-atomic operations (what happens if TX reverts mid-transaction?)
+     - Boundary conditions (what happens at min/max values? Is it tested?)
+     - Fallback behavior (what if oracle is unavailable? What if call fails?)
+
+  4. **Inconsistent State Updates**: Multiple related state variables updated
+     in sequence without atomicity guarantees or documented ordering:
+     - Reserve and balance updated separately (ratio can break temporarily)
+     - User balance and total_balance updated separately (sum invariant breaks)
+     - Two contracts exchanging state without timelock or commit-reveal pattern
+     - Cross-contract calls without re-entrancy guards or state snapshots
+
+  ## Why It's Dangerous
+
+  Business logic violations cause exploits that deterministic detection misses:
+
+  ### Real-World Examples
+
+  **Nomad Bridge - $190M Exploit**
+  - Intent: "Reliably bridge assets from Ethereum to multiple chains"
+  - Implementation: Used XCM message proof validation
+  - Violation: Upgraded router WITHOUT initializing proof validators
+  - Root Cause: Constructor shadow vulnerability + missing init validation
+  - Result: Any attacker could send unlimited messages
+  - Lesson: Intent (safe bridging) ≠ Implementation (uninitialized validation)
+
+  **Alchemix - $18M Exploit**
+  - Intent: "Maintain 200% collateralization ratio at all times"
+  - Implementation: Updates collateral and debt separately
+  - Violation: Collateral price oracle used stale price in debt calculation
+  - Root Cause: Different code paths read oracle at different times
+  - Result: System became under-collateralized without detection
+  - Lesson: Invariant (collateral_value >= 2 * debt_value) broke between state updates
+
+  **Curve - $73M Exploit**
+  - Intent: "Proportional returns for LP deposits across atomic batchSwap"
+  - Implementation: Rounding direction not documented, applies per-swap
+  - Violation: Rounding down in price calculation, up in fee calculation
+  - Root Cause: Asymmetric rounding breaks fairness invariant
+  - Result: Attacker extracted value through micro-swap compounding
+  - Lesson: Implementation details (rounding) not matching intent (fairness)
+
+  **Compound - $220M Triggered (Governance)**
+  - Intent: "Time-locked governance proposals enforce 2-day delay"
+  - Implementation: Time check on execution, but no check on voting period start
+  - Violation: Proposal could execute same block as voting ended
+  - Root Cause: Undocumented edge case in voting window
+  - Result: Emergency proposal exploited before detection/response possible
+  - Lesson: Documentation gap enabled race condition
+
+  ## Detection Strategy
+
+  **Tier A (Deterministic)**: Prerequisites - function must meet minimum risk profile:
+  - Has non-trivial state modifications (writes_state = true)
+  - Not a simple getter/setter (implementation_complexity > low)
+  - Involves value transfer OR privilege escalation OR state invariant
+  - Has NatSpec documentation (callable_with_natspec = true) OR lacks it (gap!)
+
+  **Tier B (LLM/Semantic)**: Semantic tags from LLM analysis:
+  - `intent_deviation`: LLM detected gap between NatSpec and code behavior
+  - `business_logic_mismatch`: Actual operation differs from business requirement
+  - `undocumented_behavior`: Code implements behavior not mentioned in NatSpec
+  - `invariant_violation`: Code can leave system in invalid state
+
+  **Aggregation**: `tier_a_required` - Tier A prerequisites gate Tier B enrichment
+  - Tier A must match (function is complex enough to warrant detailed review)
+  - Tier B provides evidence of specific violation type
+  - Combined result: Higher confidence that violation is real (not false positive)
+
+  ## False Positive Reduction
+
+  Excluded patterns:
+  - Pure/view functions (they don't modify state, can't violate business logic)
+  - Micro-optimizations with explicit documentation ("intentional rounding down")
+  - Getter/setter functions with trivial logic
+  - Functions with comprehensive formal verification comments
+  - Test/debug functions in test code (if detectable)
+
+  Implementation-Agnostic:
+  - Works regardless of function names (withdraw, execute, swap, transfer, etc.)
+  - Works regardless of variable names (reserved, balance, amount, value, etc.)
+  - Works regardless of NatSpec format (full, partial, missing)
+  - Works across proxies, libraries, and contracts with inheritance
+
+  ## Remediation Strategy
+
+  For matches detected:
+
+  1. **Intent Verification**: Compare NatSpec against actual bytecode semantics
+     - Does behavior match documented intent?
+     - Are all documented preconditions enforced?
+     - Are all postconditions maintained?
+
+  2. **Invariant Validation**: Identify what invariants must hold
+     - What relationships between state variables must always be true?
+     - Where should invariants be checked? (start of function? End? Both?)
+     - Are invariants atomic or can they temporarily break?
+
+  3. **Edge Case Documentation**: Explicitly document boundary behavior
+     - What happens at min/max values?
+     - How are rounding/truncation decisions made and why?
+     - What are success/failure conditions?
+     - Are there race conditions or ordering dependencies?
+
+  4. **State Update Atomicity**: Ensure all related state updates are atomic
+     - Can invariants break between updates?
+     - Can re-entrance happen between updates?
+     - Should use checks-effects-interactions pattern
+     - Consider time-locking large state changes
+
+  ## Real-World Audit Workflow
+
+  1. Identify function matches from Tier A (risk profile met)
+  2. Review Tier B semantic tags (what specific violation detected?)
+  3. For each tag:
+     - intent_deviation: Read both NatSpec and implementation, identify divergence
+     - business_logic_mismatch: Understand business requirement, find code gap
+     - undocumented_behavior: Check if behavior is intentional/documented elsewhere
+     - invariant_violation: Verify invariant holds or find counter-example
+  4. Create PoC for confirmed violations
+  5. Recommend fixes with invariant validation and better documentation
+
+scope: Function
+
+lens:
+  - Logic
+  - BusinessLogic
+  - Intent
+
+severity: medium
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic Prerequisites)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic) - Gating conditions
+    all:
+      # Must modify state (business logic can't violate if state doesn't change)
+      - property: writes_state
+        op: eq
+        value: true
+
+      # Must have non-trivial implementation (simple getters/setters excluded)
+      # Complexity assessed by presence of loops, conditionals, external calls
+      - property: implementation_complexity
+        op: in
+        value: [medium, high, very_high]
+
+      # Must involve critical operations
+      # (value transfer, privilege change, or state invariant impact)
+      - property: involves_critical_operations
+        op: eq
+        value: true
+
+    # At least ONE should match (OR logic) - Risk indicators
+    any:
+      # Has NatSpec documentation (can compare against code)
+      - property: has_natspec_documentation
+        op: eq
+        value: true
+
+      # Lacks documentation (documentation gap = risk)
+      - property: has_natspec_documentation
+        op: eq
+        value: false
+
+      # Transfers value (business logic often about value movement)
+      - property: transfers_value
+        op: eq
+        value: true
+
+      # Modifies privileged state (owners, roles, access)
+      - property: writes_privileged_state
+        op: eq
+        value: true
+
+      # Manages balances/accounting (invariants critical)
+      - property: reads_balance_state
+        op: eq
+        value: true
+
+    # NONE can match (NOT logic) - Exclusions
+    none:
+      # Pure/view functions don't modify state
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Constructor/initialization functions checked separately
+      # (different invariant rules)
+      - property: is_constructor
+        op: eq
+        value: true
+
+      # Simple getter/setter functions
+      - property: is_getter
+        op: eq
+        value: true
+
+      - property: is_setter
+        op: eq
+        value: true
+
+# =============================================================================
+# MATCH CONDITIONS (Tier B - LLM/Semantic Enrichment)
+# =============================================================================
+
+tier_b:
+  # At least ONE semantic tag must match (OR logic)
+  # These tags are assigned by LLM analysis during intent annotation phase
+  any:
+    # NatSpec vs implementation divergence detected
+    - has_risk_tag: intent_deviation
+      min_confidence: medium
+
+    # Business requirement not met by implementation
+    - has_risk_tag: business_logic_mismatch
+      min_confidence: medium
+
+    # Code implements behavior not mentioned in documentation
+    - has_risk_tag: undocumented_behavior
+      min_confidence: medium
+
+    # System invariant can be violated by this function
+    - has_risk_tag: invariant_violation
+      min_confidence: medium
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_required  # Tier A is prerequisite, Tier B provides context
+
+# =============================================================================
+# EVIDENCE AND GUIDANCE
+# =============================================================================
+
+evidence_tags:
+  - intent_annotation
+  - business_logic
+  - semantic_analysis
+  - natspec_comparison
+  - invariant_checking
+
+# =============================================================================
+# REMEDIATION GUIDANCE
+# =============================================================================
+
+fix_recommendations: |
+  ### Immediate Actions
+
+  1. **Document Intent Clearly**
+     - Write comprehensive NatSpec with preconditions and postconditions
+     - List all documented preconditions (what must be true before execution)
+     - List all documented postconditions (what must be true after success)
+     - Document edge cases explicitly (min/max values, rounding behavior, etc.)
+
+  2. **Validate Business Invariants**
+     - Check invariant before operation starts
+     - Perform the business logic operation
+     - Check invariant after operation completes
+     - Ensure invariants don't degrade
+
+  3. **Use Checks-Effects-Interactions Pattern**
+     - Validate all inputs first (checks phase)
+     - Modify state based on validated inputs (effects phase)
+     - Call external functions only after state updates (interactions phase)
+     - This ensures invariants hold at each step
+
+  4. **Make State Updates Atomic**
+     - Related state variables should update together
+     - Use single transaction batch when possible
+     - Time-lock if atomicity requires multiple transactions
+     - Document why updates must happen together
+
+  5. **Add Assertions for Invariants**
+     - Assert at function start and end
+     - Use assert() for critical invariant checks
+     - Include invariant description in assertion message
+
+  ### Code Review Checklist
+
+  - Check NatSpec documents preconditions, postconditions, edge cases
+  - Verify invariants are explicitly listed somewhere
+  - Verify invariants are validated at function start and end
+  - Verify related state updates happen together (atomic or time-locked)
+  - Verify rounding behavior is documented with justification
+  - Verify external calls happen only after state updates
+  - Verify re-entrance guards present if modifying external contract state
+  - Verify edge cases tested: min value, max value, zero value, overflow edge
+
+verification_steps: |
+  ### Verification Process
+
+  1. **Extract Intent**
+     - Find NatSpec at-dev, at-notice, and inline comments
+     - Extract business requirement: What should this function do?
+     - Identify success condition: How do we know it succeeded?
+
+  2. **Map Implementation**
+     - Trace execution flow (normal path and error paths)
+     - Identify state modifications in order
+     - Find all conditional branches
+     - Identify external calls and their side effects
+
+  3. **Compare Intent vs Implementation**
+     - Does every documented precondition get enforced?
+     - Does every documented postcondition hold?
+     - Are all edge cases handled or documented?
+     - Does behavior match at least one natural reading of the docs?
+
+  4. **Invariant Validation**
+     - List invariants that must hold
+     - Check each state modification: does it preserve invariants?
+     - Can invariant temporarily break between updates?
+     - Add assertions if not already present
+
+  5. **Test Coverage**
+     - Test normal case with documented example
+     - Test edge cases: min/max values, boundary conditions
+     - Test invariant violations: attempt to break invariant, should fail
+     - Test under-flow/overflow if math operations present
+
+  ### Success Criteria
+
+  - NatSpec documents intent clearly
+  - No divergence between intent and implementation
+  - All invariants stated and validated in code
+  - Edge cases documented or explicitly unsupported
+  - Code follows checks-effects-interactions pattern
+  - Tests cover normal, edge, and invariant violation cases
+  - External auditor can verify business logic correctness
+
+# =============================================================================
+# RELATED PATTERNS
+# =============================================================================
+
+related_patterns:
+  - logic-002-balancer-rounding
+  - access-control-001-missing-check
+  - reentrancy-basic
+  - oracle-stale-price
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  status: draft
+  notes: |
+    This is a Tier B (LLM/semantic) pattern requiring:
+    1. Intent annotation infrastructure in src/true_vkg/intent/
+    2. NatSpec comparison pipeline
+    3. LLM-driven intent extraction and deviation detection
+    4. Risk tag assignment from semantic analysis
+
+    Pattern validation requires test contracts with:
+    - Documented intent plus code divergence (positive cases)
+    - NatSpec matching implementation (negative cases)
+    - Broken invariants (positive cases)
+    - Real-world audits demonstrating business logic violations
+
+    Test contract examples needed:
+    - Nomad-like: constructor shadow plus missing init
+    - Alchemix-like: separate state updates breaking collateral invariant
+    - Curve-like: rounding asymmetry in atomic operations
+    - Compound-like: timing gap in voting window logic
+
+    See docs/guides/testing-basics.md for comprehensive Tier B testing methodology.
+
+# =============================================================================
+# PATTERN LIFECYCLE
+# =============================================================================
+
+status: draft
+version: "1.0"
+created: "2026-01-09"
+updated: "2026-01-09"
+
+# Draft status explanation:
+# This pattern is a Tier B (semantic/LLM) detection requiring infrastructure:
+# - Intent annotation system must assign risk tags during graph building
+# - NatSpec parsing and comparison logic in place
+# - LLM intent extractor trained on audit reports
+# - Tag assignment validation with test contracts
+#
+# Path to ready status:
+# 1. Implement intent annotation in KnowledgeGraphBuilder
+# 2. Create test contracts with intent deviations
+# 3. Run vrs-test-conductor agent to calculate precision/recall
+# 4. Meet quality gates (precision >= 70%, recall >= 50%, variation >= 60%)
+# 5. Real-world validation on audited contracts
+

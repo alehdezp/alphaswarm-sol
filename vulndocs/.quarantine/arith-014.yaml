@@ -1,0 +1,15 @@
+id: arith-014
+vulndoc: arithmetic/general
+name: Signed/Unsigned Conversion
+description: Signed to unsigned cast without sign checks.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 681
+match:
+  all:
+  - property: signed_unsigned_cast_risk
+    op: eq
+    value: true

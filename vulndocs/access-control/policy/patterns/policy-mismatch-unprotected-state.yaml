@@ -1,0 +1,39 @@
+id: policy-mismatch-unprotected-state
+vulndoc: access-control/policy
+name: Unprotected Critical State Modification
+description: 'Function modifies critical state without access control.
+
+  Has state_mutation labels but missing protection labels.
+
+
+  Risk: Critical protocol parameters can be changed by anyone.
+
+  '
+severity: high
+scope: Function
+lens:
+- AccessControl
+- StateIntegrity
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - property: writes_privileged_state
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: state_mutation.writes_critical
+      min_confidence: medium
+    - type: missing_label
+      value: access_control.owner_only
+    - type: missing_label
+      value: access_control.role_based
+required_labels:
+- state_mutation.writes_critical

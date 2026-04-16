@@ -1,0 +1,22 @@
+# Flash Loan Voting - Subcategory Index
+
+id: flash-loan-voting
+name: Flash Loan Voting
+parent_category: governance
+
+description: |
+  Governance systems where flash-borrowed tokens provide voting power,
+  enabling single-transaction governance attacks.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - gov-001
+
+relevant_properties:
+  - reads_voting_power
+  - uses_snapshot
+
+token_estimate: 400

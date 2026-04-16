@@ -1,0 +1,490 @@
+# VQL Minimum Query Set
+# Version: 1.0.0
+# Description: Core VQL queries for graph-first vulnerability detection
+#
+# Query Categories:
+#   - structural: Basic graph topology queries
+#   - semantic: Operation-based pattern queries
+#   - path: Multi-hop attack path queries
+#
+# Each query returns evidence-linked results with node IDs and locations.
+
+metadata:
+  version: "1.0.0"
+  created: "2026-02-04"
+  description: "VQL Minimum Query Set for BSKG-based vulnerability detection"
+  schema_version: "2.0.0"
+
+queries:
+  # ===========================================================================
+  # STRUCTURAL QUERIES (VQL-MIN-01 to VQL-MIN-03)
+  # ===========================================================================
+
+  VQL-MIN-01:
+    id: "VQL-MIN-01"
+    name: "function_entry_points"
+    description: "Find entry points (public/external functions) with/without protection"
+    category: "structural"
+    tier: "A"  # Graph-only, deterministic
+
+    # Query definition
+    query:
+      select:
+        - node_id: "fn.id"
+        - label: "fn.label"
+        - visibility: "fn.properties.visibility"
+        - has_protection: "fn.properties.has_access_control OR fn.properties.modifiers_count > 0"
+        - file: "fn.properties.file"
+        - line_start: "fn.properties.line_start"
+      from:
+        - alias: "fn"
+          type: "Function"
+      where:
+        - condition: "fn.properties.visibility IN ['public', 'external']"
+        - condition: "fn.properties.is_constructor == false"
+      order_by:
+        - field: "fn.properties.file"
+        - field: "fn.properties.line_start"
+
+    # Return shape
+    returns:
+      type: "list"
+      schema:
+        node_id: "string"
+        label: "string"
+        visibility: "string"
+        has_protection: "boolean"
+        file: "string"
+        line_start: "integer"
+
+    # Usage examples
+    examples:
+      - name: "Find unprotected entry points"
+        filter: "has_protection == false"
+      - name: "Find payable entry points"
+        filter: "fn.properties.payable == true"
+
+  VQL-MIN-02:
+    id: "VQL-MIN-02"
+    name: "external_calls"
+    description: "Find external call targets and their resolution status"
+    category: "structural"
+    tier: "A"
+
+    query:
+      select:
+        - source_id: "edge.source"
+        - target_id: "edge.target"
+        - source_label: "src_fn.label"
+        - call_type: "edge.properties.call_type"
+        - confidence: "edge.properties.confidence"
+        - target_label: "tgt_fn.label"
+        - file: "edge.properties.file"
+        - line: "edge.properties.line_number"
+      from:
+        - alias: "edge"
+          type_edge: "CALLS"
+        - alias: "src_fn"
+          type: "Function"
+          join: "edge.source == src_fn.id"
+        - alias: "tgt_fn"
+          type: "Function"
+          join: "edge.target == tgt_fn.id"
+      where:
+        - condition: "edge.properties.call_type IN ['external', 'delegatecall', 'staticcall']"
+      order_by:
+        - field: "edge.properties.confidence"
+          direction: "DESC"
+
+    returns:
+      type: "list"
+      schema:
+        source_id: "string"
+        target_id: "string"
+        source_label: "string"
+        call_type: "string"
+        confidence: "string"
+        target_label: "string"
+        file: "string"
+        line: "integer"
+
+  VQL-MIN-03:
+    id: "VQL-MIN-03"
+    name: "state_writes"
+    description: "Find state-modifying functions and their write targets"
+    category: "structural"
+    tier: "A"
+
+    query:
+      select:
+        - fn_id: "fn.id"
+        - fn_label: "fn.label"
+        - state_var_id: "sv.id"
+        - state_var_name: "sv.label"
+        - is_privileged: "sv.properties.is_privileged"
+        - is_balance: "sv.properties.semantic_role == 'balance'"
+      from:
+        - alias: "edge"
+          type_edge: "WRITES"
+        - alias: "fn"
+          type: "Function"
+          join: "edge.source == fn.id"
+        - alias: "sv"
+          type: "StateVariable"
+          join: "edge.target == sv.id"
+      where:
+        - condition: "fn.properties.visibility IN ['public', 'external']"
+      order_by:
+        - field: "fn.properties.file"
+        - field: "fn.properties.line_start"
+
+    returns:
+      type: "list"
+      schema:
+        fn_id: "string"
+        fn_label: "string"
+        state_var_id: "string"
+        state_var_name: "string"
+        is_privileged: "boolean"
+        is_balance: "boolean"
+
+  # ===========================================================================
+  # SEMANTIC QUERIES (VQL-MIN-04 to VQL-MIN-06)
+  # ===========================================================================
+
+  VQL-MIN-04:
+    id: "VQL-MIN-04"
+    name: "reentrancy_pattern"
+    description: "Detect R:bal -> X:out -> W:bal pattern (vulnerable reentrancy)"
+    category: "semantic"
+    tier: "A"
+
+    # This query detects the classic reentrancy pattern:
+    # 1. Read balance (R:bal)
+    # 2. External call (X:out)
+    # 3. Write balance (W:bal)
+    # The vulnerable pattern has external call BEFORE balance write.
+
+    query:
+      select:
+        - fn_id: "fn.id"
+        - fn_label: "fn.label"
+        - behavioral_signature: "fn.properties.behavioral_signature"
+        - read_balance_line: "fn.properties.balance_read_line"
+        - external_call_line: "fn.properties.external_call_line"
+        - write_balance_line: "fn.properties.balance_write_line"
+        - has_reentrancy_guard: "fn.properties.has_reentrancy_guard"
+        - file: "fn.properties.file"
+      from:
+        - alias: "fn"
+          type: "Function"
+      where:
+        # Check for reentrancy pattern in behavioral signature
+        - condition: "fn.properties.semantic_ops CONTAINS 'READS_USER_BALANCE'"
+        - condition: "fn.properties.semantic_ops CONTAINS 'TRANSFERS_VALUE_OUT'"
+        - condition: "fn.properties.semantic_ops CONTAINS 'WRITES_USER_BALANCE'"
+        # Verify order: external call before write
+        - condition: "fn.properties.state_write_after_external_call == true"
+      order_by:
+        - field: "fn.properties.file"
+        - field: "fn.properties.line_start"
+
+    returns:
+      type: "list"
+      schema:
+        fn_id: "string"
+        fn_label: "string"
+        behavioral_signature: "string"
+        read_balance_line: "integer"
+        external_call_line: "integer"
+        write_balance_line: "integer"
+        has_reentrancy_guard: "boolean"
+        file: "string"
+
+    # Vulnerability classification
+    vulnerability:
+      type: "reentrancy"
+      severity: "HIGH"
+      cwe: "CWE-841"
+      swc: "SWC-107"
+
+  VQL-MIN-05:
+    id: "VQL-MIN-05"
+    name: "access_control_gap"
+    description: "Detect unprotected state modifications (missing guards)"
+    category: "semantic"
+    tier: "A"
+
+    query:
+      select:
+        - fn_id: "fn.id"
+        - fn_label: "fn.label"
+        - modifiers: "fn.properties.modifiers"
+        - modifies_owner: "fn.properties.modifies_owner"
+        - modifies_roles: "fn.properties.modifies_roles"
+        - modifies_critical_state: "fn.properties.modifies_critical_state"
+        - has_access_control: "fn.properties.has_access_control"
+        - file: "fn.properties.file"
+        - line_start: "fn.properties.line_start"
+      from:
+        - alias: "fn"
+          type: "Function"
+      where:
+        - condition: "fn.properties.visibility IN ['public', 'external']"
+        - condition: >
+            (fn.properties.semantic_ops CONTAINS 'MODIFIES_OWNER' OR
+             fn.properties.semantic_ops CONTAINS 'MODIFIES_ROLES' OR
+             fn.properties.semantic_ops CONTAINS 'MODIFIES_CRITICAL_STATE')
+        - condition: "fn.properties.has_access_control == false"
+        - condition: "fn.properties.modifiers_count == 0 OR fn.properties.modifiers NOT CONTAINS_ANY ['onlyOwner', 'onlyAdmin', 'onlyRole', 'auth']"
+      order_by:
+        - field: "fn.properties.file"
+        - field: "fn.properties.line_start"
+
+    returns:
+      type: "list"
+      schema:
+        fn_id: "string"
+        fn_label: "string"
+        modifiers: "list[string]"
+        modifies_owner: "boolean"
+        modifies_roles: "boolean"
+        modifies_critical_state: "boolean"
+        has_access_control: "boolean"
+        file: "string"
+        line_start: "integer"
+
+    vulnerability:
+      type: "access_control"
+      severity: "CRITICAL"
+      cwe: "CWE-284"
+      swc: "SWC-105"
+
+  VQL-MIN-06:
+    id: "VQL-MIN-06"
+    name: "value_transfer_without_check"
+    description: "Detect unprotected value transfers (ETH/token)"
+    category: "semantic"
+    tier: "A"
+
+    query:
+      select:
+        - fn_id: "fn.id"
+        - fn_label: "fn.label"
+        - transfer_type: "fn.properties.transfer_type"
+        - has_balance_check: "fn.properties.reads_balance_state"
+        - has_access_control: "fn.properties.has_access_control"
+        - external_call_line: "fn.properties.external_call_line"
+        - file: "fn.properties.file"
+        - line_start: "fn.properties.line_start"
+      from:
+        - alias: "fn"
+          type: "Function"
+      where:
+        - condition: "fn.properties.visibility IN ['public', 'external']"
+        - condition: "fn.properties.semantic_ops CONTAINS 'TRANSFERS_VALUE_OUT'"
+        - condition: "fn.properties.has_access_control == false"
+        - condition: "fn.properties.semantic_ops NOT CONTAINS 'VALIDATES_INPUT'"
+      order_by:
+        - field: "fn.properties.file"
+        - field: "fn.properties.line_start"
+
+    returns:
+      type: "list"
+      schema:
+        fn_id: "string"
+        fn_label: "string"
+        transfer_type: "string"
+        has_balance_check: "boolean"
+        has_access_control: "boolean"
+        external_call_line: "integer"
+        file: "string"
+        line_start: "integer"
+
+    vulnerability:
+      type: "unauthorized_transfer"
+      severity: "HIGH"
+      cwe: "CWE-862"
+      swc: "SWC-105"
+
+  # ===========================================================================
+  # PATH QUERIES (VQL-MIN-07 to VQL-MIN-08)
+  # ===========================================================================
+
+  VQL-MIN-07:
+    id: "VQL-MIN-07"
+    name: "cross_function_flow"
+    description: "Find multi-hop attack paths (function A calls B calls C)"
+    category: "path"
+    tier: "B"  # Requires path enumeration
+
+    query:
+      # Path query: find sequences of calls up to 3 hops
+      path:
+        start:
+          type: "Function"
+          where: "visibility IN ['public', 'external']"
+        edges:
+          type: "CALLS"
+          min_hops: 2
+          max_hops: 3
+        end:
+          type: "Function"
+          where: "has_external_calls == true OR writes_privileged_state == true"
+      select:
+        - path_id: "path.id"
+        - start_fn: "path.start.label"
+        - end_fn: "path.end.label"
+        - hop_count: "path.length"
+        - path_risk: "path.cumulative_risk"
+        - intermediate_fns: "path.nodes[1:-1].labels"
+      where:
+        - condition: "path.cumulative_risk >= 3.0"
+      order_by:
+        - field: "path.cumulative_risk"
+          direction: "DESC"
+      limit: 50
+
+    returns:
+      type: "list"
+      schema:
+        path_id: "string"
+        start_fn: "string"
+        end_fn: "string"
+        hop_count: "integer"
+        path_risk: "float"
+        intermediate_fns: "list[string]"
+
+  VQL-MIN-08:
+    id: "VQL-MIN-08"
+    name: "callback_reachability"
+    description: "Find callback attack surfaces (flash loans, ERC-777, etc.)"
+    category: "path"
+    tier: "B"
+
+    query:
+      # Find functions that can be reached via callbacks
+      path:
+        start:
+          type: "Function"
+          where: >
+            label IN ['onFlashLoan', 'tokensReceived', 'onERC721Received',
+                      'uniswapV2Call', 'uniswapV3FlashCallback', 'onTokenTransfer',
+                      'executeOperation', 'fallback', 'receive'] OR
+            properties.is_callback == true
+        edges:
+          type: "CALLS"
+          min_hops: 0
+          max_hops: 3
+        end:
+          type: "Function"
+          where: "writes_balance_state == true OR modifies_critical_state == true"
+      select:
+        - callback_fn: "path.start.label"
+        - callback_type: "path.start.properties.callback_type"
+        - target_fn: "path.end.label"
+        - target_writes: "path.end.properties.state_variables_written_names"
+        - path_length: "path.length"
+        - has_reentrancy_guard: "path.any_node.properties.has_reentrancy_guard"
+      where:
+        - condition: "path.end.properties.has_reentrancy_guard == false"
+      order_by:
+        - field: "path.length"
+
+    returns:
+      type: "list"
+      schema:
+        callback_fn: "string"
+        callback_type: "string"
+        target_fn: "string"
+        target_writes: "list[string]"
+        path_length: "integer"
+        has_reentrancy_guard: "boolean"
+
+    vulnerability:
+      type: "callback_reentrancy"
+      severity: "HIGH"
+      cwe: "CWE-841"
+      swc: "SWC-107"
+
+# ===========================================================================
+# QUERY COMPOSITION HELPERS
+# ===========================================================================
+
+compositions:
+  # Combine queries for comprehensive reentrancy detection
+  reentrancy_comprehensive:
+    name: "Full Reentrancy Detection"
+    queries:
+      - "VQL-MIN-04"  # Direct reentrancy pattern
+      - "VQL-MIN-08"  # Callback reachability
+    combine: "UNION"
+    deduplicate_by: "fn_id"
+
+  # Combine queries for access control audit
+  access_control_audit:
+    name: "Access Control Audit"
+    queries:
+      - "VQL-MIN-01"  # Entry points (filter unprotected)
+      - "VQL-MIN-05"  # Access control gaps
+      - "VQL-MIN-06"  # Unprotected transfers
+    combine: "COLLECT"
+    group_by: "file"
+
+# ===========================================================================
+# SCHEMA REFERENCES
+# ===========================================================================
+
+schema_reference:
+  node_types:
+    - "Contract"
+    - "Function"
+    - "StateVariable"
+    - "Modifier"
+    - "Event"
+    - "Invariant"
+
+  edge_types:
+    - "CONTAINS"
+    - "CONTAINS_MODIFIER"
+    - "CONTAINS_EVENT"
+    - "INHERITS"
+    - "CALLS"
+    - "READS"
+    - "WRITES"
+    - "USES_MODIFIER"
+    - "HAS_INVARIANT"
+
+  semantic_operations:
+    value_movement:
+      - "TRANSFERS_VALUE_OUT"
+      - "RECEIVES_VALUE_IN"
+      - "READS_USER_BALANCE"
+      - "WRITES_USER_BALANCE"
+    access_control:
+      - "CHECKS_PERMISSION"
+      - "MODIFIES_OWNER"
+      - "MODIFIES_ROLES"
+    external_interaction:
+      - "CALLS_EXTERNAL"
+      - "CALLS_UNTRUSTED"
+      - "READS_EXTERNAL_VALUE"
+    state_management:
+      - "MODIFIES_CRITICAL_STATE"
+      - "INITIALIZES_STATE"
+      - "READS_ORACLE"
+
+  op_short_codes:
+    "X:out": "TRANSFERS_VALUE_OUT"
+    "X:in": "RECEIVES_VALUE_IN"
+    "R:bal": "READS_USER_BALANCE"
+    "W:bal": "WRITES_USER_BALANCE"
+    "C:auth": "CHECKS_PERMISSION"
+    "M:own": "MODIFIES_OWNER"
+    "M:role": "MODIFIES_ROLES"
+    "X:call": "CALLS_EXTERNAL"
+    "X:unk": "CALLS_UNTRUSTED"
+    "R:ext": "READS_EXTERNAL_VALUE"
+    "M:crit": "MODIFIES_CRITICAL_STATE"
+    "I:init": "INITIALIZES_STATE"
+    "R:orc": "READS_ORACLE"

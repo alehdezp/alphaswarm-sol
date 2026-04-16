@@ -1,0 +1,62 @@
+{
+  "workflow_id": "skill-vrs-audit",
+  "category": "skill",
+  "description": "Capability contract for the /vrs-audit skill. Validates that the full audit execution loop follows the expected behavioral pattern: graph construction, pattern analysis, multi-agent verification, and evidence-backed finding production.",
+  "skill_ref": "src/alphaswarm_sol/shipping/skills/audit.md",
+  "capability_checks": [
+    {
+      "id": "audit-01",
+      "name": "builds_knowledge_graph",
+      "description": "The audit skill must invoke 'alphaswarm build-kg' on the target contracts before any analysis begins",
+      "check_type": "tool_sequence",
+      "assertion": "assert_bash_command_ran(parser, 'build-kg')",
+      "required": true
+    },
+    {
+      "id": "audit-02",
+      "name": "produces_findings_with_evidence",
+      "description": "Each finding must include code location, graph node references, and severity classification",
+      "check_type": "evidence_validity",
+      "assertion": "assert_findings_have_locations(findings) and assert_findings_cite_graph_nodes(findings)",
+      "required": true
+    },
+    {
+      "id": "audit-03",
+      "name": "spawns_investigation_agents",
+      "description": "The audit skill must spawn at least attacker and defender agents for multi-agent verification",
+      "check_type": "agent_lifecycle",
+      "assertion": "assert_agent_spawned(stream, 'attacker') and assert_agent_spawned(stream, 'defender')",
+      "required": true
+    },
+    {
+      "id": "audit-04",
+      "name": "graph_first_compliance",
+      "description": "BSKG queries must occur before any finding/conclusion output",
+      "check_type": "graph_first",
+      "assertion": "assert_graph_first(parser)",
+      "required": true
+    },
+    {
+      "id": "audit-05",
+      "name": "creates_beads_for_findings",
+      "description": "Each confirmed vulnerability should produce a bead with investigation metadata",
+      "check_type": "tool_sequence",
+      "assertion": "assert_bash_command_ran(parser, 'bead')",
+      "required": false
+    }
+  ],
+  "expected_behaviors": [
+    "Reads target contract files before analysis",
+    "Builds BSKG knowledge graph as first analytical step",
+    "Queries graph for vulnerability patterns",
+    "Spawns attacker agent to construct exploit paths",
+    "Spawns defender agent to identify guards/mitigations",
+    "Produces findings with file:line locations and graph node IDs",
+    "Writes audit report to workspace"
+  ],
+  "performance_bounds": {
+    "min_duration_sec": 30,
+    "max_duration_sec": 600,
+    "min_tool_calls": 5
+  }
+}

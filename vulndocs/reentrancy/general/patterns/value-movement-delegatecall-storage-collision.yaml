@@ -1,0 +1,16 @@
+id: value-movement-delegatecall-storage-collision
+vulndoc: reentrancy/general
+name: Delegatecall Storage Collision Risk
+description: Delegatecall used outside proxy upgrade context.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: delegatecall_in_non_proxy
+    op: eq
+    value: true

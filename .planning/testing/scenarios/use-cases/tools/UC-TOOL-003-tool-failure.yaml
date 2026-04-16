@@ -1,0 +1,64 @@
+id: UC-TOOL-003
+name: "Graceful recovery when tool is not installed"
+workflow: tool-run
+category: tools
+tier: mechanical
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-tool-mythril tests/contracts/ReentrancyClassic.sol"
+  context: >
+    The user requests Mythril symbolic execution but Mythril is not installed
+    on the system. The tool workflow must detect the missing tool, report a
+    clear error, suggest installation steps, and optionally fall back to
+    available tools (e.g., Slither if installed).
+
+expected_behavior:
+  summary: |
+    The tool workflow should detect that Mythril is not available, report a
+    clear error message with installation instructions, and optionally suggest
+    or fall back to alternative tools that are available. It must not crash,
+    hang, or produce misleading output.
+  must_happen:
+    - "Detect that Mythril is not installed or not in PATH"
+    - "Report clear error message about missing tool"
+    - "Suggest installation steps for Mythril"
+    - "Check for available alternative tools"
+    - "Suggest fallback to available tools if any exist"
+  must_not_happen:
+    - "Crash with unhandled exception when tool not found"
+    - "Hang waiting for tool response"
+    - "Produce findings claiming to be from Mythril when it did not run"
+    - "Silently skip the tool with no user feedback"
+  expected_tools:
+    required:
+      - "Bash"
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: error_detection
+      description: "Did the workflow correctly detect the missing tool?"
+    - name: error_message_quality
+      description: "Is the error message clear with installation instructions?"
+    - name: fallback_suggestion
+      description: "Did the workflow suggest alternative available tools?"
+    - name: graceful_handling
+      description: "Did the workflow handle the failure without crash or hang?"
+  regression_signals:
+    - "Unhandled crash on missing tool -> CRITICAL REGRESSION: error handling broken"
+    - "Fake findings produced -> CRITICAL REGRESSION: tool output fabricated"
+    - "No error message shown -> REGRESSION: silent failure"
+
+links:
+  workflow_doc: "docs/reference/tools-overview.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-TOOL-001"
+    - "UC-FAIL-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Mechanical tier. Tests tool failure handling. Important for user experience
+  but not a core reasoning capability.

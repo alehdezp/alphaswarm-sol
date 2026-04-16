@@ -1,0 +1,21 @@
+id: proxy-uninitialized-implementation
+vulndoc: upgrade/proxy
+name: Uninitialized Implementation Contract
+description: Implementation contract lacks constructor-based initialization lock, vulnerable to front-running initialization (CWE-665)
+scope: Function
+lens:
+  - Authority
+  - Upgradeability
+severity: critical
+match:
+  all:
+    - property: is_initializer_function
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  none:
+    - property: has_access_gate
+      op: eq
+      value: true

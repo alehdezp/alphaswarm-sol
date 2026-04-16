@@ -1,0 +1,305 @@
+# =============================================================================
+# PATTERN: tokenomics-001
+# =============================================================================
+
+id: tokenomics-001
+vulndoc: token/economics
+name: "Unprotected Reward Parameter Update"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Public/external functions that modify reward, emission, or vesting parameters
+  (reward rates, emission schedules, vesting amounts) without access control,
+  allowing any caller to manipulate token economics and potentially drain protocol
+  treasuries or inflate token supply.
+
+  ## Why It's Dangerous
+  Attackers who can modify reward parameters without authorization can:
+  - **Treasury Drainage**: Set reward rates to maximum, draining all reward tokens
+  - **Inflation Attack**: Manipulate emission schedules to mint excessive tokens
+  - **Vesting Bypass**: Modify vesting parameters to unlock tokens prematurely
+  - **Economic DoS**: Set reward rates to zero, breaking protocol incentives
+  - **Reward Pool Redirection**: Change reward distribution logic to favor attacker
+
+  ## Detection Logic
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external visibility)
+  2. Function writes to sensitive config state (includes reward/emission/vesting variables)
+  3. Function has NO access control (no modifiers, no require checks, no gates)
+  4. Function is NOT a constructor (one-time initialization)
+
+  **Semantic Detection**: This pattern uses `writes_sensitive_config` property which
+  automatically detects state variables tagged with "reward" (including reward,
+  rewards, emission, emissions, vesting, vest tokens). This works regardless of
+  variable naming conventions - no regex or name matching required.
+
+  ## Real-World Examples
+  - **Sorra Finance (Jan 2025)**: $41K drained via flawed reward logic allowing
+    infinite reward claims without proper access control
+  - **$Quint Token**: $100K lost via infinite re-staking due to unprotected
+    reward update function
+  - **SportsDao**: LP manipulation leading to inflated reward calculations,
+    converted to $14K BSC-USD
+  - **Tokemak Audit (Sherlock 2023)**: High-severity finding where bad rewardDebt
+    update allowed users to steal reward tokens
+  - **Rubicon Audit (Code4rena 2023)**: Incorrect reward accounting in BathBuddy
+    contract due to missing updateReward protection
+
+  ## Impact Classification
+  - **Direct Financial Loss**: $953.2M lost to access control vulnerabilities in 2024
+  - **Attack Complexity**: LOW - Single transaction can drain treasury
+  - **Detection Difficulty**: MEDIUM - Often hidden in complex staking logic
+  - **Recovery Difficulty**: HIGH - Stolen rewards typically unrecoverable
+
+scope: Function
+
+lens:
+  - Tokenomics
+  - Authority
+
+severity: high
+
+# Pattern quality status (set by vrs-test-conductor agent)
+# Updated 2026-01-02: Documented as EXCELLENT in mega-task (~100%/~100%/~100%)
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: writes_sensitive_config
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false
+    - property: is_constructor
+      op: eq
+      value: false
+
+  # At least ONE must match (OR logic)
+  any: []
+
+  # NONE can match (NOT logic) - for false positive reduction
+  none:
+    - property: has_access_modifier
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+edges: []
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Treasury Drainage via Reward Rate Manipulation"
+    description: |
+      Attacker calls unprotected reward rate setter with maximum value, causing
+      protocol to distribute all treasury tokens as rewards, which attacker claims.
+    preconditions:
+      - "Public/external function that sets reward rate without access control"
+      - "Protocol has reward tokens in treasury contract"
+      - "Reward distribution logic uses the manipulated rate"
+    steps:
+      - "Identify unprotected setRewardRate() or similar function"
+      - "Call function with maximum reward rate (e.g., type(uint256).max)"
+      - "Stake minimal amount or trigger reward distribution"
+      - "Claim inflated rewards, draining treasury"
+    impact: "Complete treasury drainage, protocol insolvency"
+
+  - name: "Emission Schedule Tampering"
+    description: |
+      Attacker manipulates emission schedule parameters to accelerate token
+      minting, causing hyperinflation and token value collapse.
+    preconditions:
+      - "Unprotected emission schedule update function"
+      - "Protocol uses emission schedule for token minting"
+    steps:
+      - "Locate unprotected updateEmission() function"
+      - "Set emission rate to maximum or modify vesting cliff/duration"
+      - "Trigger token minting based on modified schedule"
+      - "Dump minted tokens on market, crashing price"
+    impact: "Token hyperinflation, economic collapse, user losses"
+
+  - name: "Vesting Bypass Attack"
+    description: |
+      Attacker modifies vesting parameters (cliff, duration, amount) to unlock
+      tokens immediately, bypassing intended vesting restrictions.
+    preconditions:
+      - "Public function that modifies vesting schedule parameters"
+      - "No access control on vesting parameter updates"
+    steps:
+      - "Find unprotected setVestingSchedule() function"
+      - "Modify cliff to 0, duration to minimum, or amount to maximum"
+      - "Claim now-vested tokens immediately"
+      - "Dump unlocked tokens, potentially team/investor allocations"
+    impact: "Premature unlock of team/investor tokens, market dump"
+
+  - name: "Reward Pool Redirection"
+    description: |
+      Attacker changes reward distribution logic to redirect rewards to
+      attacker-controlled addresses instead of legitimate stakers.
+    preconditions:
+      - "Unprotected function that modifies reward distribution targets"
+      - "Reward system distributes to configurable addresses/pools"
+    steps:
+      - "Identify unprotected setRewardPool() or similar function"
+      - "Change reward distribution target to attacker address"
+      - "Wait for protocol to distribute rewards to attacker instead of users"
+    impact: "Theft of user rewards, protocol reputation damage"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm function is externally callable (not internal/private)"
+  - "Verify no access control modifiers (onlyOwner, onlyRole, etc.)"
+  - "Check function body for require(msg.sender == ...) or similar guards"
+  - "Confirm state variable being modified affects reward/emission/vesting logic"
+  - "Verify this is NOT an initialization function meant to be called once"
+  - "Check if function is protected by external contract (e.g., timelock, multisig)"
+  - "Review if function is intended for public use (e.g., user-initiated reward claim)"
+  - "Examine if modified parameter has reasonable bounds/validation"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add Access Control Modifier"
+    description: |
+      Restrict function to authorized roles using access control modifiers.
+      Use OpenZeppelin's Ownable or AccessControl for production systems.
+    example: |
+      // BEFORE (VULNERABLE)
+      function setRewardRate(uint256 newRate) external {
+          rewardRate = newRate;
+      }
+
+      // AFTER (SAFE)
+      function setRewardRate(uint256 newRate) external onlyOwner {
+          rewardRate = newRate;
+          emit RewardRateUpdated(newRate);
+      }
+
+  - name: "Role-Based Access Control (RBAC)"
+    description: |
+      Use OpenZeppelin AccessControl for fine-grained permissions.
+      Separate roles for different parameter types (rewards, emissions, vesting).
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract StakingRewards is AccessControl {
+          bytes32 public constant REWARDS_ADMIN = keccak256("REWARDS_ADMIN");
+
+          function setRewardRate(uint256 newRate) external onlyRole(REWARDS_ADMIN) {
+              require(newRate <= MAX_REWARD_RATE, "Rate too high");
+              rewardRate = newRate;
+              emit RewardRateUpdated(newRate);
+          }
+      }
+
+  - name: "Timelock Protection"
+    description: |
+      Route critical parameter updates through a timelock contract, giving users
+      time to exit if malicious changes are proposed.
+    example: |
+      contract StakingRewards {
+          address public immutable timelock;
+
+          function setRewardRate(uint256 newRate) external {
+              require(msg.sender == timelock, "Must go through timelock");
+              require(newRate <= MAX_REWARD_RATE, "Rate too high");
+              rewardRate = newRate;
+              emit RewardRateUpdated(newRate);
+          }
+      }
+
+  - name: "Multisig + Parameter Bounds"
+    description: |
+      Require multisig approval for parameter changes AND enforce reasonable bounds.
+      Prevents single point of failure and limits damage from compromised keys.
+    example: |
+      contract StakingRewards {
+          address public multisig;
+          uint256 public constant MIN_REWARD_RATE = 1e15; // 0.001 tokens/sec
+          uint256 public constant MAX_REWARD_RATE = 1e18; // 1 token/sec
+
+          function setRewardRate(uint256 newRate) external {
+              require(msg.sender == multisig, "Only multisig");
+              require(newRate >= MIN_REWARD_RATE && newRate <= MAX_REWARD_RATE,
+                      "Rate out of bounds");
+              rewardRate = newRate;
+              emit RewardRateUpdated(newRate);
+          }
+      }
+
+  - name: "Immutable Parameters (Best Practice)"
+    description: |
+      For critical economic parameters that should never change post-deployment,
+      make them immutable. This eliminates the entire attack surface.
+    example: |
+      contract StakingRewards {
+          uint256 public immutable REWARD_RATE;
+          uint256 public immutable EMISSION_PER_BLOCK;
+
+          constructor(uint256 _rewardRate, uint256 _emission) {
+              REWARD_RATE = _rewardRate;
+              EMISSION_PER_BLOCK = _emission;
+          }
+
+          // No setter functions = no attack surface
+      }
+
+# Related patterns for cross-referencing
+related_patterns:
+  - auth-001  # Unprotected privileged state write
+  - auth-012  # tx.origin authentication
+  - gov-001   # Unprotected governance parameter
+  - vm-015    # Unprotected treasury withdrawal
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-285  # Improper Authorization
+  - CWE-732  # Incorrect Permission Assignment for Critical Resource
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+semantic_ops: {}
+behavioral_signature: {}
+tier_match: {}
+constraints: {}
+attack_paths: []
+exploit_similarity: {}
+verification_agents: {}

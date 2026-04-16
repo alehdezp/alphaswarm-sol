@@ -1,0 +1,49 @@
+id: auth-110
+vulndoc: access-control/general
+name: Unprotected Governance Parameter Update
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `governance-001-unprotected-parameter-update`
+  instead.
+
+
+  Location: `patterns/semantic/governance/governance-001-unprotected-parameter-update.yaml`
+
+
+  The semantic pattern uses `updates_governance_parameter` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Governance parameters updated without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: governance-001-unprotected-parameter-update
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(quorum|voting|threshold|timelock|delay|votingperiod|executiondelay)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

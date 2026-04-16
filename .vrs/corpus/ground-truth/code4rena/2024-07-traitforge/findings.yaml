@@ -1,0 +1,98 @@
+# Code4rena Contest: 2024-07-traitforge
+# Ground Truth Findings - External Source
+# DO NOT modify based on tool output
+
+contest:
+  id: "2024-07-traitforge"
+  name: "TraitForge"
+  report_url: "https://code4rena.com/reports/2024-07-traitforge"
+  findings_repo: "https://github.com/code-423n4/2024-07-traitforge-findings"
+  audit_period: "July 2024"
+  prize_pool: "$36,500"
+
+metadata:
+  imported_date: "2026-02-04"
+  source: "Code4rena"
+  trust_level: "high"
+  external_ground_truth: true
+
+statistics:
+  total_findings: 3
+  high: 2
+  medium: 1
+  vulnerability_classes:
+    - access_control
+    - reentrancy
+    - front_running
+
+findings:
+  - id: "H-01"
+    title: "Incorrect parameter ordering in _mintNewEntity allows anyone to steal ETH from the contract"
+    severity: "high"
+    vulnerability_class: "access_control"
+    swc_id: "SWC-105"
+    affected_contracts:
+      - "TraitForgeNft.sol"
+    affected_functions:
+      - "mintToken"
+      - "_mintNewEntity"
+    ground_truth_verdict: "confirmed"
+    auditor: "nnez"
+    judge_confirmed: true
+    description: |
+      Parameter ordering in _mintNewEntity is incorrect, allowing callers to
+      pass arbitrary addresses and steal ETH intended for the nukeFund.
+    exploit_requirements:
+      - "Call mintToken with manipulated parameters"
+      - "Redirect ETH to attacker-controlled address"
+    code_location:
+      file: "TraitForgeNft.sol"
+      line_start: 181
+      line_end: 195
+
+  - id: "H-02"
+    title: "Reentrancy in nuke function allows draining of nukeFund"
+    severity: "high"
+    vulnerability_class: "reentrancy"
+    swc_id: "SWC-107"
+    affected_contracts:
+      - "NukeFund.sol"
+    affected_functions:
+      - "nuke"
+    ground_truth_verdict: "confirmed"
+    auditor: "0xBugHunter"
+    judge_confirmed: true
+    description: |
+      The nuke function makes an external call before updating state,
+      allowing a malicious contract to re-enter and drain the nukeFund.
+    exploit_requirements:
+      - "Deploy malicious contract with fallback"
+      - "Call nuke with reentrancy callback"
+    code_location:
+      file: "NukeFund.sol"
+      line_start: 153
+      line_end: 178
+
+  - id: "M-01"
+    title: "mintToken can be frontrun with forge operation to get guaranteed merger without paying"
+    severity: "medium"
+    vulnerability_class: "front_running"
+    swc_id: "SWC-114"
+    affected_contracts:
+      - "TraitForgeNft.sol"
+    affected_functions:
+      - "forge"
+      - "mintToken"
+    ground_truth_verdict: "confirmed"
+    auditor: "cryptic"
+    judge_confirmed: true
+    description: |
+      Attacker can observe pending mintToken transactions and frontrun
+      with forge operation to manipulate the merger outcome.
+    exploit_requirements:
+      - "Monitor mempool for mintToken transactions"
+      - "Frontrun with forge call"
+    code_location:
+      file: "TraitForgeNft.sol"
+      line_start: 219
+      line_end: 245

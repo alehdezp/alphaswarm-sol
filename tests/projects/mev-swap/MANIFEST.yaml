@@ -1,0 +1,155 @@
+# =============================================================================
+# MEV-SWAP TEST PROJECT
+# =============================================================================
+
+project: mev-swap
+description: |
+  MEV and swap protection test scenarios for slippage, deadline, and front-running
+  protection patterns. Tests swap functions across AMM, DEX, and trading contexts.
+max_files: 30
+current_files: 2
+
+# Patterns tested in this project
+patterns:
+  mev-001:
+    files: [SlippageProtectionTest.sol]
+    status: ready
+    precision: 0.7037
+    recall: 0.9500
+    variation_score: 1.0000
+    functions:
+      # TRUE POSITIVES - Detected vulnerable functions
+      detected_vulnerable:
+        # VARIANT 1: No slippage parameter
+        - swap(address,address,uint256)  # TP1 - Classic swap
+        - exactInput(address,address,uint256)  # TP2 - Uniswap V3 style
+        - sell(address,uint256)  # TP3 - Sell naming
+        - buy(address,uint256)  # TP4 - Buy naming
+        - swapExactTokensForTokens(uint256,address[])  # TP6 - No minAmountOut
+        - swapMultiHop(address[],uint256)  # TP7 - Multi-hop no slippage
+        - swapWithDeadline(address,address,uint256,uint256)  # TP8 - Deadline but no slippage
+        # VARIANT 2: Unenforced slippage parameter
+        - swap(address,address,uint256,uint256)  # TP9 - Parameter ignored
+        - swapWithEvent(address,address,uint256,uint256)  # TP10 - Only in event
+        - exactInputSingle(address,address,uint256,uint256)  # TP12 - Only in return
+        - swapWithSlippageBps(address,address,uint256,uint256)  # TP13 - slippageBps ignored
+        - swapWithComment(address,address,uint256,uint256)  # TP14 - TODO comment
+        # VARIATIONS: Different parameter naming
+        - swapWithMinOut(address,address,uint256,uint256)  # VAR1 - minOut
+        - swapWithMinimumReceived(address,address,uint256,uint256)  # VAR2 - minimumReceived
+        - swapWithMinReturnAmount(address,address,uint256,uint256)  # VAR3 - minReturnAmount
+        # EDGE CASES: Correctly flagged
+        - swapWithOracleValidation(address,address,uint256,address)  # EDGE4 - Oracle not slippage
+        - swapWithReentrancyGuard(address,address,uint256)  # EDGE6 - Reentrancy guard not slippage
+        # REAL-WORLD: Vulnerable patterns
+        - swapExactTokensForTokensUniV2Vulnerable(uint256,address[],address)  # REAL1
+        - swapExactTokensForTokensSushiVulnerable(uint256,uint256,address[],address,uint256)  # REAL3
+      # FALSE NEGATIVES - Missed vulnerabilities
+      missed_vulnerable:
+        - trade(address,address,uint256)  # TP5 - swap_like heuristic limitation
+      # FALSE POSITIVES - Incorrectly flagged safe functions
+      false_alarms:
+        - computeSwapRatio(uint256,uint256,uint256)  # Pure function (builder issue)
+        - swap1inch(address,address,uint256,uint256)  # Safe with require check
+        - swapExactTokensForTokens(uint256,uint256,address[],address)  # Safe with validation
+        - swapMultiHop(address[],uint256,uint256,uint256[])  # Safe with per-hop checks
+        - swapViaRouter(address,address,address,uint256,uint256)  # Delegates to router
+        - swapWithCustomError(address,address,uint256,uint256)  # Custom error validation
+        - swapWithMinimumReceivedSafe(address,address,uint256,uint256)  # Safe with require
+        - swapWithSlippageBps(address,address,uint256,uint256,uint256)  # Safe percentage-based
+      # TRUE NEGATIVES - Correctly ignored safe functions
+      correctly_ignored:
+        - _swapInternal(address,address,uint256)  # EDGE1 - Internal function
+        - calculateSwapOutput(address,address,uint256)  # EDGE2 - View function
+        - swapExactTokensForTokensUniV2Safe(uint256,uint256,address[],address,uint256)  # REAL2
+    last_updated: "2025-12-31"
+    gaps:
+      builder_limitations:
+        - "swap_like flags pure functions (computeSwapRatio)"
+        - "swap_like misses 'trade' naming convention"
+        - "has_slippage_check does not detect all if-revert patterns"
+        - "has_slippage_check does not detect all custom error patterns"
+        - "has_slippage_check may miss some comparison operators"
+      pattern_design:
+        - "Pure functions should be excluded by pattern (is_pure: false in none)"
+        - "Pattern correctly flags oracle validation as insufficient (not standard slippage)"
+
+  mev-002:
+    files: [DeadlineProtectionTest.sol]
+    status: ready
+    precision: 0.7600
+    recall: 0.9500
+    variation_score: 1.0000
+    functions:
+      # TRUE POSITIVES - Detected vulnerable functions
+      detected_vulnerable:
+        # VARIANT 1: No deadline parameter
+        - swap(address,address,uint256,uint256)  # TP1 - Classic swap
+        - exactInput(address,address,uint256,uint256)  # TP2 - Uniswap V3 style
+        - sell(address,uint256,uint256)  # TP3 - Sell naming
+        - buy(address,uint256,uint256)  # TP4 - Buy naming
+        - swapExactTokensForTokens(uint256,uint256,address[])  # TP5 - No deadline
+        - swapMultiHop(address[],uint256,uint256)  # TP6 - Multi-hop no deadline
+        - swapWithSlippage(address,address,uint256,uint256)  # TP7 - Slippage but no deadline
+        # VARIANT 2: Unenforced deadline parameter
+        - swap(address,address,uint256,uint256,uint256)  # TP8 - Parameter ignored
+        - swapWithEvent(address,address,uint256,uint256,uint256)  # TP9 - Only in event
+        - exactInputSingle(address,address,uint256,uint256,uint256)  # TP10 - Only in return
+        - swapWithTODO(address,address,uint256,uint256,uint256)  # TP12 - TODO comment
+        - swapWithDeadlineInCalc(address,address,uint256,uint256,uint256)  # TP14 - Used in calc not validated
+        # VARIATIONS: Different parameter naming (unenforced)
+        - swapWithExpiry(address,address,uint256,uint256,uint256)  # VAR1 - expiry
+        - swapWithExpiration(address,address,uint256,uint256,uint256)  # VAR3 - expiration
+        - swapWithValidUntil(address,address,uint256,uint256,uint256)  # VAR5 - validUntil
+        # EDGE CASES: Correctly flagged
+        - swapWithBlockExpiration(address,address,uint256,uint256,uint256)  # EDGE5 - Block number not standard
+        - swapWithReentrancyGuard(address,address,uint256,uint256)  # EDGE6 - Reentrancy guard not deadline
+        # REAL-WORLD: Vulnerable patterns
+        - swapExactTokensForTokensUniV2Vulnerable(uint256,uint256,address[],address)  # REAL1
+        - swapExactTokensForTokensSushiVulnerable(uint256,uint256,address[],address,uint256)  # REAL3
+      # FALSE NEGATIVES - Missed vulnerabilities
+      missed_vulnerable:
+        - exchange(int128,int128,uint256,uint256)  # REAL5 - Curve exchange (swap_like limitation with int128)
+      # FALSE POSITIVES - Incorrectly flagged safe functions
+      false_alarms:
+        - calculateSwapOutput(address,address,uint256)  # EDGE2 - View function (swap_like issue)
+        - computeSwapRatio(uint256,uint256,uint256)  # EDGE3 - Pure function (swap_like issue)
+        - swapViaRouter(address,address,address,uint256,uint256,uint256)  # EDGE4 - Delegates to router (has deadline param but flagged)
+        - swapWithCustomError(address,address,uint256,uint256,uint256)  # TN6 - Custom error check (has_deadline_check limitation)
+        - swapWithValidUntilSafe(address,address,uint256,uint256,uint256)  # VAR6 - validUntil enforced (has_deadline_check limitation)
+        - swapExactTokensForTokens(uint256,uint256,address[],address,uint256)  # Safe version from SafeWithDeadlineProtection (contract disambiguation)
+      # TRUE NEGATIVES - Correctly ignored safe functions
+      correctly_ignored:
+        - _swapInternal(address,address,uint256)  # EDGE1 - Internal function
+        - swapWithComprehensiveProtection(address,address,uint256,uint256,uint256)  # TN2 - Full MEV protection
+        - swapAlternativeComparison(address,address,uint256,uint256,uint256)  # TN5 - Alternative comparison
+        - swapWithBoundedDeadline(address,address,uint256,uint256,uint256)  # TN7 - Bounded deadline
+        - swapWithExpirySafe(address,address,uint256,uint256,uint256)  # VAR2 - expiry enforced
+        - swapWithExpirationSafe(address,address,uint256,uint256,uint256)  # VAR4 - expiration enforced
+        - swapExactTokensForTokensUniV2Safe(uint256,uint256,address[],address,uint256)  # REAL2
+        - swap1inch(address,address,uint256,uint256,uint256)  # REAL4
+    last_updated: "2025-12-31"
+    gaps:
+      builder_limitations:
+        - "swap_like flags view/pure functions (calculateSwapOutput, computeSwapRatio)"
+        - "swap_like misses int128 parameter functions (Curve exchange)"
+        - "has_deadline_check does not detect all if-revert patterns (custom errors)"
+        - "has_deadline_check may not detect validUntil parameter checks"
+        - "Contract disambiguation: Safe and vulnerable versions with same signature both flagged"
+      pattern_design:
+        - "Pure/view functions should be excluded (is_pure/is_view: false in none)"
+        - "Pattern correctly flags block.number expiration as non-standard"
+
+notes: |
+  MEV scenarios for testing:
+  - Slippage protection (minAmountOut parameters and checks)
+  - Deadline protection (transaction expiry)
+  - Sandwich attack vectors
+  - Multi-hop swap protection
+  - AMM interaction patterns
+
+  Recommended test contract structure:
+  - SlippageProtectionTest.sol: Main slippage pattern tests
+  - DeadlineProtectionTest.sol: Deadline parameter tests
+  - MultiHopSwapTest.sol: Complex multi-path swaps
+  - AMMLikePatterns.sol: Uniswap/Sushiswap-like patterns

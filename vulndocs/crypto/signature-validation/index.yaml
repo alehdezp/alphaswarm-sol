@@ -1,0 +1,13 @@
+id: signature-validation
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Signature Duplication Attack
+category: crypto
+severity: critical
+cwe: CWE-347
+description: |
+  Threshold bypass via counting same signature multiple times,
+  or accepting duplicate signatures in multi-sig schemes.
+discovered: "2026-01-09"
+source: "Chakra Audit (Code4rena, Critical)"

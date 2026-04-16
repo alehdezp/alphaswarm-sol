@@ -1,0 +1,608 @@
+- id: semgrep-security-accessible-selfdestruct
+  name: accessible-selfdestruct
+  description: Contract can be destructed by anyone in $FUNC
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - accessible-selfdestruct
+- id: semgrep-security-arbitrary-low-level-call
+  name: arbitrary-low-level-call
+  description: An attacker may perform call() to an arbitrary address with controlled
+    calldata
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - arbitrary-low-level-call
+- id: semgrep-security-bad-transferfrom-access-control
+  name: bad-transferfrom-access-control
+  description: An attacker may perform transferFrom() with arbitrary addresses
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - bad-transferfrom-access-control
+- id: semgrep-security-balancer-readonly-reentrancy-getpooltokens
+  name: balancer-readonly-reentrancy-getpooltokens
+  description: $VAULT.getPoolTokens() call on a Balancer pool is not protected from
+    the read-only reentrancy.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - balancer-readonly-reentrancy-getpooltokens
+- id: semgrep-security-balancer-readonly-reentrancy-getrate
+  name: balancer-readonly-reentrancy-getrate
+  description: $VAR.getRate() call on a Balancer pool is not protected from the read-only
+    reentrancy.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - balancer-readonly-reentrancy-getrate
+- id: semgrep-security-basic-arithmetic-underflow
+  name: basic-arithmetic-underflow
+  description: Possible arithmetic underflow
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - basic-arithmetic-underflow
+- id: semgrep-security-basic-oracle-manipulation
+  name: basic-oracle-manipulation
+  description: Price oracle can be manipulated via flashloan
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - basic-oracle-manipulation
+- id: semgrep-security-compound-borrowfresh-reentrancy
+  name: compound-borrowfresh-reentrancy
+  description: Function borrowFresh() in Compound performs state update after doTransferOut()
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - compound-borrowfresh-reentrancy
+- id: semgrep-security-compound-precision-loss
+  name: compound-precision-loss
+  description: In Compound forks if there is a market with totalSupply = 0 and collateralFactor
+    != 0 a precision loss attack is possible if redeemAmount is taken from the arguments
+    of redeemFresh()
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - compound-precision-loss
+- id: semgrep-security-compound-sweeptoken-not-restricted
+  name: compound-sweeptoken-not-restricted
+  description: Function sweepToken is allowed to be called by anyone
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - compound-sweeptoken-not-restricted
+- id: semgrep-security-curve-readonly-reentrancy
+  name: curve-readonly-reentrancy
+  description: $POOL.get_virtual_price() call on a Curve pool is not protected from
+    the read-only reentrancy.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - curve-readonly-reentrancy
+- id: semgrep-security-delegatecall-to-arbitrary-address
+  name: delegatecall-to-arbitrary-address
+  description: An attacker may perform delegatecall() to an arbitrary address.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - delegatecall-to-arbitrary-address
+- id: semgrep-security-encode-packed-collision
+  name: encode-packed-collision
+  description: abi.encodePacked hash collision with variable length arguments in $F()
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - encode-packed-collision
+- id: semgrep-security-erc20-public-burn
+  name: erc20-public-burn
+  description: Anyone can burn tokens of other accounts
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - erc20-public-burn
+- id: semgrep-security-erc20-public-transfer
+  name: erc20-public-transfer
+  description: Custom ERC20 implementation exposes _transfer() as public
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - erc20-public-transfer
+- id: semgrep-security-erc677-reentrancy
+  name: erc677-reentrancy
+  description: ERC677 callAfterTransfer() reentrancy
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - erc677-reentrancy
+- id: semgrep-security-erc721-arbitrary-transferfrom
+  name: erc721-arbitrary-transferfrom
+  description: Custom ERC721 implementation lacks access control checks in _transfer()
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - erc721-arbitrary-transferfrom
+- id: semgrep-security-erc721-reentrancy
+  name: erc721-reentrancy
+  description: ERC721 onERC721Received() reentrancy
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - erc721-reentrancy
+- id: semgrep-security-erc777-reentrancy
+  name: erc777-reentrancy
+  description: ERC777 tokensReceived() reentrancy
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - erc777-reentrancy
+- id: semgrep-security-exact-balance-check
+  name: exact-balance-check
+  description: Testing the balance of an account as a basis for some action has risks
+    associated with unexpected receipt of ether or another token, including tokens
+    deliberately transfered to cause such tests to fail, as an MEV attack.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - exact-balance-check
+- id: semgrep-security-gearbox-tokens-path-confusion
+  name: gearbox-tokens-path-confusion
+  description: UniswapV3 adapter implemented incorrect extraction of path parameters
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - gearbox-tokens-path-confusion
+- id: semgrep-security-incorrect-use-of-blockhash
+  name: incorrect-use-of-blockhash
+  description: blockhash(block.number) and blockhash(block.number + N) always returns
+    0.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - incorrect-use-of-blockhash
+- id: semgrep-security-keeper-network-oracle-manipulation
+  name: keeper-network-oracle-manipulation
+  description: "Keep3rV2.current() call has high data freshness, but it has low security,\
+    \ \nan exploiter simply needs to manipulate 2 data points to be able to impact\
+    \ the feed.\n"
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - keeper-network-oracle-manipulation
+- id: semgrep-security-missing-assignment
+  name: missing-assignment
+  description: Meaningless statement that does not change any values could be a sign
+    of missed security checks or other important changes.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - missing-assignment
+- id: semgrep-security-msg-value-multicall
+  name: msg-value-multicall
+  description: $F with constant msg.value can be called multiple times
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - msg-value-multicall
+- id: semgrep-security-no-bidi-characters
+  name: no-bidi-characters
+  description: The code must not contain any of Unicode Direction Control Characters
+  scope: Contract
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - no-bidi-characters
+- id: semgrep-security-no-slippage-check
+  name: no-slippage-check
+  description: No slippage check in a Uniswap v2/v3 trade
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - no-slippage-check
+- id: semgrep-security-olympus-dao-staking-incorrect-call-order
+  name: olympus-dao-staking-incorrect-call-order
+  description: The order of calling the transferFrom() and rebase() functions is incorrect
+    in Olympus DAO forks
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - olympus-dao-staking-incorrect-call-order
+- id: semgrep-security-openzeppelin-ecdsa-recover-malleable
+  name: openzeppelin-ecdsa-recover-malleable
+  description: Potential signature malleability in $F
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - openzeppelin-ecdsa-recover-malleable
+- id: semgrep-security-oracle-price-update-not-restricted
+  name: oracle-price-update-not-restricted
+  description: Oracle price data can be submitted by anyone
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - oracle-price-update-not-restricted
+- id: semgrep-security-oracle-uses-curve-spot-price
+  name: oracle-uses-curve-spot-price
+  description: Oracle uses the get_p() Curve pool function which can be manipulated
+    via flashloan to calculate the asset price
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - oracle-uses-curve-spot-price
+- id: semgrep-security-proxy-storage-collision
+  name: proxy-storage-collision
+  description: Proxy declares a state var that may override a storage slot of the
+    implementation
+  scope: Contract
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - proxy-storage-collision
+- id: semgrep-security-public-transfer-fees-supporting-tax-tokens
+  name: public-transfer-fees-supporting-tax-tokens
+  description: public _transferFeesSupportingTaxTokens() without any modificators
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - public-transfer-fees-supporting-tax-tokens
+- id: semgrep-security-redacted-cartel-custom-approval-bug
+  name: redacted-cartel-custom-approval-bug
+  description: transferFrom() can steal allowance of other accounts
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - redacted-cartel-custom-approval-bug
+- id: semgrep-security-rigoblock-missing-access-control
+  name: rigoblock-missing-access-control
+  description: setMultipleAllowances() is missing onlyOwner modifier
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - rigoblock-missing-access-control
+- id: semgrep-security-sense-missing-oracle-access-control
+  name: sense-missing-oracle-access-control
+  description: Oracle update is not restricted in $F()
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - sense-missing-oracle-access-control
+- id: semgrep-security-superfluid-ctx-injection
+  name: superfluid-ctx-injection
+  description: A specially crafted calldata may be used to impersonate other accounts
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - superfluid-ctx-injection
+- id: semgrep-security-tecra-coin-burnfrom-bug
+  name: tecra-coin-burnfrom-bug
+  description: Parameter "from" is checked at incorrect position in "_allowances"
+    mapping
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - tecra-coin-burnfrom-bug
+- id: semgrep-security-thirdweb-vulnerability
+  name: thirdweb-vulnerability
+  description: 'In contracts that support Multicall and ERC2771Context an Arbitrary
+    Address Spoofing attack is possible.
+
+    '
+  scope: Contract
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - thirdweb-vulnerability
+- id: semgrep-security-uniswap-callback-not-protected
+  name: uniswap-callback-not-protected
+  description: Uniswap callback is not protected
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - uniswap-callback-not-protected
+- id: semgrep-security-uniswap-v4-callback-not-protected
+  name: uniswap-v4-callback-not-protected
+  description: Uniswap v4 callback $CALLBACK is not protected with onlyPoolManager
+    modifier
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - uniswap-v4-callback-not-protected
+- id: semgrep-security-unrestricted-transferownership
+  name: unrestricted-transferownership
+  description: Unrestricted transferOwnership
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - unrestricted-transferownership

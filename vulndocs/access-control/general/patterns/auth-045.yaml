@@ -1,0 +1,13 @@
+id: auth-045
+vulndoc: access-control/general
+name: Public Wrapper Without Access Gate
+description: Public/external wrapper calls internal logic without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: public_wrapper_without_access_gate
+    op: eq
+    value: true

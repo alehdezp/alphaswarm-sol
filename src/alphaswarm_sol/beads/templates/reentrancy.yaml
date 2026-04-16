@@ -1,0 +1,78 @@
+# Reentrancy Investigation Template
+vulnerability_class: reentrancy
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify the external call"
+    look_for: |
+      - .call{value:}()
+      - .transfer()
+      - .send()
+      - High-level calls to external contracts
+      - Token transfers (safeTransfer, transfer)
+    evidence_needed: "Line number, target address source, value being sent"
+
+  - step_number: 2
+    action: "Check state changes relative to external call"
+    look_for: |
+      - Balance updates (balances[user] -= amount)
+      - Mapping writes
+      - State variable modifications
+    evidence_needed: "List all state writes and their line numbers"
+    red_flag: "State write occurs AFTER external call"
+    safe_if: "All state writes occur BEFORE external call (CEI pattern)"
+
+  - step_number: 3
+    action: "Check for reentrancy protection"
+    look_for: |
+      - nonReentrant modifier
+      - ReentrancyGuard inheritance
+      - Custom mutex/lock variable
+    evidence_needed: "Modifier name or lock mechanism code"
+    safe_if: "Proper reentrancy guard is applied to this function"
+
+  - step_number: 4
+    action: "Determine if external call target is controlled"
+    look_for: |
+      - Is target address from user input?
+      - Is target address from storage that user can modify?
+      - Is it a hardcoded trusted address?
+    evidence_needed: "Source of the call target"
+    red_flag: "Target is user-controlled or from untrusted storage"
+    safe_if: "Target is hardcoded, immutable, or from trusted source"
+
+  - step_number: 5
+    action: "Assess exploitability and impact"
+    look_for: |
+      - What can attacker gain from reentering?
+      - Is there profit potential (drain funds, mint tokens)?
+      - What's the maximum extractable value?
+    evidence_needed: "Attack scenario with profit calculation"
+
+questions_to_answer:
+  - "Is there an external call in this function?"
+  - "Does state change after the external call?"
+  - "Is there a reentrancy guard protecting this function?"
+  - "Can the external call target execute arbitrary code?"
+  - "What can an attacker gain from reentering?"
+
+common_false_positives:
+  - "Function has nonReentrant modifier but pattern didn't detect it"
+  - "External call is to a trusted, immutable contract (e.g., WETH)"
+  - "State written after call is unrelated to the call's value"
+  - "Function is internal/private and all public callers are protected"
+  - "The 'state update' is just emitting an event"
+
+key_indicators:
+  - "Balance decremented AFTER value transfer"
+  - "User-controlled callback address"
+  - "No reentrancy protection"
+  - "Significant value at risk"
+
+safe_patterns:
+  - "Checks-Effects-Interactions (CEI) pattern followed"
+  - "nonReentrant modifier present"
+  - "Pull payment pattern (user claims, not push)"
+  - "External call to verified safe contract"

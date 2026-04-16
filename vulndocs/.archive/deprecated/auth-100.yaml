@@ -1,0 +1,13 @@
+id: auth-100
+vulndoc: access-control/general
+name: Multisig Threshold Without Owner Count Check
+description: Multisig threshold changes without owner count validation.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: multisig_threshold_change_without_owner_count_check
+    op: eq
+    value: true

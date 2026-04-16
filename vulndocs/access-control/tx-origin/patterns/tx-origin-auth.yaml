@@ -1,0 +1,13 @@
+id: tx-origin-auth
+vulndoc: access-control/tx-origin
+name: tx.origin Authentication Usage
+description: Functions using tx.origin for authorization or logic.
+scope: Function
+lens:
+  - Authority
+severity: high
+match:
+  all:
+    - property: uses_tx_origin
+      op: eq
+      value: true

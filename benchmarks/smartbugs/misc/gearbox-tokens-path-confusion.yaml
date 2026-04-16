@@ -1,0 +1,22 @@
+# Gearbox Tokens Path Confusion
+id: smartbugs-gearbox-tokens-path-confusion
+name: Gearbox Tokens Path Confusion
+category: misc
+source: examples/semgrep-smart-contracts/solidity/security/gearbox-tokens-path-confusion.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: path-confusion
+  description: Token path in swaps can be confused/manipulated
+  severity: high
+  cwe: CWE-20
+
+expected_detections:
+  - pattern: auth-017
+    confidence: medium
+
+vkg_pattern_mapping:
+  primary: auth-017
+  secondary: [token-path-confusion]
+
+status: pending

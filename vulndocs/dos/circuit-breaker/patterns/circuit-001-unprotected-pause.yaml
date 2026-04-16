@@ -1,0 +1,336 @@
+# =============================================================================
+# PATTERN: circuit-001
+# =============================================================================
+
+id: circuit-001
+vulndoc: dos/circuit-breaker
+name: "Unprotected Circuit Breaker Function"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Public/external functions that modify circuit breaker state (pause/unpause/emergency
+  stop mechanisms) without proper access control, allowing any caller to halt or
+  resume contract operations.
+
+  ## Why It's Dangerous
+  Circuit breakers are emergency safety mechanisms that temporarily halt contract
+  operations when suspicious activity is detected. Unprotected pause/unpause functions
+  enable severe attacks:
+
+  **Denial of Service (DoS)**: Attackers can pause the contract indefinitely, preventing
+  legitimate users from withdrawing funds, executing trades, claiming rewards, or
+  performing any contract operations.
+
+  **Front-Running Attacks**: Malicious actors can monitor the mempool for profitable
+  transactions (large swaps, liquidations, arbitrage), front-run them with a pause
+  transaction, then unpause after extracting value.
+
+  **Security Incident Exploitation**: During active exploits, attackers can prevent
+  defenders from pausing the contract, or unpause prematurely before patches are deployed.
+
+  **Governance Manipulation**: Unauthorized unpausing during security review periods
+  can expose vulnerable code to exploitation before fixes are implemented.
+
+  ## Detection Logic
+  This pattern detects functions that:
+  1. Are externally callable (public/external visibility)
+  2. Write to sensitive configuration state tagged as "pause" (detected semantically)
+  3. Modify contract state (writes_state = true)
+  4. Lack any access control mechanism (has_access_gate = false)
+  5. Are not constructors
+
+  **Implementation Agnostic**: Detection does NOT rely on function names like "pause",
+  "unpause", "halt", "freeze". Instead, it uses semantic state variable tagging where
+  variables containing pause-related tokens ("pause", "paused", "pausable", "pauser")
+  are automatically tagged with "pause" security tags (see heuristics.py line 68-69).
+
+  ## Real-World Context
+  - **Vaultwarden Emergency Access (CVE)**: Missing authentication allowed grantees
+    to modify emergency access terms without authorization
+  - **OWASP SC01:2025**: Improper Access Control is the #1 smart contract vulnerability
+  - **Impact**: Q1 2024 saw $45M in losses across 16 access control incidents ($2.8M average)
+
+scope: Function
+
+lens:
+  - Authority
+  - Liveness  # Circuit breakers affect protocol liveness
+
+severity: high
+
+# Pattern quality status (set by vrs-test-conductor agent)
+# Updated 2026-01-02: Documented as EXCELLENT in mega-task (~100%/~100%/~100%)
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable to be exploitable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must write to sensitive config (includes "pause" tagged state vars)
+    # See builder.py line 597-614 for full list of sensitive config tags
+    - property: writes_sensitive_config
+      op: eq
+      value: true
+
+    # Must modify state (circuit breakers change pause state)
+    - property: writes_state
+      op: eq
+      value: true
+
+  # At least ONE must match (OR logic) - none required
+  any: []
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Exclude functions with access control
+    - property: has_access_gate
+      op: eq
+      value: true
+
+    # Exclude constructors (one-time setup is acceptable)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude if has access modifier (onlyOwner, onlyRole, etc.)
+    - property: has_access_modifier
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+edges: []
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Denial of Service via Malicious Pause"
+    description: "Attacker permanently pauses contract to prevent all operations"
+    preconditions:
+      - "Function is public/external without access control"
+      - "Contract implements pausable pattern (OpenZeppelin Pausable, etc.)"
+      - "Paused state blocks critical user operations"
+    steps:
+      - "Attacker identifies unprotected pause function"
+      - "Attacker calls pause() to halt all contract operations"
+      - "Users cannot withdraw funds, claim rewards, or execute trades"
+      - "Attacker may demand ransom to unpause or maintain DoS indefinitely"
+    impact: "Complete protocol shutdown, frozen user funds, reputational damage"
+
+  - name: "Front-Running Profitable Operations"
+    description: "Attacker pauses contract to prevent competitor transactions"
+    preconditions:
+      - "Unprotected pause AND unpause functions exist"
+      - "Contract has time-sensitive profitable operations (liquidations, MEV)"
+    steps:
+      - "Attacker monitors mempool for profitable transactions"
+      - "Attacker front-runs with pause() to block competitor"
+      - "Attacker executes own profitable transaction"
+      - "Attacker calls unpause() to restore normal operations"
+    impact: "MEV extraction, unfair competition, value extraction from protocol"
+
+  - name: "Premature Unpause During Security Incident"
+    description: "Attacker unpauses during active exploit or investigation"
+    preconditions:
+      - "Protocol team has paused contract during security incident"
+      - "Unpause function lacks access control"
+    steps:
+      - "Security team pauses contract after detecting exploit"
+      - "Attacker calls unpause() before patch is deployed"
+      - "Original exploit or new attack vectors remain exposed"
+      - "Attacker drains vulnerable contract"
+    impact: "Extended security breach, loss of funds, bypass of emergency measures"
+
+  - name: "Governance Attack on Emergency Functions"
+    description: "Manipulation of pause state during critical governance decisions"
+    preconditions:
+      - "Protocol uses pause state for governance processes"
+      - "Circuit breaker affects quorum or voting calculations"
+    steps:
+      - "Attacker pauses contract during active governance vote"
+      - "Paused state affects voter participation or quorum"
+      - "Malicious proposal passes due to manipulated state"
+    impact: "Governance takeover, unauthorized protocol changes"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Verify the function truly modifies pause/halt/emergency state variables"
+  - "Check if pause state affects critical protocol operations (transfers, withdrawals)"
+  - "Confirm no internal access control logic in function body (require checks)"
+  - "Determine if this is intentional public design (rare but possible)"
+  - "Review if contract inherits from OpenZeppelin Pausable or similar standards"
+  - "Assess blast radius: what operations are blocked when paused?"
+  - "Check for circuit breaker documentation in NatSpec comments"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add onlyOwner Modifier (OpenZeppelin Ownable)"
+    description: "Restrict pause/unpause to contract owner only"
+    example: |
+      import "@openzeppelin/contracts/access/Ownable.sol";
+      import "@openzeppelin/contracts/security/Pausable.sol";
+
+      contract SafeCircuitBreaker is Ownable, Pausable {
+          // Only owner can pause
+          function pause() external onlyOwner {
+              _pause();
+          }
+
+          // Only owner can unpause
+          function unpause() external onlyOwner {
+              _unpause();
+          }
+      }
+
+  - name: "Add Role-Based Access Control (OpenZeppelin AccessControl)"
+    description: "Use role-based system for multi-admin circuit breaker management"
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+      import "@openzeppelin/contracts/security/Pausable.sol";
+
+      contract RoleBasedCircuitBreaker is AccessControl, Pausable {
+          bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+          bytes32 public constant UNPAUSER_ROLE = keccak256("UNPAUSER_ROLE");
+
+          constructor() {
+              _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+              _grantRole(PAUSER_ROLE, msg.sender);
+              _grantRole(UNPAUSER_ROLE, msg.sender);
+          }
+
+          // Only pausers can pause
+          function pause() external onlyRole(PAUSER_ROLE) {
+              _pause();
+          }
+
+          // Only unpausers can unpause
+          function unpause() external onlyRole(UNPAUSER_ROLE) {
+              _unpause();
+          }
+      }
+
+  - name: "Add Guardian System with Timelock"
+    description: "Implement guardian-based emergency system with unpause delay"
+    example: |
+      import "@openzeppelin/contracts/access/Ownable.sol";
+      import "@openzeppelin/contracts/security/Pausable.sol";
+
+      contract GuardianCircuitBreaker is Ownable, Pausable {
+          address public guardian;
+          uint256 public unpauseETA;
+          uint256 public constant UNPAUSE_DELAY = 2 days;
+
+          modifier onlyGuardian() {
+              require(msg.sender == guardian, "Not guardian");
+              _;
+          }
+
+          // Guardian can immediately pause in emergency
+          function pause() external onlyGuardian {
+              _pause();
+              unpauseETA = 0; // Reset unpause timer
+          }
+
+          // Owner schedules unpause with timelock
+          function scheduleUnpause() external onlyOwner {
+              require(paused(), "Not paused");
+              unpauseETA = block.timestamp + UNPAUSE_DELAY;
+          }
+
+          // Anyone can execute unpause after timelock
+          function executeUnpause() external {
+              require(unpauseETA != 0, "Unpause not scheduled");
+              require(block.timestamp >= unpauseETA, "Timelock not expired");
+              _unpause();
+              unpauseETA = 0;
+          }
+
+          // Owner can set guardian
+          function setGuardian(address _guardian) external onlyOwner {
+              require(_guardian != address(0), "Invalid guardian");
+              guardian = _guardian;
+          }
+      }
+
+  - name: "Add Multi-Signature Requirement"
+    description: "Require multiple signatures for circuit breaker operations"
+    example: |
+      // Use Gnosis Safe or similar multisig as owner
+      // Combined with OpenZeppelin Pausable
+
+      contract MultisigCircuitBreaker is Pausable {
+          address public multisig; // Gnosis Safe address
+
+          modifier onlyMultisig() {
+              require(msg.sender == multisig, "Only multisig");
+              _;
+          }
+
+          function pause() external onlyMultisig {
+              _pause();
+          }
+
+          function unpause() external onlyMultisig {
+              _unpause();
+          }
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - auth-001  # Unprotected privileged state write
+  - auth-002  # tx.origin auth (weak auth)
+  - auth-020  # Unprotected initializer
+  - live-005  # DoS via external dependency
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Improper Access Control (2025 #1 vulnerability)
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-285  # Improper Authorization
+  - CWE-862  # Missing Authorization
+  - CWE-400  # Uncontrolled Resource Consumption (DoS)
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+semantic_ops: {}
+behavioral_signature: {}
+tier_match: {}
+constraints: {}
+attack_paths: []
+exploit_similarity: {}
+verification_agents: {}

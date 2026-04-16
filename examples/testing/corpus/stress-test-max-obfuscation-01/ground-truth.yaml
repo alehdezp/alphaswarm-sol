@@ -1,0 +1,172 @@
+project:
+  name: stress-test-max-obfuscation-01
+  theme: vault
+  tier: 3
+  adversarial_categories:
+  - A
+  - B
+  - C
+  description: Maximum difficulty stress test. All obfuscation categories applied.
+    Tranche-based adaptive pool with oracle, library, and cross-contract patterns.
+findings:
+- pattern_id: balance-update-after-transfer
+  contract: AdaptivePoolManager
+  function: concludeTranche
+  line_range: 57-72
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  - A4-variable-aliasing
+  - B5-library-mediated
+  expected_reasoning_chain:
+  - 'Identify external call t.beneficiary.call{value: processed}'
+  - 'Trace aliasing chain: base -> bonus -> combined -> processed'
+  - Library call ComputeEngine.aggregate used in chain
+  - Notice t.principal = 0 occurs AFTER external call
+  - 'Conclude: reentrancy hidden by variable aliasing and library indirection'
+- pattern_id: oracle-stale-price
+  contract: AdaptivePoolManager
+  function: applyPolicyAccrual
+  line_range: 75-83
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify policyEngine.currentRate() returns rate and timestamp
+  - Timestamp value destructured but never validated
+  - 'Cross-contract: oracle rate can be stale'
+  - 'Conclude: stale oracle rate used for accrual calculations'
+- pattern_id: dos-unbounded-loop
+  contract: AdaptivePoolManager
+  function: batchSettle
+  line_range: 86-96
+  severity: medium
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify for loop over trancheIds with no upper bound
+  - Each iteration may perform external call
+  - 'Conclude: DoS via unbounded batch settlement'
+- pattern_id: auth-001
+  contract: AdaptivePoolManager
+  function: certifyAgent
+  line_range: 99-102
+  severity: high
+  adversarial_techniques:
+  - A2-misleading-names
+  expected_reasoning_chain:
+  - Identify certifyAgent grants authorization (name implies security process)
+  - No access control - anyone can certify themselves as agent
+  - 'Conclude: misleading name hides missing access control'
+- pattern_id: auth-002
+  contract: AdaptivePoolManager
+  function: reconfigurePolicy
+  line_range: 105-108
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify reconfigurePolicy replaces the oracle contract
+  - No access control
+  - Attacker deploys malicious oracle returning extreme rates
+  - 'Conclude: oracle replacement enables economic attack'
+- pattern_id: auth-003
+  contract: AdaptivePoolManager
+  function: delegateCoordination
+  line_range: 111-113
+  severity: critical
+  adversarial_techniques:
+  - A2-misleading-names
+  expected_reasoning_chain:
+  - Identify delegateCoordination changes coordinator
+  - No access control
+  - 'Conclude: anyone can seize coordinator role'
+- pattern_id: auth-004
+  contract: AdaptivePoolManager
+  function: emergencyRecovery
+  line_range: 116-118
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify emergencyRecovery sends entire balance to recipient
+  - No access control
+  - 'Conclude: unrestricted emergency drain'
+- pattern_id: ac-002
+  contract: PolicyOracle
+  function: adjustRate
+  line_range: 20-23
+  severity: high
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify adjustRate changes oracle rate
+  - No access control (updater exists but unchecked)
+  - 'Cross-contract: manipulated rate affects all tranche accruals'
+  - 'Conclude: oracle rate manipulation via missing access control'
+- pattern_id: precision-loss-rounding
+  contract: ComputeEngine
+  function: computeGrowth
+  line_range: 12-14
+  severity: medium
+  adversarial_techniques:
+  - B5-library-mediated
+  expected_reasoning_chain:
+  - 'Identify division: (principal * rate) / 1e18'
+  - Small principals with small rates truncate to zero growth
+  - 'Library-mediated: all accrual calculations use this'
+  - 'Conclude: precision loss in growth calculation'
+- pattern_id: frontrunning-vulnerability
+  contract: AdaptivePoolManager
+  function: batchSettle
+  line_range: 86-96
+  severity: medium
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify batch settlement sends ETH based on tranche values
+  - No minimum payout check or deadline
+  - Oracle rate can be manipulated between submission and execution
+  - 'Conclude: frontrunning via oracle manipulation before settlement'
+- pattern_id: oracle-002
+  contract: AdaptivePoolManager
+  function: applyPolicyAccrual
+  line_range: 75-83
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify applyPolicyAccrual calls policyEngine.currentRate() which returns (rate, lastUpdated)
+  - The lastUpdated timestamp is destructured but discarded — no freshness validation (e.g., require(block.timestamp - lastUpdated < maxStaleness))
+  - PolicyOracle.adjustRate has no access control, so anyone can set an extreme rate value
+  - The accrual is computed as t.principal.computeGrowth(rate) which is (principal * rate) / 1e18
+  - An attacker sets rate to a massive value via adjustRate, then calls applyPolicyAccrual to inflate t.accrued
+  - 'Conclude: oracle rate manipulation — unprotected adjustRate combined with no staleness check allows accrual inflation to drain the pool'
+- pattern_id: callback-controlled-recipient
+  contract: AdaptivePoolManager
+  function: concludeTranche
+  line_range: 57-72
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify concludeTranche sends ETH via t.beneficiary.call{value: processed} where beneficiary was set at tranche creation
+  - The beneficiary is msg.sender from originateTranche, so a contract can set itself as beneficiary
+  - When the ETH transfer triggers the beneficiary contract's receive/fallback, execution returns to attacker-controlled code
+  - The attacker's callback executes before t.principal = 0 and t.accrued = 0 state updates (lines 67-68)
+  - The variable aliasing chain (base -> bonus -> combined -> processed) obscures the value being sent but does not prevent the callback
+  - 'Conclude: callback-controlled recipient — beneficiary is a user-chosen address that receives ETH before state cleanup, enabling reentrancy via attacker-deployed contract'
+safe_patterns:
+- technique: C1-safe-dangerous-names
+  contract: AdaptivePoolManager
+  function: originateTranche
+  expected_verdict: safe
+  reasoning: Deposit function with complex naming. No external calls, proper state
+    updates.
+summary:
+  total_findings: 12
+  total_safe_patterns: 1
+  difficulty: extreme
+  notes: 'Maximum obfuscation stress test. All 3 categories applied: A (variable aliasing,
+    misleading names, function renaming), B (cross-contract oracle, library-mediated),
+    C (safe deposit honeypot). 10 distinct findings.'

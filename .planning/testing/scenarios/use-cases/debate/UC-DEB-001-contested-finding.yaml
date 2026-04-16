@@ -1,0 +1,76 @@
+id: UC-DEB-001
+name: "Structured debate on contested reentrancy finding"
+workflow: vrs-debate
+category: debate
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyWithGuard.sol"
+  command: "/vrs-debate tests/contracts/ReentrancyWithGuard.sol --finding reentrancy"
+  context: >
+    ReentrancyWithGuard.sol has a CEI violation pattern but is protected by a
+    ReentrancyGuard modifier. The attacker argues it is vulnerable (CEI
+    violation exists), the defender argues it is safe (guard mitigates it).
+    This is a genuinely contested finding where both sides have valid evidence.
+    The debate must produce a structured exchange and a final verdict.
+
+expected_behavior:
+  summary: |
+    The debate workflow should orchestrate a structured adversarial exchange:
+    1. Attacker presents CEI violation evidence with graph references
+    2. Defender responds with guard evidence and coverage analysis
+    3. At least one round of rebuttal where each side addresses the other's points
+    4. Verifier (or convergence logic) produces a final verdict
+    The debate must show genuine engagement with opposing evidence, not talking past.
+  must_happen:
+    - "Attacker presents evidence of CEI violation from graph queries"
+    - "Defender presents evidence of ReentrancyGuard from graph queries"
+    - "At least one rebuttal round where arguments engage with opposing evidence"
+    - "Both sides cite specific code locations and graph nodes"
+    - "Final verdict produced with confidence score"
+    - "Verdict explicitly addresses the contested point (guard coverage)"
+  must_not_happen:
+    - "Either side ignores the other's evidence"
+    - "Debate degenerates into repetition without new arguments"
+    - "Verdict reached without structured exchange (just picking a side)"
+    - "Arguments without graph evidence"
+    - "Debate exceeds 5 rounds without convergence"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 55
+  key_dimensions:
+    - name: debate_structure
+      description: "Did the debate follow a structured format with clear rounds and rebuttals?"
+    - name: evidence_engagement
+      description: "Did each side genuinely engage with the other's evidence, not talk past?"
+    - name: convergence_quality
+      description: "Did the debate converge to a justified verdict, not just run out of rounds?"
+    - name: graph_utilization
+      description: "Did both sides use BSKG queries to support their arguments?"
+  regression_signals:
+    - "No structured rounds in debate -> CRITICAL REGRESSION: debate protocol broken"
+    - "Sides ignore each other's evidence -> REGRESSION: engagement quality degraded"
+    - "No verdict produced -> REGRESSION: convergence logic broken"
+    - "Debate exceeds 5 rounds -> REGRESSION: convergence too slow"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyWithGuard.sol"
+  related_scenarios:
+    - "UC-VER-003"
+    - "UC-DEB-002"
+    - "UC-DEB-003"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Core tier because adversarial debate is the framework's key differentiator.
+  This is the canonical test of multi-agent reasoning quality.

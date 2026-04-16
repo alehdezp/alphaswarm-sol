@@ -1,0 +1,105 @@
+# Internal Annotated Contract: OracleNoStaleness
+# Phase: 07.3.1.6 IMP-B1 / IMP-K2
+# Purpose: Ground truth for internal test contracts
+
+contract:
+  id: "oracle-no-staleness"
+  name: "OracleNoStaleness"
+  source_path: "tests/contracts/OracleNoStaleness.sol"
+  solidity_version: "^0.8.20"
+
+metadata:
+  annotation_date: "2026-02-04"
+  annotator: "AlphaSwarm.sol team"
+  trust_level: "medium"
+  purpose: "Controlled test case for oracle staleness check detection"
+
+contract_summary:
+  description: |
+    Vulnerable contract that reads Chainlink oracle price without
+    checking for staleness. Stale prices can be exploited when the
+    oracle fails to update (network issues, gas spikes, etc.).
+
+  lines_of_code: 25
+  functions:
+    - name: "constructor"
+      visibility: "public"
+      state_mutability: "nonpayable"
+      vulnerable: false
+
+    - name: "getPrice"
+      visibility: "external"
+      state_mutability: "view"
+      vulnerable: true
+
+findings:
+  - id: "INT-ONS-001"
+    title: "Missing staleness check on Chainlink oracle price"
+    severity: "high"
+    vulnerability_class: "oracle_manipulation"
+    swc_id: "SWC-120"
+    cwe_id: "CWE-754"
+    ground_truth_verdict: "confirmed"
+
+    affected_functions:
+      - "getPrice"
+
+    vulnerable_code:
+      file: "tests/contracts/OracleNoStaleness.sol"
+      line_start: 21
+      line_end: 24
+      snippet: |
+        function getPrice() external view returns (int256) {
+            (, int256 answer, , , ) = oracle.latestRoundData();
+            return answer;
+        }
+
+    vulnerability_pattern:
+      description: "Oracle read without staleness validation"
+      operations_sequence:
+        - op: "READS_ORACLE"
+          location: "line 22"
+        - op_missing: "CHECKS_STALENESS"
+          expected_after: "READS_ORACLE"
+
+    missing_checks:
+      - check: "updatedAt > block.timestamp - MAX_STALENESS"
+        purpose: "Ensure price is recent"
+      - check: "answer > 0"
+        purpose: "Ensure valid price"
+      - check: "answeredInRound >= roundId"
+        purpose: "Ensure answer is from current round"
+
+    exploit_scenario:
+      preconditions:
+        - "Oracle has not been updated recently"
+        - "Price has moved significantly since last update"
+      steps:
+        - "Oracle becomes stale due to network issues"
+        - "Attacker exploits stale price in dependent protocol"
+        - "Example: borrow at inflated collateral value"
+      postconditions:
+        - "Attacker profits from stale price differential"
+
+    fix_recommendation: |
+      Add comprehensive staleness checks:
+      ```solidity
+      (uint80 roundId, int256 answer, , uint256 updatedAt, uint80 answeredInRound) = oracle.latestRoundData();
+      require(answer > 0, "Invalid price");
+      require(updatedAt > block.timestamp - MAX_STALENESS, "Stale price");
+      require(answeredInRound >= roundId, "Round incomplete");
+      ```
+
+    detection_expectations:
+      tier_a_detectable: true   # Graph identifies missing check
+      tier_b_detectable: true   # LLM can verify pattern
+      tier_c_detectable: true   # Economic analysis shows profit motive
+
+statistics:
+  total_findings: 1
+  by_severity:
+    high: 1
+    medium: 0
+    low: 0
+  by_class:
+    oracle_manipulation: 1

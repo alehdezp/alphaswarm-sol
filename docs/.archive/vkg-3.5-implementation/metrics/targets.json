@@ -1,0 +1,109 @@
+{
+  "schema_version": "3.5.0",
+  "description": "Target metrics for VKG 3.5 completion",
+
+  "detection_quality": {
+    "precision": {
+      "phase_0": 0.70,
+      "phase_1": 0.75,
+      "phase_2": 0.85,
+      "phase_3": 0.88,
+      "phase_4": 0.90,
+      "final": 0.90
+    },
+    "recall": {
+      "phase_0": 0.60,
+      "phase_1": 0.65,
+      "phase_2": 0.75,
+      "phase_3": 0.82,
+      "phase_4": 0.85,
+      "final": 0.85
+    },
+    "f1_score": {
+      "final": 0.875
+    },
+    "business_logic_detection_rate": {
+      "phase_0": 0.10,
+      "phase_1": 0.30,
+      "phase_2": 0.45,
+      "phase_3": 0.55,
+      "phase_4": 0.60,
+      "final": 0.60
+    },
+    "novel_vulnerability_discovery": {
+      "final": 0.30,
+      "notes": "Ability to find vulns not in pattern DB"
+    }
+  },
+
+  "efficiency": {
+    "token_reduction_vs_baseline": {
+      "phase_2": 0.60,
+      "final": 0.40,
+      "notes": "GLM-style context slicing target"
+    },
+    "time_to_finding_reduction": {
+      "final": 0.60,
+      "notes": "40% faster than baseline"
+    }
+  },
+
+  "coverage": {
+    "erc_standards_defined": {
+      "phase_0": 4,
+      "final": 15
+    },
+    "defi_primitives_defined": {
+      "phase_0": 4,
+      "final": 10
+    },
+    "attack_patterns_defined": {
+      "phase_0": 20,
+      "final": 100
+    },
+    "protocol_types_supported": {
+      "final": 10,
+      "list": ["dex", "lending", "vault", "nft", "dao", "staking", "bridge", "oracle", "insurance", "derivatives"]
+    }
+  },
+
+  "quality_gates": {
+    "phase_0": {
+      "tests_pass": true,
+      "precision_min": 0.70,
+      "recall_min": 0.60,
+      "no_fp_on_safe_contracts": true
+    },
+    "phase_1": {
+      "intent_accuracy": 0.80,
+      "token_overhead": 0.10,
+      "notes": "Intent annotation should be accurate and efficient"
+    },
+    "phase_2": {
+      "attacker_constructs_viable_attacks": true,
+      "defender_finds_real_guards": true,
+      "verifier_correctly_proves": 0.90,
+      "token_reduction": 0.80
+    },
+    "phase_3": {
+      "iterative_improves_detection": true,
+      "causal_explanations_correct": 0.85,
+      "counterfactuals_block_vulns": 0.90
+    },
+    "phase_4": {
+      "transfer_improves_detection": true,
+      "similar_project_accuracy": 0.70
+    }
+  },
+
+  "aspirational": {
+    "match_human_auditor": {
+      "target": 0.80,
+      "notes": "Long-term goal: 80% of human auditor findings"
+    },
+    "find_novel_zero_days": {
+      "target": "yes",
+      "notes": "Ability to discover previously unknown vulnerability classes"
+    }
+  }
+}

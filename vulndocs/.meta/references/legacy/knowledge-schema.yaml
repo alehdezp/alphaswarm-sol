@@ -1,0 +1,592 @@
+# VulnDocs Knowledge Schema Definition
+# Phase 17.0: Knowledge Schema Design
+#
+# This schema defines the structure for vulnerability documentation.
+# It supports:
+#   - Hierarchical category/subcategory/document structure
+#   - Prompt caching markers for LLM efficiency
+#   - Version tracking for knowledge updates
+#   - Severity mappings per category
+#   - Real-world exploit references
+#   - Detection pattern linkage
+#
+# Philosophy Alignment:
+#   - Behavior-first: Focus on semantic operations, not names
+#   - Evidence-linked: Every finding links to code locations
+#   - Minimal context: Each doc contains only what's needed
+#   - Cacheable: Stable content blocks for token efficiency
+
+schema_version: "1.0"
+schema_name: "vulndocs"
+description: "Vulnerability Knowledge Documentation Schema"
+last_updated: "2026-01-08"
+
+# =============================================================================
+# CATEGORY SCHEMA
+# =============================================================================
+# Categories are top-level vulnerability classifications.
+# Each category contains multiple subcategories.
+
+category_schema:
+  required_fields:
+    - id                    # Unique identifier (e.g., "reentrancy", "access-control")
+    - name                  # Human-readable name
+    - description           # Brief description of the category
+    - severity_range        # List of applicable severity levels
+    - subcategories         # List of subcategory references
+
+  optional_fields:
+    - relevant_properties   # VKG properties relevant to this category
+    - semantic_operations   # Related semantic operations from operations.py
+    - context_cache_key     # Key for prompt caching (format: "{id}-v{version}")
+    - token_estimate        # Estimated tokens for this category's content
+    - related_cwes          # Common CWE identifiers
+    - external_refs         # Links to external documentation
+
+  field_types:
+    id:
+      type: string
+      pattern: "^[a-z][a-z0-9-]*$"
+      description: "Lowercase alphanumeric with dashes"
+      examples: ["reentrancy", "access-control", "oracle"]
+
+    name:
+      type: string
+      max_length: 100
+      description: "Human-readable category name"
+      examples: ["Reentrancy Vulnerabilities", "Access Control Issues"]
+
+    description:
+      type: string
+      max_length: 500
+      description: "Brief description for navigation"
+
+    severity_range:
+      type: array
+      items:
+        type: string
+        enum: ["critical", "high", "medium", "low", "informational"]
+      min_items: 1
+      max_items: 5
+      description: "Applicable severity levels"
+
+    subcategories:
+      type: array
+      items:
+        $ref: "#/subcategory_reference"
+      min_items: 1
+      description: "List of subcategory references"
+
+    relevant_properties:
+      type: array
+      items:
+        type: string
+      description: "VKG graph properties relevant to detection"
+      examples: ["state_write_after_external_call", "has_reentrancy_guard"]
+
+    semantic_operations:
+      type: array
+      items:
+        type: string
+      description: "Related semantic operations"
+      examples: ["TRANSFERS_VALUE_OUT", "WRITES_USER_BALANCE"]
+
+    context_cache_key:
+      type: string
+      pattern: "^[a-z][a-z0-9-]*-v[0-9]+$"
+      description: "Prompt caching identifier"
+
+    token_estimate:
+      type: integer
+      minimum: 100
+      maximum: 10000
+      default: 1500
+      description: "Estimated tokens for full category content"
+
+# =============================================================================
+# SUBCATEGORY SCHEMA
+# =============================================================================
+# Subcategories are specific variants within a category.
+# For example, "classic" vs "cross-function" reentrancy.
+
+subcategory_schema:
+  required_fields:
+    - id                    # Unique identifier within category
+    - name                  # Human-readable name
+    - description           # Brief description
+    - parent_category       # Reference to parent category ID
+
+  optional_fields:
+    - severity_range        # Override category severity if different
+    - patterns              # Associated pattern IDs from patterns/
+    - relevant_properties   # VKG properties specific to this subcategory
+    - graph_signals         # Specific graph signals for detection
+    - behavioral_signatures # Expected behavioral signature patterns
+    - operation_sequences   # Operation sequences for detection
+    - false_positive_indicators # Properties that indicate false positives
+    - token_estimate        # Estimated tokens
+    - related_exploits      # IDs of related real-world exploits
+
+  field_types:
+    id:
+      type: string
+      pattern: "^[a-z][a-z0-9-]*$"
+      description: "Unique within parent category"
+      examples: ["classic", "cross-function", "read-only"]
+
+    name:
+      type: string
+      max_length: 100
+      description: "Human-readable subcategory name"
+
+    description:
+      type: string
+      max_length: 1000
+      description: "Detailed description of this vulnerability variant"
+
+    parent_category:
+      type: string
+      $ref: "#/category_schema/field_types/id"
+      description: "Parent category ID"
+
+    patterns:
+      type: array
+      items:
+        type: string
+        pattern: "^[a-z]{2,4}-[0-9]{3}$"
+      description: "Pattern pack IDs"
+      examples: ["vm-001", "ac-002"]
+
+    graph_signals:
+      type: array
+      items:
+        $ref: "#/graph_signal_schema"
+      description: "Graph property signals for detection"
+
+    behavioral_signatures:
+      type: array
+      items:
+        type: string
+      description: "Behavioral signature patterns (regex)"
+      examples: ["R:bal.*X:out.*W:bal", "M:crit(?!.*C:auth)"]
+
+    operation_sequences:
+      type: object
+      properties:
+        vulnerable:
+          type: array
+          items:
+            type: string
+        safe:
+          type: array
+          items:
+            type: string
+      description: "Vulnerable vs safe operation orderings"
+
+# =============================================================================
+# DOCUMENT TYPES SCHEMA
+# =============================================================================
+# Each subcategory can have multiple document types.
+
+document_types:
+  detection:
+    description: "How to detect this vulnerability using VKG"
+    purpose: "Guide graph-based detection"
+    required_sections:
+      - graph_signals       # Table of property signals
+      - operation_sequences # Vulnerable vs safe patterns
+    optional_sections:
+      - behavioral_signatures
+      - false_positive_indicators
+      - detection_hints
+      - checklist
+    file_extension: ".md"
+    template: |
+      # Detection: {subcategory_name}
+
+      ## Graph Signals
+      | Property | Expected | Critical? |
+      |----------|----------|-----------|
+      {graph_signals_table}
+
+      ## Operation Sequences
+      - VULNERABLE: `{vulnerable_sequence}`
+      - SAFE: `{safe_sequence}`
+
+      ## False Positive Indicators
+      {false_positive_list}
+
+  patterns:
+    description: "Code pattern examples"
+    purpose: "Show vulnerable vs safe code"
+    required_sections:
+      - code_patterns       # Vulnerable code examples
+    optional_sections:
+      - safe_patterns       # Safe code alternatives
+      - edge_cases
+      - variations
+    file_extension: ".md"
+    template: |
+      # Patterns: {subcategory_name}
+
+      ## Vulnerable Pattern
+      ```solidity
+      {vulnerable_code}
+      ```
+
+      ## Safe Pattern
+      ```solidity
+      {safe_code}
+      ```
+
+  exploits:
+    description: "Real-world exploit references"
+    purpose: "Evidence-based analysis"
+    required_sections:
+      - exploit_list        # List of real exploits
+    optional_sections:
+      - attack_flows
+      - postmortems
+      - timeline
+    file_extension: ".md"
+    schema:
+      exploit_entry:
+        required_fields:
+          - name
+          - date
+          - description
+        optional_fields:
+          - loss_usd
+          - protocol
+          - chain
+          - tx_hash
+          - postmortem_url
+          - cve_id
+          - solodit_id
+
+  fixes:
+    description: "Remediation guidance"
+    purpose: "How to fix vulnerabilities"
+    required_sections:
+      - recommendations      # List of fix recommendations
+    optional_sections:
+      - code_examples
+      - effectiveness_matrix
+      - testing_guidance
+    file_extension: ".md"
+
+# =============================================================================
+# GRAPH SIGNAL SCHEMA
+# =============================================================================
+# Schema for detection signals based on VKG properties.
+
+graph_signal_schema:
+  required_fields:
+    - property              # VKG property name
+    - expected              # Expected value for vulnerability
+
+  optional_fields:
+    - critical              # Whether this signal is critical
+    - description           # Human-readable explanation
+    - confidence            # Signal confidence (0.0-1.0)
+
+  field_types:
+    property:
+      type: string
+      description: "VKG graph property name"
+      examples:
+        - state_write_after_external_call
+        - has_access_gate
+        - has_reentrancy_guard
+        - visibility
+        - writes_privileged_state
+
+    expected:
+      type: any
+      description: "Expected value when vulnerable"
+      examples:
+        - true
+        - false
+        - ["public", "external"]
+
+    critical:
+      type: boolean
+      default: false
+      description: "Critical signal - high weight in detection"
+
+    confidence:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+      default: 0.8
+      description: "Signal confidence level"
+
+# =============================================================================
+# NAVIGATION METADATA SCHEMA
+# =============================================================================
+# Metadata to help LLM agents navigate the knowledge hierarchy.
+
+navigation_schema:
+  index_metadata:
+    description: "Metadata included in index.yaml files"
+    fields:
+      - navigation_hints    # Tips for LLM navigation
+      - depth_options       # Available depth levels
+      - token_budgets       # Token estimates per depth
+      - related_categories  # Cross-references to related categories
+
+  navigation_hints:
+    type: array
+    items:
+      type: string
+    description: "Guidance for LLM agents"
+    examples:
+      - "Start with category index for broad search"
+      - "Use detection depth for pattern matching"
+      - "Exploits depth provides evidence-based context"
+
+  depth_options:
+    type: object
+    properties:
+      index:
+        description: "Category/subcategory names only"
+        token_estimate: 200
+      overview:
+        description: "High-level descriptions"
+        token_estimate: 500
+      detection:
+        description: "Graph signals and patterns"
+        token_estimate: 1000
+      patterns:
+        description: "Code pattern examples"
+        token_estimate: 1500
+      exploits:
+        description: "Real-world exploit references"
+        token_estimate: 1000
+      fixes:
+        description: "Remediation guidance"
+        token_estimate: 800
+      full:
+        description: "All available content"
+        token_estimate: 5000
+
+# =============================================================================
+# PROMPT CACHE MARKERS SCHEMA
+# =============================================================================
+# Schema for prompt caching integration.
+
+prompt_cache_schema:
+  description: "Markers for Anthropic/OpenAI prompt caching"
+
+  cache_control_types:
+    ephemeral:
+      description: "Cache for session duration"
+      use_case: "Stable system context"
+    static:
+      description: "Long-term cache"
+      use_case: "Knowledge that rarely changes"
+    none:
+      description: "No caching"
+      use_case: "Dynamic content"
+
+  cacheable_content:
+    layer_1:
+      name: "System Context"
+      content_type: "Navigation instructions + category index"
+      cache_type: "ephemeral"
+      token_estimate: 3000
+      stability: "high"
+
+    layer_2:
+      name: "Category Context"
+      content_type: "Category overview + subcategory index"
+      cache_type: "ephemeral"
+      token_estimate: 1500
+      stability: "medium"
+
+    layer_3:
+      name: "Subcategory Context"
+      content_type: "Detection + patterns + exploits + fixes"
+      cache_type: "none"
+      token_estimate: 1000
+      stability: "low"
+
+  cache_key_format:
+    pattern: "{category}-{subcategory}-{depth}-v{version}"
+    examples:
+      - "reentrancy-classic-detection-v1"
+      - "access-control-missing-modifier-full-v2"
+
+# =============================================================================
+# REAL-WORLD EXPLOIT REFERENCE SCHEMA
+# =============================================================================
+
+exploit_reference_schema:
+  required_fields:
+    - id                    # Unique exploit identifier
+    - name                  # Human-readable name (e.g., "The DAO Hack")
+    - date                  # ISO date format
+
+  optional_fields:
+    - loss_usd              # Dollar amount lost
+    - protocol              # Protocol name
+    - chain                 # Blockchain (ethereum, bsc, etc.)
+    - category              # VulnDocs category
+    - subcategory           # VulnDocs subcategory
+    - description           # Attack description
+    - attack_steps          # Step-by-step attack flow
+    - tx_hash               # Transaction hash
+    - postmortem_url        # Link to postmortem
+    - cve_id                # CVE identifier if assigned
+    - solodit_id            # Solodit vulnerability ID
+    - vulnerable_code_url   # Link to vulnerable code
+    - fixed_code_url        # Link to fix
+    - pattern_ids           # Related VKG pattern IDs
+
+# =============================================================================
+# PATTERN LINKAGE SCHEMA
+# =============================================================================
+# How VulnDocs links to pattern packs.
+
+pattern_linkage_schema:
+  description: "Links between VulnDocs and pattern packs in patterns/"
+
+  linkage_types:
+    exact_match:
+      description: "Pattern directly detects this vulnerability"
+      confidence: 0.95
+    partial_match:
+      description: "Pattern detects related vulnerability"
+      confidence: 0.70
+    theoretical:
+      description: "Pattern could detect with enhancement"
+      confidence: 0.50
+
+  linkage_entry:
+    required_fields:
+      - pattern_id          # Pattern pack ID (e.g., "vm-001")
+      - linkage_type        # exact_match, partial_match, theoretical
+    optional_fields:
+      - notes               # Additional context
+      - coverage            # What aspects the pattern covers
+
+# =============================================================================
+# VALIDATION RULES
+# =============================================================================
+
+validation_rules:
+  category:
+    - "id must be unique across all categories"
+    - "id must match pattern ^[a-z][a-z0-9-]*$"
+    - "name must be non-empty"
+    - "description must be non-empty"
+    - "severity_range must contain valid severity values"
+    - "subcategories must reference valid subcategory IDs"
+
+  subcategory:
+    - "id must be unique within parent category"
+    - "id must match pattern ^[a-z][a-z0-9-]*$"
+    - "parent_category must reference valid category"
+    - "patterns must reference valid pattern IDs"
+
+  document:
+    - "File must exist at expected path"
+    - "Required sections must be present"
+    - "Code blocks must be valid Solidity (when applicable)"
+
+  index:
+    - "version must follow semver format"
+    - "last_updated must be valid ISO date"
+    - "All referenced categories must exist"
+
+# =============================================================================
+# EXAMPLE STRUCTURES
+# =============================================================================
+
+examples:
+  category_index:
+    id: reentrancy
+    name: Reentrancy Vulnerabilities
+    description: Attacks exploiting callback mechanisms during external calls
+    severity_range: ["high", "critical"]
+    subcategories:
+      - id: classic
+        name: Classic Reentrancy
+        description: State write after external call
+        patterns: ["vm-001", "vm-002"]
+      - id: cross-function
+        name: Cross-Function Reentrancy
+        description: Reentrancy affecting multiple functions sharing state
+    relevant_properties:
+      - state_write_after_external_call
+      - has_reentrancy_guard
+      - external_call_sites
+      - state_variables_written
+    context_cache_key: "reentrancy-v1"
+    token_estimate: 1500
+
+  subcategory_full:
+    id: classic
+    name: Classic Reentrancy
+    description: |
+      State write after external call allows attacker to re-enter
+      before state is updated. The function reads a balance, makes
+      an external call (which can call back), then writes the balance.
+    parent_category: reentrancy
+    severity_range: ["high", "critical"]
+    patterns: ["vm-001", "vm-002"]
+    relevant_properties:
+      - state_write_after_external_call
+      - has_reentrancy_guard
+      - visibility
+    graph_signals:
+      - property: state_write_after_external_call
+        expected: true
+        critical: true
+      - property: has_reentrancy_guard
+        expected: false
+        critical: true
+      - property: visibility
+        expected: ["public", "external"]
+        critical: true
+    behavioral_signatures:
+      - "R:bal.*X:out.*W:bal"
+      - "R:bal.*X:call.*W:bal"
+    operation_sequences:
+      vulnerable:
+        - "R:bal -> X:out -> W:bal"
+        - "R:bal -> X:call -> W:bal"
+      safe:
+        - "R:bal -> W:bal -> X:out"
+    false_positive_indicators:
+      - "nonReentrant modifier present"
+      - "All state writes complete before external call"
+      - "External call is to trusted contract (hardcoded)"
+    token_estimate: 500
+
+  graph_signal:
+    property: state_write_after_external_call
+    expected: true
+    critical: true
+    description: "Function writes state after making external call"
+    confidence: 0.95
+
+  exploit_reference:
+    id: dao-hack
+    name: The DAO Hack
+    date: "2016-06-17"
+    loss_usd: "60000000"
+    protocol: The DAO
+    chain: ethereum
+    category: reentrancy
+    subcategory: classic
+    description: |
+      Attacker exploited reentrancy in splitDAO function to drain
+      approximately $60M worth of ETH by recursively calling withdraw
+      before balance was updated.
+    attack_steps:
+      - "1. Call splitDAO with malicious proposal"
+      - "2. Fallback function re-enters splitDAO"
+      - "3. Repeat until funds drained"
+    postmortem_url: "https://blog.ethereum.org/2016/06/17/critical-update-re-dao-vulnerability"
+    pattern_ids: ["vm-001"]

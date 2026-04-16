@@ -1,0 +1,22 @@
+# State Inconsistency - Subcategory Index
+
+id: state-inconsistency
+name: State Inconsistency
+parent_category: logic
+
+description: |
+  Related state variables becoming desynchronized due to partial
+  updates or error conditions.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - logic-003
+
+relevant_properties:
+  - state_variables_written
+  - has_revert_path
+
+token_estimate: 400

@@ -1,0 +1,57 @@
+workflow_id: skill-vrs-verify
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- coordination_quality
+- evidence_flow
+- verification_thoroughness
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: agents_spawned
+  description: Verification agents were spawned
+  expected_behavior: Task tool calls spawn attacker/defender/verifier roles
+  grader_type: code
+- id: evidence_routed
+  description: Evidence passed between verification agents
+  expected_behavior: SendMessage calls reference prior evidence between agents
+  grader_type: code
+- id: session_completed
+  description: Verification completed with verdict
+  expected_behavior: session_completed is true and response contains structured verdict
+  grader_type: code
+evidence_requirements:
+- type: transcript
+  description: Per-agent transcripts
+- type: graph_nodes
+  description: Graph evidence from verification
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Skill spawns attacker, defender, and verifier agents with clear
+  scope. Skill routes evidence from attacker to defender for rebuttal. Skill routes
+  both perspectives to verifier for independent arbitration. Skill ensures verifier
+  performs independent graph queries before rendering verdict. Skill synthesizes final
+  verdict from agent outputs with evidence chain.
+active_dimensions:
+- coordination_quality
+- evidence_flow
+- verification_thoroughness
+- task_delegation
+- consensus_quality
+- rubric_coverage
+- evidence_quality
+- arbitration_quality

@@ -1,0 +1,86 @@
+# TWAP Manipulation - Subcategory Index
+# Time-weighted average price oracle manipulation attacks
+
+id: twap-manipulation
+name: TWAP Manipulation
+parent_category: oracle
+
+description: |
+  Time-Weighted Average Price (TWAP) oracles average prices over time to resist
+  flash loan attacks. However, TWAP oracles can still be manipulated through
+  sustained trading over multiple blocks, short TWAP windows, or low liquidity
+  pools. Attackers may spend capital to move prices gradually, then exploit
+  protocols before the TWAP corrects.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - oracle-006
+  - oracle-007
+
+# VKG properties for detection
+relevant_properties:
+  - uses_twap_oracle
+  - twap_window_seconds
+  - twap_pool_liquidity
+  - reads_oracle_price
+  - external_call_sites
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: uses_twap_oracle
+    expected: true
+    critical: true
+    description: Function uses TWAP oracle for pricing
+
+  - property: twap_window_seconds
+    expected: "<1800"
+    critical: true
+    description: TWAP window too short (< 30 minutes)
+
+  - property: twap_pool_liquidity
+    expected: "low"
+    critical: false
+    description: TWAP source pool has low liquidity
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+# Behavioral signatures
+behavioral_signatures:
+  - "X:twap->C:price->W:state"
+  - "X:pool->R:cumulative->C:avg->W:collateral"
+  - "R:observations->C:twap->W:liquidation"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "READS_ORACLE(twap_short) -> MODIFIES_CRITICAL_STATE"
+    - "CALLS_EXTERNAL(low_liquidity_pool) -> READS_ORACLE -> MODIFIES_CRITICAL_STATE"
+  safe:
+    - "READS_ORACLE(twap_long) -> VALIDATES_BOUNDS -> MODIFIES_CRITICAL_STATE"
+    - "READS_ORACLE(twap) -> CROSS_VALIDATES(chainlink) -> MODIFIES_CRITICAL_STATE"
+
+# False positive indicators
+false_positive_indicators:
+  - "TWAP window >= 30 minutes"
+  - "High liquidity pool used as TWAP source"
+  - "Multiple oracle sources cross-validated"
+  - "Price bounds prevent extreme deviations"
+  - "Manipulation cost exceeds potential profit"
+
+# Related real-world exploits
+related_exploits:
+  - rari-fuse-twap
+  - harvest-finance
+  - indexed-finance
+
+# Token estimate for this subcategory
+token_estimate: 500

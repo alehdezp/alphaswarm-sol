@@ -1,0 +1,73 @@
+id: UC-DEF-002
+name: "Defender finds partial guard with bypass"
+workflow: vrs-defender
+category: agents
+tier: important
+
+input:
+  contract: "tests/contracts/MulticallBatchingNoGuard.sol"
+  command: "/vrs-audit tests/contracts/MulticallBatchingNoGuard.sol --agent defender"
+  context: >
+    MulticallBatchingNoGuard.sol has partial protection: some entry points
+    have access control or guards, but the multicall/batching function
+    bypasses those guards by allowing arbitrary delegatecall or internal
+    function calls. The defender must identify that while guards exist, they
+    are incomplete because the batching function provides a bypass path.
+
+expected_behavior:
+  summary: |
+    The defender agent should build a BSKG, find existing guards, but also
+    discover that the multicall/batching function provides a path that
+    bypasses those guards. The defense report should explain which guards
+    exist, which entry point bypasses them, and why the protection is
+    therefore incomplete.
+  must_happen:
+    - "Agent builds BSKG from MulticallBatchingNoGuard.sol"
+    - "Agent identifies existing guards or access control"
+    - "Agent discovers the multicall/batching bypass path"
+    - "Agent explains why the guard is incomplete (which entry point bypasses)"
+    - "Defense report distinguishes between guarded and unguarded paths"
+    - "Report rates the protection as partial or insufficient"
+  must_not_happen:
+    - "Agent claims full protection when a bypass exists"
+    - "Agent misses the existing guards entirely"
+    - "Agent reports only guards without checking for bypass paths"
+    - "Agent skips graph queries for entry point analysis"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 55
+  key_dimensions:
+    - name: guard_identification
+      description: "Did the defender find the existing guards?"
+    - name: bypass_detection
+      description: "Did the defender discover the multicall bypass path?"
+    - name: nuanced_assessment
+      description: "Did the report distinguish between guarded and unguarded paths?"
+    - name: graph_utilization
+      description: "Were BSKG queries used to trace entry points and guard coverage?"
+  regression_signals:
+    - "Defender claims full protection -> CRITICAL REGRESSION: bypass detection broken"
+    - "Defender misses all guards -> REGRESSION: guard detection broken"
+    - "No nuance in assessment (all-or-nothing) -> REGRESSION: assessment granularity lost"
+
+links:
+  workflow_doc: "docs/reference/graph-first-template.md"
+  test_contract: "tests/contracts/MulticallBatchingNoGuard.sol"
+  related_scenarios:
+    - "UC-DEF-001"
+    - "UC-VER-003"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier. Tests the defender's ability to give nuanced assessments
+  rather than binary safe/unsafe verdicts. This is harder than complete-guard
+  detection and critical for real-world utility.

@@ -1,0 +1,16 @@
+id: ext-027
+vulndoc: access-control/external-call
+name: Oracle Update Missing Rate Limit
+description: Oracle update functions without cooldown or rate limiting.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: has_oracle_update_rate_limit
+    op: eq
+    value: false

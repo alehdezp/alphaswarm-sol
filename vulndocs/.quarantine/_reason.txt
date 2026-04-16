@@ -1,0 +1,34 @@
+QUARANTINE: Patterns with implementable but missing builder properties
+======================================================================
+
+These 57 patterns are valid vulnerability detection patterns whose tier_a
+conditions reference properties that COULD be implemented in FunctionProcessor
+or ContractProcessor via Slither AST analysis, but currently are not emitted.
+
+Every pattern here has ALL its tier_a property conditions referencing
+non-existent builder properties, meaning the pattern ALWAYS returns zero
+findings -- it silently pretends to check for something it cannot detect.
+
+These patterns should be restored to active service once the referenced
+builder properties are implemented. See the orphan property list below.
+
+Moved: 2026-02-08 (Phase 2.1-04 Pattern Triage)
+
+Property categories needed:
+- ABI decode detection (uses_abi_decode, has_abi_decode_guard)
+- Calldata handling (uses_calldata_slice, has_calldata_length_check)
+- Array parameter analysis (has_multi_array_parameter, has_array_length_match)
+- Cast analysis (has_explicit_cast, cast_is_narrowing, signed_unsigned_cast_risk)
+- Opcode detection (uses_extcodesize, uses_extcodehash, uses_gasleft)
+- Merkle proof detection (uses_merkle_proof, merkle_leaf_domain_separated)
+- Oracle update detection (oracle_update_function, has_oracle_update_*)
+- Address validation (address_parameter_used_for_call, validates_contract_code)
+- Delegatecall context (delegatecall_context_sensitive, delegatecall_in_non_proxy)
+- Read-only reentrancy (read_only_reentrancy_surface)
+- Cross-chain detection (has_cross_chain_context, has_bridge_*_check)
+- Storage growth (array_growth_unbounded, mapping_growth_unbounded)
+- Access gate internals (access_gate_uses_*, access_control_weak_source)
+- Invariant detection (touches_invariant_unchecked, state_cleanup_missing)
+- Missing checks (missing_return_value_check, missing_amount_bounds)
+- Logic detection (override_missing_super, selfdestruct_target_user_controlled)
+- Event analysis (event_param_mismatch)

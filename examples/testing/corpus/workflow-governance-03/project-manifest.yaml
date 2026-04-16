@@ -1,0 +1,26 @@
+name: "workflow-governance-03"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "governance"
+tier: 1
+adversarial_categories: []
+pattern_count: 6
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/GovernorAlpha.sol"
+    - "contracts/periphery/VoteAggregator.sol"
+  safe:
+    - "contracts/core/GovernorAlpha_safe.sol"
+    - "contracts/periphery/VoteAggregator_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

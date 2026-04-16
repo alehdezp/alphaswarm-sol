@@ -1,0 +1,21 @@
+id: crypto-zero-address-check
+vulndoc: crypto/signature
+name: Missing Zero Address Validation in Signature Verification
+description: |
+  Detects signature verification without checking if ecrecover returned address(0).
+  Critical vulnerability: ecrecover returns address(0) for invalid signatures.
+  Without validation, anyone can execute functions on behalf of address(0).
+  Common pitfall in early signature verification implementations.
+  Impact: Complete bypass of signature verification for address(0) operations.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: uses_ecrecover
+      op: eq
+      value: true
+    - property: checks_zero_address
+      op: eq
+      value: false

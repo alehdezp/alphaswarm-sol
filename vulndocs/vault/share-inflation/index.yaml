@@ -1,0 +1,144 @@
+# Share Inflation Attack - ERC-4626
+# Subcategory: vault/share-inflation
+# Added: 2026-01-09
+
+id: share-inflation
+name: Share Inflation Attack
+category: vault
+
+description: |
+  Attack exploiting ERC-4626 vault share calculation where attacker
+  donates assets directly to vault (inflating totalAssets) without
+  receiving shares, causing subsequent depositors to receive zero
+  or minimal shares due to integer division rounding toward zero.
+
+severity: critical
+
+detection:
+  graph_signals:
+    - property: is_erc4626_vault
+      expected: true
+      critical: true
+    - property: has_virtual_offset
+      expected: false
+      critical: true
+      note: "Missing virtual offset makes vault vulnerable"
+    - property: has_dead_shares
+      expected: false
+      critical: true
+
+  operations:
+    vulnerable:
+      - READS_USER_BALANCE  # totalAssets()
+      - PERFORMS_DIVISION   # assets / totalSupply
+      - WRITES_USER_BALANCE
+    behavioral_signature: "R:bal->A:div->W:bal"
+
+  code_patterns:
+    vulnerable: |
+      // VULNERABLE: No virtual offset
+      function convertToShares(uint256 assets) public view returns (uint256) {
+          uint256 supply = totalSupply();
+          return supply == 0 ? assets : assets * supply / totalAssets();
+      }
+
+    safe: |
+      // SAFE: OpenZeppelin virtual offset pattern
+      function _convertToShares(uint256 assets, Math.Rounding rounding)
+          internal view returns (uint256) {
+          return assets.mulDiv(
+              totalSupply() + 10 ** _decimalsOffset(),
+              totalAssets() + 1,
+              rounding
+          );
+      }
+
+attack_mechanism:
+  preconditions:
+    - "Vault is empty or has very few shares"
+    - "No virtual offset or dead shares"
+    - "No minimum deposit requirement"
+
+  steps:
+    - step: 1
+      action: "Attacker deposits minimal amount (1 wei)"
+      result: "Receives 1 share (1:1 ratio)"
+
+    - step: 2
+      action: "Attacker donates large amount directly to vault"
+      result: "totalAssets increases, totalSupply stays at 1"
+
+    - step: 3
+      action: "Victim deposits assets"
+      result: "shares = assets * 1 / (1 + donation) = 0 (rounding)"
+
+    - step: 4
+      action: "Attacker redeems 1 share"
+      result: "Receives all assets including victim's deposit"
+
+  example_calculation: |
+    Initial: totalAssets=0, totalSupply=0
+    Step 1: Attacker deposits 1 wei -> 1 share (1:1)
+    Step 2: Attacker donates 1000 ETH -> totalAssets=1000 ETH + 1 wei
+    Step 3: Victim deposits 100 ETH
+            shares = 100 * 1 / (1000 + 1) = 0 (rounds down)
+    Step 4: Attacker redeems 1 share -> gets 1100 ETH
+
+exploits:
+  - name: "ResupplyFi Donation Attack"
+    date: "2025-06-26"
+    loss: "$9.8M"
+    chain: "Ethereum"
+    description: |
+      Attacker used $4K flash loan to donate to wstUSR vault.
+      Combined with zero exchange rate bug in _updateExchangeRate,
+      drained $9.8M via collateral manipulation.
+    tx: "0x..."
+    source: "SolidityScan"
+
+  - name: "Perennial Vault Inflation"
+    date: "2025"
+    loss: "Critical (pre-deployment)"
+    description: |
+      Zellic audit found critical inflation attack where attacker
+      could front-run first depositor to steal entire deposit.
+    source: "Zellic Audit"
+
+false_positive_indicators:
+  - "Uses OpenZeppelin ERC4626 with _decimalsOffset()"
+  - "Burns initial 'dead shares' to address(0)"
+  - "Has minimum deposit requirement > dust amount"
+  - "Uses virtual assets/shares in calculation"
+  - "Has time-weighted average pricing"
+
+fixes:
+  recommended:
+    - name: "Virtual Offset (OpenZeppelin)"
+      description: "Add virtual shares and assets to prevent manipulation"
+      code: |
+        function _decimalsOffset() internal view virtual returns (uint8) {
+            return 3;  // 10^3 virtual shares
+        }
+
+    - name: "Dead Shares"
+      description: "Burn initial shares to establish minimum value"
+      code: |
+        constructor() {
+            _mint(address(0), 1000);
+        }
+
+    - name: "Minimum Deposit"
+      description: "Require deposits above dust threshold"
+      code: |
+        require(assets >= MIN_DEPOSIT, "Below minimum");
+
+    - name: "Rounding Direction"
+      description: "Round in favor of vault on deposits, user on withdrawals"
+
+related_patterns:
+  - id: vault-001
+    name: "ERC-4626 Share Inflation"
+    status: ready
+
+context_cache_key: "vault-share-inflation-v1"
+token_estimate: 1500

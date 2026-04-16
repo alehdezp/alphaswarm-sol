@@ -1,0 +1,20 @@
+id: ext-005
+vulndoc: access-control/external-call
+name: L2 Sequencer Uptime Missing
+description: L2 oracle usage without sequencer uptime validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: l2_oracle_context
+    op: eq
+    value: true
+  none:
+  - property: has_sequencer_uptime_check
+    op: eq
+    value: true

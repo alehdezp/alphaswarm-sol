@@ -1,0 +1,74 @@
+# Governance policies for AlphaSwarm orchestration
+#
+# This configuration defines operational boundaries enforced by PolicyEnforcer:
+# - Cost budgets (hard/soft limits)
+# - Tool access restrictions per agent role
+# - Evidence integrity requirements
+# - Model usage policies
+#
+# See: src/alphaswarm_sol/governance/enforcer.py
+
+metadata:
+  version: "1.0"
+  description: "Runtime governance policies for multi-agent orchestration"
+  updated: "2026-01-29"
+
+policies:
+  # Cost budget enforcement
+  cost_budget:
+    hard_limit_usd: 10.0  # Maximum spend per pool (blocks if exceeded)
+    soft_limit_usd: 8.0   # Warning threshold (80% of hard limit)
+    enabled: true
+    block_on_exceed: true  # If false, logs warning instead of blocking
+
+  # Tool access restrictions
+  tool_access:
+    enabled: true
+    # Role-based tool restrictions (agent_type -> allowed tools)
+    role_restrictions:
+      vrs-attacker:
+        - slither
+        - mythril
+        - echidna
+        - bskg_query
+      vrs-defender:
+        - slither
+        - aderyn
+        - halmos
+        - bskg_query
+      vrs-verifier:
+        - bskg_query
+        - semgrep
+      vrs-secure-reviewer:
+        - slither
+        - bskg_query
+        - semgrep
+    # Tools forbidden for all agents
+    forbidden_tools:
+      - shell_exec  # No arbitrary shell execution
+      - file_write  # No direct file writes
+
+  # Evidence integrity requirements
+  evidence_integrity:
+    enabled: true
+    require_evidence_refs: true  # Block confidence upgrades without evidence
+    min_evidence_count: 1  # Minimum number of evidence refs required
+
+  # Model usage policies
+  model_usage:
+    enabled: true
+    # Tier restrictions by agent type
+    tier_restrictions:
+      vrs-attacker:
+        - opus    # High-tier for exploit construction
+        - sonnet
+      vrs-defender:
+        - sonnet  # Mid-tier for guard search
+        - haiku
+      vrs-verifier:
+        - opus    # High-tier for cross-check
+        - sonnet
+      cost-governor:
+        - haiku   # Low-tier for budget monitoring
+    # If specified, only these models allowed (overrides tier_restrictions)
+    allowed_models: []  # Empty = use tier_restrictions

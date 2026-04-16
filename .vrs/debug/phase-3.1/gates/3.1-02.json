@@ -1,0 +1,97 @@
+{
+  "plan_id": "3.1-02",
+  "status": "pass",
+  "started_at": "2026-02-11T17:02:32Z",
+  "ended_at": "2026-02-11T17:15:40Z",
+  "duration_ms": 788000,
+  "commands_executed": [
+    {
+      "command": "grep -ri 'tmux' src/alphaswarm_sol/ --include='*.py' --include='*.yaml'",
+      "result": "0 hits",
+      "status": "pass"
+    },
+    {
+      "command": "grep -ri 'tmux' configs/ --include='*.yaml'",
+      "result": "0 hits",
+      "status": "pass"
+    },
+    {
+      "command": "grep -ri 'jujutsu|jj-workspace' src/alphaswarm_sol/ --include='*.py'",
+      "result": "18 hits in active workspace infrastructure (not legacy)",
+      "status": "pass_with_note"
+    },
+    {
+      "command": "grep -ri 'MasterOrchestrator|AgenticRunner|self_improving_runner|tmux_harness|tmux_controller|tmux_cli_wrapper' .claude/skills/ .claude/agents/",
+      "result": "0 hits",
+      "status": "pass"
+    },
+    {
+      "command": "python -c \"import yaml; yaml.safe_load(open('configs/skill_tool_policies.yaml'))\"",
+      "result": "YAML parses OK",
+      "status": "pass"
+    },
+    {
+      "command": "python -c \"import yaml; data = yaml.safe_load(open('src/alphaswarm_sol/skills/registry.yaml')); print(f'{len(data.get(\"skills\", []))} skills')\"",
+      "result": "51 skills registered (down from 53: removed strict-audit and today-date)",
+      "status": "pass"
+    },
+    {
+      "command": "python -c \"import alphaswarm_sol.testing.workflow\"",
+      "result": "Import succeeds",
+      "status": "pass"
+    },
+    {
+      "command": "pytest tests/test_skills_package.py tests/workflow_harness/ -q",
+      "result": "107 passed",
+      "status": "pass"
+    }
+  ],
+  "assertions": [
+    {
+      "assertion": "Zero tmux references in src/alphaswarm_sol/ (.py, .yaml)",
+      "result": true
+    },
+    {
+      "assertion": "Zero tmux references in configs/ (.yaml)",
+      "result": true
+    },
+    {
+      "assertion": "skill_tool_policies.yaml parses as valid YAML",
+      "result": true
+    },
+    {
+      "assertion": "registry.yaml parses as valid YAML",
+      "result": true
+    },
+    {
+      "assertion": "All 51 registry skill entries have existing files on disk",
+      "result": true
+    },
+    {
+      "assertion": "workflow __init__.py imports only existing modules",
+      "result": true
+    },
+    {
+      "assertion": "Tests pass (107/107)",
+      "result": true
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "configs/skill_tool_policies.yaml",
+      "md5": "e010b95d58e38f97de83ad8ce00886e1"
+    },
+    {
+      "file": "src/alphaswarm_sol/skills/registry.yaml",
+      "md5": "c0ea90daaf148cb5e94a139b777e640c"
+    },
+    {
+      "file": "src/alphaswarm_sol/testing/workflow/__init__.py",
+      "md5": "96804bc6dc3e103e8cf4bd0c32e5ef26"
+    }
+  ],
+  "notes": {
+    "pre_existing_test_failures": "tests/agents/test_attacker_agent.py, tests/test_checkpoint.py, tests/test_session_state.py, tests/e2e/test_workflow_infrastructure.py have broken imports from modules deleted in prior work (testing.unit, testing.flexible, testing.corpus). Not caused by 3.1-02. Scope of 3.1-06.",
+    "jujutsu_references": "18 references to jujutsu in src/alphaswarm_sol/ are in ACTIVE workspace infrastructure (orchestration/workspace.py, testing/flexible/), not legacy."
+  }
+}

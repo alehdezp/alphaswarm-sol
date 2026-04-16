@@ -1,0 +1,835 @@
+- id: live-001
+  name: Unbounded Loop DoS
+  description: Unbounded loops with gas-intensive work.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: has_unbounded_loop
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+    any:
+      - property: external_calls_in_loop
+        op: eq
+        value: true
+      - property: has_delete_in_loop
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+
+- id: live-002
+  name: Block Gas Limit Exhaustion
+  description: External calls or unbounded deletions in loops.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+    any:
+      - property: external_calls_in_loop
+        op: eq
+        value: true
+      - property: has_unbounded_deletion
+        op: eq
+        value: true
+
+- id: live-003
+  name: Push Payment Griefing
+  description: Push payments without failure handling or pull alternative.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_push_payment
+        op: eq
+        value: true
+      - property: payment_recipient_controllable
+        op: eq
+        value: true
+    any:
+      - property: handles_transfer_failure
+        op: eq
+        value: false
+      - property: contract_has_withdraw
+        op: eq
+        value: false
+
+- id: live-004
+  name: Auction Griefing
+  description: Auction bids that refund prior bidders via push payments.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: is_auction_like
+        op: eq
+        value: true
+      - property: has_push_payment
+        op: eq
+        value: true
+    any:
+      - property: handles_transfer_failure
+        op: eq
+        value: false
+      - property: contract_has_withdraw
+        op: eq
+        value: false
+
+- id: live-005
+  name: Division by Zero
+  description: Division uses unvalidated divisor.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: uses_division
+        op: eq
+        value: true
+      - property: divisor_validated_nonzero
+        op: eq
+        value: false
+    any:
+      - property: divisor_source
+        op: contains_any
+        value: [parameter, storage, calculation]
+
+- id: live-006
+  name: Array Out of Bounds
+  description: Array access without index validation.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_array_parameter
+        op: eq
+        value: true
+      - property: has_array_index_check
+        op: eq
+        value: false
+
+- id: live-007
+  name: Assert Gas Consumption
+  description: Uses assert in public/external functions.
+  scope: Function
+  lens:
+    - Liveness
+  severity: low
+  match:
+    all:
+      - property: uses_assert
+        op: eq
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+
+- id: live-008
+  name: Storage Growth DoS
+  description: Unbounded storage growth in arrays or mappings.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: writes_state
+        op: eq
+        value: true
+      - property: has_user_input
+        op: eq
+        value: true
+      - property: has_access_gate
+        op: eq
+        value: false
+    any:
+      - property: array_growth_unbounded
+        op: eq
+        value: true
+      - property: mapping_growth_unbounded
+        op: eq
+        value: true
+      - property: storage_growth_operation
+        op: eq
+        value: true
+
+- id: live-009
+  name: Economic DoS via Fees
+  description: Fee parameters without bounds checks.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_fee_parameter
+        op: eq
+        value: true
+      - property: has_fee_bounds
+        op: eq
+        value: false
+      - property: writes_state
+        op: eq
+        value: true
+
+- id: live-010
+  name: Permanent Fund Lock
+  description: Funds can become permanently locked.
+  scope: Function
+  lens:
+    - Liveness
+  severity: critical
+  match:
+    all:
+      - property: locks_funds
+        op: eq
+        value: true
+    any:
+      - property: unlock_condition_external_dependent
+        op: eq
+        value: true
+      - property: unlock_condition_potentially_impossible
+        op: eq
+        value: true
+
+- id: live-011
+  name: Missing Emergency Recovery
+  description: Contract lacks emergency withdrawal or pause functions.
+  scope: Contract
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_emergency_withdraw
+        op: eq
+        value: false
+      - property: has_emergency_pause
+        op: eq
+        value: false
+      - property: has_privileged_operations
+        op: eq
+        value: true
+
+- id: live-012
+  name: External Call Cascade Failure
+  description: Multiple external calls without failure handling.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+    any:
+      - property: external_call_count
+        op: gte
+        value: 2
+      - property: low_level_call_count
+        op: gte
+        value: 2
+
+- id: live-013
+  name: Nested Loop Complexity
+  description: Nested loops with unbounded sources.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_nested_loop
+        op: eq
+        value: true
+      - property: loop_bound_sources
+        op: contains_any
+        value: [user_input, storage_length, unknown]
+      - property: has_require_bounds
+        op: eq
+        value: false
+      - property: visibility
+        op: in
+        value: [public, external]
+
+- id: live-014
+  name: Dynamic Gas Consumption
+  description: Gas usage scales with unbounded input.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: has_unbounded_loop
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+    any:
+      - property: writes_state
+        op: eq
+        value: true
+      - property: external_calls_in_loop
+        op: eq
+        value: true
+      - property: event_emission_in_loop
+        op: eq
+        value: true
+
+- id: live-015
+  name: Transaction Size Attacks
+  description: Single transaction processes entire storage arrays.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: loop_bound_sources
+        op: contains_any
+        value: [storage_length]
+      - property: has_pagination_parameter
+        op: eq
+        value: false
+      - property: writes_state
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+      - property: visibility
+        op: in
+        value: [public, external]
+
+- id: live-016
+  name: Batch Operation Limits
+  description: Batch operations without size caps.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+      - property: loop_bound_sources
+        op: contains_any
+        value: [user_input]
+      - property: has_pagination_parameter
+        op: eq
+        value: false
+      - property: has_require_bounds
+        op: eq
+        value: false
+    any:
+      - property: writes_state
+        op: eq
+        value: true
+      - property: external_calls_in_loop
+        op: eq
+        value: true
+
+- id: live-017
+  name: Unbounded Array Operations
+  description: Iteration over entire storage arrays without bounds.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: loop_bound_sources
+        op: contains_any
+        value: [storage_length]
+      - property: has_require_bounds
+        op: eq
+        value: false
+      - property: is_view
+        op: eq
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+
+- id: live-018
+  name: Unbounded Mapping Iterations
+  description: Loops that iterate over mapping-backed key sets.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: mapping_iteration_in_loop
+        op: eq
+        value: true
+      - property: has_unbounded_loop
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+      - property: writes_state
+        op: eq
+        value: true
+
+- id: live-019
+  name: Unbounded String or Bytes Operations
+  description: String/bytes operations without length checks.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_bytes_or_string_parameter
+        op: eq
+        value: true
+      - property: has_bytes_length_check
+        op: eq
+        value: false
+      - property: visibility
+        op: in
+        value: [public, external]
+    any:
+      - property: writes_state
+        op: eq
+        value: true
+      - property: allocates_memory_array_from_input
+        op: eq
+        value: true
+
+- id: live-020
+  name: Callback Griefing
+  description: External callback targets can revert and block execution.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_low_level_calls
+        op: eq
+        value: true
+      - property: call_target_user_controlled
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+      - property: has_try_catch
+        op: eq
+        value: false
+
+- id: live-021
+  name: State Manipulation Griefing
+  description: Time-based state changes without access control.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: time_based_access_control
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+      - property: has_access_gate
+        op: eq
+        value: false
+
+- id: live-022
+  name: External Call Dependency
+  description: Critical operations depend on unchecked external call success.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_low_level_calls
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+      - property: has_try_catch
+        op: eq
+        value: false
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+
+- id: live-023
+  name: External Call Gas Forwarding
+  description: Forwards gas to user-controlled external calls.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_call_with_gas
+        op: eq
+        value: true
+      - property: call_target_user_controlled
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+
+- id: live-024
+  name: Underflow or Overflow Reverts
+  description: Arithmetic without unchecked guards (pre-0.8).
+  scope: Function
+  lens:
+    - Liveness
+  severity: low
+  match:
+    all:
+      - property: uses_arithmetic
+        op: eq
+        value: true
+      - property: uses_unchecked_block
+        op: eq
+        value: false
+      - property: pre_08_arithmetic
+        op: eq
+        value: true
+
+- id: live-025
+  name: Storage Slot Exhaustion
+  description: Storage growth without limits.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: array_growth_unbounded
+        op: eq
+        value: true
+
+- id: live-026
+  name: Storage Cost Attacks
+  description: Unbounded loops with storage growth.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: mapping_growth_unbounded
+        op: eq
+        value: true
+
+- id: live-027
+  name: Storage Cleanup Failures
+  description: Unbounded deletion in loops.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: has_delete_in_loop
+        op: eq
+        value: true
+      - property: has_unbounded_deletion
+        op: eq
+        value: true
+
+- id: live-028
+  name: Economic Barrier DoS
+  description: Amount parameters lack bounds checks.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_threshold_parameter
+        op: eq
+        value: true
+      - property: has_threshold_check
+        op: eq
+        value: false
+      - property: writes_state
+        op: eq
+        value: true
+    any:
+      - property: is_deposit_like
+        op: eq
+        value: true
+      - property: is_withdraw_like
+        op: eq
+        value: true
+      - property: is_mint_like
+        op: eq
+        value: true
+      - property: is_burn_like
+        op: eq
+        value: true
+      - property: is_value_transfer
+        op: eq
+        value: true
+
+- id: live-029
+  name: Liquidity DoS
+  description: Liquidity-sensitive operations without safeguards.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    any:
+      - property: pool_reserves_used_for_collateral
+        op: eq
+        value: true
+      - property: balance_used_for_rewards
+        op: eq
+        value: true
+
+- id: live-030
+  name: State Transition Blocking
+  description: External calls can block state transitions.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_low_level_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+      - property: has_try_catch
+        op: eq
+        value: false
+
+- id: live-031
+  name: Pause Mechanism Issues
+  description: Pause checks without recovery paths.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_pause_check
+        op: eq
+        value: true
+      - property: contract_has_withdraw
+        op: eq
+        value: false
+      - property: contract_has_emergency_withdraw
+        op: eq
+        value: false
+
+- id: live-032
+  name: Deadline and Expiration DoS
+  description: Deadline parameters without future checks.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: has_deadline_parameter
+        op: eq
+        value: true
+      - property: has_deadline_future_check
+        op: eq
+        value: false
+
+- id: live-033
+  name: Memory Exhaustion
+  description: Memory allocation sized by user input.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: allocates_memory_array_from_input
+        op: eq
+        value: true
+      - property: has_amount_bounds
+        op: eq
+        value: false
+      - property: has_require_bounds
+        op: eq
+        value: false
+      - property: visibility
+        op: in
+        value: [public, external]
+
+- id: live-034
+  name: Calldata or Stack Exhaustion
+  description: Calldata slicing without bounds or recursive calls.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    any:
+      - property: calldata_slice_without_check
+        op: eq
+        value: true
+      - property: recursive_call_without_guard
+        op: eq
+        value: true
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+
+- id: live-035
+  name: Event Log Exhaustion
+  description: Event emission inside loops.
+  scope: Function
+  lens:
+    - Liveness
+  severity: low
+  match:
+    all:
+      - property: event_emission_in_loop
+        op: eq
+        value: true
+      - property: has_unbounded_loop
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+
+- id: live-036
+  name: Conditional Unlock Failures
+  description: Unlock paths are potentially impossible.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: locks_funds
+        op: eq
+        value: true
+      - property: unlock_condition_potentially_impossible
+        op: eq
+        value: true
+
+- id: live-037
+  name: Time Lock Issues
+  description: Timelock parameters without bounds.
+  scope: Function
+  lens:
+    - Liveness
+  severity: medium
+  match:
+    all:
+      - property: time_lock_overflow_risk
+        op: eq
+        value: true
+
+- id: live-038
+  name: Broken Recovery Mechanisms
+  description: Emergency functions rely on unchecked external calls.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: is_emergency_function
+        op: eq
+        value: true
+      - property: has_low_level_calls
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+      - property: has_try_catch
+        op: eq
+        value: false
+
+- id: live-039
+  name: Admin Recovery Risks
+  description: Emergency recovery can drain user funds.
+  scope: Function
+  lens:
+    - Liveness
+  severity: high
+  match:
+    all:
+      - property: is_emergency_function
+        op: eq
+        value: true
+      - property: can_affect_user_funds
+        op: eq
+        value: true
+      - property: has_access_gate
+        op: eq
+        value: true
+      - property: contract_has_timelock
+        op: eq
+        value: false
+      - property: contract_has_multisig
+        op: eq
+        value: false

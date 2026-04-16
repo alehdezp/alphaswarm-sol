@@ -1,0 +1,24 @@
+id: logic-006
+vulndoc: logic/general
+name: Unprotected Selfdestruct
+description: Selfdestruct callable without access control.
+scope: Function
+lens:
+- LogicState
+severity: critical
+cwe:
+- 749
+match:
+  all:
+  - property: uses_selfdestruct
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  none:
+  - property: has_access_gate
+    op: eq
+    value: true

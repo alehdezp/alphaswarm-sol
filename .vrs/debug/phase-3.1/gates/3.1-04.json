@@ -1,0 +1,116 @@
+{
+  "plan_id": "3.1-04",
+  "status": "PASS",
+  "started_at": "2026-02-11T17:36:30Z",
+  "ended_at": "2026-02-11T17:45:00Z",
+  "duration_ms": 510000,
+  "commands_executed": [
+    {
+      "command": "cp RULES-ESSENTIAL.md .planning/archive/testing-rules/legacy/RULES-ESSENTIAL.md.bak",
+      "purpose": "Archive original before rewrite",
+      "result": "Success - byte-identical copy"
+    },
+    {
+      "command": "cp VALIDATION-RULES.md .planning/archive/testing-rules/legacy/VALIDATION-RULES.md.bak",
+      "purpose": "Archive original before rewrite",
+      "result": "Success - byte-identical copy"
+    },
+    {
+      "command": "diff RULES-ESSENTIAL.md RULES-ESSENTIAL.md.bak",
+      "purpose": "Verify archive is byte-identical",
+      "result": "IDENTICAL"
+    },
+    {
+      "command": "diff VALIDATION-RULES.md VALIDATION-RULES.md.bak",
+      "purpose": "Verify archive is byte-identical",
+      "result": "IDENTICAL"
+    },
+    {
+      "command": "grep -ri 'tmux|jujutsu' RULES-ESSENTIAL.md",
+      "purpose": "Verify zero legacy references",
+      "result": "0 hits"
+    },
+    {
+      "command": "grep -ri 'tmux|jujutsu' VALIDATION-RULES.md",
+      "purpose": "Verify zero legacy references",
+      "result": "0 hits"
+    },
+    {
+      "command": "grep -c 'TeamCreate|SendMessage|TaskCreate' RULES-ESSENTIAL.md",
+      "purpose": "Verify Agent Teams pattern references",
+      "result": "12 hits"
+    },
+    {
+      "command": "grep -c 'nonce|hash|duration.*5' VALIDATION-RULES.md",
+      "purpose": "Verify anti-fabrication substance preserved",
+      "result": "8 hits (>= 3 required)"
+    },
+    {
+      "command": "unique rule ID count across both files",
+      "purpose": "Verify rule count in [12, 18]",
+      "result": "15 unique IDs"
+    }
+  ],
+  "assertions": [
+    {
+      "id": "legacy-zero",
+      "description": "Zero legacy infrastructure references (tmux, jujutsu) in both files",
+      "status": "PASS",
+      "evidence": "grep returns 0 hits for both files"
+    },
+    {
+      "id": "rule-count",
+      "description": "Total unique rule IDs in range [12, 18]",
+      "status": "PASS",
+      "evidence": "15 unique IDs: EXEC-INTEGRITY, TRANSCRIPT-AUTH, METRICS-REALISM, GROUND-TRUTH, REPORT-INTEGRITY, DURATION-BOUNDS, EVIDENCE-CHAIN, GATE-INTEGRITY, ISOLATION, SESSION-NAMING, ARTIFACT-PROD, ARTIFACT-DEP, WAVE-GATE, TIER-C-GATING, INFRA-USAGE"
+    },
+    {
+      "id": "agent-teams-patterns",
+      "description": "Rules reference TeamCreate, SendMessage, TaskCreate",
+      "status": "PASS",
+      "evidence": "12 references to Agent Teams patterns in RULES-ESSENTIAL.md"
+    },
+    {
+      "id": "anti-fabrication-preserved",
+      "description": "Anti-fabrication substance preserved (nonce, hash, duration, evidence)",
+      "status": "PASS",
+      "evidence": "8 hits for nonce/hash/duration in VALIDATION-RULES.md"
+    },
+    {
+      "id": "archives-identical",
+      "description": "Archives are byte-identical to pre-rewrite originals",
+      "status": "PASS",
+      "evidence": "diff shows zero differences for both files"
+    },
+    {
+      "id": "shared-namespace",
+      "description": "Both files share the same rule ID namespace",
+      "status": "PASS",
+      "evidence": "All 15 IDs from RULES-ESSENTIAL.md registry appear in VALIDATION-RULES.md cross-reference table"
+    },
+    {
+      "id": "enforcement-mapping",
+      "description": "Every rule category maps to an enforcement mechanism",
+      "status": "PASS",
+      "evidence": "Rule ID Registry table has non-empty Enforcement Mechanism column for all 15 rows"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".planning/testing/rules/canonical/RULES-ESSENTIAL.md",
+      "sha256": "8e8910443608cc5c9cd9197bcd08b17843d33975f33a0d49e6fd1de13b3c319f"
+    },
+    {
+      "path": ".planning/testing/rules/canonical/VALIDATION-RULES.md",
+      "sha256": "155e073d1cf084703d0cff0d62ef1fd6a7a3e18a61abca6bf96b85cb661245bb"
+    },
+    {
+      "path": ".planning/archive/testing-rules/legacy/RULES-ESSENTIAL.md.bak",
+      "sha256": "22de640d05aa5bc8178b767fa48d317ea65766aaadb1f1bc82aa4ce424326285"
+    },
+    {
+      "path": ".planning/archive/testing-rules/legacy/VALIDATION-RULES.md.bak",
+      "sha256": "69791fd89c0574e9651c46227fd2c510e5fde5707bd24041ea17e06c20cd985f"
+    }
+  ]
+}

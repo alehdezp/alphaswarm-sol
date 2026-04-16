@@ -1,0 +1,20 @@
+id: initializer-no-gate
+vulndoc: access-control/unprotected-functions
+name: Initializer Without Access Gate
+description: Initializer-like functions callable publicly without access control.
+scope: Function
+lens:
+  - Upgradeability
+  - Authority
+severity: high
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: has_access_gate
+      op: eq
+      value: false
+    - property: is_initializer_function
+      op: eq
+      value: true

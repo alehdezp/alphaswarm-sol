@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alphaswarm.sol/schemas/evaluation-contract.schema.json",
+  "title": "Evaluation Contract",
+  "description": "Schema for evaluation contracts that define capability checks, reasoning dimensions, and evidence requirements for workflow testing. Hardened in Plan 06: evaluation_config required with 4 sub-fields, additionalProperties: false at root and metadata.",
+  "type": "object",
+  "required": [
+    "workflow_id",
+    "category",
+    "rule_refs",
+    "capability_checks",
+    "grader_type",
+    "evaluation_config",
+    "hooks",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "Unique identifier for the workflow under test (e.g., 'skill-vrs-audit', 'agent-vrs-attacker').",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "description": "Category of the workflow being evaluated.",
+      "enum": ["skill", "agent", "orchestrator"]
+    },
+    "rule_refs": {
+      "type": "array",
+      "description": "References to stable rule IDs from the rules registry (e.g., 'EXEC-INTEGRITY', 'GROUND-TRUTH').",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9-]+$"
+      },
+      "minItems": 1
+    },
+    "capability_checks": {
+      "type": "array",
+      "description": "Specific capabilities to verify during evaluation.",
+      "items": {
+        "$ref": "#/definitions/capability_check"
+      },
+      "minItems": 1
+    },
+    "reasoning_dimensions": {
+      "type": "array",
+      "description": "Trajectory dimensions to assess in the workflow (e.g., 'graph_utilization', 'evidence_quality').",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_requirements": {
+      "type": "array",
+      "description": "Types of evidence the workflow must produce.",
+      "items": {
+        "$ref": "#/definitions/evidence_requirement"
+      }
+    },
+    "grader_type": {
+      "type": "string",
+      "description": "Overall grading approach for this evaluation contract.",
+      "enum": ["code", "model", "hybrid"]
+    },
+    "evaluation_config": {
+      "type": "object",
+      "description": "Evaluation pipeline configuration for this contract. All 4 sub-fields are required.",
+      "required": ["run_gvs", "run_reasoning", "debrief", "depth"],
+      "properties": {
+        "run_gvs": {
+          "type": "boolean",
+          "description": "Whether to run Graph Value Scoring."
+        },
+        "run_reasoning": {
+          "type": "boolean",
+          "description": "Whether to run LLM reasoning evaluation."
+        },
+        "debrief": {
+          "type": "boolean",
+          "description": "Whether to run agent debrief."
+        },
+        "depth": {
+          "type": "string",
+          "description": "Evaluation depth.",
+          "enum": ["shallow", "standard", "deep"]
+        },
+        "debate_enabled": {
+          "type": "boolean",
+          "description": "Whether to enable evaluator debate protocol for this workflow.",
+          "default": false
+        },
+        "run_mode": {
+          "type": "string",
+          "description": "Override default run mode for this contract (tier default if absent).",
+          "enum": ["simulated", "headless", "interactive"]
+        },
+        "debrief_wait_seconds": {
+          "type": "integer",
+          "description": "Max seconds to wait for debrief response before dead-agent detection.",
+          "minimum": 0,
+          "default": 30
+        },
+        "debrief_layer_weight": {
+          "type": "number",
+          "description": "Weight for debrief layer in scoring (0.0-1.0, default 1.0).",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 1.0
+        }
+      },
+      "additionalProperties": false
+    },
+    "hooks": {
+      "type": "array",
+      "description": "Claude Code hook lifecycle events this contract requires.",
+      "items": {
+        "type": "string",
+        "enum": [
+          "PreToolUse",
+          "PostToolUse",
+          "PostToolUseFailure",
+          "PermissionRequest",
+          "SubagentStart",
+          "SubagentStop",
+          "Stop",
+          "SessionStart",
+          "PreCompact",
+          "SessionEnd",
+          "UserPromptSubmit",
+          "Notification",
+          "TeammateIdle",
+          "TaskCompleted"
+        ]
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Contract authoring status: active (fully authored) or stub (template-derived placeholder).",
+      "enum": ["active", "stub"]
+    },
+    "coverage_axes": {
+      "type": "array",
+      "description": "Coverage radar axes this contract contributes to (e.g., 'vulnerability_class', 'semantic_operation').",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "ground_truth_rubric": {
+      "type": "string",
+      "description": "Prose describing expected reasoning process steps. MUST describe process, NOT detection outcomes. Core contracts SHOULD include this.",
+      "minLength": 1
+    },
+    "active_dimensions": {
+      "type": "array",
+      "description": "Whitelist of dimension names to evaluate for this contract. Unlisted dimensions default to applicable=False.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional context for the evaluation. evaluation_depth is DEPRECATED — use evaluation_config.depth instead.",
+      "additionalProperties": false,
+      "properties": {
+        "tier": {
+          "type": "string",
+          "description": "Testing tier for this workflow.",
+          "enum": ["core", "important", "standard"]
+        },
+        "model_tier": {
+          "type": "string",
+          "description": "Default model tier for this workflow.",
+          "enum": ["opus", "sonnet", "haiku"]
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes about this contract."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "capability_check": {
+      "type": "object",
+      "required": ["id", "description", "expected_behavior", "grader_type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Machine-readable check identifier.",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of what to verify.",
+          "minLength": 1
+        },
+        "expected_behavior": {
+          "type": "string",
+          "description": "Observable outcome that indicates success.",
+          "minLength": 1
+        },
+        "grader_type": {
+          "type": "string",
+          "description": "How to evaluate this check.",
+          "enum": ["code", "model"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence_requirement": {
+      "type": "object",
+      "required": ["type", "description"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Kind of evidence required.",
+          "enum": ["transcript", "graph_nodes", "code_locations", "tool_output"]
+        },
+        "description": {
+          "type": "string",
+          "description": "What this evidence should contain.",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,31 @@
+id: live-015
+vulndoc: dos/general
+name: Transaction Size Attacks
+description: Single transaction processes entire storage arrays.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: loop_bound_sources
+    op: contains_any
+    value:
+    - storage_length
+  - property: has_pagination_parameter
+    op: eq
+    value: false
+  - property: writes_state
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

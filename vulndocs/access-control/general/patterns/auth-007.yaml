@@ -1,0 +1,19 @@
+id: auth-007
+vulndoc: access-control/general
+name: Privilege Escalation Path
+description: Role changes with self-modification and no access gate.
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: has_role_grant
+    op: eq
+    value: true
+  - property: allows_self_modification
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

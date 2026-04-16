@@ -1,0 +1,28 @@
+id: live-019
+vulndoc: dos/general
+name: Unbounded String or Bytes Operations
+description: String/bytes operations without length checks.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_bytes_or_string_parameter
+    op: eq
+    value: true
+  - property: has_bytes_length_check
+    op: eq
+    value: false
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  any:
+  - property: writes_state
+    op: eq
+    value: true
+  - property: allocates_memory_array_from_input
+    op: eq
+    value: true

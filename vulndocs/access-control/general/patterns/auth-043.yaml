@@ -1,0 +1,13 @@
+id: auth-043
+vulndoc: access-control/general
+name: Time-Based Access Control
+description: Access control uses block.timestamp checks.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: time_based_access_control
+    op: eq
+    value: true

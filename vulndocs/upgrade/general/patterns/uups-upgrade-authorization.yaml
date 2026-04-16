@@ -1,0 +1,24 @@
+id: uups-upgrade-authorization
+vulndoc: upgrade/general
+name: UUPS Upgrade Authorization Missing
+description: UUPS upgrade functions missing access control checks.
+scope: Function
+lens:
+- Upgradeability
+severity: high
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_is_uups_proxy
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: has_access_control
+    op: eq
+    value: false

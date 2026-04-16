@@ -1,0 +1,100 @@
+project:
+  name: yield-aggregator-03
+  theme: vault
+  tier: 2
+  adversarial_categories:
+  - A
+  description: 'Multi-strategy yield aggregator with capital allocation. Category
+    A: A1 + A4 obfuscation.'
+findings:
+- pattern_id: balance-update-after-transfer
+  contract: YieldRouter
+  function: reclaimCapital
+  line_range: 52-64
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  - A4-variable-aliasing
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: payout}'
+  - Notice userShares update at line 61 occurs AFTER external call
+  - Variable aliasing via cached/tempDeposits/tempShares obscures data flow
+  - 'Conclude: reentrancy with aliased variable obfuscation'
+- pattern_id: dos-unbounded-loop
+  contract: YieldRouter
+  function: harvestAllYields
+  line_range: 68-81
+  severity: medium
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify for loop iterating up to strategyCount
+  - No upper bound on strategyCount
+  - Each iteration makes external call to strategy vault
+  - 'Conclude: DoS if too many strategies registered'
+- pattern_id: auth-001
+  contract: YieldRouter
+  function: registerStrategy
+  line_range: 84-87
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify registerStrategy adds a new vault to strategies
+  - No access control modifier or msg.sender check
+  - Attacker can register malicious vault to steal harvested funds
+  - 'Conclude: missing access control on strategy registration'
+- pattern_id: auth-002
+  contract: YieldRouter
+  function: recoverFunds
+  line_range: 96-99
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify recoverFunds sends arbitrary amount to arbitrary address
+  - No access control present
+  - Anyone can drain the entire contract
+  - 'Conclude: missing access control on emergency withdrawal'
+- pattern_id: auth-004
+  contract: YieldRouter
+  function: rotateStrategist
+  line_range: 102-104
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify rotateStrategist changes strategist address
+  - No access control - anyone can become strategist
+  - Strategist has deactivateStrategy power
+  - 'Conclude: missing access control on admin role transfer'
+- pattern_id: dos-user-controlled-batch
+  contract: YieldRouter
+  function: harvestAllYields
+  line_range: 68-81
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify harvestAllYields loops from 0 to strategyCount, calling s.vault.call(harvest()) on each active strategy
+  - strategyCount is incremented by registerStrategy which has no access control
+  - Attacker can register hundreds of strategies pointing to contracts that consume maximum gas
+  - The loop must complete all iterations in a single transaction — exceeds block gas limit
+  - 'Conclude: attacker inflates strategyCount via unprotected registerStrategy, making harvestAllYields exceed gas limit'
+- pattern_id: attacker-controlled-write
+  contract: YieldRouter
+  function: registerStrategy
+  line_range: 84-87
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify registerStrategy writes to strategies[strategyCount] with caller-supplied vault address and allocation
+  - No access control — anyone can call registerStrategy, not just the strategist
+  - Attacker registers a malicious vault contract that returns inflated yield values from harvest()
+  - harvestAllYields adds decoded yield to totalDeposits, inflating share prices for the attacker
+  - 'Conclude: unprotected registerStrategy allows attacker to inject malicious vault that manipulates totalDeposits via fake harvest returns'
+safe_patterns: []
+summary:
+  total_findings: 7
+  total_safe_patterns: 0
+  difficulty: medium
+  notes: Category A obfuscation with variable aliasing (A4) on reentrancy

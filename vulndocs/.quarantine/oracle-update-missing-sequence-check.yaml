@@ -1,0 +1,16 @@
+id: oracle-update-missing-sequence-check
+vulndoc: oracle/freshness
+name: Oracle Update Missing Sequence Check
+description: Oracle update functions without sequence/nonce checks risk replayed or reordered updates.
+scope: Function
+lens:
+  - Oracle
+severity: medium
+match:
+  all:
+    - property: oracle_update_function
+      op: eq
+      value: true
+    - property: has_oracle_update_sequence_check
+      op: eq
+      value: false

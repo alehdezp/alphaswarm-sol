@@ -1,0 +1,77 @@
+{
+  "description": "Expected protocol context for Vault contract",
+  "validation_rules": [
+    {
+      "check": "protocol_type",
+      "expected_values": ["vault", "custody", "storage", "defi"],
+      "reason": "Contract is a simple ETH vault with deposit/withdraw"
+    },
+    {
+      "check": "roles_present",
+      "expected_roles": ["owner", "user"],
+      "reason": "Contract has owner (admin) and user (depositor) roles"
+    },
+    {
+      "check": "assumptions",
+      "expected_contains": [
+        "owner is trusted",
+        "users manage own funds"
+      ],
+      "reason": "Basic vault trust assumptions"
+    }
+  ],
+  "optional_checks": [
+    {
+      "check": "oracles",
+      "expected": "none",
+      "reason": "No external price feeds in this simple vault"
+    },
+    {
+      "check": "similar_exploits",
+      "expected": "vault/reentrancy exploits",
+      "reason": "Exa should find similar vault exploits"
+    }
+  ],
+  "context_structure": {
+    "required_fields": [
+      "protocol_type",
+      "roles"
+    ],
+    "optional_fields": [
+      "oracles",
+      "assumptions",
+      "invariants",
+      "economic_model",
+      "similar_exploits",
+      "external_dependencies",
+      "trust_model"
+    ]
+  },
+  "ground_truth": {
+    "protocol_type": "vault",
+    "description": "Simple ETH vault allowing deposits and withdrawals",
+    "roles": [
+      {
+        "name": "owner",
+        "description": "Contract admin with emergency withdraw capability",
+        "permissions": ["emergencyWithdraw", "transferOwnership", "pause"]
+      },
+      {
+        "name": "user",
+        "description": "Regular user who can deposit and withdraw their funds",
+        "permissions": ["deposit", "withdraw", "safeWithdraw"]
+      }
+    ],
+    "trust_assumptions": [
+      "Owner is trusted to not abuse emergency functions",
+      "Users are responsible for securing their own addresses",
+      "Contract relies on ETH transfer success"
+    ],
+    "oracles": [],
+    "external_dependencies": [],
+    "known_vulnerabilities": [
+      "withdraw() is vulnerable to reentrancy",
+      "setOwner() has no access control"
+    ]
+  }
+}

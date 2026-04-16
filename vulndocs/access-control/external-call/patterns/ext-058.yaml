@@ -1,0 +1,19 @@
+id: ext-058
+vulndoc: access-control/external-call
+name: L2 Timestamp Manipulation Risk
+description: L2 oracle context uses block.timestamp without finality checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: l2_oracle_context
+    op: eq
+    value: true
+  - property: uses_block_timestamp
+    op: eq
+    value: true
+  - property: has_l2_finality_check
+    op: eq
+    value: false

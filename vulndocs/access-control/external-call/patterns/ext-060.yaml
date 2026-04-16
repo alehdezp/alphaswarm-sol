@@ -1,0 +1,16 @@
+id: ext-060
+vulndoc: access-control/external-call
+name: Oracle Aggregation Min Sources Missing
+description: Aggregation without enforcing a minimum number of sources.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_min_source_count
+    op: eq
+    value: false

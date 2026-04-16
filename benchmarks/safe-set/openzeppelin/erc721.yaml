@@ -1,0 +1,25 @@
+# OpenZeppelin ERC721
+id: oz-erc721
+name: OpenZeppelin ERC721
+category: openzeppelin
+source: "@openzeppelin/contracts/token/ERC721/ERC721.sol"
+version: "5.0.x"
+
+contract_info:
+  description: |
+    OpenZeppelin's reference ERC721 implementation.
+    Industry standard NFT implementation.
+  deployed_since: 2020
+  tvl_or_usage: "Billions USD in NFT value"
+  audit_sources:
+    - OpenZeppelin Internal
+    - Multiple community audits
+
+expected_findings: []
+
+false_positive_categories:
+  - token-*
+  - erc721-*
+  - nft-*
+
+status: validated

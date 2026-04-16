@@ -1,0 +1,16 @@
+id: auth-034
+vulndoc: access-control/general
+name: Timelock Delay Zero
+description: Timelock delay configured to zero.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_timelock
+    op: eq
+    value: true
+  - property: timelock_delay_zero
+    op: eq
+    value: true

@@ -1,0 +1,16 @@
+id: value-movement-value-forwarding
+vulndoc: reentrancy/general
+name: User-Controlled Value Forwarding
+description: Value forwarded from user-controlled source.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: has_call_with_value
+    op: eq
+    value: true
+  - property: call_value_user_controlled
+    op: eq
+    value: true

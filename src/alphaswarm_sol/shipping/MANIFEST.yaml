@@ -1,0 +1,335 @@
+# Shipping Manifest - AlphaSwarm.sol
+# Authoritative inventory of all shipped skills and agents.
+# Generated: 2026-02-11 | Phase: 3.1-03
+# Verified against filesystem: ls shipping/skills/*.md = 30, ls shipping/agents/*.md = 21
+
+manifest:
+  version: "3.1"
+  generated_at: "2026-02-11"
+  counts:
+    skills: 30
+    agents: 21
+
+  skills:
+    # --- Audit & Investigation (core) ---
+    - id: audit
+      name: "Full Audit Execution"
+      path: "src/alphaswarm_sol/shipping/skills/audit.md"
+      category: audit
+      tier: core
+
+    - id: investigate
+      name: "Deep Vulnerability Investigation"
+      path: "src/alphaswarm_sol/shipping/skills/investigate.md"
+      category: audit
+      tier: core
+
+    - id: verify
+      name: "Multi-Agent Verification"
+      path: "src/alphaswarm_sol/shipping/skills/verify.md"
+      category: audit
+      tier: core
+
+    - id: debate
+      name: "Structured Adversarial Debate"
+      path: "src/alphaswarm_sol/shipping/skills/debate.md"
+      category: audit
+      tier: core
+
+    - id: evidence-audit
+      name: "Evidence Audit"
+      path: "src/alphaswarm_sol/shipping/skills/evidence-audit.md"
+      category: audit
+      tier: support
+
+    # --- Beads (orchestration units) ---
+    - id: bead-create
+      name: "Create Investigation Bead"
+      path: "src/alphaswarm_sol/shipping/skills/bead-create.md"
+      category: beads
+      tier: core
+
+    - id: bead-list
+      name: "List/Filter Beads"
+      path: "src/alphaswarm_sol/shipping/skills/bead-list.md"
+      category: beads
+      tier: core
+
+    - id: bead-update
+      name: "Update Bead Status"
+      path: "src/alphaswarm_sol/shipping/skills/bead-update.md"
+      category: beads
+      tier: core
+
+    # --- Orchestration ---
+    - id: orch-spawn
+      name: "Spawn Worker Subagent"
+      path: "src/alphaswarm_sol/shipping/skills/orch-spawn.md"
+      category: orchestration
+      tier: core
+
+    - id: orch-resume
+      name: "Resume Interrupted Work"
+      path: "src/alphaswarm_sol/shipping/skills/orch-resume.md"
+      category: orchestration
+      tier: core
+
+    # --- Graph & Context ---
+    - id: context-pack
+      name: "Build Pattern Context Pack"
+      path: "src/alphaswarm_sol/shipping/skills/context-pack.md"
+      category: graph
+      tier: support
+
+    - id: graph-contract-validate
+      name: "Graph Interface v2 Validation"
+      path: "src/alphaswarm_sol/shipping/skills/graph-contract-validate.md"
+      category: graph
+      tier: support
+
+    - id: slice-unify
+      name: "Unified Slicing"
+      path: "src/alphaswarm_sol/shipping/skills/slice-unify.md"
+      category: graph
+      tier: support
+
+    - id: taint-extend
+      name: "Taint Extension Analysis"
+      path: "src/alphaswarm_sol/shipping/skills/taint-extend.md"
+      category: graph
+      tier: support
+
+    - id: ordering-proof
+      name: "Operation Ordering Proof"
+      path: "src/alphaswarm_sol/shipping/skills/ordering-proof.md"
+      category: graph
+      tier: support
+
+    # --- Pattern Discovery ---
+    - id: pattern-batch
+      name: "Batch Pattern Discovery"
+      path: "src/alphaswarm_sol/shipping/skills/pattern-batch.md"
+      category: patterns
+      tier: core
+
+    - id: pattern-verify
+      name: "Pattern Verification"
+      path: "src/alphaswarm_sol/shipping/skills/pattern-verify.md"
+      category: patterns
+      tier: core
+
+    # --- External Tools ---
+    - id: tool-slither
+      name: "Run Slither Analysis"
+      path: "src/alphaswarm_sol/shipping/skills/tool-slither.md"
+      category: tools
+      tier: core
+
+    - id: tool-aderyn
+      name: "Run Aderyn Analysis"
+      path: "src/alphaswarm_sol/shipping/skills/tool-aderyn.md"
+      category: tools
+      tier: core
+
+    - id: tool-mythril
+      name: "Run Mythril Symbolic Execution"
+      path: "src/alphaswarm_sol/shipping/skills/tool-mythril.md"
+      category: tools
+      tier: core
+
+    - id: tool-coordinator
+      name: "Tool Execution Strategy"
+      path: "src/alphaswarm_sol/shipping/skills/tool-coordinator.md"
+      category: tools
+      tier: support
+
+    # --- Testing ---
+    - id: test-full
+      name: "Full Test Orchestration"
+      path: "src/alphaswarm_sol/shipping/skills/test-full.md"
+      category: testing
+      tier: support
+
+    - id: test-quick
+      name: "Quick Smoke Test"
+      path: "src/alphaswarm_sol/shipping/skills/test-quick.md"
+      category: testing
+      tier: support
+
+    - id: test-component
+      name: "Single Agent Component Test"
+      path: "src/alphaswarm_sol/shipping/skills/test-component.md"
+      category: testing
+      tier: support
+
+    # --- Benchmarking & Quality ---
+    - id: benchmark-model
+      name: "Model Comparison Benchmark"
+      path: "src/alphaswarm_sol/shipping/skills/benchmark-model.md"
+      category: benchmarking
+      tier: experimental
+
+    - id: mutate-contract
+      name: "Contract Mutation"
+      path: "src/alphaswarm_sol/shipping/skills/mutate-contract.md"
+      category: benchmarking
+      tier: experimental
+
+    - id: track-gap
+      name: "Gap Tracking"
+      path: "src/alphaswarm_sol/shipping/skills/track-gap.md"
+      category: benchmarking
+      tier: support
+
+    # --- VulnDocs ---
+    - id: validate-vulndocs
+      name: "VulnDocs Validation Pipeline"
+      path: "src/alphaswarm_sol/shipping/skills/validate-vulndocs.md"
+      category: vulndocs
+      tier: support
+
+    - id: taxonomy-migrate
+      name: "Taxonomy Migration"
+      path: "src/alphaswarm_sol/shipping/skills/taxonomy-migrate.md"
+      category: vulndocs
+      tier: support
+
+    # --- Health ---
+    - id: health-check
+      name: "Installation Validation"
+      path: "src/alphaswarm_sol/shipping/skills/health-check.md"
+      category: health
+      tier: core
+
+  agents:
+    # --- Core Investigation ---
+    - id: vrs-attacker
+      name: "BSKG Attacker"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-attacker.md"
+      category: investigation
+      model_tier: opus
+
+    - id: vrs-defender
+      name: "BSKG Defender"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-defender.md"
+      category: investigation
+      model_tier: sonnet
+
+    - id: vrs-verifier
+      name: "BSKG Verifier"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-verifier.md"
+      category: investigation
+      model_tier: opus
+
+    - id: vrs-secure-reviewer
+      name: "Secure Reviewer"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-secure-reviewer.md"
+      category: investigation
+      model_tier: sonnet
+
+    - id: vrs-contradiction
+      name: "Contradiction Agent"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-contradiction.md"
+      category: investigation
+      model_tier: sonnet
+
+    # --- Synthesis & Merging ---
+    - id: vrs-integrator
+      name: "BSKG Integrator"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-integrator.md"
+      category: synthesis
+      model_tier: sonnet
+
+    - id: vrs-finding-merger
+      name: "Finding Merger"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-finding-merger.md"
+      category: synthesis
+      model_tier: sonnet
+
+    - id: vrs-finding-synthesizer
+      name: "Finding Synthesizer"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-finding-synthesizer.md"
+      category: synthesis
+      model_tier: sonnet
+
+    # --- Pattern Discovery ---
+    - id: vrs-context-packer
+      name: "Context Packer"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-context-packer.md"
+      category: patterns
+      model_tier: sonnet
+
+    - id: vrs-pattern-composer
+      name: "Pattern Composer"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-pattern-composer.md"
+      category: patterns
+      model_tier: sonnet
+
+    - id: vrs-pattern-scout
+      name: "Pattern Scout"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-pattern-scout.md"
+      category: patterns
+      model_tier: haiku
+
+    - id: vrs-pattern-verifier
+      name: "Pattern Verifier"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-pattern-verifier.md"
+      category: patterns
+      model_tier: sonnet
+
+    # --- Orchestration ---
+    - id: vrs-supervisor
+      name: "BSKG Supervisor"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-supervisor.md"
+      category: orchestration
+      model_tier: sonnet
+
+    # --- Quality & Testing ---
+    - id: vrs-test-conductor
+      name: "Test Conductor"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-test-conductor.md"
+      category: testing
+      model_tier: opus
+
+    - id: vrs-benchmark-runner
+      name: "Benchmark Runner"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-benchmark-runner.md"
+      category: testing
+      model_tier: haiku
+
+    - id: vrs-mutation-tester
+      name: "Mutation Tester"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-mutation-tester.md"
+      category: testing
+      model_tier: haiku
+
+    - id: vrs-regression-hunter
+      name: "Regression Hunter"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-regression-hunter.md"
+      category: testing
+      model_tier: sonnet
+
+    - id: vrs-corpus-curator
+      name: "Corpus Curator"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-corpus-curator.md"
+      category: testing
+      model_tier: sonnet
+
+    # --- VulnDocs Quality ---
+    - id: vrs-gap-finder
+      name: "Gap Finder"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-gap-finder.md"
+      category: vulndocs
+      model_tier: opus
+
+    - id: vrs-gap-finder-lite
+      name: "Gap Finder Lite"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-gap-finder-lite.md"
+      category: vulndocs
+      model_tier: sonnet
+
+    - id: vrs-prevalidator
+      name: "Prevalidator"
+      path: "src/alphaswarm_sol/shipping/agents/vrs-prevalidator.md"
+      category: vulndocs
+      model_tier: haiku

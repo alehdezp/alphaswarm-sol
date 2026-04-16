@@ -1,0 +1,48 @@
+# DVDeFi Challenge: The Rewarder
+# Vulnerability: Flash loan reward manipulation
+
+id: dvd-the-rewarder
+name: The Rewarder
+version: "4"
+difficulty: 3
+category: Flash Loan
+
+source_path: examples/damm-vuln-defi/src/the-rewarder
+
+vulnerability:
+  type: flash-loan-reward-manipulation
+  description: |
+    The reward distribution is based on snapshot balances that can be
+    inflated via flash loans to claim disproportionate rewards.
+  cwe: CWE-362
+  severity: high
+
+expected_detections:
+  - pattern: flash-loan-reward-attack
+    contract: TheRewarderDistributor
+    function: claimRewards
+    property: reads_external_balance
+    confidence: high
+
+  - pattern: snapshot-manipulation
+    contract: TheRewarderDistributor
+    function: claimRewards
+    property: reads_snapshot_value
+    confidence: medium
+
+expected_functions:
+  vulnerable:
+    - TheRewarderDistributor.claimRewards
+  safe:
+    - TheRewarderDistributor.createDistribution
+
+false_positive_exclusions:
+  - description: "createDistribution has admin check"
+    reason: Properly access controlled
+
+verification:
+  exploit_summary: "Flash loan tokens, deposit, claim rewards, withdraw, repay"
+  fix_summary: "Use time-weighted average balance or delay reward claims"
+
+status: detected
+detection_date: "2026-01-06"

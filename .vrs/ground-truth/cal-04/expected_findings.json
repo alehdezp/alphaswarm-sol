@@ -1,0 +1,13 @@
+{
+    "contract_id": "cal-04",
+    "contract_name": "TxOriginAuth",
+    "expected_findings": [
+        {
+            "vulnerability_class": "access-control",
+            "severity": "high",
+            "function_name": "privileged",
+            "description": "tx.origin used for authorization instead of msg.sender — require(tx.origin == owner) is vulnerable to phishing attacks where a malicious contract tricks the owner into calling it, inheriting owner's tx.origin",
+            "key_indicators": ["tx.origin in require", "phishing vulnerability via intermediary contract", "should use msg.sender instead of tx.origin"]
+        }
+    ]
+}

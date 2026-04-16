@@ -1,0 +1,88 @@
+# Safe Set Benchmark Suite
+# Curated known-safe contracts for False Positive measurement
+#
+# Source: Battle-tested implementations, reference libraries, audited contracts
+# Purpose: Measure and minimize false positive rate
+#
+# Target: FP Rate < 15%
+# Note: Any finding on these contracts is a FALSE POSITIVE
+
+name: safe-set
+version: "1.0.0"
+description: Known-safe contracts for false positive measurement
+
+# Metrics targets
+targets:
+  false_positive_rate:
+    maximum: 25%
+    target: 15%
+    excellent: 5%
+  critical_fp_rate:
+    maximum: 5%
+    target: 1%
+    excellent: 0%
+
+# Categories
+categories:
+  internal_safe:
+    description: VKG's internal safe reference implementations
+    count: 10
+    source: tests/contracts/safe/
+    contracts:
+      - id: safe-reentrancy
+        file: internal/reentrancy-safe.yaml
+      - id: safe-access-control
+        file: internal/access-control-safe.yaml
+      - id: safe-oracle
+        file: internal/oracle-safe.yaml
+      - id: safe-dos
+        file: internal/dos-safe.yaml
+      - id: safe-token
+        file: internal/token-safe.yaml
+      - id: safe-crypto
+        file: internal/crypto-safe.yaml
+      - id: safe-delegatecall
+        file: internal/delegatecall-safe.yaml
+      - id: safe-mev
+        file: internal/mev-safe.yaml
+      - id: safe-proxy
+        file: internal/proxy-safe.yaml
+      - id: safe-arithmetic
+        file: internal/arithmetic-safe.yaml
+
+  openzeppelin:
+    description: OpenZeppelin reference implementations
+    count: 5
+    source: external/openzeppelin/
+    contracts:
+      - id: oz-erc20
+        file: openzeppelin/erc20.yaml
+      - id: oz-erc721
+        file: openzeppelin/erc721.yaml
+      - id: oz-ownable
+        file: openzeppelin/ownable.yaml
+      - id: oz-access-control
+        file: openzeppelin/access-control.yaml
+      - id: oz-pausable
+        file: openzeppelin/pausable.yaml
+
+  solmate:
+    description: Solmate gas-optimized implementations
+    count: 3
+    source: external/solmate/
+    contracts:
+      - id: solmate-erc20
+        file: solmate/erc20.yaml
+      - id: solmate-erc721
+        file: solmate/erc721.yaml
+      - id: solmate-auth
+        file: solmate/auth.yaml
+
+# Total: 18 known-safe contracts
+total_contracts: 18
+
+# Validation requirements
+validation:
+  any_finding_is_fp: true
+  track_fp_by_pattern: true
+  track_fp_by_severity: true

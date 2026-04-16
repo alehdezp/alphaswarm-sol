@@ -1,0 +1,18 @@
+id: value-movement-cross-function-reentrancy
+vulndoc: reentrancy/classic
+name: Cross-Function Reentrancy
+description: External call before state write with shared-state readers.
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: cross_function_reentrancy_surface
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

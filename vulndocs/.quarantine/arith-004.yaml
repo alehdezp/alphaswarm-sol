@@ -1,0 +1,15 @@
+id: arith-004
+vulndoc: arithmetic/general
+name: Division by Zero Risk
+description: Division without nonzero checks for divisors.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 369
+match:
+  all:
+  - property: division_by_zero_risk
+    op: eq
+    value: true

@@ -1,0 +1,401 @@
+(* VQL 2.0 Formal Grammar Specification *)
+(* EBNF notation with extensions *)
+
+(* ========================================
+   TOP-LEVEL QUERY
+   ======================================== *)
+
+query ::= describe_query
+        | find_query
+        | match_query
+        | flow_query
+        | pattern_query
+        | set_operation_query
+        ;
+
+(* ========================================
+   DESCRIBE QUERIES (Schema Introspection)
+   ======================================== *)
+
+describe_query ::= "DESCRIBE" describe_target ;
+
+describe_target ::= "TYPES"
+                  | "PROPERTIES" [ "FOR" node_type ]
+                  | "EDGES"
+                  | "PATTERNS"
+                  | "LENSES"
+                  | "SCHEMA"
+                  ;
+
+(* ========================================
+   FIND QUERIES (Simple Node/Edge Search)
+   ======================================== *)
+
+find_query ::= [ with_clause ] "FIND" target [ where_clause ] [ return_clause ] [ modifiers ] ;
+
+target ::= node_types | edge_types ;
+
+node_types ::= node_type [ "," node_type ]* ;
+
+edge_types ::= edge_type [ "," edge_type ]* ;
+
+(* ========================================
+   MATCH QUERIES (Graph Pattern Matching)
+   ======================================== *)
+
+match_query ::= [ with_clause ] "MATCH" pattern_list [ where_clause ] [ return_clause ] [ modifiers ] ;
+
+pattern_list ::= pattern [ "," pattern ]* ;
+
+pattern ::= [ identifier "=" ] node_pattern [ relationship_pattern ]* ;
+
+node_pattern ::= "(" [ identifier ] [ ":" node_type ] [ "IN" identifier ] [ properties_literal ] ")" ;
+
+relationship_pattern ::= "-" "[" [ identifier ] [ ":" edge_type ] [ properties_literal ] [ length_spec ] "]" "-" [ direction_indicator ] node_pattern ;
+
+direction_indicator ::= ">" | "<" ;
+
+length_spec ::= "*" [ min_depth [ ".." max_depth ] ] ;
+
+min_depth ::= integer ;
+
+max_depth ::= integer ;
+
+(* Optional pattern matching *)
+optional_match ::= "OPTIONAL" "MATCH" pattern_list ;
+
+(* ========================================
+   FLOW QUERIES (Dataflow Analysis)
+   ======================================== *)
+
+flow_query ::= "FLOW" [ flow_direction ] "FROM" source_spec "TO" sink_spec
+               [ through_clause ]
+               [ exclude_clause ]
+               [ sanitizer_clause ]
+               [ where_clause ]
+               [ return_clause ]
+               [ modifiers ] ;
+
+flow_direction ::= "FORWARD" | "BACKWARD" ;
+
+source_spec ::= node_pattern
+              | "(" query ")"
+              | set_operation ;
+
+sink_spec ::= node_pattern
+            | "(" query ")"
+            | "ANY"
+            | set_operation ;
+
+through_clause ::= "THROUGH" node_pattern ;
+
+exclude_clause ::= "EXCLUDE" "SOURCES" array_literal ;
+
+sanitizer_clause ::= "REQUIRE" sanitizer_condition ;
+
+sanitizer_condition ::= "ALL" "PATHS" "PASS" "(" condition ")" ;
+
+(* ========================================
+   PATTERN QUERIES (Vulnerability Patterns)
+   ======================================== *)
+
+pattern_query ::= "PATTERN" pattern_id_list
+                  [ lens_clause ]
+                  [ severity_clause ]
+                  [ modifiers ] ;
+
+pattern_id_list ::= pattern_id [ "," pattern_id ]* ;
+
+lens_clause ::= "LENS" lens_id_list ;
+
+lens_id_list ::= lens_id [ "," lens_id ]* ;
+
+severity_clause ::= "SEVERITY" severity_level_list ;
+
+severity_level_list ::= severity_level [ "," severity_level ]* ;
+
+severity_level ::= "critical" | "high" | "medium" | "low" | "info" ;
+
+(* ========================================
+   SET OPERATIONS
+   ======================================== *)
+
+set_operation_query ::= query set_operator query ;
+
+set_operator ::= "UNION" | "INTERSECT" | "EXCEPT" ;
+
+(* ========================================
+   CLAUSES
+   ======================================== *)
+
+(* WITH Clause (Common Table Expressions) *)
+with_clause ::= "WITH" cte_list ;
+
+cte_list ::= cte [ "," cte ]* ;
+
+cte ::= identifier "AS" "(" query ")" ;
+
+(* WHERE Clause (Filtering) *)
+where_clause ::= "WHERE" condition ;
+
+condition ::= simple_condition
+            | "(" condition ")"
+            | condition "AND" condition
+            | condition "OR" condition
+            | "NOT" condition
+            | exists_condition
+            | pattern_predicate
+            ;
+
+simple_condition ::= expression operator expression ;
+
+exists_condition ::= "EXISTS" "(" query ")"
+                   | "NOT" "EXISTS" "(" query ")" ;
+
+pattern_predicate ::= "(" identifier ")" "-" "[" [ ":" edge_type ] "]" "-" [ direction_indicator ] "(" [ ":" node_type ] [ properties_literal ] ")" ;
+
+(* RETURN Clause (Projection) *)
+return_clause ::= "RETURN" return_spec ;
+
+return_spec ::= return_all
+              | return_list
+              | special_return ;
+
+return_all ::= "*" ;
+
+return_list ::= return_item [ "," return_item ]* ;
+
+return_item ::= expression [ "AS" identifier ] ;
+
+special_return ::= "SOURCES" [ "," "SINKS" ] [ "," "PATHS" ]
+                 | "SINKS"
+                 | "PATHS"
+                 | "TAINTED" "FUNCTIONS"
+                 | "UNSAFE" "PATHS"
+                 | "INFLUENCERS"
+                 | "USE_DEF_CHAINS"
+                 ;
+
+(* ========================================
+   EXPRESSIONS
+   ======================================== *)
+
+expression ::= primary_expression
+             | function_call
+             | case_expression
+             | path_expression
+             | aggregation_expression
+             | arithmetic_expression
+             ;
+
+primary_expression ::= identifier
+                     | literal
+                     | "(" expression ")"
+                     ;
+
+function_call ::= function_name "(" [ expression_list ] ")" ;
+
+function_name ::= "LENGTH" | "NODES" | "ALL" | "ANY" | "NONE" | "EXISTS" ;
+
+case_expression ::= "CASE" [ expression ]
+                    when_clause+
+                    [ else_clause ]
+                    "END" ;
+
+when_clause ::= "WHEN" condition "THEN" expression ;
+
+else_clause ::= "ELSE" expression ;
+
+path_expression ::= identifier [ "." identifier ]* [ "[" expression "]" ]* ;
+
+aggregation_expression ::= aggregation_function "(" [ "DISTINCT" ] expression ")" ;
+
+aggregation_function ::= "COUNT" | "SUM" | "AVG" | "MAX" | "MIN" | "COLLECT" ;
+
+arithmetic_expression ::= expression arithmetic_operator expression ;
+
+arithmetic_operator ::= "+" | "-" | "*" | "/" | "%" ;
+
+expression_list ::= expression [ "," expression ]* ;
+
+(* ========================================
+   OPERATORS
+   ======================================== *)
+
+operator ::= comparison_operator
+           | set_operator_binary
+           | string_operator
+           | array_operator
+           ;
+
+comparison_operator ::= "=" | "!=" | ">" | "<" | ">=" | "<=" ;
+
+set_operator_binary ::= "IN" | "NOT" "IN" ;
+
+string_operator ::= "REGEX" | "LIKE" | "NOT" "LIKE" ;
+
+array_operator ::= "CONTAINS" | "CONTAINS_ANY" | "CONTAINS_ALL" ;
+
+(* ========================================
+   MODIFIERS
+   ======================================== *)
+
+modifiers ::= [ group_by ] [ having ] [ order_by ] [ limit ] [ offset ] [ options ] ;
+
+group_by ::= "GROUP" "BY" expression_list ;
+
+having ::= "HAVING" condition ;
+
+order_by ::= "ORDER" "BY" order_item_list ;
+
+order_item_list ::= order_item [ "," order_item ]* ;
+
+order_item ::= expression [ order_direction ] ;
+
+order_direction ::= "ASC" | "DESC" ;
+
+limit ::= "LIMIT" integer ;
+
+offset ::= "OFFSET" integer ;
+
+options ::= option+ ;
+
+option ::= "COMPACT" | "EXPLAIN" | "NO" "EVIDENCE" | "VERBOSE" ;
+
+(* ========================================
+   LITERALS
+   ======================================== *)
+
+literal ::= string_literal
+          | number_literal
+          | boolean_literal
+          | array_literal
+          | object_literal
+          | null_literal
+          ;
+
+string_literal ::= "'" string_content "'" | '"' string_content '"' ;
+
+number_literal ::= integer | float ;
+
+integer ::= digit+ ;
+
+float ::= digit+ "." digit+ [ exponent ] ;
+
+exponent ::= ( "e" | "E" ) [ "+" | "-" ] digit+ ;
+
+boolean_literal ::= "true" | "false" | "TRUE" | "FALSE" ;
+
+array_literal ::= "[" [ literal_list ] "]" ;
+
+literal_list ::= literal [ "," literal ]* ;
+
+object_literal ::= "{" [ property_pair_list ] "}" ;
+
+properties_literal ::= "{" [ property_pair_list ] "}" ;
+
+property_pair_list ::= property_pair [ "," property_pair ]* ;
+
+property_pair ::= identifier ":" literal ;
+
+null_literal ::= "null" | "NULL" ;
+
+(* ========================================
+   IDENTIFIERS AND TYPES
+   ======================================== *)
+
+identifier ::= ( letter | "_" ) ( letter | digit | "_" )* ;
+
+node_type ::= "Function" | "Contract" | "StateVariable" | "Event" | "Input"
+            | "Loop" | "Invariant" | "ExternalCallSite" | "SignatureUse"
+            | "Modifier" ;
+
+edge_type ::= "CONTAINS_FUNCTION" | "CONTAINS_STATE" | "CONTAINS_EVENT"
+            | "FUNCTION_HAS_INPUT" | "FUNCTION_HAS_LOOP"
+            | "INPUT_TAINTS_STATE" | "FUNCTION_INPUT_TAINTS_STATE"
+            | "FUNCTION_TOUCHES_INVARIANT"
+            | "INVARIANT_TARGETS_CONTRACT" | "INVARIANT_TARGETS_FUNCTION" | "INVARIANT_TARGETS_STATE"
+            | "USES_MODIFIER" | "READS_STATE" | "WRITES_STATE"
+            | "CALLS_INTERNAL" | "CALLS_EXTERNAL"
+            | "FUNCTION_HAS_CALLSITE" | "CALLSITE_TARGETS" | "CALLSITE_MOVES_VALUE"
+            | "FUNCTION_USES_SIGNATURE"
+            | "INHERITS" | "CONTAINS_MODIFIER"
+            ;
+
+pattern_id ::= identifier [ "-" identifier ]* ;
+
+lens_id ::= "Authority" | "Reentrancy" | "MEV" | "Oracle" | "Token" | "Crypto" | "DoS" | "Invariant" ;
+
+(* ========================================
+   LEXICAL ELEMENTS
+   ======================================== *)
+
+letter ::= "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
+         | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+         | "u" | "v" | "w" | "x" | "y" | "z"
+         | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
+         | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
+         | "U" | "V" | "W" | "X" | "Y" | "Z" ;
+
+digit ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+string_content ::= ( any_character_except_quote )* ;
+
+(* Comments *)
+comment ::= line_comment | block_comment ;
+
+line_comment ::= "--" ( any_character_except_newline )* newline ;
+
+block_comment ::= "/*" ( any_character )* "*/" ;
+
+(* Whitespace is ignored *)
+whitespace ::= space | tab | newline | carriage_return ;
+
+(* ========================================
+   EXAMPLES (Non-normative)
+   ======================================== *)
+
+(*
+Example 1: Simple FIND query
+FIND functions WHERE visibility = public
+
+Example 2: FIND with RETURN projection
+FIND functions
+WHERE visibility = public AND writes_state
+RETURN id, label, visibility
+
+Example 3: MATCH pattern
+MATCH (f:Function)-[:WRITES_STATE]->(s:StateVariable)
+WHERE f.visibility = 'public'
+RETURN f.label, s.label
+
+Example 4: FLOW query
+FLOW FROM (i:Input WHERE i.kind = 'parameter')
+TO (s:StateVariable)
+EXCLUDE SOURCES ['msg.sender']
+RETURN PATHS
+
+Example 5: WITH clause (CTE)
+WITH risky AS (
+  FIND functions WHERE writes_state AND NOT has_access_gate
+)
+MATCH (f:Function IN risky)-[:CALLS_EXTERNAL]->(ext)
+RETURN f, ext
+
+Example 6: Variable-length path
+MATCH (f:Function)-[:CALLS_INTERNAL*1..3]->(target:Function)
+WHERE f.visibility = 'public' AND target.writes_state
+RETURN f, target, LENGTH(PATH) AS depth
+
+Example 7: EXISTS subquery
+FIND functions
+WHERE EXISTS (
+  MATCH (f)-[:WRITES_STATE]->(:StateVariable {security_tags: ['owner']})
+)
+
+Example 8: Aggregation
+FIND functions
+GROUP BY visibility
+RETURN visibility, COUNT(*) AS total
+HAVING COUNT(*) > 5
+*)

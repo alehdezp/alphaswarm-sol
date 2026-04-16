@@ -1,0 +1,16 @@
+id: auth-031
+vulndoc: access-control/general
+name: Upgrade Without Timelock
+description: Upgrade functions on contracts without timelock.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_has_timelock
+    op: eq
+    value: false

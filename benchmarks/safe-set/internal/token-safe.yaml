@@ -1,0 +1,32 @@
+# Token Safe Reference Implementation
+id: safe-token
+name: TokenSafe
+category: internal_safe
+source: tests/contracts/safe/TokenSafe.sol
+solidity_version: "0.8.x"
+
+contract_info:
+  description: |
+    Reference implementation demonstrating safe token handling:
+    - SafeERC20 usage
+    - Return value checks
+    - Transfer validation
+  security_features:
+    - SafeERC20 library
+    - Return value validation
+    - Proper allowance handling
+  safe_since: 2025-12
+  review_status: internal
+
+expected_findings: []
+
+false_positive_categories:
+  - token-*
+  - erc20-*
+  - transfer-*
+
+notes: |
+  This contract demonstrates correct token handling patterns.
+  Any token-related finding is a false positive.
+
+status: validated

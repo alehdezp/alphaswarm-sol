@@ -1,0 +1,16 @@
+id: ext-010
+vulndoc: access-control/external-call
+name: Unsafe ABI Decode
+description: abi.decode without calldata length checks or try-catch guard.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: uses_abi_decode
+    op: eq
+    value: true
+  - property: has_abi_decode_guard
+    op: eq
+    value: false

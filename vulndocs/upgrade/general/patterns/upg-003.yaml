@@ -1,0 +1,17 @@
+id: upg-003
+vulndoc: upgrade/general
+name: Storage Slot Collision
+description: Upgradeable storage layout collision risk.
+scope: Contract
+lens:
+- Upgradeability
+severity: critical
+match:
+  all:
+  - property: semgrep_like_rules
+    op: contains_any
+    value:
+    - proxy-storage-collision
+  - property: upgradeable_without_storage_gap
+    op: eq
+    value: true

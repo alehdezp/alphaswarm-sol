@@ -1,0 +1,46 @@
+# DVDeFi Challenge: Puppet V3
+# Vulnerability: DEX oracle manipulation (Uniswap V3 TWAP insufficient)
+
+id: dvd-puppet-v3
+name: Puppet V3
+version: "4"
+difficulty: 5
+category: Oracle
+
+source_path: examples/damm-vuln-defi/src/puppet-v3
+
+vulnerability:
+  type: dex-oracle-manipulation
+  description: |
+    The lending pool uses Uniswap V3 TWAP with insufficient window,
+    allowing manipulation with sustained large swaps over multiple blocks.
+  cwe: CWE-829
+  severity: critical
+
+expected_detections:
+  - pattern: dex-oracle-manipulation
+    contract: PuppetV3Pool
+    function: _getOracleQuote
+    property: reads_external_value
+    confidence: high
+
+  - pattern: twap-insufficient-window
+    contract: PuppetV3Pool
+    function: borrow
+    property: reads_oracle_price
+    confidence: medium
+
+expected_functions:
+  vulnerable:
+    - PuppetV3Pool.borrow
+    - PuppetV3Pool._getOracleQuote
+  safe: []
+
+false_positive_exclusions: []
+
+verification:
+  exploit_summary: "Manipulate V3 pool over multiple blocks, then borrow at reduced collateral"
+  fix_summary: "Use longer TWAP window (30+ min) or Chainlink price feeds"
+
+status: detected
+detection_date: "2026-01-06"

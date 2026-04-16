@@ -1,0 +1,16 @@
+id: auth-085
+vulndoc: access-control/general
+name: Owner Uninitialized With Privileged Ops
+description: Privileged contract with uninitialized owner variable.
+scope: Contract
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: owner_uninitialized
+    op: eq
+    value: true
+  - property: has_privileged_operations
+    op: eq
+    value: true

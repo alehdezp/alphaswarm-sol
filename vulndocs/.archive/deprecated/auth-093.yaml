@@ -1,0 +1,13 @@
+id: auth-093
+vulndoc: access-control/general
+name: Governance Vote Flashloan Risk
+description: Governance vote uses live balances without snapshot (flash-loan risk).
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: governance_vote_without_snapshot
+    op: eq
+    value: true

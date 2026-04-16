@@ -1,0 +1,697 @@
+schema_version: '1.0'
+updated: '2026-01-29'
+entries:
+- url: https://owasp.org/www-project-smart-contract-top-10/
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: standards/owasp
+  agent: corpus-ingest-init
+  extracted: false
+  notes: OWASP Smart Contract Top 10 (2025) - primary coverage anchor
+- url: https://github.com/OWASP/www-project-smart-contract-verification-standard
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: standards/scsvs
+  agent: corpus-ingest-init
+  extracted: false
+  notes: OWASP SCSVS v0.0.1 (2024) - control groups reference
+- url: https://docs.soliditylang.org/en/latest/security-considerations.html
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: platform/solidity
+  agent: corpus-ingest-init
+  extracted: false
+  notes: Solidity security considerations - CEI pattern reference
+- url: https://ethereum.org/en/developers/docs/smart-contracts/security/
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: platform/ethereum
+  agent: corpus-ingest-init
+  extracted: false
+  notes: Ethereum smart contract security guide
+- url: https://docs.chain.link/data-feeds/selecting-data-feeds#developer-responsibilities
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: oracle/chainlink
+  agent: corpus-ingest-init
+  extracted: false
+  notes: Chainlink developer responsibilities
+- url: https://docs.chain.link/data-feeds/l2-sequencer-uptime-feeds
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: oracle/sequencer-uptime
+  agent: corpus-ingest-init
+  extracted: false
+  notes: L2 sequencer uptime feed guidance - key for exemplar pattern
+- url: https://docs.openzeppelin.com/contracts/5.x/access-control
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: library/openzeppelin
+  agent: corpus-ingest-init
+  extracted: false
+  notes: OpenZeppelin access control patterns
+- url: https://scsfg.io/
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: seed_sources
+  category: community/field-guide
+  agent: corpus-ingest-init
+  extracted: false
+  notes: Smart Contract Security Field Guide
+- url: https://github.com/tinchoabbate/damn-vulnerable-defi
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: corpus_sources
+  category: corpus/vulnerable
+  agent: corpus-ingest-init
+  extracted: false
+  notes: DVDeFi v3 - primary vulnerable contract source
+- url: https://github.com/OpenZeppelin/ethernaut
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: corpus_sources
+  category: corpus/vulnerable
+  agent: corpus-ingest-init
+  extracted: false
+  notes: Ethernaut CTF - classic Solidity CTF
+- url: https://github.com/OpenZeppelin/openzeppelin-contracts
+  accessed_at: '2026-01-29T12:48:00Z'
+  query: corpus_sources
+  category: corpus/safe
+  agent: corpus-ingest-init
+  extracted: false
+  notes: OpenZeppelin contracts - safe reference implementations
+- url: https://www.halborn.com/blog/post/explained-the-gmx-hack-july-2025
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  category: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+- url: https://sherlock.xyz/post/gmx-exchange-hack-explained
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  category: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+- url: https://blog.solidityscan.com/gmx-v1-hack-analysis-ed0ab0c0dd0f
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  category: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+- url: https://www.quillaudits.com/blog/hack-analysis/how-gmx-lost-42m
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  category: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+- url: https://www.certik.com/resources/blog/gmx-incident-analysis
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  category: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+- url: https://dev.to/abdelrahman_elsaheir_11d8/gmx-v1-exploit-analysis-how-a-42m-classic-reentrancy-attack-unfolded-9o1
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  category: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+- url: https://blog.penpiexyz.io/penpie-post-mortem-report-1ac9863b663a
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/classic/specifics/penpie-permissionless-callback
+  category: reentrancy/classic/specifics/penpie-permissionless-callback
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/classic/specifics/penpie-permissionless-callback/index.yaml
+- url: https://blog.solidityscan.com/penpie-hack-analysis-29034a6f2a61
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/classic/specifics/penpie-permissionless-callback
+  category: reentrancy/classic/specifics/penpie-permissionless-callback
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/classic/specifics/penpie-permissionless-callback/index.yaml
+- url: https://blog.verichains.io/p/penpie-incident-analysis
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/classic/specifics/penpie-permissionless-callback
+  category: reentrancy/classic/specifics/penpie-permissionless-callback
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/classic/specifics/penpie-permissionless-callback/index.yaml
+- url: https://www.halborn.com/blog/post/explained-the-penpie-hack-september-2024
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:reentrancy/classic/specifics/penpie-permissionless-callback
+  category: reentrancy/classic/specifics/penpie-permissionless-callback
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from reentrancy/classic/specifics/penpie-permissionless-callback/index.yaml
+- url: https://medium.com/neptune-mutual/understanding-the-uwu-lend-exploit-b32ea552f030
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  category: oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from oracle/price-manipulation/specifics/uwu-curve-spot-manipulation/index.yaml
+- url: https://slowmist.medium.com/analysis-of-the-uwu-lend-hack-9502b2c06dbe
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  category: oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from oracle/price-manipulation/specifics/uwu-curve-spot-manipulation/index.yaml
+- url: https://cyvers.ai/blog/uwu-lend-23m-exploit-oracle-vulnerabilities-exposed
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  category: oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from oracle/price-manipulation/specifics/uwu-curve-spot-manipulation/index.yaml
+- url: https://blog.solidityscan.com/uwulend-hack-analysis-77eb9181a717
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  category: oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from oracle/price-manipulation/specifics/uwu-curve-spot-manipulation/index.yaml
+- url: https://blog.1inch.com/vulnerability-discovered-in-resolver-contract/
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/configuration/specifics/1inch-calldata-corruption
+  category: logic/configuration/specifics/1inch-calldata-corruption
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/configuration/specifics/1inch-calldata-corruption/index.yaml
+- url: https://blog.decurity.io/yul-calldata-corruption-1inch-postmortem-a7ea7a53bfd9
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/configuration/specifics/1inch-calldata-corruption
+  category: logic/configuration/specifics/1inch-calldata-corruption
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/configuration/specifics/1inch-calldata-corruption/index.yaml
+- url: https://rekt.news/1inch-rekt
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/configuration/specifics/1inch-calldata-corruption
+  category: logic/configuration/specifics/1inch-calldata-corruption
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/configuration/specifics/1inch-calldata-corruption/index.yaml
+- url: https://www.halborn.com/blog/post/explained-the-1inch-hack-march-2025
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/configuration/specifics/1inch-calldata-corruption
+  category: logic/configuration/specifics/1inch-calldata-corruption
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/configuration/specifics/1inch-calldata-corruption/index.yaml
+- url: https://www.nominis.io/insights/crypto-security-incidents-march-2025
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/configuration/specifics/1inch-calldata-corruption
+  category: logic/configuration/specifics/1inch-calldata-corruption
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/configuration/specifics/1inch-calldata-corruption/index.yaml
+- url: https://blog.openzeppelin.com/uniswap-hooks-library-milestone-1-audit
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/state-isolation
+  category: logic/state-isolation
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/state-isolation/index.yaml
+- url: https://euler.finance/blog/euler-v2-code-reveal
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/liquidation-mechanics/specifics/euler-ltv-gap
+  category: logic/liquidation-mechanics/specifics/euler-ltv-gap
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/liquidation-mechanics/specifics/euler-ltv-gap/index.yaml
+- url: https://blog.openzeppelin.com/euler-vault-kit-evk-audit
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/liquidation-mechanics/specifics/euler-ltv-gap
+  category: logic/liquidation-mechanics/specifics/euler-ltv-gap
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/liquidation-mechanics/specifics/euler-ltv-gap/index.yaml
+- url: https://www.certora.com/blog/the-holy-grail
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/liquidation-mechanics/specifics/euler-ltv-gap
+  category: logic/liquidation-mechanics/specifics/euler-ltv-gap
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/liquidation-mechanics/specifics/euler-ltv-gap/index.yaml
+- url: https://quadrigainitiative.com/casestudy/clipperexchangeassetdepositwithdrawalmanipulation.php
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/invariant-violation/specifics/clipper-single-asset-bypass
+  category: logic/invariant-violation/specifics/clipper-single-asset-bypass
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/invariant-violation/specifics/clipper-single-asset-bypass/index.yaml
+- url: https://cointelegraph.com/news/clipper-dex-clarifies-hack-not-private-key-leak
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/invariant-violation/specifics/clipper-single-asset-bypass
+  category: logic/invariant-violation/specifics/clipper-single-asset-bypass
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/invariant-violation/specifics/clipper-single-asset-bypass/index.yaml
+- url: https://blog.clipper.exchange/clipper-dec-24-exploit-post-mortem/
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/invariant-violation/specifics/clipper-single-asset-bypass
+  category: logic/invariant-violation/specifics/clipper-single-asset-bypass
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/invariant-violation/specifics/clipper-single-asset-bypass/index.yaml
+- url: https://www.halborn.com/blog/post/explained-the-zklend-hack-february-2025
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/arithmetic/specifics/zklend-precision-loss
+  category: logic/arithmetic/specifics/zklend-precision-loss
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/arithmetic/specifics/zklend-precision-loss/index.yaml
+- url: https://zklend.io/blog/post-mortem
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/arithmetic/specifics/zklend-precision-loss
+  category: logic/arithmetic/specifics/zklend-precision-loss
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/arithmetic/specifics/zklend-precision-loss/index.yaml
+- url: https://www.halborn.com/blog/post/explained-the-balancer-hack-november-2025
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/arithmetic/specifics/balancer-v2-rounding
+  category: logic/arithmetic/specifics/balancer-v2-rounding
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/arithmetic/specifics/balancer-v2-rounding/index.yaml
+- url: https://research.checkpoint.com/2025/how-an-attacker-drained-128m-from-balancer-through-rounding-error-exploitation/
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/arithmetic/specifics/balancer-v2-rounding
+  category: logic/arithmetic/specifics/balancer-v2-rounding
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/arithmetic/specifics/balancer-v2-rounding/index.yaml
+- url: https://blocksec.com/blog/in-depth-analysis-the-balancer-v2-exploit
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/arithmetic/specifics/balancer-v2-rounding
+  category: logic/arithmetic/specifics/balancer-v2-rounding
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/arithmetic/specifics/balancer-v2-rounding/index.yaml
+- url: https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation
+  accessed_at: '2026-01-29T12:58:15Z'
+  query: vulndocs_index:logic/arithmetic/specifics/balancer-v2-rounding
+  category: logic/arithmetic/specifics/balancer-v2-rounding
+  agent: vulndocs_reference_extract
+  extracted: true
+  notes: Extracted from logic/arithmetic/specifics/balancer-v2-rounding/index.yaml
+- url: https://hackmd.io/@vyperlang/HJUgNMhs2
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:reentrancy
+  category: reentrancy/read-only
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Vyper compiler reentrancy lock bypass - $70M+ across pools
+- url: https://www.halborn.com/blog/post/explained-the-euler-finance-hack-march-2023
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:reentrancy
+  category: reentrancy/cross-function
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Euler donateToReserves reentrancy - $200M (recovered)
+- url: https://rekt.news/mango-markets-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:oracle
+  category: oracle/price-manipulation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Mango Markets oracle manipulation - $117M
+- url: https://rekt.news/beanstalk-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:oracle
+  category: oracle/price-manipulation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Beanstalk flash loan governance attack - $182M
+- url: https://rekt.news/inverse-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:oracle
+  category: oracle/price-manipulation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Inverse Finance Keep3r oracle manipulation - $15M
+- url: https://rekt.news/wormhole-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:cross_chain
+  category: cross-chain/signature-validation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Wormhole guardian signature bypass - $320M
+- url: https://rekt.news/ronin-network-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:cross_chain
+  category: cross-chain/bridge-compromise
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Ronin validator key compromise - $625M
+- url: https://rekt.news/nomad-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:logic
+  category: logic/validation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Nomad zero-root message validation bypass - $190M
+- url: https://rekt.news/tornado-gov-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:governance
+  category: governance/proposal-manipulation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Tornado governance takeover via create2 - full control
+- url: https://rekt.news/harvest-finance-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:oracle
+  category: oracle/price-manipulation
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Harvest flash loan Curve price manipulation - $34M
+- url: https://medium.com/fei-protocol/fei-rari-hack-post-mortem-7fa9c7a3e3a0
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:reentrancy
+  category: reentrancy/classic
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Fei/Rari Fuse pool reentrancy - $80M
+- url: https://rekt.news/audius-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:upgrade
+  category: upgrade/storage-collision
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Audius proxy storage collision - $6M
+- url: https://rekt.news/level-finance-rekt/
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:reentrancy
+  category: reentrancy/classic
+  agent: audit-discovery-07.2-03
+  extracted: true
+  notes: Level Finance referral reentrancy - $1.1M
+- url: https://solodit.xyz
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:platform
+  category: platform/solodit
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Solodit - aggregated audit findings from Code4rena, Sherlock, Immunefi
+- url: https://code4rena.com
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:platform
+  category: platform/code4rena
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Code4rena - audit contest platform with public findings
+- url: https://sherlock.xyz
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:platform
+  category: platform/sherlock
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Sherlock - insurance-backed audit contest platform
+- url: https://immunefi.com
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:platform
+  category: platform/immunefi
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Immunefi - major bug bounty platform with disclosed vulnerabilities
+- url: https://github.com/trailofbits/publications
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:audit_firm
+  category: audit_firm/trailofbits
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Trail of Bits - public audit reports repository
+- url: https://consensys.io/diligence/audits
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:audit_firm
+  category: audit_firm/consensys
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Consensys Diligence - public audit reports
+- url: https://spearbit.com
+  accessed_at: '2026-01-29T13:01:00Z'
+  query: audit_discovery:audit_firm
+  category: audit_firm/spearbit
+  agent: audit-discovery-07.2-03
+  extracted: false
+  notes: Spearbit - security research and audits
+- url: https://github.com/OpenZeppelin/ethernaut
+  accessed_at: '2026-01-29T13:12:44.868480+00:00'
+  query: ethernaut solidity CTF OpenZeppelin
+  category: corpus/vulnerable
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit d05643a4
+- url: https://github.com/OpenZeppelin/openzeppelin-contracts
+  accessed_at: '2026-01-29T13:12:47.011368+00:00'
+  query: openzeppelin contracts security patterns
+  category: corpus/safe
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit dde766bd
+- url: https://github.com/Vectorized/solady
+  accessed_at: '2026-01-29T13:12:48.551454+00:00'
+  query: solady gas optimized solidity patterns
+  category: corpus/safe
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit 90db92ce
+- url: https://github.com/transmissions11/solmate
+  accessed_at: '2026-01-29T13:12:49.532313+00:00'
+  query: solmate modern solidity building blocks
+  category: corpus/safe
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit 89365b88
+- url: https://github.com/Uniswap/v3-core
+  accessed_at: '2026-01-29T13:12:50.735645+00:00'
+  query: uniswap v3 core contracts audited
+  category: corpus/safe
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit d8b1c635
+- url: https://github.com/crytic/not-so-smart-contracts
+  accessed_at: '2026-01-29T13:12:51.607225+00:00'
+  query: crytic not so smart contracts vulnerabilities
+  category: corpus/vulnerable
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit 020dbdbd
+- url: https://github.com/tinchoabbate/damn-vulnerable-defi
+  accessed_at: '2026-01-29T13:14:30.617861+00:00'
+  query: damn vulnerable defi solidity CTF
+  category: corpus/vulnerable
+  agent: corpus-ingest
+  extracted: true
+  notes: Ingested commit 64fddf9f
+
+# ============================================================
+# PHASE 7.3-01 CORPUS EXPANSION (2026-01-29)
+# User decision: EXPAND with novel 2025-2026 exploits + practice repos
+# Research sources: 07.3-01-NOVEL-PROTOCOLS.md, 07.3-01-PRACTICE-REPOS.md
+# ============================================================
+
+# TIER 1 - CRITICAL: Practice Repositories
+- url: https://github.com/SunWeb3Sec/DeFiHackLabs
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 defi hack labs POC exploit foundry'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '600+ real DeFi exploits with Foundry POCs - highest priority (pending ingest)'
+
+- url: https://github.com/SunWeb3Sec/DeFiVulnLabs
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 defi vuln labs vulnerability types'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '48 vulnerability types with educational focus (pending ingest)'
+
+- url: https://github.com/theredguild/damn-vulnerable-defi
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 damn vulnerable defi v4 CTF'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'DVDeFi v4 - 17 progressive challenges with 2024 patterns (pending ingest)'
+
+# TIER 1 - NOVEL 2025-2026 EXPLOITS ($346M+ in losses)
+- url: https://github.com/balancer/balancer-v2-monorepo
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 balancer v2 rounding exploit nov 2025'
+  category: corpus/vulnerable/precision-loss
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$128M exploit - cumulative rounding in ComposableStablePool (pending ingest)'
+
+- url: https://github.com/yearn/yearn-vaults
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 yearn yeth cached storage poisoning'
+  category: corpus/vulnerable/cached-storage
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$9M exploit - multi-tx state corruption via cached values (pending ingest)'
+
+- url: https://etherscan.io/address/0x5cdaf83e077dbac2692b5864ca18b61d67453be8
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 zkswap bridge zk proof bypass'
+  category: corpus/vulnerable/zk-proof-bypass
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$5M exploit - ZKSpace Bridge verifyExitProof no-op (pending ingest)'
+
+- url: https://etherscan.io/address/0x6de5bdc580f55bc9dacafcb67b91674040a247e3
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 zkswap v2 bridge'
+  category: corpus/vulnerable/zk-proof-bypass
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'ZKSwap V2 Bridge - related to $5M exploit (pending ingest)'
+
+- url: https://etherscan.io/address/0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 truebit protocol integer overflow'
+  category: corpus/vulnerable/legacy-solidity
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$26.4M exploit - legacy Solidity 0.6.10 integer overflow (pending ingest)'
+
+- url: https://github.com/1inch/limit-order-protocol
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 1inch fusion v1 buffer overflow'
+  category: corpus/vulnerable/buffer-overflow
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$5M exploit - Web2-style buffer overflow in calldata (pending ingest)'
+
+# TIER 1 - EIP-7702 EXPLOITS (ZERO existing coverage)
+- url: https://github.com/IPOR-Labs/ipor-fusion
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 ipor fusion eip-7702 delegation'
+  category: corpus/vulnerable/eip7702
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$336K exploit - EIP-7702 delegation hijacking (pending ingest)'
+
+# TIER 2 - PRACTICE REPOSITORIES
+- url: https://github.com/minaminao/ctf-blockchain
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 ctf blockchain challenges solutions'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '200+ CTF challenges with solutions (pending ingest)'
+
+- url: https://github.com/secureum/secureum-a-maze-x-challenges
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 secureum a-maze-x ctf'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'Secureum DeFi-focused CTF challenges (pending ingest)'
+
+- url: https://github.com/X3-Security/GCTF-2024-Smart-Contract-Challenges
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 gctf 2024 smart contract challenges'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'GCTF 2024 CTF with modern patterns (pending ingest)'
+
+- url: https://github.com/crytic/building-secure-contracts
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 trail of bits building secure contracts'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'Trail of Bits authoritative security examples (pending ingest)'
+
+- url: https://github.com/Quillhash/DeFi-Attack-Vectors
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 quillhash defi attack vectors'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'QuillAudits DeFi attack vector catalog (pending ingest)'
+
+- url: https://github.com/Quillhash/Proxies-Security
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 quillhash proxies security'
+  category: corpus/vulnerable
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: 'Proxy/upgradeable contract security examples (pending ingest)'
+
+# TIER 2 - ADDITIONAL L2 AND EMERGING PATTERNS
+- url: https://github.com/Bunniapp/bunni-v2
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 bunni dex uniswap v4 rounding'
+  category: corpus/vulnerable/rounding-direction
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$8.4M exploit - Uniswap v4 rounding direction error (pending ingest)'
+
+- url: https://github.com/radiant-capital/radiant-protocol
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'corpus_expansion:07.3-01 radiant capital aave fork'
+  category: corpus/vulnerable/fork-vulnerability
+  agent: corpus-expansion-07.3-01
+  extracted: false
+  notes: '$4.5M exploit - Aave v2 fork empty market rounding (pending ingest)'
+
+# RESEARCH REFERENCES (HIGH confidence sources)
+- url: https://research.checkpoint.com/2025/how-an-attacker-drained-128m-from-balancer-through-rounding-error-exploitation/
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'research:07.3-01-NOVEL-PROTOCOLS balancer v2 exploit analysis'
+  category: research/precision-loss
+  agent: corpus-expansion-07.3-01
+  extracted: true
+  notes: 'Check Point Research - Balancer $128M exploit technical analysis'
+
+- url: https://research.checkpoint.com/2025/16-wei/
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'research:07.3-01-NOVEL-PROTOCOLS yearn yeth 16 wei exploit'
+  category: research/cached-storage
+  agent: corpus-expansion-07.3-01
+  extracted: true
+  notes: 'Check Point Research - Yearn yETH $9M cached storage exploit'
+
+- url: https://www.halborn.com/blog/post/explained-the-1inch-hack-march-2025
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'research:07.3-01-NOVEL-PROTOCOLS 1inch buffer overflow'
+  category: research/buffer-overflow
+  agent: corpus-expansion-07.3-01
+  extracted: true
+  notes: 'Halborn - 1inch $5M buffer overflow exploit analysis'
+
+- url: https://www.halborn.com/blog/post/eip-7702-security-considerations
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'research:07.3-01-NOVEL-PROTOCOLS eip-7702 security'
+  category: research/eip7702
+  agent: corpus-expansion-07.3-01
+  extracted: true
+  notes: 'Halborn - EIP-7702 security considerations'
+
+- url: https://www.blockaid.io/blog/how-zkswaps-5m-exploit-couldve-been-prevented-with-onchain-monitoring
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'research:07.3-01-NOVEL-PROTOCOLS zkswap bridge exploit'
+  category: research/zk-proof-bypass
+  agent: corpus-expansion-07.3-01
+  extracted: true
+  notes: 'Blockaid - ZKSwap $5M exploit analysis'
+
+- url: https://cointelegraph.com/news/26m-truebit-hack-smart-contract-vulnerability
+  accessed_at: '2026-01-29T20:59:22Z'
+  query: 'research:07.3-01-NOVEL-PROTOCOLS truebit integer overflow'
+  category: research/legacy-solidity
+  agent: corpus-expansion-07.3-01
+  extracted: true
+  notes: 'Cointelegraph - TrueBit $26.4M integer overflow analysis'

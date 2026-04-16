@@ -1,0 +1,45 @@
+id: invariant-supply-manipulation
+vulndoc: logic/invariants
+name: Supply Manipulation Without Check
+description: 'Function can manipulate token supply without invariant enforcement.
+
+  Total supply changes should preserve token economics invariants.
+
+
+  Risk: Supply manipulation can break token economics, enable inflation
+
+  attacks, or cause accounting discrepancies between balances and supply.
+
+  '
+severity: critical
+scope: Function
+lens:
+- TokenSecurity
+- Invariants
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    any:
+    - property: writes_supply_state
+      op: eq
+      value: true
+    - has_operation: MODIFIES_CRITICAL_STATE
+  tier_c:
+    any:
+    - type: has_label
+      value: state_mutation.modifies_supply
+    - type: has_label
+      value: value_handling.mints_tokens
+    - type: has_label
+      value: value_handling.burns_tokens
+    none:
+    - type: has_label
+      value: invariants.enforces_supply_invariant
+    - type: has_label
+      value: invariants.enforces_cap

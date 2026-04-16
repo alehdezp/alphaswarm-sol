@@ -1,0 +1,28 @@
+id: live-017
+vulndoc: dos/general
+name: Unbounded Array Operations
+description: Iteration over entire storage arrays without bounds.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: loop_bound_sources
+    op: contains_any
+    value:
+    - storage_length
+  - property: has_require_bounds
+    op: eq
+    value: false
+  - property: is_view
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

@@ -1,0 +1,16 @@
+id: ext-031
+vulndoc: access-control/external-call
+name: Oracle Update Missing Sequencing
+description: Oracle updates without nonce or sequencing checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: has_oracle_update_sequence_check
+    op: eq
+    value: false

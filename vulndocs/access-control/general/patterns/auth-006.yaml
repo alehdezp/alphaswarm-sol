@@ -1,0 +1,24 @@
+id: auth-006
+vulndoc: access-control/general
+name: Unprotected Initializer
+description: Public initializer without initializer modifier or init guard.
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: is_initializer_function
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: has_initializer_modifier
+    op: eq
+    value: false
+  - property: checks_initialized_flag
+    op: eq
+    value: false

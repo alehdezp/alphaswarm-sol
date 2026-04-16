@@ -1,0 +1,308 @@
+{
+  "auth-005": {
+    "pattern_id": "auth-005",
+    "lower_bound": 0.3,
+    "upper_bound": 0.95,
+    "initial": 0.7,
+    "observed_precision": 0.7,
+    "sample_size": 0,
+    "computed_at": "2026-01-08T02:05:53.293969"
+  },
+  "dos-001": {
+    "pattern_id": "dos-001",
+    "lower_bound": 0.8985,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 34,
+    "computed_at": "2026-01-08T02:05:53.293983"
+  },
+  "oracle-001": {
+    "pattern_id": "oracle-001",
+    "lower_bound": 0.3,
+    "upper_bound": 0.95,
+    "initial": 0.7,
+    "observed_precision": 0.7,
+    "sample_size": 0,
+    "computed_at": "2026-01-08T02:05:53.293985"
+  },
+  "oracle-003": {
+    "pattern_id": "oracle-003",
+    "lower_bound": 0.6457,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 7,
+    "computed_at": "2026-01-08T02:05:53.293987"
+  },
+  "oracle-004": {
+    "pattern_id": "oracle-004",
+    "lower_bound": 0.3906,
+    "upper_bound": 0.8619,
+    "initial": 0.6667,
+    "observed_precision": 0.6667,
+    "sample_size": 12,
+    "computed_at": "2026-01-08T02:05:53.293989"
+  },
+  "oracle-005": {
+    "pattern_id": "oracle-005",
+    "lower_bound": 0.6226,
+    "upper_bound": 0.98,
+    "initial": 0.9091,
+    "observed_precision": 0.9091,
+    "sample_size": 12,
+    "computed_at": "2026-01-08T02:05:53.293992"
+  },
+  "oracle-006": {
+    "pattern_id": "oracle-006",
+    "lower_bound": 0.15,
+    "upper_bound": 0.6576,
+    "initial": 0.15,
+    "observed_precision": 0.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.293994"
+  },
+  "oracle-007": {
+    "pattern_id": "oracle-007",
+    "lower_bound": 0.6669,
+    "upper_bound": 0.98,
+    "initial": 0.9231,
+    "observed_precision": 0.9231,
+    "sample_size": 14,
+    "computed_at": "2026-01-08T02:05:53.293998"
+  },
+  "multisig-001": {
+    "pattern_id": "multisig-001",
+    "lower_bound": 0.7847,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 14,
+    "computed_at": "2026-01-08T02:05:53.294001"
+  },
+  "multisig-002": {
+    "pattern_id": "multisig-002",
+    "lower_bound": 0.7847,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 14,
+    "computed_at": "2026-01-08T02:05:53.294005"
+  },
+  "multisig-003": {
+    "pattern_id": "multisig-003",
+    "lower_bound": 0.7225,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 10,
+    "computed_at": "2026-01-08T02:05:53.294007"
+  },
+  "vm-001-classic": {
+    "pattern_id": "vm-001-classic",
+    "lower_bound": 0.7575,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 12,
+    "computed_at": "2026-01-08T02:05:53.294009"
+  },
+  "mev-001": {
+    "pattern_id": "mev-001",
+    "lower_bound": 0.3,
+    "upper_bound": 0.95,
+    "initial": 0.7,
+    "observed_precision": 0.7,
+    "sample_size": 0,
+    "computed_at": "2026-01-08T02:05:53.294009"
+  },
+  "mev-002": {
+    "pattern_id": "mev-002",
+    "lower_bound": 0.3,
+    "upper_bound": 0.95,
+    "initial": 0.7,
+    "observed_precision": 0.7,
+    "sample_size": 0,
+    "computed_at": "2026-01-08T02:05:53.294010"
+  },
+  "vm-002-unprotected-transfer": {
+    "pattern_id": "vm-002-unprotected-transfer",
+    "lower_bound": 0.4805,
+    "upper_bound": 0.891,
+    "initial": 0.7333,
+    "observed_precision": 0.7333,
+    "sample_size": 16,
+    "computed_at": "2026-01-08T02:05:53.294012"
+  },
+  "token-001-unhandled-fee-on-transfer": {
+    "pattern_id": "token-001-unhandled-fee-on-transfer",
+    "lower_bound": 0.5958,
+    "upper_bound": 0.98,
+    "initial": 0.9,
+    "observed_precision": 0.9,
+    "sample_size": 16,
+    "computed_at": "2026-01-08T02:05:53.294014"
+  },
+  "token-002-erc777-reentrancy": {
+    "pattern_id": "token-002-erc777-reentrancy",
+    "lower_bound": 0.7225,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 17,
+    "computed_at": "2026-01-08T02:05:53.294015"
+  },
+  "token-003-infinite-approval": {
+    "pattern_id": "token-003-infinite-approval",
+    "lower_bound": 0.28,
+    "upper_bound": 0.72,
+    "initial": 0.5,
+    "observed_precision": 0.5,
+    "sample_size": 16,
+    "computed_at": "2026-01-08T02:05:53.294017"
+  },
+  "token-004-non-standard-return": {
+    "pattern_id": "token-004-non-standard-return",
+    "lower_bound": 0.5958,
+    "upper_bound": 0.98,
+    "initial": 0.9,
+    "observed_precision": 0.9,
+    "sample_size": 17,
+    "computed_at": "2026-01-08T02:05:53.294019"
+  },
+  "token-005-unchecked-return": {
+    "pattern_id": "token-005-unchecked-return",
+    "lower_bound": 0.6647,
+    "upper_bound": 0.9385,
+    "initial": 0.8462,
+    "observed_precision": 0.8462,
+    "sample_size": 26,
+    "computed_at": "2026-01-08T02:05:53.294020"
+  },
+  "dos-002-external-call-in-loop": {
+    "pattern_id": "dos-002-external-call-in-loop",
+    "lower_bound": 0.7218,
+    "upper_bound": 0.9747,
+    "initial": 0.9091,
+    "observed_precision": 0.9091,
+    "sample_size": 25,
+    "computed_at": "2026-01-08T02:05:53.294022"
+  },
+  "token-006-approval-race-condition": {
+    "pattern_id": "token-006-approval-race-condition",
+    "lower_bound": 0.6647,
+    "upper_bound": 0.9385,
+    "initial": 0.8462,
+    "observed_precision": 0.8462,
+    "sample_size": 26,
+    "computed_at": "2026-01-08T02:05:53.294023"
+  },
+  "crypto-002-incomplete-permit-implementation": {
+    "pattern_id": "crypto-002-incomplete-permit-implementation",
+    "lower_bound": 0.2505,
+    "upper_bound": 0.8418,
+    "initial": 0.5714,
+    "observed_precision": 0.5714,
+    "sample_size": 9,
+    "computed_at": "2026-01-08T02:05:53.294025"
+  },
+  "auth-003": {
+    "pattern_id": "auth-003",
+    "lower_bound": 0.8389,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 20,
+    "computed_at": "2026-01-08T02:05:53.294027"
+  },
+  "circuit-001": {
+    "pattern_id": "circuit-001",
+    "lower_bound": 0.6097,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.294028"
+  },
+  "governance-001": {
+    "pattern_id": "governance-001",
+    "lower_bound": 0.6457,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 7,
+    "computed_at": "2026-01-08T02:05:53.294030"
+  },
+  "tokenomics-001": {
+    "pattern_id": "tokenomics-001",
+    "lower_bound": 0.5655,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 5,
+    "computed_at": "2026-01-08T02:05:53.294031"
+  },
+  "bridge-001": {
+    "pattern_id": "bridge-001",
+    "lower_bound": 0.6097,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.294033"
+  },
+  "defi-001": {
+    "pattern_id": "defi-001",
+    "lower_bound": 0.6457,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 7,
+    "computed_at": "2026-01-08T02:05:53.294034"
+  },
+  "emergency-001": {
+    "pattern_id": "emergency-001",
+    "lower_bound": 0.6097,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.294036"
+  },
+  "merkle-001": {
+    "pattern_id": "merkle-001",
+    "lower_bound": 0.6097,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.294037"
+  },
+  "oracle-002": {
+    "pattern_id": "oracle-002",
+    "lower_bound": 0.6097,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.294039"
+  },
+  "treasury-001": {
+    "pattern_id": "treasury-001",
+    "lower_bound": 0.6097,
+    "upper_bound": 0.98,
+    "initial": 0.98,
+    "observed_precision": 1.0,
+    "sample_size": 6,
+    "computed_at": "2026-01-08T02:05:53.294040"
+  },
+  "upgrade-004": {
+    "pattern_id": "upgrade-004",
+    "lower_bound": 0.6398,
+    "upper_bound": 0.965,
+    "initial": 0.875,
+    "observed_precision": 0.875,
+    "sample_size": 25,
+    "computed_at": "2026-01-08T02:05:53.294042"
+  }
+}

@@ -1,0 +1,47 @@
+id: policy-mismatch-admin-action-unprotected
+vulndoc: access-control/policy
+name: Unprotected Admin Action
+description: 'Function performs admin-level operations but lacks admin access control.
+
+  Detects privileged operations missing proper restrictions.
+
+
+  Risk: Admin functions like ownership transfer, parameter changes, or
+
+  emergency actions can be called by anyone.
+
+  '
+severity: critical
+scope: Function
+lens:
+- AccessControl
+- Governance
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    any:
+    - has_operation: MODIFIES_OWNER
+    - has_operation: MODIFIES_ROLES
+    - property: modifies_admin_state
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: access_control.admin_function
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: access_control.owner_only
+    - type: has_label
+      value: access_control.role_based
+    - type: has_label
+      value: access_control.multisig_required
+required_labels:
+- access_control.admin_function

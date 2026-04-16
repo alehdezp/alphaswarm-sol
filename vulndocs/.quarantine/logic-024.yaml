@@ -1,0 +1,22 @@
+id: logic-024
+vulndoc: logic/general
+name: Contract vs EOA Assumption
+description: Address usage without code existence checks.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 749
+match:
+  any:
+  - property: address_parameter_used_for_call
+    op: eq
+    value: true
+  - property: address_parameter_used_for_transfer
+    op: eq
+    value: true
+  none:
+  - property: validates_contract_code
+    op: eq
+    value: true

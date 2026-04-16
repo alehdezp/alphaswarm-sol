@@ -1,0 +1,19 @@
+id: auth-028
+vulndoc: access-control/general
+name: Delegatecall Target Unvalidated
+description: Delegatecall to user-controlled target without validation.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: delegatecall_target_user_controlled
+    op: eq
+    value: true
+  - property: validates_delegatecall_target
+    op: eq
+    value: false

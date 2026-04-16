@@ -1,0 +1,16 @@
+id: vm-009
+vulndoc: reentrancy/general
+name: Approval Race Condition
+description: ERC20 approve without allowance adjustments.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: uses_erc20_approve
+    op: eq
+    value: true
+  - property: uses_allowance_adjust
+    op: eq
+    value: false

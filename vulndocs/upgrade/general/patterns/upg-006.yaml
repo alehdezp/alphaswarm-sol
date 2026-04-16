@@ -1,0 +1,19 @@
+id: upg-006
+vulndoc: upgrade/general
+name: UUPS Upgrade Unprotected
+description: UUPS upgrade function without access control.
+scope: Function
+lens:
+- Upgradeability
+severity: critical
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_is_uups_proxy
+    op: eq
+    value: true
+  - property: has_access_control
+    op: eq
+    value: false

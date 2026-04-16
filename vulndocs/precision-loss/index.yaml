@@ -1,0 +1,17 @@
+# precision-loss Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: precision-loss
+name: Precision Loss
+description: |
+  Vulnerability subcategories for precision-loss domain.
+  See individual subcategories for detection patterns and documentation.
+
+subcategories:
+  - id: rounding-manipulation
+    name: Rounding Direction Manipulation
+    path: rounding-manipulation/
+
+statistics:
+  subcategory_count: 1
+  last_updated: "2026-01-23"

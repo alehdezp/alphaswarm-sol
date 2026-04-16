@@ -1,0 +1,31 @@
+id: op-reentrancy-untrusted-call
+vulndoc: reentrancy/classic
+name: Untrusted External Call Before Balance Write (Operation-Based)
+description: 'Calls to untrusted addresses followed by balance modifications.
+
+  Higher severity as attacker controls callback destination.
+
+  '
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: critical
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: CALLS_UNTRUSTED
+    - has_operation: WRITES_USER_BALANCE
+    - sequence_order:
+        before: CALLS_UNTRUSTED
+        after: WRITES_USER_BALANCE
+    none:
+    - property: has_reentrancy_guard
+      value: true
+aggregation:
+  mode: tier_a_only

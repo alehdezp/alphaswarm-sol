@@ -1,0 +1,35 @@
+id: live-016
+vulndoc: dos/general
+name: Batch Operation Limits
+description: Batch operations without size caps.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: loop_bound_sources
+    op: contains_any
+    value:
+    - user_input
+  - property: has_pagination_parameter
+    op: eq
+    value: false
+  - property: has_require_bounds
+    op: eq
+    value: false
+  any:
+  - property: writes_state
+    op: eq
+    value: true
+  - property: external_calls_in_loop
+    op: eq
+    value: true

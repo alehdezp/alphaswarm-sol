@@ -1,0 +1,154 @@
+# SmartBugs Ground Truth Manifest
+# Phase: 07.3.1.6 IMP-B1 / IMP-K2
+# Purpose: Reference to SmartBugs-curated academic benchmark
+
+manifest:
+  version: "1.0.0"
+  created: "2026-02-04"
+  source: "SmartBugs-curated"
+  type: "academic_benchmark"
+
+repository:
+  url: "https://github.com/smartbugs/smartbugs-curated"
+  commit_hash: "230e649123477eff332742a59a1c7cc6dc286cab"
+  pinned: true  # Pin to specific commit for reproducibility
+  license: "MIT"
+
+citation:
+  title: "SmartBugs: A Framework to Analyze Solidity Smart Contracts"
+  venue: "ACM ESEC/FSE 2020"
+  authors:
+    - "Durieux et al."
+  doi: "10.1145/3368089.3417065"
+
+dataset:
+  total_contracts: 143
+  total_findings: 207
+
+  # DASP (Decentralized Application Security Project) Taxonomy
+  vulnerability_categories:
+    - category: "reentrancy"
+      contracts: 31
+      findings: 32
+      swc_ids: ["SWC-107"]
+      description: "Reentrant function calls causing unexpected state changes"
+
+    - category: "access_control"
+      contracts: 18
+      findings: 21
+      swc_ids: ["SWC-105", "SWC-106"]
+      description: "Function modifier failures or tx.origin misuse"
+
+    - category: "arithmetic"
+      contracts: 15
+      findings: 23
+      swc_ids: ["SWC-101"]
+      description: "Integer overflow/underflow issues"
+
+    - category: "unchecked_low_level_calls"
+      contracts: 52
+      findings: 75
+      swc_ids: ["SWC-104"]
+      description: "Failed call(), delegatecall(), or send() not checked"
+
+    - category: "denial_of_service"
+      contracts: 6
+      findings: 7
+      swc_ids: ["SWC-113", "SWC-128"]
+      description: "Gas-based DoS or unbounded operations"
+
+    - category: "bad_randomness"
+      contracts: 8
+      findings: 31
+      swc_ids: ["SWC-120"]
+      description: "Miner-biased outcome manipulation via blockhash etc."
+
+    - category: "front_running"
+      contracts: 4
+      findings: 7
+      swc_ids: ["SWC-114"]
+      description: "Transaction ordering dependence"
+
+    - category: "time_manipulation"
+      contracts: 5
+      findings: 7
+      swc_ids: ["SWC-116"]
+      description: "Block timestamp manipulation"
+
+    - category: "short_addresses"
+      contracts: 1
+      findings: 1
+      swc_ids: ["SWC-129"]
+      description: "EVM-level incorrectly padded arguments"
+
+annotation_format:
+  description: |
+    Each SmartBugs contract contains inline annotations marking vulnerabilities.
+
+  header_annotations:
+    - "@source": "Original source URL"
+    - "@author": "Annotator"
+    - "@vulnerable_at_lines": "Comma-separated line numbers"
+
+  inline_annotations:
+    vulnerable_line: "// <yes> <report> CATEGORY"
+    safe_line: "// <no>"
+
+  example: |
+    // @source: https://github.com/sigp/solidity-security-blog
+    // @author: SmartBugs Team
+    // @vulnerable_at_lines: 31,38
+
+    function withdraw() public {
+        msg.sender.call{value: balances[msg.sender]}(""); // <yes> <report> REENTRANCY
+        balances[msg.sender] = 0;
+    }
+
+selected_subset:
+  # Minimum 3 contracts per IMP-K2 requirement
+  # Selected for coverage across key vulnerability classes
+
+  reentrancy:
+    - path: "dataset/reentrancy/simple_dao.sol"
+      findings: 1
+      description: "Classic DAO-style reentrancy"
+
+    - path: "dataset/reentrancy/etherstore.sol"
+      findings: 1
+      description: "ETH withdrawal reentrancy"
+
+    - path: "dataset/reentrancy/0x7a8721a9d64c74da899424c1b52acbf58ddc9782.sol"
+      findings: 1
+      description: "Real-world reentrancy"
+
+  access_control:
+    - path: "dataset/access_control/FibonacciBalance.sol"
+      findings: 2
+      description: "Unprotected state modification"
+
+    - path: "dataset/access_control/incorrect_constructor_name1.sol"
+      findings: 1
+      description: "Wrong constructor naming (pre-Solidity 0.4.22)"
+
+  unchecked_calls:
+    - path: "dataset/unchecked_low_level_calls/0x3a0e9acd953ffc0dd18d63603488846a6b8b2b01.sol"
+      findings: 1
+      description: "Unchecked send() return value"
+
+validation_usage:
+  description: |
+    Use SmartBugs contracts as ground truth for tool benchmarking.
+
+  recommended_workflow:
+    1: "Load contract from dataset path"
+    2: "Run AlphaSwarm.sol detection"
+    3: "Compare against @vulnerable_at_lines"
+    4: "Compute precision/recall"
+
+  scoring:
+    true_positive: "Tool finding matches annotated line"
+    false_positive: "Tool finding on non-annotated line"
+    false_negative: "Annotated line not found by tool"
+
+external_ground_truth: true
+no_manual_modification: true

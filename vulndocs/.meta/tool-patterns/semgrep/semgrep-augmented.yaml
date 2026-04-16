@@ -1,0 +1,57 @@
+- id: semgrep-security-unguarded
+  name: Semgrep Security Finding Without Access Gate
+  description: Public/external function has Semgrep security findings without an access gate.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  - Augmented
+  severity: high
+  match:
+    all:
+    - property: semgrep_like_security_count
+      op: gte
+      value: 1
+    - property: has_access_gate
+      op: eq
+      value: false
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+
+- id: semgrep-security-multi-findings
+  name: Multiple Semgrep Security Findings
+  description: Function has multiple Semgrep security findings (hotspot).
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  - Augmented
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_security_count
+      op: gte
+      value: 2
+
+- id: semgrep-security-high-severity
+  name: High Severity Semgrep Findings
+  description: Function has multiple Semgrep findings and is externally reachable.
+  scope: Function
+  lens:
+  - Semgrep
+  - Security
+  - Augmented
+  severity: medium
+  match:
+    all:
+    - property: semgrep_like_security_count
+      op: gte
+      value: 1
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external

@@ -1,0 +1,27 @@
+# Category Template
+# Copy this file to create a new vulnerability category folder
+# Path: vulndocs/{category-id}/index.yaml
+
+schema_version: "1.0"
+
+id: category-id
+name: Category Name
+
+description: |
+  Brief description of this vulnerability category.
+  What makes vulnerabilities in this category similar?
+  What security impact do they have?
+
+# Subcategories in this category
+subcategories:
+  - subcategory-1
+  - subcategory-2
+
+# Optional: Related categories for cross-referencing
+related_categories:
+  - related-category-id
+
+# Metadata for LLM context engineering
+token_estimate: 200
+created: YYYY-MM-DD
+updated: YYYY-MM-DD

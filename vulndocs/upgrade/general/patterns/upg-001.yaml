@@ -1,0 +1,47 @@
+id: upg-001
+vulndoc: upgrade/general
+name: Unprotected Initializer
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `upgrade-005-unprotected-initializer` instead.
+
+
+  Location: `patterns/semantic/upgradeability/upgrade-005-unprotected-initializer.yaml`
+
+
+  The semantic pattern uses `is_initializer_function` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Public initializer without initializer modifier or init guard.
+
+  '
+scope: Function
+lens:
+- Upgradeability
+severity: critical
+status: deprecated
+deprecated_in_favor_of: upgrade-005-unprotected-initializer
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)^(initialize|init|setup|__init__)
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: contract_is_upgradeable
+    op: eq
+    value: true
+  - property: has_initializer_modifier
+    op: eq
+    value: false
+  - property: checks_initialized_flag
+    op: eq
+    value: false

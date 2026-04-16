@@ -1,0 +1,14 @@
+invariants:
+  - id: total-supply-preserved
+    contract: InvariantConfigFixture
+    target_type: Contract
+    expression: "totalSupply == sum(balances)"
+    guard_functions:
+      - _checkInvariant
+      - ensureInvariant
+      - guardByName
+  - id: hash-invariant
+    contract: InvariantConfigFixture
+    target_type: StateVariable
+    target_name: totalSupplyHash
+    expression: "keccak256(\"totalSupply\") == totalSupplyHash"

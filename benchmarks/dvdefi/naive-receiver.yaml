@@ -1,0 +1,49 @@
+# DVDeFi Challenge: Naive Receiver
+# Vulnerability: Callback exploitation via flash loan
+
+id: dvd-naive-receiver
+name: Naive Receiver
+version: "4"
+difficulty: 1
+category: Access Control
+
+source_path: examples/damm-vuln-defi/src/naive-receiver
+
+vulnerability:
+  type: callback-unauthorized-action
+  description: |
+    The FlashLoanReceiver accepts flash loans from anyone and pays fees,
+    allowing an attacker to drain victim's funds through repeated flash loans.
+  cwe: CWE-284
+  severity: high
+
+expected_detections:
+  - pattern: callback-missing-caller-check
+    contract: FlashLoanReceiver
+    function: onFlashLoan
+    property: callback_chain_surface
+    confidence: high
+
+  - pattern: callback-no-access-gate
+    contract: FlashLoanReceiver
+    function: onFlashLoan
+    property: has_access_gate
+    value: false
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - FlashLoanReceiver.onFlashLoan
+  safe:
+    - NaiveReceiverPool.flashLoan
+
+false_positive_exclusions:
+  - description: "Pool's flashLoan has proper callback handling"
+    reason: Pool enforces callback interface correctly
+
+verification:
+  exploit_summary: "Call flashLoan with victim as borrower to drain their funds via fees"
+  fix_summary: "Add caller check in onFlashLoan to only accept loans from owner"
+
+status: detected
+detection_date: "2025-12-31"

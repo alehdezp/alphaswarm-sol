@@ -1,0 +1,44 @@
+id: statemachine-double-initialization
+vulndoc: logic/state-machine
+name: Double Initialization Risk
+description: 'Initializer function can be called multiple times.
+
+  Should only be callable once to prevent re-initialization attacks.
+
+
+  Risk: Attacker reinitializes contract after deployment,
+
+  potentially changing owner or resetting critical state.
+
+  '
+severity: critical
+scope: Function
+lens:
+- StateIntegrity
+- Initialization
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    none:
+    - property: checks_initialized_flag
+      op: eq
+      value: true
+    - property: has_initializer_modifier
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: state_mutation.initializes_state
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: temporal.single_use_only
+required_labels:
+- state_mutation.initializes_state

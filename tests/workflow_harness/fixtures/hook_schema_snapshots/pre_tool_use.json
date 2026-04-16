@@ -1,0 +1,8 @@
+{
+  "session_id": "eeb93c51-cb2c-4594-a4d9-4a5e5c11600f",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "uv run alphaswarm query 'functions without access control'"
+  },
+  "_schema_note": "PreToolUse stdin from real CC session. tool_name is the canonical tool identifier. tool_input contains the full input dict. Used by delegate_guard.py for blocking decisions."
+}

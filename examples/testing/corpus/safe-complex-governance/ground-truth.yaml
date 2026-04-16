@@ -1,0 +1,39 @@
+project:
+  name: "safe-complex-governance"
+  theme: "governance"
+  tier: 1
+  adversarial_categories: ["C"]
+  description: "False-positive control. Complex governance with misleading comments (C5) and dangerous-looking names (C1) but ALL patterns are correctly implemented."
+
+findings: []
+
+safe_patterns:
+  - technique: "C1-safe-dangerous-names"
+    contract: "SecureGovernor"
+    function: "withdraw"
+    expected_verdict: safe
+    reasoning: "Has nonReentrant modifier and follows CEI pattern (state update before call)"
+
+  - technique: "C5-misleading-comments"
+    contract: "SecureGovernor"
+    function: "execute"
+    expected_verdict: safe
+    reasoning: "Comments say WARNING/TODO/dangerous but function has nonReentrant + CEI + state check"
+
+  - technique: "C2-complex-correct-acl"
+    contract: "SecureGovernor"
+    function: "cancelProposal"
+    expected_verdict: safe
+    reasoning: "Multi-condition access control (proposer OR guardian) with executed-state guard"
+
+  - technique: "C1-safe-dangerous-names"
+    contract: "SecureGovernor"
+    function: "castVote"
+    expected_verdict: safe
+    reasoning: "Despite direct state modification, has hasVoted[msg.sender] check preventing double-vote"
+
+summary:
+  total_findings: 0
+  total_safe_patterns: 4
+  difficulty: "medium"
+  notes: "FP control: complex governance that LOOKS vulnerable (misleading comments, dangerous-looking patterns) but is fully secure"

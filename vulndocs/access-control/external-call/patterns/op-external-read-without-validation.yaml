@@ -1,0 +1,20 @@
+id: op-external-read-without-validation
+vulndoc: access-control/external-call
+name: External Read Without Validation (Operation-Based)
+description: 'Reading external values without input validation.
+
+  May include manipulable prices or untrusted data.
+
+  '
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  tier_a:
+    all:
+    - has_operation: READS_EXTERNAL_VALUE
+    none:
+    - has_operation: VALIDATES_INPUT
+aggregation:
+  mode: tier_a_only

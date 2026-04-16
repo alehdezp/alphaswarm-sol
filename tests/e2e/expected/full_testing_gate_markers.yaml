@@ -1,0 +1,507 @@
+# Gate Markers for /vrs-full-testing Evidence Pack Validation
+#
+# This file maps gate IDs to evidence pack fields and expected markers.
+# Used by full_testing_gate_check.py to locate and validate gate data.
+#
+# Usage:
+#   from alphaswarm_sol.testing.gate_markers import GateMarkerValidator
+#   validator = GateMarkerValidator("tests/e2e/expected/full_testing_gate_markers.yaml")
+#   validator.validate_evidence_pack(evidence_pack_path)
+
+version: "1.0.0"
+updated: "2026-01-30"
+
+# =============================================================================
+# Gate Marker Definitions
+# =============================================================================
+gates:
+  # ---------------------------------------------------------------------------
+  # G01: Stage Completion
+  # ---------------------------------------------------------------------------
+  G01:
+    gate_id: G01
+    name: Stage Completion
+    description: All test suites completed successfully
+    category: critical
+    blocking: true
+
+    # Evidence pack fields to check
+    evidence_fields:
+      primary: manifest.json
+      paths:
+        - field: suites.s1_command.status
+          expected_type: string
+          valid_values: ["passed", "failed", "skipped"]
+        - field: suites.s2_agent.status
+          expected_type: string
+          valid_values: ["passed", "failed", "skipped"]
+        - field: suites.s3_context.status
+          expected_type: string
+          valid_values: ["passed", "failed", "skipped"]
+        - field: suites.s4_resume.status
+          expected_type: string
+          valid_values: ["passed", "failed", "skipped"]
+
+    # Validation markers
+    markers:
+      pass_condition: "all(suite.status == 'passed' for suite in suites.values())"
+      fail_markers:
+        - pattern: "status.*failed"
+          error_code: G01-F01
+        - pattern: "suites.*\\{\\}"
+          error_code: G01-F05
+
+  # ---------------------------------------------------------------------------
+  # G02: Precision
+  # ---------------------------------------------------------------------------
+  G02:
+    gate_id: G02
+    name: Precision
+    description: Detection accuracy (minimize false positives)
+    category: critical
+    blocking: true
+
+    evidence_fields:
+      primary: metrics/accuracy.json
+      paths:
+        - field: overall.precision
+          expected_type: number
+          valid_range: [0.0, 1.0]
+        - field: false_positives
+          expected_type: array
+          optional: true
+
+    markers:
+      pass_condition: "overall.precision >= 0.85"
+      threshold: 0.85
+      fail_markers:
+        - pattern: "precision.*null"
+          error_code: G02-F02
+        - pattern: "precision.*1\\.0"
+          error_code: G02-F03
+          severity: warning
+
+  # ---------------------------------------------------------------------------
+  # G03: Recall
+  # ---------------------------------------------------------------------------
+  G03:
+    gate_id: G03
+    name: Recall
+    description: Detection coverage (minimize false negatives)
+    category: critical
+    blocking: true
+
+    evidence_fields:
+      primary: metrics/accuracy.json
+      paths:
+        - field: overall.recall
+          expected_type: number
+          valid_range: [0.0, 1.0]
+        - field: false_negatives
+          expected_type: array
+          optional: true
+
+    markers:
+      pass_condition: "overall.recall >= 0.80"
+      threshold: 0.80
+      fail_markers:
+        - pattern: "recall.*null"
+          error_code: G03-F02
+        - pattern: "recall.*1\\.0"
+          error_code: G03-F03
+          severity: warning
+
+  # ---------------------------------------------------------------------------
+  # G04: F1 Score
+  # ---------------------------------------------------------------------------
+  G04:
+    gate_id: G04
+    name: F1 Score
+    description: Balanced precision/recall measure
+    category: critical
+    blocking: true
+
+    evidence_fields:
+      primary: metrics/accuracy.json
+      paths:
+        - field: overall.f1_score
+          expected_type: number
+          valid_range: [0.0, 1.0]
+
+    markers:
+      pass_condition: "overall.f1_score >= 0.82"
+      threshold: 0.82
+      fail_markers:
+        - pattern: "f1_score.*null"
+          error_code: G04-F02
+
+  # ---------------------------------------------------------------------------
+  # G05: Debug Coverage
+  # ---------------------------------------------------------------------------
+  G05:
+    gate_id: G05
+    name: Debug Coverage
+    description: All agents/skills have debug records
+    category: observability
+    blocking: true
+
+    evidence_fields:
+      primary: manifest.json
+      secondary: debug/index.json
+      paths:
+        - field: debug.enabled
+          expected_type: boolean
+          expected_value: true
+        - field: debug.records_count
+          expected_type: number
+          min_value: 1
+        - field: debug.validation.all_records_valid
+          expected_type: boolean
+          expected_value: true
+        - field: debug.validation.validation_errors
+          expected_type: array
+          expected_length: 0
+
+    secondary_paths:
+      - field: records
+        expected_type: array
+        min_length: 1
+      - field: records[].status
+        expected_type: string
+        valid_values: ["success", "error"]
+
+    markers:
+      pass_condition: "debug.enabled == true AND debug.validation.all_records_valid == true"
+      fail_markers:
+        - pattern: "enabled.*false"
+          error_code: G05-F01
+        - pattern: "all_records_valid.*false"
+          error_code: G05-F02
+        - pattern: "duration_ms.*0"
+          error_code: G05-F04
+
+  # ---------------------------------------------------------------------------
+  # G06: Tier-C Detection
+  # ---------------------------------------------------------------------------
+  G06:
+    gate_id: G06
+    name: Tier-C Detection
+    description: Label-dependent patterns functional
+    category: functional
+    blocking: true
+
+    evidence_fields:
+      primary: metrics/accuracy.json
+      paths:
+        - field: by_category.tier_c_labels.true_positives
+          expected_type: number
+          min_value: 1
+        - field: by_category.tier_c_labels.precision
+          expected_type: number
+          valid_range: [0.0, 1.0]
+          optional: true
+        - field: by_category.tier_c_labels.recall
+          expected_type: number
+          valid_range: [0.0, 1.0]
+          optional: true
+
+    markers:
+      pass_condition: "by_category.tier_c_labels.true_positives >= 1"
+      threshold: 1
+      fail_markers:
+        - pattern: "true_positives.*0"
+          error_code: G06-F01
+        - pattern: "tier_c_labels.*null"
+          error_code: G06-F02
+
+  # ---------------------------------------------------------------------------
+  # G07: Economic Context
+  # ---------------------------------------------------------------------------
+  G07:
+    gate_id: G07
+    name: Economic Context
+    description: Oracle/pricing scenarios validated
+    category: functional
+    blocking: true
+
+    evidence_fields:
+      primary: manifest.json
+      paths:
+        - field: scenarios
+          expected_type: array
+          min_length: 1
+        - field: scenarios[].id
+          expected_type: string
+        - field: scenarios[].category
+          expected_type: string
+          valid_values: ["general", "oracle", "pricing", "economic", "reentrancy", "access"]
+        - field: scenarios[].status
+          expected_type: string
+          valid_values: ["passed", "failed", "skipped"]
+
+    # Filter for oracle/pricing/economic categories
+    filters:
+      - category_in: ["oracle", "pricing", "economic"]
+        required_pass_count: 1
+
+    markers:
+      pass_condition: "len([s for s in scenarios if s.category in ['oracle', 'pricing', 'economic'] and s.status == 'passed']) >= 1"
+      threshold: 1
+      fail_markers:
+        - pattern: "oracle.*failed"
+          error_code: G07-F01
+        - pattern: "scenarios.*\\[\\]"
+          error_code: G07-F02
+
+  # ---------------------------------------------------------------------------
+  # G08: Agent Agreement
+  # ---------------------------------------------------------------------------
+  G08:
+    gate_id: G08
+    name: Agent Agreement
+    description: Multi-agent debate consistency
+    category: quality
+    blocking: false
+
+    evidence_fields:
+      primary: metrics/agreement.json
+      paths:
+        - field: overall_agreement_rate
+          expected_type: number
+          valid_range: [0.0, 1.0]
+        - field: by_debate
+          expected_type: array
+          optional: true
+        - field: by_debate[].scenario
+          expected_type: string
+        - field: by_debate[].agreement
+          expected_type: boolean
+
+    markers:
+      pass_condition: "overall_agreement_rate >= 0.90"
+      threshold: 0.90
+      fail_markers:
+        - pattern: "overall_agreement_rate.*null"
+          error_code: G08-F02
+          severity: info
+
+  # ---------------------------------------------------------------------------
+  # G09: Transcript Validity
+  # ---------------------------------------------------------------------------
+  G09:
+    gate_id: G09
+    name: Transcript Validity
+    description: All transcripts have valid markers
+    category: validation
+    blocking: true
+
+    evidence_fields:
+      primary: manifest.json
+      paths:
+        - field: validation.pack_valid
+          expected_type: boolean
+          expected_value: true
+        - field: validation.all_transcripts_present
+          expected_type: boolean
+          expected_value: true
+        - field: validation.all_markers_valid
+          expected_type: boolean
+          expected_value: true
+        - field: validation.errors
+          expected_type: array
+          expected_length: 0
+
+    markers:
+      pass_condition: "validation.pack_valid == true AND validation.all_markers_valid == true"
+      fail_markers:
+        - pattern: "pack_valid.*false"
+          error_code: G09-F01
+        - pattern: "all_transcripts_present.*false"
+          error_code: G09-F02
+        - pattern: "all_markers_valid.*false"
+          error_code: G09-F03
+        - pattern: "errors.*\\[.+\\]"
+          error_code: G09-F04
+
+  # ---------------------------------------------------------------------------
+  # G10: Duration Validity
+  # ---------------------------------------------------------------------------
+  G10:
+    gate_id: G10
+    name: Duration Validity
+    description: No mocked/simulated runs (min 5s)
+    category: validation
+    blocking: true
+
+    evidence_fields:
+      primary: manifest.json
+      paths:
+        - field: scenarios
+          expected_type: array
+          min_length: 1
+        - field: scenarios[].id
+          expected_type: string
+        - field: scenarios[].duration_ms
+          expected_type: number
+          min_value: 5001
+
+    markers:
+      pass_condition: "all(s.duration_ms > 5000 for s in scenarios)"
+      threshold: 5000
+      fail_markers:
+        - pattern: "duration_ms.*[0-4]\\d{3}"
+          error_code: G10-F01
+        - pattern: "duration_ms.*\\d{1,3}$"
+          error_code: G10-F01
+        - pattern: "scenarios.*\\[\\]"
+          error_code: G10-F02
+
+# =============================================================================
+# Cross-Gate Validation
+# =============================================================================
+cross_gate_validations:
+  # Ensure consistency between gates
+  - name: "Suite-Scenario Consistency"
+    description: "Suite status should align with scenario outcomes"
+    gates: ["G01", "G09", "G10"]
+    validation: |
+      If G01 passes (all suites passed), then:
+        - G09 should pass (valid transcripts)
+        - G10 should pass (valid durations)
+      If G01 fails, G09/G10 may still pass (infrastructure issue vs test failure)
+
+  - name: "Accuracy-TierC Consistency"
+    description: "If G06 passes, accuracy metrics should reflect Tier-C data"
+    gates: ["G02", "G03", "G06"]
+    validation: |
+      If G06 passes (Tier-C TP >= 1), then:
+        - by_category.tier_c_labels should exist in accuracy.json
+        - Tier-C TPs should contribute to overall recall
+
+  - name: "Debug-Duration Consistency"
+    description: "Debug records should have valid durations matching scenario durations"
+    gates: ["G05", "G10"]
+    validation: |
+      If G05 passes (debug valid):
+        - All debug records should have duration_ms > 0
+        - Debug durations should correlate with scenario durations
+
+# =============================================================================
+# Evidence Pack Structure
+# =============================================================================
+evidence_pack_structure:
+  required_files:
+    - path: manifest.json
+      gates: ["G01", "G05", "G07", "G09", "G10"]
+    - path: metrics/accuracy.json
+      gates: ["G02", "G03", "G04", "G06"]
+
+  optional_files:
+    - path: metrics/agreement.json
+      gates: ["G08"]
+    - path: debug/index.json
+      gates: ["G05"]
+
+  directories:
+    - path: transcripts/
+      description: transcript files
+      gates: ["G09"]
+    - path: debug/skills/
+      description: skill debug records
+      gates: ["G05"]
+    - path: debug/agents/
+      description: agent debug records
+      gates: ["G05"]
+
+# =============================================================================
+# Marker Validation Patterns
+# =============================================================================
+marker_patterns:
+  # Transcript markers
+  start_marker:
+    pattern: '^\[ALPHASWARM-START\]\s+(\S+)\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?)$'
+    groups:
+      - name: scenario_id
+        index: 1
+      - name: timestamp
+        index: 2
+
+  end_marker:
+    pattern: '^\[ALPHASWARM-END\]\s+(\S+)\s+(\d+)\s+(\d+)$'
+    groups:
+      - name: scenario_id
+        index: 1
+      - name: exit_code
+        index: 2
+      - name: duration_ms
+        index: 3
+
+  # Gate-specific markers in output
+  gate_markers:
+    G01:
+      - pattern: "Suite.*passed"
+        indicates: pass
+      - pattern: "Suite.*failed"
+        indicates: fail
+
+    G05:
+      - pattern: "Debug mode enabled"
+        indicates: pass
+      - pattern: "Debug records captured"
+        indicates: pass
+      - pattern: "DEBUG_MODE.*false"
+        indicates: fail
+
+    G06:
+      - pattern: "Tier-C.*detected"
+        indicates: pass
+      - pattern: "Label-dependent.*match"
+        indicates: pass
+
+    G07:
+      - pattern: "Oracle.*validated"
+        indicates: pass
+      - pattern: "Economic context.*complete"
+        indicates: pass
+
+# =============================================================================
+# Threshold Configuration
+# =============================================================================
+thresholds:
+  G02:
+    metric: precision
+    min_value: 0.85
+    unit: ratio
+  G03:
+    metric: recall
+    min_value: 0.80
+    unit: ratio
+  G04:
+    metric: f1_score
+    min_value: 0.82
+    unit: ratio
+  G06:
+    metric: true_positives
+    min_value: 1
+    unit: count
+  G07:
+    metric: oracle_passed
+    min_value: 1
+    unit: count
+  G08:
+    metric: agreement_rate
+    min_value: 0.90
+    unit: ratio
+  G10:
+    metric: duration_ms
+    min_value: 5000
+    unit: milliseconds
+
+# =============================================================================
+# Validation Configuration
+# =============================================================================
+validation_config:
+  strict_mode: true
+  fail_fast: true
+  output_format: json
+  report_path: evidence/gate_validation_report.json

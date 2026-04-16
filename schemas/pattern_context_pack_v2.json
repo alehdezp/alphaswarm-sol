@@ -1,0 +1,794 @@
+{
+  "$defs": {
+    "AssetType": {
+      "description": "Type of asset at risk.",
+      "enum": [
+        "native",
+        "token",
+        "governance",
+        "mixed",
+        "unknown"
+      ],
+      "title": "AssetType",
+      "type": "string"
+    },
+    "GuardType": {
+      "description": "Types of guards/mitigations.",
+      "enum": [
+        "reentrancy_guard",
+        "access_control",
+        "pausable",
+        "timelock",
+        "oracle_check",
+        "slippage_check",
+        "balance_check",
+        "custom"
+      ],
+      "title": "GuardType",
+      "type": "string"
+    },
+    "PCPAntiSignal": {
+      "description": "A guard/mitigation that negates the pattern.\n\nAnti-signals indicate that a pattern does NOT apply due to\nsome guard or mitigation being present.",
+      "properties": {
+        "id": {
+          "description": "Unique anti-signal identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "guard_type": {
+          "$ref": "#/$defs/GuardType",
+          "description": "Type of guard/mitigation"
+        },
+        "severity": {
+          "default": "medium",
+          "description": "How severely this anti-signal negates the pattern",
+          "title": "Severity",
+          "type": "string"
+        },
+        "expected_context": {
+          "default": "",
+          "description": "Expected context when this anti-signal is present",
+          "title": "Expected Context",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "description": "Evidence references for this anti-signal",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "bypass_notes": {
+          "description": "Notes on how this guard might be bypassed",
+          "items": {
+            "type": "string"
+          },
+          "title": "Bypass Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "guard_type"
+      ],
+      "title": "PCPAntiSignal",
+      "type": "object"
+    },
+    "PCPBudget": {
+      "description": "Token budget constraints for PCP v2.\n\nControls token allocation across cheap/verify/deep passes.",
+      "properties": {
+        "pcp_max_tokens": {
+          "default": 800,
+          "description": "Maximum tokens for PCP itself",
+          "maximum": 2000,
+          "minimum": 100,
+          "title": "Pcp Max Tokens",
+          "type": "integer"
+        },
+        "context_max_tokens": {
+          "default": 2200,
+          "description": "Maximum tokens for full context (PCP + slice + protocol)",
+          "maximum": 6000,
+          "minimum": 500,
+          "title": "Context Max Tokens",
+          "type": "integer"
+        },
+        "cheap_pass_tokens": {
+          "default": 1200,
+          "description": "Token budget for cheap/fast pass",
+          "maximum": 3000,
+          "minimum": 500,
+          "title": "Cheap Pass Tokens",
+          "type": "integer"
+        },
+        "verify_pass_tokens": {
+          "default": 1800,
+          "description": "Token budget for verification pass",
+          "maximum": 4000,
+          "minimum": 1000,
+          "title": "Verify Pass Tokens",
+          "type": "integer"
+        },
+        "deep_pass_tokens": {
+          "default": 2400,
+          "description": "Token budget for deep analysis pass",
+          "maximum": 6000,
+          "minimum": 1500,
+          "title": "Deep Pass Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "PCPBudget",
+      "type": "object"
+    },
+    "PCPCompositionHints": {
+      "description": "Hints for pattern composition and chaining.\n\nDescribes how this pattern relates to other patterns.",
+      "properties": {
+        "co_occurs_with": {
+          "description": "Pattern IDs that frequently co-occur with this pattern",
+          "items": {
+            "type": "string"
+          },
+          "title": "Co Occurs With",
+          "type": "array"
+        },
+        "combine_with": {
+          "description": "Pattern IDs to combine for compound detection",
+          "items": {
+            "type": "string"
+          },
+          "title": "Combine With",
+          "type": "array"
+        }
+      },
+      "title": "PCPCompositionHints",
+      "type": "object"
+    },
+    "PCPCounterfactual": {
+      "description": "A what-if scenario for Tier-B exploration.\n\nCounterfactuals model \"what if X were removed/changed\" scenarios.",
+      "properties": {
+        "id": {
+          "description": "Unique counterfactual identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "if_removed": {
+          "description": "ID of anti-signal/guard to hypothetically remove",
+          "title": "If Removed",
+          "type": "string"
+        },
+        "becomes_true": {
+          "default": true,
+          "description": "Whether the pattern would hold if guard removed",
+          "title": "Becomes True",
+          "type": "boolean"
+        },
+        "notes": {
+          "default": "",
+          "description": "Additional notes about this counterfactual",
+          "title": "Notes",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "if_removed"
+      ],
+      "title": "PCPCounterfactual",
+      "type": "object"
+    },
+    "PCPDeterminism": {
+      "description": "Determinism constraints for PCP v2.\n\nEnsures no RAG, no name heuristics, and stable serialization.",
+      "properties": {
+        "no_rag": {
+          "default": true,
+          "description": "No retrieval-augmented generation allowed",
+          "title": "No Rag",
+          "type": "boolean"
+        },
+        "no_name_heuristics": {
+          "default": true,
+          "description": "No function/variable name heuristics allowed",
+          "title": "No Name Heuristics",
+          "type": "boolean"
+        },
+        "serialization_order": {
+          "description": "Canonical serialization order for deterministic hashing",
+          "items": {
+            "type": "string"
+          },
+          "title": "Serialization Order",
+          "type": "array"
+        },
+        "hash_seed": {
+          "default": "graph_hash + pcp_version + pattern_id",
+          "description": "Hash seed formula for cache keying",
+          "title": "Hash Seed",
+          "type": "string"
+        }
+      },
+      "title": "PCPDeterminism",
+      "type": "object"
+    },
+    "PCPEconomicPlaceholders": {
+      "description": "Placeholders for Phase 5.11 economic context overlay.\n\nThese fields are reserved for future economic reasoning integration.",
+      "properties": {
+        "value_flows": {
+          "description": "Value flow descriptors (populated in Phase 5.11)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Value Flows",
+          "type": "array"
+        },
+        "incentive_hooks": {
+          "description": "Incentive mechanism hooks (populated in Phase 5.11)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Incentive Hooks",
+          "type": "array"
+        },
+        "role_assumptions": {
+          "description": "Role/actor assumptions (populated in Phase 5.11)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Role Assumptions",
+          "type": "array"
+        },
+        "offchain_dependencies": {
+          "description": "Off-chain dependency flags (populated in Phase 5.11)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Offchain Dependencies",
+          "type": "array"
+        },
+        "risk_pre_score": {
+          "$ref": "#/$defs/RiskPreScore",
+          "default": "unknown",
+          "description": "Pre-computed risk score placeholder"
+        }
+      },
+      "title": "PCPEconomicPlaceholders",
+      "type": "object"
+    },
+    "PCPEvidenceRequirements": {
+      "description": "Evidence requirements for graph-based matching.\n\nSpecifies what types of nodes, edges, and paths are needed.",
+      "properties": {
+        "node_types": {
+          "description": "Required node types in evidence subgraph",
+          "items": {
+            "type": "string"
+          },
+          "title": "Node Types",
+          "type": "array"
+        },
+        "edge_types": {
+          "description": "Required edge types in evidence subgraph",
+          "items": {
+            "type": "string"
+          },
+          "title": "Edge Types",
+          "type": "array"
+        },
+        "path_constraints": {
+          "description": "Path constraint expressions",
+          "items": {
+            "type": "string"
+          },
+          "title": "Path Constraints",
+          "type": "array"
+        }
+      },
+      "title": "PCPEvidenceRequirements",
+      "type": "object"
+    },
+    "PCPEvidenceWeights": {
+      "description": "Evidence weight categorization for prioritized analysis.\n\nCategorizes evidence refs by importance for multi-pass detection.",
+      "properties": {
+        "required": {
+          "description": "Evidence refs that MUST exist for a match",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required",
+          "type": "array"
+        },
+        "strong": {
+          "description": "Evidence refs that strongly support a match",
+          "items": {
+            "type": "string"
+          },
+          "title": "Strong",
+          "type": "array"
+        },
+        "weak": {
+          "description": "Evidence refs that weakly support a match",
+          "items": {
+            "type": "string"
+          },
+          "title": "Weak",
+          "type": "array"
+        },
+        "optional": {
+          "description": "Evidence refs that are nice-to-have",
+          "items": {
+            "type": "string"
+          },
+          "title": "Optional",
+          "type": "array"
+        }
+      },
+      "title": "PCPEvidenceWeights",
+      "type": "object"
+    },
+    "PCPExploitStep": {
+      "description": "A step in the exploit sequence.",
+      "properties": {
+        "id": {
+          "description": "Unique step identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable step description",
+          "title": "Description",
+          "type": "string"
+        },
+        "required_ops": {
+          "description": "Semantic operations required for this step",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Ops",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "description": "Evidence references supporting this step",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "PCPExploitStep",
+      "type": "object"
+    },
+    "PCPGuardTaxonomyEntry": {
+      "description": "An entry in the guard taxonomy.\n\nDescribes a specific guard type and its expected behavior.",
+      "properties": {
+        "id": {
+          "description": "Unique guard taxonomy entry identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/GuardType",
+          "description": "Guard type classification"
+        },
+        "description": {
+          "description": "Human-readable guard description",
+          "title": "Description",
+          "type": "string"
+        },
+        "expected_ops": {
+          "description": "Semantic operations expected when this guard is present",
+          "items": {
+            "type": "string"
+          },
+          "title": "Expected Ops",
+          "type": "array"
+        },
+        "bypass_notes": {
+          "description": "Notes on potential bypass vectors",
+          "items": {
+            "type": "string"
+          },
+          "title": "Bypass Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "description"
+      ],
+      "title": "PCPGuardTaxonomyEntry",
+      "type": "object"
+    },
+    "PCPImpactInvariant": {
+      "description": "An impact invariant describing the vulnerability's effect.",
+      "properties": {
+        "id": {
+          "description": "Unique invariant identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable impact description",
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "description": "Evidence references supporting this invariant",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "PCPImpactInvariant",
+      "type": "object"
+    },
+    "PCPOpSignatures": {
+      "description": "Operation signatures and ordering constraints.",
+      "properties": {
+        "required_ops": {
+          "description": "Semantic operations required for this pattern",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Required Ops",
+          "type": "array"
+        },
+        "ordering_variants": {
+          "description": "Valid operation orderings (multiple variants allowed)",
+          "items": {
+            "$ref": "#/$defs/PCPOrderingVariant"
+          },
+          "title": "Ordering Variants",
+          "type": "array"
+        },
+        "forbidden_ops": {
+          "description": "Semantic operations that must NOT be present",
+          "items": {
+            "type": "string"
+          },
+          "title": "Forbidden Ops",
+          "type": "array"
+        }
+      },
+      "required": [
+        "required_ops"
+      ],
+      "title": "PCPOpSignatures",
+      "type": "object"
+    },
+    "PCPOrderingVariant": {
+      "description": "A valid operation ordering sequence.",
+      "properties": {
+        "id": {
+          "description": "Unique ordering variant identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "description": "Human-readable description",
+          "title": "Description",
+          "type": "string"
+        },
+        "sequence": {
+          "description": "Ordered list of semantic operations",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Sequence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "sequence"
+      ],
+      "title": "PCPOrderingVariant",
+      "type": "object"
+    },
+    "PCPPrecondition": {
+      "description": "Precondition for pattern applicability.",
+      "properties": {
+        "id": {
+          "description": "Unique precondition identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "description": "Human-readable precondition description",
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "description": "Evidence references supporting this precondition",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "PCPPrecondition",
+      "type": "object"
+    },
+    "PCPRiskEnvelope": {
+      "description": "Risk envelope for semantic risk framing.\n\nDescribes the asset type, trust boundary, and value flow characteristics.",
+      "properties": {
+        "asset_type": {
+          "$ref": "#/$defs/AssetType",
+          "default": "unknown",
+          "description": "Type of asset at risk"
+        },
+        "trust_boundary": {
+          "$ref": "#/$defs/TrustBoundary",
+          "default": "unknown",
+          "description": "Trust boundary being crossed"
+        },
+        "value_movement": {
+          "$ref": "#/$defs/ValueMovement",
+          "default": "unknown",
+          "description": "Direction of value movement"
+        },
+        "severity_floor": {
+          "default": "medium",
+          "description": "Minimum severity for this pattern",
+          "title": "Severity Floor",
+          "type": "string"
+        }
+      },
+      "title": "PCPRiskEnvelope",
+      "type": "object"
+    },
+    "PCPUnknownsPolicy": {
+      "description": "Explicit policy for handling missing evidence/signals.\n\nNever infer safety from missing context - missing = unknown.",
+      "properties": {
+        "missing_required": {
+          "$ref": "#/$defs/UnknownsPolicy",
+          "default": "unknown",
+          "description": "How to treat missing required evidence"
+        },
+        "missing_optional": {
+          "$ref": "#/$defs/UnknownsPolicy",
+          "default": "unknown",
+          "description": "How to treat missing optional evidence"
+        },
+        "missing_anti_signal": {
+          "$ref": "#/$defs/UnknownsPolicy",
+          "default": "unknown",
+          "description": "How to treat missing anti-signals"
+        }
+      },
+      "title": "PCPUnknownsPolicy",
+      "type": "object"
+    },
+    "PCPWitness": {
+      "description": "Witness requirements for pattern matching.\n\nDefines minimal proof subgraph (required) and negative witness (must-not-exist).",
+      "properties": {
+        "minimal_required": {
+          "description": "Minimal evidence set that must exist for a plausible match",
+          "items": {
+            "type": "string"
+          },
+          "title": "Minimal Required",
+          "type": "array"
+        },
+        "negative_required": {
+          "description": "Evidence that must NOT exist for a match to hold",
+          "items": {
+            "type": "string"
+          },
+          "title": "Negative Required",
+          "type": "array"
+        }
+      },
+      "title": "PCPWitness",
+      "type": "object"
+    },
+    "RiskPreScore": {
+      "description": "Pre-computed risk score placeholder for economic context.",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "unknown"
+      ],
+      "title": "RiskPreScore",
+      "type": "string"
+    },
+    "TrustBoundary": {
+      "description": "Trust boundary being crossed.",
+      "enum": [
+        "user->contract",
+        "contract->contract",
+        "external->internal",
+        "admin->user",
+        "unknown"
+      ],
+      "title": "TrustBoundary",
+      "type": "string"
+    },
+    "UnknownsPolicy": {
+      "description": "How to treat missing evidence/signals.",
+      "enum": [
+        "unknown",
+        "fail",
+        "warn"
+      ],
+      "title": "UnknownsPolicy",
+      "type": "string"
+    },
+    "ValueMovement": {
+      "description": "Direction of value movement.",
+      "enum": [
+        "in",
+        "out",
+        "internal",
+        "bidirectional",
+        "unknown"
+      ],
+      "title": "ValueMovement",
+      "type": "string"
+    }
+  },
+  "description": "Deterministic, evidence-first context pack for agentic pattern discovery. PCP v2 is cacheable, schema-validated, and graph-first.",
+  "properties": {
+    "id": {
+      "description": "Unique PCP identifier (pcp-<pattern_id>)",
+      "title": "Id",
+      "type": "string"
+    },
+    "version": {
+      "default": "2.0",
+      "description": "PCP schema version (must be 2.x)",
+      "pattern": "^2\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    },
+    "pattern_id": {
+      "description": "Associated pattern ID",
+      "title": "Pattern Id",
+      "type": "string"
+    },
+    "name": {
+      "description": "Human-readable pattern name",
+      "title": "Name",
+      "type": "string"
+    },
+    "summary": {
+      "description": "Brief pattern summary",
+      "title": "Summary",
+      "type": "string"
+    },
+    "scope": {
+      "default": "Function",
+      "description": "Pattern scope (Function, Contract, Transaction)",
+      "title": "Scope",
+      "type": "string"
+    },
+    "determinism": {
+      "$ref": "#/$defs/PCPDeterminism",
+      "description": "Determinism constraints"
+    },
+    "budget": {
+      "$ref": "#/$defs/PCPBudget",
+      "description": "Token budget constraints"
+    },
+    "evidence_weights": {
+      "$ref": "#/$defs/PCPEvidenceWeights",
+      "description": "Evidence weight categorization"
+    },
+    "witness": {
+      "$ref": "#/$defs/PCPWitness",
+      "description": "Witness requirements"
+    },
+    "preconditions": {
+      "description": "Preconditions for pattern applicability",
+      "items": {
+        "$ref": "#/$defs/PCPPrecondition"
+      },
+      "title": "Preconditions",
+      "type": "array"
+    },
+    "exploit_steps": {
+      "description": "Steps in the exploit sequence",
+      "items": {
+        "$ref": "#/$defs/PCPExploitStep"
+      },
+      "title": "Exploit Steps",
+      "type": "array"
+    },
+    "impact_invariants": {
+      "description": "Impact invariants describing the vulnerability's effect",
+      "items": {
+        "$ref": "#/$defs/PCPImpactInvariant"
+      },
+      "title": "Impact Invariants",
+      "type": "array"
+    },
+    "op_signatures": {
+      "$ref": "#/$defs/PCPOpSignatures",
+      "description": "Operation signatures and ordering constraints"
+    },
+    "anti_signals": {
+      "description": "Guards/mitigations that negate the pattern",
+      "items": {
+        "$ref": "#/$defs/PCPAntiSignal"
+      },
+      "title": "Anti Signals",
+      "type": "array"
+    },
+    "counterfactuals": {
+      "description": "What-if scenarios for Tier-B exploration",
+      "items": {
+        "$ref": "#/$defs/PCPCounterfactual"
+      },
+      "title": "Counterfactuals",
+      "type": "array"
+    },
+    "guard_taxonomy": {
+      "description": "Guard taxonomy entries",
+      "items": {
+        "$ref": "#/$defs/PCPGuardTaxonomyEntry"
+      },
+      "title": "Guard Taxonomy",
+      "type": "array"
+    },
+    "ordering_variants": {
+      "description": "Valid operation orderings",
+      "items": {
+        "$ref": "#/$defs/PCPOrderingVariant"
+      },
+      "title": "Ordering Variants",
+      "type": "array"
+    },
+    "risk_envelope": {
+      "$ref": "#/$defs/PCPRiskEnvelope",
+      "description": "Risk envelope for semantic risk framing"
+    },
+    "composition_hints": {
+      "$ref": "#/$defs/PCPCompositionHints",
+      "description": "Hints for pattern composition and chaining"
+    },
+    "economic_placeholders": {
+      "$ref": "#/$defs/PCPEconomicPlaceholders",
+      "description": "Placeholders for Phase 5.11 economic context"
+    },
+    "evidence_requirements": {
+      "$ref": "#/$defs/PCPEvidenceRequirements",
+      "description": "Evidence requirements for graph-based matching"
+    },
+    "unknowns_policy": {
+      "$ref": "#/$defs/PCPUnknownsPolicy",
+      "description": "Policy for handling missing evidence/signals"
+    }
+  },
+  "required": [
+    "id",
+    "pattern_id",
+    "name",
+    "summary",
+    "op_signatures"
+  ],
+  "title": "Pattern Context Pack v2",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alphaswarm.sol/schemas/pattern_context_pack_v2.json"
+}

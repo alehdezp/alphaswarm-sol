@@ -1,0 +1,26 @@
+# arithmetic Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: arithmetic
+name: Arithmetic
+description: 'Vulnerability subcategories for arithmetic domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: general
+  name: General
+  path: general/
+- id: incorrect-overflow-check
+  name: Incorrect Overflow Check Constants
+  path: incorrect-overflow-check/
+- id: precision
+  name: Precision
+  path: precision/
+- id: rounding-direction
+  name: Rounding Direction Vulnerabilities
+  path: rounding-direction/
+statistics:
+  subcategory_count: 4
+  last_updated: '2026-02-18'

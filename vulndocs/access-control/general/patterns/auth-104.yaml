@@ -1,0 +1,18 @@
+id: auth-104
+vulndoc: access-control/general
+name: Mixed tx.origin and msg.sender Auth
+description: Access control mixes tx.origin and msg.sender.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: access_gate_sources
+    op: contains_any
+    value:
+    - tx.origin
+  - property: access_gate_sources
+    op: contains_any
+    value:
+    - msg.sender

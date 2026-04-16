@@ -1,0 +1,147 @@
+project:
+  name: multi-token-vault-03
+  theme: vault
+  tier: 2
+  adversarial_categories:
+  - A
+  - B
+  description: 'Multi-asset vault with borrowing, liquidation, and rebalancing. Category
+    A+B: library-mediated calculations + cross-function composition.'
+findings:
+- pattern_id: invariant-balance-unvalidated
+  contract: MultiAssetVault
+  function: borrowAsset
+  line_range: 56-65
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  - B5-library-mediated
+  expected_reasoning_chain:
+  - Identify borrowAsset allows borrowing any amount
+  - No collateral adequacy check against userBalances
+  - User can borrow without depositing collateral
+  - 'Conclude: missing collateral ratio validation enables unbacked borrowing'
+- pattern_id: balance-update-after-transfer
+  contract: MultiAssetVault
+  function: withdrawAsset
+  line_range: 69-77
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount}'
+  - userBalances update occurs AFTER external call
+  - No reentrancy guard
+  - 'Conclude: reentrancy in withdrawAsset'
+- pattern_id: cross-function-composition-reentrancy
+  contract: MultiAssetVault
+  function: withdrawAsset
+  line_range: 69-77
+  severity: high
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify withdrawAsset does not check userDebt
+  - User can borrow, then withdraw collateral in reentrancy callback
+  - 'Cross-function: borrowAsset + withdrawAsset compose to allow theft'
+  - 'Conclude: cross-function vulnerability allows borrow-then-withdraw attack'
+- pattern_id: dos-unbounded-loop
+  contract: MultiAssetVault
+  function: rebalance
+  line_range: 80-88
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify for loop over assetCount with no upper bound
+  - assetCount can grow unbounded
+  - 'Conclude: DoS on rebalance if too many assets registered'
+- pattern_id: auth-001
+  contract: MultiAssetVault
+  function: setAssetWeight
+  line_range: 91-93
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify setAssetWeight changes asset weight used in rebalancing
+  - No access control
+  - Attacker can manipulate weights to distort vault accounting
+  - 'Conclude: missing access control on weight configuration'
+- pattern_id: auth-002
+  contract: MultiAssetVault
+  function: liquidatePosition
+  line_range: 96-108
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify liquidatePosition seizes user collateral
+  - No health factor check - only requires debt > 0
+  - Any user with debt can be liquidated regardless of collateral
+  - 'Conclude: invalid liquidation logic allows seizing healthy positions'
+- pattern_id: ac-002
+  contract: MultiAssetVault
+  function: transferCurator
+  line_range: 111-113
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify transferCurator changes curator address
+  - No access control
+  - 'Conclude: anyone can seize curator role'
+- pattern_id: precision-loss-rounding
+  contract: TokenAccounting
+  function: weightedValue
+  line_range: 7-9
+  severity: medium
+  adversarial_techniques:
+  - B5-library-mediated
+  expected_reasoning_chain:
+  - 'Identify integer division: (amount * weight) / 10000'
+  - Small amounts with small weights truncate to zero
+  - 'Library-mediated: vault relies on this for all weight calculations'
+  - 'Conclude: precision loss in library affects vault accounting'
+- pattern_id: invariant-ratio-violation
+  contract: MultiAssetVault
+  function: borrowAsset
+  line_range: 56-65
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify borrowAsset increments userDebt[msg.sender] and sends ETH without checking userBalances
+  - The vault has a maxLeverage variable (300 = 3x) and TokenAccounting.healthFactor exists but is never called
+  - The invariant that debt/collateral ratio must stay below maxLeverage is never enforced
+  - A user with zero deposits can call borrowAsset to borrow unlimited ETH since no collateral check exists
+  - 'Conclude: collateral-to-debt ratio invariant is completely unenforced — healthFactor library function exists but is dead code'
+- pattern_id: arith-002
+  contract: TokenAccounting
+  function: weightedValue
+  line_range: 7-9
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify weightedValue computes (amount * weight) / 10000 using Solidity integer division
+  - For amount * weight < 10000, the result truncates to zero (e.g., amount=50, weight=100 yields 0 instead of 0.5)
+  - The multiplication amount * weight can overflow for large values before Solidity 0.8 checks apply at uint256 max
+  - The vault uses 'using TokenAccounting for uint256' so all weight-based calculations inherit this precision loss
+  - 'Conclude: integer arithmetic in weightedValue causes truncation-to-zero for small amounts and potential overflow for large amounts'
+- pattern_id: invariant-underflow-risk
+  contract: MultiAssetVault
+  function: liquidatePosition
+  line_range: 96-108
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify liquidatePosition sets userBalances[user][assetId] = 0 and subtracts balance from assets[assetId].deposited
+  - Notice it only checks a single assetId but zeroes the entire userDebt[user] across all assets
+  - If a user has deposits in multiple assetIds, liquidating one asset zeroes all debt while leaving other asset balances intact
+  - The line assets[assetId].deposited -= balance can underflow if balance tracking has been corrupted by reentrancy in withdrawAsset
+  - 'Conclude: underflow risk in deposited accounting — reentrancy-corrupted balances or multi-asset debt clearing creates inconsistent state'
+safe_patterns: []
+summary:
+  total_findings: 11
+  total_safe_patterns: 0
+  difficulty: hard
+  notes: 'Category A+B: cross-function composition reentrancy + library-mediated precision
+    loss + missing collateral validation'

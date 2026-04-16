@@ -1,0 +1,16 @@
+id: ext-018
+vulndoc: access-control/external-call
+name: Contract Address Not Verified
+description: External call target is not checked for deployed code.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: address_parameter_used_for_call
+    op: eq
+    value: true
+  - property: validates_contract_code
+    op: eq
+    value: false

@@ -1,0 +1,15 @@
+id: logic-020
+vulndoc: logic/general
+name: Rounding Accumulation
+description: Rounding errors accumulate in loops.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: rounding_accumulation_risk
+    op: eq
+    value: true

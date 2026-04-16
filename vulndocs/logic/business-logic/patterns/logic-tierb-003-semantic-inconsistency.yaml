@@ -1,0 +1,209 @@
+# =============================================================================
+# PATTERN: logic-tierb-003-semantic-inconsistency
+# Semantic Inconsistency Detection (Tier B - LLM Reasoning Required)
+# =============================================================================
+
+id: logic-tierb-003-semantic-inconsistency
+vulndoc: logic/business-logic
+name: "Semantic Inconsistency (LLM-Verified)"
+
+description: |
+  ## What This Detects
+
+  Functions where naming, documentation, or interface semantics don't match
+  actual implementation behavior. This creates confusion and potential exploits.
+
+  **Categories:**
+  - "safeTransfer" that isn't actually safe
+  - "nonReentrant" modifier without actual protection
+  - Error messages that don't match failure conditions
+  - Return values with different semantics than expected
+  - Interface implementations that deviate from standard
+
+  **Why Tier B (LLM) is Required:**
+  - Requires understanding naming conventions and expectations
+  - Must compare semantic meaning of names vs code behavior
+  - Needs context about standard patterns and their semantics
+  - Human intuition about "what this should do"
+
+  ## Why It's Dangerous
+
+  Semantic inconsistency creates:
+  - **False Security**: Developers/auditors skip review of "safe" functions
+  - **Integration Bugs**: Other contracts rely on expected behavior
+  - **Audit Failures**: Misleading names cause auditors to miss vulnerabilities
+  - **User Confusion**: Users expect documented behavior
+
+  ## Real-World Examples
+
+  **Fake Safe Functions**: Functions named "safe*" without actual safety
+  **Missing Guards**: "nonReentrant" in name but no actual lock
+  **Wrong Errors**: require(x, "Insufficient balance") when checking allowance
+  **Interface Deviation**: ERC20 transfer returning void instead of bool
+
+scope: Function
+
+lens:
+  - Logic
+  - Authority
+
+severity: medium
+
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  tier_a:
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+    any:
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+      - property: transfers_value
+        op: eq
+        value: true
+    none:
+      - property: is_constructor
+        op: eq
+        value: true
+
+  tier_b:
+    any:
+      - has_risk_tag: naming_behavior_mismatch
+      - has_risk_tag: natspec_contradiction
+      - has_risk_tag: misleading_semantics
+      - has_risk_tag: return_value_confusion
+      - has_risk_tag: interface_deviation
+      - has_risk_tag: fake_safety_label
+
+aggregation:
+  mode: tier_b_enhances  # Tier A is broad, Tier B is the real detection
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Tier B pattern - requires LLM semantic analysis"
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Fake Safety Function"
+    description: "Function named 'safe*' lacks actual safety guarantees"
+    preconditions:
+      - "Function name suggests safety (safeTransfer, safeApprove, etc.)"
+      - "Implementation lacks the expected safety check"
+    steps:
+      - "Identify 'safe*' function"
+      - "Verify it lacks return value check or other safety"
+      - "Call with token that returns false on failure"
+      - "Function continues despite failure"
+    impact: "Silent failure leading to fund loss"
+
+  - name: "Missing Reentrancy Guard"
+    description: "Function labeled 'nonReentrant' without actual lock"
+    preconditions:
+      - "Function or modifier named 'nonReentrant'"
+      - "No actual mutex lock implemented"
+    steps:
+      - "Identify misleading nonReentrant label"
+      - "Exploit via reentrant callback"
+      - "Bypass non-existent protection"
+    impact: "Reentrancy attack despite apparent protection"
+
+  - name: "Interface Standard Deviation"
+    description: "Standard interface implementation with non-standard behavior"
+    preconditions:
+      - "Contract implements ERC20/ERC721/etc."
+      - "Implementation deviates from standard semantics"
+    steps:
+      - "Integrate contract assuming standard behavior"
+      - "Standard behavior assumed but not provided"
+      - "Integration fails or behaves unexpectedly"
+    impact: "Integration failures, potential fund loss"
+
+# =============================================================================
+# VERIFICATION & RECOMMENDATIONS
+# =============================================================================
+
+verification_steps:
+  - "Compare function name with actual behavior"
+  - "Check if 'safe*' functions actually have safety checks"
+  - "Verify modifiers do what their names suggest"
+  - "Compare error messages with actual conditions"
+  - "Check interface implementations against standards"
+  - "Verify return value semantics match expectations"
+
+fix_recommendations:
+  - name: "Align Names with Behavior"
+    description: "Rename functions to accurately reflect behavior, or fix behavior"
+  - name: "Implement Expected Safety"
+    description: "Add missing safety checks to 'safe*' functions"
+  - name: "Fix Error Messages"
+    description: "Ensure error strings match actual failure conditions"
+  - name: "Follow Standards"
+    description: "Implement standard interfaces exactly per specification"
+
+related_patterns:
+  - logic-tierb-001-business-logic-violation
+  - lib-001-safe-erc20
+  - lib-002-reentrancy-guard
+
+owasp_mapping:
+  - SC02
+
+cwe_mapping:
+  - CWE-1113
+  - CWE-704
+
+llm_guidance: |
+  When evaluating for semantic inconsistency:
+  
+  1. **Analyze Function Names**
+     - Does "safe*" actually have safety checks?
+     - Does "protected*" have actual protection?
+     - Does "verify*" actually verify?
+  
+  2. **Check Modifiers**
+     - Do modifier names match their behavior?
+     - Is "nonReentrant" actually preventing reentrancy?
+     - Is "onlyOwner" actually checking ownership?
+  
+  3. **Compare Documentation**
+     - Does NatSpec match implementation?
+     - Are error messages accurate?
+     - Do examples match actual behavior?
+  
+  4. **Standard Compliance**
+     - For ERC20/ERC721/etc., does implementation match standard?
+     - Are optional features clearly documented?
+  
+  5. **Tag Assignment**
+     - naming_behavior_mismatch: Name suggests different behavior
+     - natspec_contradiction: Documentation contradicts code
+     - misleading_semantics: General semantic confusion
+     - return_value_confusion: Return differs from expected
+     - interface_deviation: Standard interface broken
+     - fake_safety_label: Safety name without safety

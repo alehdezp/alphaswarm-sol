@@ -1,0 +1,13 @@
+id: replay-protection
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Cross-Chain Replay Attack
+category: cross-chain
+severity: critical
+cwe: CWE-294
+description: |
+  Message replay across different bridge adapters due to per-adapter
+  deduplication instead of global nonce tracking.
+discovered: "2026-01-09"
+source: "Immunefi Folks Finance, Nomad Bridge ($190M)"

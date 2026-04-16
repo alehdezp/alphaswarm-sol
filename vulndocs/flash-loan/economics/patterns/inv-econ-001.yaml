@@ -1,0 +1,152 @@
+# Price Manipulation via Flash Loan Investigation Pattern
+# Task 13.11: LLM Investigation Patterns
+
+id: inv-econ-001
+vulndoc: flash-loan/economics
+name: Price Manipulation via Flash Loan
+type: investigation
+category: economic
+subcategories:
+  - flash-loan
+  - oracle-manipulation
+  - arbitrage
+severity_range:
+  - HIGH
+  - CRITICAL
+description: |
+  Investigate whether prices used by the contract can be manipulated within
+  a single transaction using flash loans. Looks for spot price dependencies,
+  manipulable oracles, and profitable attack vectors.
+version: "1.0.0"
+author: VKG Team
+tags:
+  - defi
+  - oracle
+  - flash-loan
+  - mev
+
+trigger:
+  description: "Contract uses external price source"
+  require_all: false
+  graph_signals:
+    - signal: "Function reads oracle price"
+      property: reads_oracle_price
+    - signal: "Function reads external value"
+      property: reads_external_value
+    - signal: "Function is swap-like"
+      property: swap_like
+
+investigation:
+  hypothesis: "Price can be manipulated within a transaction to extract value"
+
+  steps:
+    - id: 1
+      action: explore_graph
+      description: "Find all price reads and their usage"
+      graph_query: "FIND functions WHERE reads_price OR reads_oracle"
+      interpretation: |
+        For each price usage:
+        - What decision depends on this price (liquidation, swap rate, collateral value)?
+        - Is the price from a spot source (manipulable) or TWAP (harder)?
+        - How much value is at stake (TVL, trade size limits)?
+        - Are there price bounds or circuit breakers?
+      timeout_seconds: 15
+
+    - id: 2
+      action: lsp_references
+      description: "Find price source"
+      target: "${function_name}"
+      interpretation: |
+        Where does the price come from?
+        - On-chain DEX pool (manipulable in same tx via flash loan)
+        - Chainlink/Band Protocol (off-chain, harder to manipulate)
+        - Custom oracle (depends on implementation)
+        - Reserve ratios (manipulable via large swaps)
+      timeout_seconds: 15
+
+    - id: 3
+      action: read_code
+      description: "Examine price-dependent logic"
+      target: "${function_name}"
+      interpretation: |
+        How is the price used?
+        - Direct multiplication/division (linear relationship)
+        - Liquidation threshold (boolean decision)
+        - Fee calculation (small manipulation = small gain)
+        - Large value transfers (high-value target)
+      timeout_seconds: 10
+
+    - id: 4
+      action: reason
+      description: "Analyze flash loan attack viability"
+      prompt: |
+        Analyzing price manipulation attack:
+
+        Price dependencies (step 1): {step_1_results}
+        Price sources (step 2): {step_2_results}
+        Price-dependent logic (step 3): {step_3_results}
+
+        Consider this attack sequence:
+        1. Attacker takes flash loan (Aave, Balancer, etc.)
+        2. Attacker manipulates price source (if on-chain DEX)
+           - Large swap to move the price
+           - Provide/remove liquidity to shift reserves
+        3. Attacker interacts with target contract at manipulated price
+           - Liquidation at favorable price
+           - Swap at inflated/deflated rate
+           - Borrow more than should be allowed
+        4. Attacker restores price (or not) by reversing initial action
+        5. Attacker repays flash loan with profit
+
+        Is this attack viable?
+        - Can the price source be manipulated in same tx? (Uniswap V2/V3 pools = yes)
+        - Is the value extractable > gas + flash loan fee (~0.09%)?
+        - Are there protections that prevent this?
+          - TWAP oracle (looks at historical price)
+          - Price bounds (reverts if price moves too much)
+          - Slippage protection (limits impact)
+          - Multiple oracle sources (median/average)
+          - Time locks on large operations
+
+        Calculate approximate profit potential:
+        - TVL or max operation size
+        - Price impact achievable with flash loan
+        - Value extracted at manipulated price
+        - Cost of attack (gas + flash loan fee)
+
+        Provide specific numbers where possible.
+      timeout_seconds: 45
+
+  verdict_criteria:
+    vulnerable: |
+      - Price is from spot source (single block)
+      - Significant value at stake (>$10k extractable)
+      - No effective price manipulation protections
+      - Attack is clearly profitable
+    likely_vulnerable: |
+      - Price manipulation possible but limited protections exist
+      - Profitability depends on market conditions
+      - Complex attack but achievable
+    uncertain: |
+      - Unknown oracle implementation
+      - Price manipulation possible but unclear profitability
+      - Depends on external contract configurations
+    likely_safe: |
+      - Uses TWAP or off-chain oracle
+      - Price bounds in place
+      - Small value at stake (<$1k)
+    safe: |
+      - Chainlink/Band oracle with freshness checks
+      - Multiple oracle sources with median
+      - Effective circuit breakers
+      - Time locks on sensitive operations
+
+output:
+  verdict: "VULNERABLE | LIKELY_VULNERABLE | UNCERTAIN | LIKELY_SAFE | SAFE"
+  attack_path: "Step-by-step flash loan attack sequence with estimated profit"
+  confidence: "0-100"
+  evidence:
+    - "Price source and its manipulability"
+    - "Value at stake"
+    - "Existing protections (or lack thereof)"
+  recommendation: "How to protect against price manipulation"

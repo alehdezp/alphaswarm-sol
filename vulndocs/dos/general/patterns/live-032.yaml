@@ -1,0 +1,16 @@
+id: live-032
+vulndoc: dos/general
+name: Deadline and Expiration DoS
+description: Deadline parameters without future checks.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_deadline_parameter
+    op: eq
+    value: true
+  - property: has_deadline_future_check
+    op: eq
+    value: false

@@ -1,0 +1,15 @@
+id: arith-008
+vulndoc: arithmetic/general
+name: Multiplication Overflow
+description: Large number multiplication without safe math.
+scope: Function
+lens:
+- Arithmetic
+severity: high
+cwe:
+- 190
+match:
+  all:
+  - property: multiplication_overflow_risk
+    op: eq
+    value: true

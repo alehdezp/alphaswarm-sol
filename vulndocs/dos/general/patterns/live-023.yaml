@@ -1,0 +1,19 @@
+id: live-023
+vulndoc: dos/general
+name: External Call Gas Forwarding
+description: Forwards gas to user-controlled external calls.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_call_with_gas
+    op: eq
+    value: true
+  - property: call_target_user_controlled
+    op: eq
+    value: true
+  - property: checks_low_level_call_success
+    op: eq
+    value: false

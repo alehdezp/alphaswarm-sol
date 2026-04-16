@@ -1,0 +1,218 @@
+# SmartBugs Access Control Ground Truth
+#
+# Source: SmartBugs Curated Dataset
+# URL: https://github.com/smartbugs/smartbugs-curated
+# Paper: "SmartBugs: A Framework to Analyze Solidity Smart Contracts" (arXiv:1910.10601)
+#
+# CRITICAL: This ground truth comes from EXTERNAL academic source (SmartBugs),
+# NOT from our tool's output. Meets VALIDATION-RULES.md B1 requirement.
+#
+# Last updated: 2026-01-30 (Phase 7.3 GA Validation v6)
+
+source: smartbugs-curated
+dataset_url: https://github.com/smartbugs/smartbugs-curated
+paper_url: https://arxiv.org/abs/1910.10601
+category: access_control
+vulnerability_class: access-control
+total_vulnerabilities: 10
+
+# Contracts with known access control vulnerabilities
+contracts:
+  - file: wallet.sol
+    vulnerabilities:
+      - id: SB-AC-001
+        type: missing-access-control
+        subtype: unprotected-init
+        function: initWallet
+        line: 8
+        severity: critical
+        description: initWallet can be called by anyone after deployment
+        pattern_expected:
+          - access-control-missing
+          - unprotected-function
+
+  - file: parity_wallet_bug_1.sol
+    vulnerabilities:
+      - id: SB-AC-002
+        type: missing-access-control
+        subtype: unprotected-init
+        function: initWallet
+        line: 12
+        severity: critical
+        description: Parity wallet initialization vulnerability ($30M+ loss incident)
+        pattern_expected:
+          - access-control-missing
+          - unprotected-function
+        historic_incident: true
+        incident_loss: "$30M+"
+
+  - file: parity_wallet_bug_2.sol
+    vulnerabilities:
+      - id: SB-AC-003
+        type: suicide-access-control
+        subtype: unprotected-selfdestruct
+        function: kill
+        line: 20
+        severity: critical
+        description: Unprotected selfdestruct allows anyone to destroy contract
+        pattern_expected:
+          - suicide-access-control
+          - unprotected-selfdestruct
+
+  - file: multiowner.sol
+    vulnerabilities:
+      - id: SB-AC-004
+        type: ownership-manipulation
+        subtype: owner-change-missing-auth
+        function: changeOwner
+        line: 15
+        severity: critical
+        description: Owner can be changed without proper validation
+        pattern_expected:
+          - ownership-manipulation
+          - access-control-missing
+
+  - file: unprotected_0.sol
+    vulnerabilities:
+      - id: SB-AC-005
+        type: missing-access-control
+        subtype: unprotected-admin
+        function: changeOwner
+        line: 6
+        severity: critical
+        description: No access control on owner change function
+        pattern_expected:
+          - access-control-missing
+          - unprotected-function
+
+  - file: tx_origin.sol
+    vulnerabilities:
+      - id: SB-AC-006
+        type: tx-origin-auth
+        subtype: tx-origin-authentication
+        function: withdrawAll
+        line: 10
+        severity: high
+        description: Uses tx.origin for authentication (phishing vulnerability)
+        pattern_expected:
+          - tx-origin-auth
+          - tx-origin-authentication
+
+  - file: mycontract.sol
+    vulnerabilities:
+      - id: SB-AC-007
+        type: missing-access-control
+        subtype: unprotected-transfer
+        function: sendTo
+        line: 8
+        severity: high
+        description: Unprotected fund transfer function
+        pattern_expected:
+          - access-control-missing
+          - unprotected-transfer
+
+  - file: phishable.sol
+    vulnerabilities:
+      - id: SB-AC-008
+        type: tx-origin-auth
+        subtype: tx-origin-phishing
+        function: withdrawAll
+        line: 12
+        severity: high
+        description: Phishing vulnerability via tx.origin authentication
+        pattern_expected:
+          - tx-origin-auth
+          - tx-origin-phishing
+
+  - file: simple_suicide.sol
+    vulnerabilities:
+      - id: SB-AC-009
+        type: suicide-access-control
+        subtype: unprotected-selfdestruct
+        function: suicideAnyone
+        line: 5
+        severity: critical
+        description: Anyone can call selfdestruct and destroy contract
+        pattern_expected:
+          - suicide-access-control
+          - unprotected-selfdestruct
+
+  - file: arbitrary_send.sol
+    vulnerabilities:
+      - id: SB-AC-010
+        type: unauthorized-transfer
+        subtype: arbitrary-ether-send
+        function: delegateSend
+        line: 8
+        severity: high
+        description: Arbitrary ETH transfer without proper authorization
+        pattern_expected:
+          - unauthorized-transfer
+          - arbitrary-send-eth
+
+# Safe contracts (for false positive validation)
+safe_contracts:
+  - file: access_control_secure.sol
+    reason: Uses onlyOwner modifier correctly on all admin functions
+    expected_properties:
+      has_access_gate: true
+      has_modifier: onlyOwner
+
+  - file: ownable_safe.sol
+    reason: Inherits OpenZeppelin Ownable with proper access control
+    expected_properties:
+      has_access_gate: true
+      uses_ownable_pattern: true
+
+# Vulnerability subtype summary (for analyze_by_subtype.py)
+subtype_summary:
+  missing-access-control:
+    count: 4
+    ids: [SB-AC-001, SB-AC-002, SB-AC-005, SB-AC-007]
+    detection_rationale: "MODIFIES_OWNER or TRANSFERS_VALUE_OUT without has_access_gate"
+
+  suicide-access-control:
+    count: 2
+    ids: [SB-AC-003, SB-AC-009]
+    detection_rationale: "CALLS_SELFDESTRUCT without has_access_gate"
+
+  tx-origin-auth:
+    count: 2
+    ids: [SB-AC-006, SB-AC-008]
+    detection_rationale: "Uses tx.origin in require/if for authentication"
+
+  ownership-manipulation:
+    count: 1
+    ids: [SB-AC-004]
+    detection_rationale: "MODIFIES_OWNER with insufficient validation"
+
+  unauthorized-transfer:
+    count: 1
+    ids: [SB-AC-010]
+    detection_rationale: "TRANSFERS_VALUE_OUT without authorization checks"
+
+# Thresholds for this test suite
+thresholds:
+  min_precision: 0.60
+  min_recall: 0.80
+  min_f1: 0.65
+  max_execution_time_seconds: 900
+  max_false_positives_on_safe: 0
+
+# Validation notes
+notes: |
+  This ground truth is derived from the SmartBugs curated dataset, which is
+  maintained by academic researchers for benchmarking smart contract analysis
+  tools. The vulnerabilities have been manually verified and are used in
+  multiple published research papers.
+
+  Key validation points:
+  1. All vulnerabilities are from EXTERNAL source (SmartBugs), not our tool
+  2. Line numbers and functions are as labeled in the original dataset
+  3. Safe contracts are included for false positive validation
+  4. Subtypes allow granular analysis of detection capabilities
+
+  Expected AlphaSwarm detection strategy:
+  - Graph properties: has_access_gate, visibility, modifies_owner
+  - Semantic operations: TRANSFERS_VALUE_OUT, MODIFIES_OWNER, CALLS_SELFDESTRUCT
+  - Pattern matching: access-control-*, tx-origin-*, suicide-*

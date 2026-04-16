@@ -1,0 +1,16 @@
+id: auth-068
+vulndoc: access-control/general
+name: Timelock Parameter Missing Check
+description: Timelock parameters exist but no timelock enforcement.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_timelock_parameter
+    op: eq
+    value: true
+  - property: has_timelock_check
+    op: eq
+    value: false

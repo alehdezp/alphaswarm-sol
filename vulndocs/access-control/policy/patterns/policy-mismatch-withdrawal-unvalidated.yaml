@@ -1,0 +1,42 @@
+id: policy-mismatch-withdrawal-unvalidated
+vulndoc: access-control/policy
+name: Withdrawal Without Validation
+description: 'Function handles withdrawals but lacks proper balance/amount validation.
+
+  Should verify sufficient balance before sending.
+
+
+  Risk: Withdrawals can exceed balance, leading to accounting errors or
+
+  underflow exploits in pre-0.8.0 Solidity.
+
+  '
+severity: high
+scope: Function
+lens:
+- ValueTransfer
+- Invariants
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: TRANSFERS_VALUE_OUT
+    none:
+    - has_operation: VALIDATES_INPUT
+  tier_c:
+    all:
+    - type: has_label
+      value: value_handling.handles_withdrawal
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: invariants.enforces_balance_check
+    - type: has_label
+      value: invariants.validates_amount
+required_labels:
+- value_handling.handles_withdrawal

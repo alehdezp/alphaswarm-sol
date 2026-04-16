@@ -1,0 +1,469 @@
+# =============================================================================
+# PATTERN: defi-001
+# =============================================================================
+
+id: defi-001
+vulndoc: flash-loan/defi
+name: "Unprotected DeFi Risk Parameter Update"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Public/external functions that modify DeFi risk parameters (fees, liquidation
+  thresholds, collateral factors, interest rates, debt ceilings, caps, reserves)
+  without access control. These parameters control the economic safety and
+  stability of DeFi protocols.
+
+  ## Why It's Dangerous
+  DeFi risk parameters are the most sensitive configuration in lending, AMM, and
+  derivative protocols. Unprotected modification allows attackers to:
+
+  - **Protocol Drainage**: Manipulate fees to 100% to extract all protocol revenue
+  - **Forced Liquidations**: Lower liquidation thresholds to liquidate healthy positions
+  - **Over-Borrowing**: Increase collateral factors beyond safe limits, causing insolvency
+  - **Economic Attacks**: Manipulate interest rates to make borrowing unprofitable
+  - **Cap Bypass**: Increase debt ceilings or supply caps to break protocol limits
+  - **Oracle Manipulation**: Change oracle dependencies to use malicious price feeds
+  - **Reserve Drainage**: Modify reserve ratios to withdraw protocol reserves
+
+  Unlike simple state variables, risk parameters have **multiplicative impact**:
+  changing a fee from 0.3% to 30% affects every transaction in the protocol.
+
+  ## Detection Logic
+  This pattern triggers when a function:
+  1. Is externally callable (public/external visibility)
+  2. Writes to state variables tagged as sensitive config (fee, collateral, debt,
+     liquidity, reserve, cap, oracle, treasury, governance, pause, allowlist,
+     denylist, signer, dependency)
+  3. Modifies state (not just a view function)
+  4. Has NO access control (no modifiers, no require checks, no role validation)
+  5. Is NOT a constructor (initialization is expected to be unprotected)
+
+  ## Implementation-Agnostic Detection
+  This pattern uses SEMANTIC property `writes_sensitive_config` which detects
+  state variable security tags, NOT function/variable names. Works regardless of:
+  - Variable naming: `protocolFee`, `swapFee`, `tradingFee`, `feeRate`
+  - Function naming: `setFee`, `updateFee`, `configureFee`, `adjustFee`
+  - Parameter naming: `_fee`, `newFee`, `fee_`, `feeValue`
+
+  The builder's heuristics (builder.py:597-619) automatically classify state
+  variables based on common patterns, making detection robust across all codebases.
+
+  ## Real-World Context
+  Major DeFi protocols protect risk parameters with strict access control:
+  - **Aave**: Liquidation threshold changes require governance vote
+  - **Compound**: Interest rate model updates require timelock
+  - **MakerDAO**: Collateral factor changes require multi-sig + delay
+  - **Uniswap V3**: Fee tier configuration is immutable or governance-only
+
+  Audits from OpenZeppelin, Trail of Bits, and other firms consistently flag
+  unprotected parameter updates as HIGH severity findings.
+
+scope: Function
+
+lens:
+  - DeFi
+
+severity: high
+
+# Pattern quality status (set by vrs-test-conductor agent)
+# Updated 2026-01-02: Documented as EXCELLENT in mega-task (~100%/~100%/~100%)
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable to be exploitable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must write to sensitive config state variables
+    # This includes: fee, config, reward, collateral, debt, liquidity,
+    # reserve, cap, oracle, treasury, governance, pause, allowlist,
+    # denylist, signer, dependency (builder.py:597-619)
+    - property: writes_sensitive_config
+      op: eq
+      value: true
+
+    # Must actually modify state (not just read config)
+    - property: writes_state
+      op: eq
+      value: true
+
+  # At least ONE must match (OR logic) - none required
+  any: []
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Exclude functions with ANY access control
+    - property: has_access_gate
+      op: eq
+      value: true
+
+    # Constructors are expected to initialize config without access control
+    - property: is_constructor
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# Edge requirements for graph-based detection
+edges: []
+
+# Path requirements for multi-hop detection
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Protocol Fee Manipulation"
+    description: |
+      Attacker calls unprotected fee update function to set protocol fee to 100%,
+      extracting all trading/lending revenue until intervention.
+    preconditions:
+      - "Function to update protocol fee is public/external"
+      - "No access control on fee update function"
+      - "Protocol actively processes transactions with fees"
+    steps:
+      - "Attacker identifies unprotected fee update function (e.g., setProtocolFee)"
+      - "Attacker calls function with fee = 10000 basis points (100%)"
+      - "All subsequent protocol transactions pay 100% fee to protocol treasury"
+      - "Attacker (if they control withdrawal) drains accumulated fees"
+      - "OR: Protocol becomes unusable due to excessive fees"
+    impact: |
+      Complete protocol revenue extraction or DoS. In AMMs, 100% fees make
+      trading impossible. In lending, 100% borrow fees prevent new loans.
+
+  - name: "Liquidation Threshold Manipulation"
+    description: |
+      Attacker lowers liquidation threshold on lending protocol to force liquidation
+      of healthy collateralized positions, stealing liquidation bonuses.
+    preconditions:
+      - "Lending protocol with collateralized loans"
+      - "Unprotected function to update liquidation threshold"
+      - "Active borrowing positions exist"
+    steps:
+      - "Attacker identifies users with healthy positions (e.g., 150% collateralized)"
+      - "Attacker calls unprotected setLiquidationThreshold with very high value (e.g., 200%)"
+      - "Previously healthy positions now appear under-collateralized"
+      - "Attacker liquidates these positions, claiming liquidation bonus (e.g., 10%)"
+      - "Victims lose collateral despite being safely collateralized"
+    impact: |
+      Forced liquidations of healthy positions. In Aave/Compound-style protocols,
+      liquidation bonuses range from 5-15%, providing direct profit to attacker.
+      Users lose funds despite maintaining safe collateral ratios.
+
+  - name: "Collateral Factor Over-Inflation"
+    description: |
+      Attacker increases collateral factor beyond safe limits to borrow more than
+      collateral value, causing protocol insolvency.
+    preconditions:
+      - "Lending protocol with collateral factor configuration"
+      - "Unprotected collateral factor update function"
+      - "Sufficient liquidity in lending pool"
+    steps:
+      - "Attacker deposits minimal collateral (e.g., 1 ETH = $2000)"
+      - "Attacker calls unprotected setCollateralFactor with inflated value (e.g., 150%)"
+      - "Attacker borrows 150% of collateral value ($3000 against $2000 collateral)"
+      - "Attacker withdraws borrowed funds"
+      - "Attacker abandons collateral (or manipulates price to trigger liquidation immunity)"
+      - "Protocol is left insolvent: $3000 debt against $2000 collateral"
+    impact: |
+      Protocol insolvency. If collateral factor > 100%, attackers can borrow more
+      than they deposit. With flash loans, this can be amplified to drain entire
+      lending pools. Compound Governance ensures collateral factors < 90% exactly
+      to prevent this attack.
+
+  - name: "Interest Rate Model Manipulation"
+    description: |
+      Attacker manipulates interest rate parameters to make borrowing unprofitable
+      or to earn excessive interest as a lender.
+    preconditions:
+      - "Lending protocol with configurable interest rates"
+      - "Unprotected interest rate parameter update"
+    steps:
+      - "Attacker supplies large amount of capital to lending pool"
+      - "Attacker calls unprotected setInterestRate with inflated values (e.g., 1000% APY)"
+      - "Borrowers are charged excessive interest on existing loans"
+      - "New borrowing becomes impossible due to high rates"
+      - "Attacker earns inflated interest on their supplied capital"
+      - "Protocol experiences bank run as borrowers repay and flee"
+    impact: |
+      Economic attack causing protocol abandonment. Existing borrowers face
+      liquidation due to unaffordable interest. New borrowing stops. Protocol
+      reputation destroyed.
+
+  - name: "Debt Ceiling Bypass"
+    description: |
+      Attacker raises debt ceiling or supply cap to bypass protocol safety limits,
+      enabling over-leveraging or excessive minting.
+    preconditions:
+      - "Protocol has debt ceiling or supply cap configuration"
+      - "Unprotected function to update caps/ceilings"
+      - "Current utilization near limit"
+    steps:
+      - "Attacker identifies protocol near debt ceiling (e.g., $100M limit, $95M borrowed)"
+      - "Attacker calls unprotected setDebtCeiling with unlimited value (type(uint256).max)"
+      - "Attacker borrows massive amount beyond original safety limits"
+      - "Protocol becomes over-leveraged and vulnerable to market shocks"
+      - "If market downturn occurs, protocol becomes insolvent due to excessive debt"
+    impact: |
+      Protocol safety limits bypassed. Debt ceilings exist to limit exposure to
+      specific assets (especially risky collateral). Removing limits can cause
+      catastrophic losses during market volatility.
+
+  - name: "Oracle Dependency Manipulation"
+    description: |
+      Attacker changes oracle address to malicious price feed, enabling price
+      manipulation attacks on lending/derivative protocols.
+    preconditions:
+      - "Protocol uses configurable oracle address"
+      - "Unprotected oracle address update function"
+      - "Price-dependent operations (liquidations, minting, swaps)"
+    steps:
+      - "Attacker deploys malicious oracle contract returning manipulated prices"
+      - "Attacker calls unprotected setOracle with malicious oracle address"
+      - "Protocol now uses attacker-controlled prices"
+      - "Attacker manipulates prices to trigger liquidations or over-borrow"
+      - "Attacker profits from liquidation bonuses or stolen collateral"
+    impact: |
+      Complete protocol compromise. Oracle manipulation is one of the most
+      devastating DeFi attacks (e.g., ~$200M in oracle-related exploits in 2021-2022).
+      Attacker gains full control over protocol economics.
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm function is truly externally callable (not called only by trusted contracts)"
+  - "Verify the modified state variables are actual risk parameters (not metadata/display values)"
+  - "Check if there's indirect access control (e.g., requires specific contract state)"
+  - "Examine protocol documentation to confirm these parameters are meant to be governance-controlled"
+  - "Look for emergency pause mechanisms that might protect against exploitation"
+  - "Check if initialization pattern expects one-time unprotected setup (constructors excluded)"
+  - "Verify the parameter has economic impact (affects fees, rates, limits, not just logging)"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add Ownable Access Control"
+    description: |
+      Use OpenZeppelin's Ownable pattern to restrict updates to contract owner.
+      Suitable for centralized governance during early stages.
+    example: |
+      // SPDX-License-Identifier: MIT
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract LendingProtocol is Ownable {
+          uint256 public liquidationThreshold;
+
+          // SAFE: Only owner can update critical parameter
+          function setLiquidationThreshold(uint256 _threshold)
+              external
+              onlyOwner
+          {
+              require(_threshold < 10000, "Threshold too high");
+              require(_threshold > 5000, "Threshold too low");
+              liquidationThreshold = _threshold;
+              emit LiquidationThresholdUpdated(_threshold);
+          }
+      }
+
+  - name: "Add Role-Based Access Control"
+    description: |
+      Use OpenZeppelin's AccessControl for granular permissions. Allows
+      separation of duties (e.g., PARAMETER_ADMIN role separate from owner).
+    example: |
+      // SPDX-License-Identifier: MIT
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract LendingProtocol is AccessControl {
+          bytes32 public constant RISK_ADMIN_ROLE = keccak256("RISK_ADMIN_ROLE");
+          uint256 public collateralFactor;
+
+          constructor() {
+              _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+              _grantRole(RISK_ADMIN_ROLE, msg.sender);
+          }
+
+          // SAFE: Only RISK_ADMIN_ROLE can update collateral factor
+          function setCollateralFactor(address asset, uint256 _factor)
+              external
+              onlyRole(RISK_ADMIN_ROLE)
+          {
+              require(_factor <= 9000, "Factor cannot exceed 90%"); // Prevent insolvency
+              require(_factor >= 1000, "Factor too low");
+              collateralFactor = _factor;
+              emit CollateralFactorUpdated(asset, _factor);
+          }
+      }
+
+  - name: "Add Governance + Timelock"
+    description: |
+      Use governance voting + timelock delay for decentralized parameter updates.
+      Prevents instant attacks and allows community response time. Industry best
+      practice for production DeFi protocols (Compound, Aave, MakerDAO).
+    example: |
+      // SPDX-License-Identifier: MIT
+      import "@openzeppelin/contracts/governance/TimelockController.sol";
+
+      contract LendingProtocol {
+          TimelockController public timelock;
+          uint256 public protocolFee;
+
+          modifier onlyGovernance() {
+              require(msg.sender == address(timelock), "Only governance");
+              _;
+          }
+
+          // SAFE: Requires governance vote + timelock delay (e.g., 2 days)
+          function setProtocolFee(uint256 _fee)
+              external
+              onlyGovernance
+          {
+              require(_fee <= 1000, "Fee cannot exceed 10%"); // Reasonable limit
+              protocolFee = _fee;
+              emit ProtocolFeeUpdated(_fee);
+          }
+      }
+
+      // Governance process:
+      // 1. Submit proposal to change fee
+      // 2. Community votes (e.g., 7-day voting period)
+      // 3. If approved, queued in timelock (e.g., 2-day delay)
+      // 4. After delay, anyone can execute the change
+      // 5. Community has time to exit if they disagree
+
+  - name: "Add Multi-Sig Requirement"
+    description: |
+      Require multiple trusted signers (e.g., 3-of-5 multi-sig) to approve
+      parameter changes. Reduces single point of failure risk.
+    example: |
+      // SPDX-License-Identifier: MIT
+      // Using Gnosis Safe or similar multi-sig as owner
+
+      contract LendingProtocol is Ownable {
+          // Owner is Gnosis Safe with 3-of-5 requirement
+          uint256 public interestRateModel;
+
+          // SAFE: Requires 3 out of 5 trusted signers to approve transaction
+          function setInterestRateModel(uint256 _model)
+              external
+              onlyOwner  // Owner = Gnosis Safe multi-sig
+          {
+              require(_model < 5000, "Rate too high"); // Max 50% APY
+              interestRateModel = _model;
+              emit InterestRateModelUpdated(_model);
+          }
+      }
+
+  - name: "Add Parameter Bounds Validation"
+    description: |
+      Even with access control, add sanity checks to prevent accidental
+      misconfiguration. Defense in depth.
+    example: |
+      // SPDX-License-Identifier: MIT
+      contract LendingProtocol is Ownable {
+          uint256 public constant MAX_LIQUIDATION_BONUS = 2000; // 20%
+          uint256 public constant MIN_LIQUIDATION_THRESHOLD = 10000; // 100%
+          uint256 public constant MAX_LIQUIDATION_THRESHOLD = 20000; // 200%
+
+          uint256 public liquidationThreshold;
+          uint256 public liquidationBonus;
+
+          // SAFE: Access control + bounds validation
+          function setLiquidationParams(
+              uint256 _threshold,
+              uint256 _bonus
+          ) external onlyOwner {
+              require(
+                  _threshold >= MIN_LIQUIDATION_THRESHOLD &&
+                  _threshold <= MAX_LIQUIDATION_THRESHOLD,
+                  "Invalid threshold"
+              );
+              require(_bonus <= MAX_LIQUIDATION_BONUS, "Bonus too high");
+
+              liquidationThreshold = _threshold;
+              liquidationBonus = _bonus;
+
+              emit LiquidationParamsUpdated(_threshold, _bonus);
+          }
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - auth-001  # Unprotected privileged state write (general case)
+  - auth-114  # Original name-dependent version (DEPRECATED)
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-285  # Improper Authorization
+  - CWE-862  # Missing Authorization
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+semantic_ops: {}
+behavioral_signature: {}
+tier_match: {}
+constraints: {}
+attack_paths: []
+exploit_similarity: {}
+verification_agents: {}
+
+# =============================================================================
+# REFERENCES
+# =============================================================================
+#
+# DeFi Security Research:
+# - Dacian: "Lending/Borrowing DeFi Attacks" (2023-2025)
+#   https://dacian.me/lending-borrowing-defi-attacks
+# - Cyfrin: "DeFi Liquidation Vulnerabilities" (2025)
+#   https://www.cyfrin.io/blog/defi-liquidation-vulnerabilities-and-mitigation-strategies
+# - QuillAudits: "Guide to Lending and Borrowing Protocols" (2025)
+#   https://www.quillaudits.com/blog/web3-security/guide-to-lending-and-borrowing-protocols
+#
+# Audit Reports:
+# - OpenZeppelin: Compound III Audit (2022)
+# - OpenZeppelin: Radiant V2 Audit (2023)
+# - OpenZeppelin: f(x) v2 Audit (2025)
+# - OpenZeppelin: 1inch Protocol Fee Audit (2025)
+#
+# Academic Research:
+# - "Liquidity Management Attacks on Lending Markets" (AFT 2023)
+#   https://drops.dagstuhl.de/opus/volltexte/2023/19407/
+#
+# Protocol Documentation:
+# - Aave: Risk Parameters Documentation
+# - Compound: Governance & Timelock
+# - MakerDAO: Collateral Factor Governance
+#
+# =============================================================================

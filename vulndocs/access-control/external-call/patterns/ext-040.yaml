@@ -1,0 +1,19 @@
+id: ext-040
+vulndoc: access-control/external-call
+name: Chainlink Decimals Hardcoded
+description: Chainlink price scaling hardcodes decimals without querying the feed.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: calls_chainlink_latest_round_data
+    op: eq
+    value: true
+  - property: uses_fixed_oracle_decimals
+    op: eq
+    value: true
+  - property: calls_chainlink_decimals
+    op: eq
+    value: false

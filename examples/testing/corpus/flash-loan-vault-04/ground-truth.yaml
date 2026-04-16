@@ -1,0 +1,223 @@
+project:
+  name: flash-loan-vault-04
+  theme: vault
+  tier: 2
+  adversarial_categories:
+  - A
+  description: 'ERC-4626-style vault with flash loans and share price mechanics. Category
+    A: encoding indirection (A6).'
+findings:
+- pattern_id: vault-share-inflation
+  contract: FlashVault
+  function: deposit
+  line_range: 22-35
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify first deposit sets sharesToMint = msg.value with no minimum
+  - Attacker can deposit 1 wei, then donate to inflate totalAssets
+  - Next depositor gets 0 shares due to integer division truncation
+  - 'Conclude: first-depositor share inflation attack'
+- pattern_id: balance-update-after-transfer
+  contract: FlashVault
+  function: withdraw
+  line_range: 39-55
+  severity: high
+  adversarial_techniques:
+  - A6-encoding-indirection
+  expected_reasoning_chain:
+  - Identify external call via abi.encodeWithSignature and msg.sender.call
+  - Call payload is dynamically constructed hiding the transfer semantics
+  - shares[msg.sender] update occurs AFTER the encoded external call
+  - 'Conclude: reentrancy hidden via encoding indirection'
+- pattern_id: flash-loan-price-manipulation
+  contract: FlashVault
+  function: flashLoan
+  line_range: 58-71
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify flash loan provides large amount of capital in single transaction
+  - Combined with donateToVault, attacker can manipulate totalAssets
+  - Share price (totalAssets/totalShares) can be artificially inflated
+  - 'Conclude: flash loan enables vault share price manipulation'
+- pattern_id: flash-loan-reward-attack
+  contract: FlashVault
+  function: donateToVault
+  line_range: 74-76
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify donateToVault directly increases totalAssets
+  - No restrictions on who can donate or when
+  - Donation changes share price for all existing depositors
+  - 'Conclude: donation vector enables share price manipulation attacks'
+- pattern_id: auth-001
+  contract: FlashVault
+  function: setFlashFee
+  line_range: 79-81
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify setFlashFee changes the flash loan fee
+  - No access control modifier
+  - Attacker can set fee to 0 for free flash loans
+  - 'Conclude: missing access control on fee parameter'
+- pattern_id: auth-003
+  contract: FlashVault
+  function: setKeeper
+  line_range: 84-86
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify setKeeper changes admin role
+  - No access control
+  - Anyone can become keeper
+  - 'Conclude: missing access control on role assignment'
+- pattern_id: flash-loan-protected-operations
+  contract: FlashVault
+  function: flashLoan
+  line_range: 58-71
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify flashLoan sends ETH to msg.sender via call{value: amount} at line 69 with arbitrary calldata, giving borrower full execution control
+  - Notice during the callback, borrower can call deposit() to mint shares at the current totalAssets/totalShares ratio
+  - Recognize no flash-loan-in-progress flag prevents deposit/withdraw during flash loan execution, allowing share price manipulation within the same transaction
+  - 'Conclude: flash loan callback can re-enter deposit/withdraw without protection, enabling share price manipulation during flash loan execution'
+- pattern_id: invariant-supply-manipulation
+  contract: FlashVault
+  function: donateToVault
+  line_range: 74-76
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify donateToVault at line 79-80 directly increases totalAssets via totalAssets += msg.value with no restrictions
+  - Notice this breaks the invariant that totalAssets should only change through deposit/withdraw/flash-fee — donation inflates totalAssets without minting new shares
+  - Recognize an attacker who holds shares can donate to increase share price (totalAssets/totalShares), causing subsequent depositors to receive fewer shares
+  - 'Conclude: unrestricted donation function breaks supply/asset invariant, enabling share price manipulation to steal from future depositors'
+- pattern_id: arith-001
+  contract: FlashVault
+  function: deposit
+  line_range: 22-35
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify deposit computes sharesToMint = (msg.value * totalShares) / totalAssets at line 30 when totalShares > 0
+  - Notice if totalAssets is inflated (via donateToVault) relative to totalShares, the division truncates sharesToMint to zero for small deposits
+  - Recognize first depositor sets sharesToMint = msg.value (1 wei possible), then donates to inflate totalAssets, causing all subsequent deposits to mint 0 shares
+  - 'Conclude: integer division truncation in share calculation enables first-depositor inflation attack that steals subsequent deposits'
+- pattern_id: inv-econ-001
+  contract: FlashVault
+  function: flashLoan
+  line_range: 58-71
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify flashLoan provides amount of ETH to borrower at line 69 and only adds the fee to totalAssets at line 72
+  - Notice during the callback the borrower can call donateToVault to inflate totalAssets, or deposit/withdraw to manipulate share ratios
+  - Recognize the economic invariant (totalAssets tracks real vault value) is violable within a single flash loan transaction via composable callbacks
+  - 'Conclude: flash loan enables economic invariant violation — borrower can manipulate totalAssets/totalShares ratio during callback to extract value from other depositors'
+safe_patterns: []
+
+# Multi-agent debate ground truth extension (Prestep P-2, GAP-08)
+debate_expectations:
+  debatable_findings:
+    - finding_ref: balance-update-after-transfer  # withdraw reentrancy via encoding
+      expected_outcome: confirmed
+      expected_rounds: 3
+      difficulty: medium
+
+      attacker_expected:
+        claim_type: exploit_path
+        must_cite:
+          - type: code_location
+            description: "abi.encodeWithSignature + msg.sender.call at line 47-48 before shares update"
+          - type: graph_node
+            description: "TRANSFERS_VALUE_OUT via encoded call before WRITES_USER_BALANCE"
+        min_evidence_count: 2
+        min_confidence: 0.7
+
+      defender_expected:
+        position: partial_mitigation
+        must_cite:
+          - type: reasoning
+            description: "Encoding indirection may make exploitation harder in practice"
+        expected_mitigations:
+          - "The dynamic calldata construction adds complexity for attacker"
+        # Defender can argue encoding adds friction but should NOT claim it prevents reentrancy
+
+      verifier_expected:
+        must_check_both_sides: true
+        independent_queries:
+          - "Trace data flow through abi.encodeWithSignature to msg.sender.call"
+          - "Check for reentrancy guards on withdraw"
+        arbitration_basis: evidence_weight
+        expected_verdict_confidence: high
+
+      quality_signals:
+        min_unique_evidence_items: 3
+        defender_must_engage: true
+        verifier_must_run_own_queries: true
+        max_rounds_without_new_argument: 1
+        anti_rubber_stamp_checks:
+          - "Attacker traces full encoding indirection path (not just 'external call exists')"
+          - "Defender acknowledges encoding does not prevent reentrancy"
+          - "Verifier independently verifies no nonReentrant modifier"
+
+    - finding_ref: vault-share-inflation  # first depositor attack
+      expected_outcome: confirmed
+      expected_rounds: 2
+      difficulty: medium
+
+      attacker_expected:
+        claim_type: economic_impact
+        must_cite:
+          - type: code_location
+            description: "deposit at line 22-35: first deposit sharesToMint = msg.value with no minimum"
+          - type: reasoning
+            description: "1 wei deposit + donation inflates share price → next depositor gets 0 shares"
+        min_evidence_count: 2
+        min_confidence: 0.8
+
+      defender_expected:
+        position: challenge_preconditions
+        must_cite:
+          - type: reasoning
+            description: "Attack requires being first depositor (race condition)"
+        expected_mitigations:
+          - "Attack window limited to vault deployment — first deposit only"
+
+      verifier_expected:
+        must_check_both_sides: true
+        independent_queries:
+          - "Check if dead shares or minimum deposit exists"
+          - "Verify donateToVault has no caller restriction"
+        arbitration_basis: evidence_weight
+        expected_verdict_confidence: high
+
+      quality_signals:
+        min_unique_evidence_items: 3
+        defender_must_engage: true
+        verifier_must_run_own_queries: true
+        max_rounds_without_new_argument: 1
+        anti_rubber_stamp_checks:
+          - "Verifier independently checks for ERC-4626 inflation mitigations (dead shares, min deposit)"
+          - "If confirmed, verifier explains why 'first deposit only' window is still exploitable"
+
+  global_quality_requirements:
+    evidence_citation_rate: 0.9
+    cross_reference_rate: 0.7
+    convergence_budget: 3
+
+summary:
+  total_findings: 10
+  total_safe_patterns: 0
+  total_debate_entries: 2
+  difficulty: medium
+  notes: Category A with A6 encoding indirection on reentrancy and vault-specific
+    patterns

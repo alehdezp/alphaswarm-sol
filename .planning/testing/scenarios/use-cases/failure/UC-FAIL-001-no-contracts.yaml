@@ -1,0 +1,69 @@
+id: UC-FAIL-001
+name: "Graceful error on empty directory with no contracts"
+workflow: failure
+category: failure
+tier: important
+
+input:
+  contract: "/tmp/empty-dir-for-testing/"
+  command: "/vrs-audit /tmp/empty-dir-for-testing/"
+  context: >
+    The user points the audit at an empty directory or a directory with no
+    Solidity files. The workflow must produce a clear, actionable error
+    message and exit gracefully without crashing, hanging, or producing
+    nonsensical findings.
+
+expected_behavior:
+  summary: |
+    The workflow should detect that no Solidity contracts are present in the
+    target directory and report a clear error. It should NOT attempt to build
+    a graph, run queries, or spawn agents. The error message should tell the
+    user what went wrong and suggest how to fix it.
+  must_happen:
+    - "Workflow checks for .sol files in the target directory"
+    - "Workflow detects no Solidity files are present"
+    - "Workflow produces a clear error message explaining the problem"
+    - "Error message suggests a fix (e.g., 'No .sol files found. Check the path.')"
+    - "Workflow exits cleanly with appropriate exit code"
+  must_not_happen:
+    - "Workflow crashes with an unhandled exception"
+    - "Workflow hangs indefinitely waiting for input"
+    - "Workflow attempts to build a graph from zero files"
+    - "Workflow produces findings from an empty directory"
+    - "Workflow produces a generic Python traceback to the user"
+    - "Workflow silently succeeds with no output"
+  expected_tools:
+    ordered: []
+    required:
+      - "Bash"
+  expected_findings:
+    min_count: 0
+    must_include_category: ""
+    severity: ""
+
+evaluation:
+  pass_threshold: 70
+  key_dimensions:
+    - name: error_clarity
+      description: "Is the error message clear, specific, and actionable?"
+    - name: graceful_exit
+      description: "Does the workflow exit cleanly without crash or hang?"
+    - name: no_false_work
+      description: "Does the workflow avoid attempting graph build or analysis on empty input?"
+  regression_signals:
+    - "Unhandled exception or traceback shown -> CRITICAL REGRESSION: error handling broken"
+    - "Workflow hangs -> CRITICAL REGRESSION: timeout handling broken"
+    - "Workflow produces findings from empty dir -> REGRESSION: validation bypass"
+    - "Score drops below 70 -> REGRESSION: error handling degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: ""
+  related_scenarios: []
+
+status: draft
+last_validated: null
+notes: >
+  Important tier because graceful error handling is essential for user
+  experience. Higher pass threshold (70) because this is a simple behavioral
+  check that should be easy to pass.

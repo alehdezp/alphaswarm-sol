@@ -1,0 +1,35 @@
+# upgrade Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: upgrade
+name: Upgrade
+description: 'Vulnerability subcategories for upgrade domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: function-clashing
+  name: Function Selector Clashing
+  path: function-clashing/
+- id: general
+  name: General
+  path: general/
+- id: initializer
+  name: Initializer
+  path: initializer/
+- id: proxy
+  name: Proxy
+  path: proxy/
+- id: selfdestruct
+  name: Selfdestruct in Implementation
+  path: selfdestruct/
+- id: storage-collision
+  name: Storage Collision
+  path: storage-collision/
+- id: uninitialized-proxy
+  name: Uninitialized Proxy
+  path: uninitialized-proxy/
+statistics:
+  subcategory_count: 7
+  last_updated: '2026-02-18'

@@ -1,0 +1,33 @@
+id: arithmetic-rounding-direction
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: "Rounding Direction Vulnerabilities"
+severity: critical
+category: arithmetic
+subcategory: rounding-direction
+
+description: >
+  Incorrect rounding direction in mathematical operations can be exploited through dust donations
+  or precision manipulation to drain protocol funds. Particularly dangerous in AMM pool accounting.
+
+evidence_threshold: 5
+
+references:
+  exploits:
+    - name: "Balancer V2 Weighted Pool"
+      loss: "$128M"
+      date: "2023-11-XX"
+      source: "https://blog.trailofbits.com/2025/11/07/balancer-hack-analysis-and-guidance-for-the-defi-ecosystem/"
+
+  audits:
+    - firm: "Trail of Bits"
+      date: "2021"
+      finding: "Appendix H: Rounding direction guidance"
+      protocol: "Balancer V2"
+
+  research:
+    - title: "Understanding the Balancer v2 Exploit"
+      source: "https://www.openzeppelin.com/news/understanding-the-balancer-v2-exploit"
+    - title: "Precision in DeFi Math: Understanding the Balancer Exploit"
+      source: "https://tech.sedhu.me/precision-in-defi-math-understanding-the-balancer-exploit"

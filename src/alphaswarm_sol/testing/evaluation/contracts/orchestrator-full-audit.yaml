@@ -1,0 +1,71 @@
+workflow_id: orchestrator-full-audit
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+- GRAPH-FIRST
+reasoning_dimensions:
+- coordination_quality
+- evidence_flow
+- debate_coherence
+- graph_utilization
+- finding_quality
+- completeness
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: graph_built
+  description: BSKG built from target contracts
+  expected_behavior: alphaswarm build-kg invoked via Bash tool
+  grader_type: code
+- id: agents_spawned
+  description: Required agent roles were spawned
+  expected_behavior: TeamCreate and Task tool calls for attacker/defender/verifier
+    roles
+  grader_type: code
+- id: debate_turns_exchanged
+  description: Multi-turn debate occurred between agents
+  expected_behavior: SendMessage calls between agents in transcript
+  grader_type: code
+- id: session_completed
+  description: Audit session completed with verdict
+  expected_behavior: session_completed is true and response contains structured verdict
+  grader_type: code
+evidence_requirements:
+- type: graph_nodes
+  description: BSKG evidence from all agents
+- type: transcript
+  description: Full debate transcript
+- type: code_locations
+  description: Source code references in final report
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Orchestrator builds BSKG before spawning any investigation agents.
+  Orchestrator assigns clear roles with specific investigation scope to each agent.
+  Orchestrator routes evidence between agents to enable informed debate. Orchestrator
+  monitors debate progression and intervenes when turns become circular. Orchestrator
+  synthesizes a final verdict that integrates evidence from all agents. Orchestrator
+  performs self-critique by evaluating whether all relevant code paths were covered
+  by the investigation.
+active_dimensions:
+- coordination_quality
+- evidence_flow
+- debate_coherence
+- graph_utilization
+- finding_quality
+- completeness
+- task_delegation
+- consensus_quality
+- rubric_coverage

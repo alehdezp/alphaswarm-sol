@@ -1,0 +1,77 @@
+id: UC-VER-004
+name: "Verify tool-only finding with reasoning layer"
+workflow: vrs-verify
+category: verify
+tier: important
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-verify tests/contracts/ReentrancyClassic.sol --finding slither-reentrancy"
+  context: >
+    A Slither finding reports a reentrancy vulnerability in ReentrancyClassic.sol.
+    The finding is mechanically correct but provides no reasoning about exploit
+    feasibility, economic impact, or graph-level evidence. The verifier must
+    take this bare tool output and add a reasoning layer: confirm via graph
+    queries, assess exploit feasibility, and produce a verdict richer than
+    the original Slither output.
+
+expected_behavior:
+  summary: |
+    The verifier receives a bare Slither finding (just detector name, severity,
+    and code location) and must enrich it with graph-based reasoning. It should
+    independently verify the finding via BSKG queries, add exploit feasibility
+    assessment, and produce a verdict that goes beyond what Slither alone
+    provides.
+  must_happen:
+    - "Verifier receives the bare Slither finding as input"
+    - "Verifier builds or loads BSKG for independent verification"
+    - "Verifier runs graph queries to confirm the CEI violation"
+    - "Verifier adds exploit feasibility assessment beyond Slither output"
+    - "Verdict includes graph-based evidence not present in original finding"
+    - "Verdict enriches the finding with reasoning about impact"
+  must_not_happen:
+    - "Verifier just rubber-stamps the Slither finding without independent analysis"
+    - "Verifier only repeats information already in the Slither output"
+    - "Verifier rejects a true positive from Slither"
+    - "Verifier skips graph queries"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "reentrancy"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 55
+  key_dimensions:
+    - name: enrichment_quality
+      description: "Did the verifier add reasoning beyond what Slither provided?"
+    - name: independent_verification
+      description: "Did the verifier verify via graph, not just trust Slither?"
+    - name: exploit_feasibility
+      description: "Did the verdict include exploit feasibility assessment?"
+    - name: evidence_quality
+      description: "Does the verdict include graph node references not in the original finding?"
+  regression_signals:
+    - "Verifier only repeats Slither output -> CRITICAL REGRESSION: no reasoning added"
+    - "Verifier rejects true Slither positive -> REGRESSION: tool integration broken"
+    - "No graph queries run -> REGRESSION: graph-first violated for tool findings"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-VER-001"
+    - "UC-TOOL-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier because tool-finding enrichment is a common workflow. Tests
+  the value-add of multi-agent verification over raw tool output.

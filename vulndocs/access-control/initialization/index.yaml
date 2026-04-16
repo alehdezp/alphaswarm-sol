@@ -1,0 +1,85 @@
+# Initialization Vulnerabilities - Subcategory Index
+# Unprotected initializers and reinitialize attacks
+
+id: initialization
+name: Initialization Vulnerabilities
+parent_category: access-control
+
+description: |
+  Vulnerabilities in contract initialization, particularly in upgradeable contracts.
+  Unprotected initializers allow attackers to call initialization functions after
+  deployment to take control. Reinitialize attacks exploit contracts that can be
+  initialized multiple times, allowing attackers to reset ownership or critical state.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - auth-008
+  - auth-009
+
+# VKG properties for detection
+relevant_properties:
+  - is_initializer_function
+  - has_initializer_modifier
+  - visibility
+  - modifies_owner
+  - writes_privileged_state
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: is_initializer_function
+    expected: true
+    critical: true
+    description: Function is an initializer (sets up initial state)
+
+  - property: has_initializer_modifier
+    expected: false
+    critical: true
+    description: No initializer protection modifier present
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+  - property: modifies_owner
+    expected: true
+    critical: true
+    description: Function sets ownership state
+
+# Behavioral signatures
+behavioral_signatures:
+  - "INITIALIZES_STATE->!G:initializer"
+  - "W:owner->!G:onlyInitializing"
+  - "initialize()->!initialized"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "INITIALIZES_STATE without initializer guard"
+    - "MODIFIES_OWNER without initialization check"
+    - "Multiple initialization possible"
+  safe:
+    - "initializer modifier -> INITIALIZES_STATE"
+    - "reinitializer(version) -> MODIFIES_CRITICAL_STATE"
+    - "initialized check -> INITIALIZES_STATE"
+
+# False positive indicators
+false_positive_indicators:
+  - "Function has initializer/reinitializer modifier"
+  - "initialized flag checked before state changes"
+  - "Function is constructor (not initializer)"
+  - "Contract is not upgradeable"
+
+# Related real-world exploits
+related_exploits:
+  - parity-wallet-freeze
+  - wormhole-hack
+
+# Token estimate for this subcategory
+token_estimate: 500

@@ -1,0 +1,38 @@
+# crypto Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: crypto
+name: Crypto
+description: 'Vulnerability subcategories for crypto domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: ecrecover-zero
+  name: ECRecover Zero Address
+  path: ecrecover-zero/
+- id: hash-collision
+  name: Hash Collision via abi.encodePacked
+  path: hash-collision/
+- id: merkle
+  name: Merkle
+  path: merkle/
+- id: replay
+  name: Replay Attacks
+  path: replay/
+- id: signature
+  name: Signature
+  path: signature/
+- id: signature-malleability
+  name: Signature Malleability
+  path: signature-malleability/
+- id: signature-validation
+  name: Signature Duplication Attack
+  path: signature-validation/
+- id: weak-randomness
+  name: Weak Randomness
+  path: weak-randomness/
+statistics:
+  subcategory_count: 8
+  last_updated: '2026-02-18'

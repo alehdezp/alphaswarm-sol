@@ -1,0 +1,16 @@
+id: auth-044
+vulndoc: access-control/general
+name: Governance Without Timelock
+description: Governance operations without timelock protection.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_governance
+    op: eq
+    value: true
+  - property: has_timelock
+    op: eq
+    value: false

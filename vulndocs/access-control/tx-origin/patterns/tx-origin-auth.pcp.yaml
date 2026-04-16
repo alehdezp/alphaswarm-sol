@@ -1,0 +1,299 @@
+# Pattern Context Pack (PCP) v2 - tx.origin Authentication
+# Path: vulndocs/access-control/tx-origin/patterns/tx-origin-auth.pcp.yaml
+
+schema_version: "2.0"
+
+# =============================================================================
+# IDENTITY (Required)
+# =============================================================================
+
+id: pcp-tx-origin-auth
+version: "2.0"
+pattern_id: "tx-origin-auth"
+name: "tx.origin Authentication"
+summary: |
+  Detects authentication using tx.origin instead of msg.sender, which is
+  vulnerable to phishing attacks where a malicious contract tricks the user
+  into initiating a transaction that bypasses access control.
+scope: Function
+
+# =============================================================================
+# DETERMINISM CONSTRAINTS (Required - do not modify defaults)
+# =============================================================================
+
+determinism:
+  no_rag: true
+  no_name_heuristics: true
+  serialization_order:
+    - pcp
+    - slice
+    - protocol
+    - evidence
+  hash_seed: "graph_hash + pcp_version + pattern_id"
+
+# =============================================================================
+# TOKEN BUDGET
+# =============================================================================
+
+budget:
+  pcp_max_tokens: 800
+  context_max_tokens: 2200
+  cheap_pass_tokens: 1200
+  verify_pass_tokens: 1800
+  deep_pass_tokens: 2400
+
+# =============================================================================
+# EVIDENCE WEIGHTS
+# =============================================================================
+
+evidence_weights:
+  required:
+    - "ev-tx-origin-usage"
+  strong:
+    - "ev-auth-comparison"
+    - "ev-owner-check"
+  weak:
+    - "ev-modifier-usage"
+  optional:
+    - "ev-require-statement"
+
+# =============================================================================
+# WITNESS REQUIREMENTS
+# =============================================================================
+
+witness:
+  minimal_required:
+    - "uses_tx_origin"
+    - "tx_origin_in_access_check"
+  negative_required:
+    - "msg_sender_used_instead"
+    - "tx_origin_only_for_non_auth_purpose"
+
+# =============================================================================
+# EXPLOIT MODELING
+# =============================================================================
+
+preconditions:
+  - id: "pre-001"
+    description: "Contract uses tx.origin for authorization (owner check, admin verification)"
+    evidence_refs:
+      - "ev-tx-origin-auth"
+  - id: "pre-002"
+    description: "Authorized user interacts with external contracts (DEXes, dApps)"
+    evidence_refs:
+      - "ev-user-interaction-pattern"
+
+exploit_steps:
+  - id: "step-001"
+    description: "Attacker deploys malicious contract with enticing functionality"
+    required_ops: []
+    evidence_refs:
+      - "ev-malicious-contract"
+  - id: "step-002"
+    description: "Attacker tricks authorized user into calling malicious contract"
+    required_ops:
+      - "CALLS_EXTERNAL"
+    evidence_refs:
+      - "ev-phishing-vector"
+  - id: "step-003"
+    description: "Malicious contract calls victim contract; tx.origin is still the authorized user"
+    required_ops:
+      - "CALLS_EXTERNAL"
+    evidence_refs:
+      - "ev-forwarded-call"
+  - id: "step-004"
+    description: "Victim contract checks tx.origin, sees authorized user, allows privileged action"
+    required_ops:
+      - "CHECKS_TX_ORIGIN"
+      - "TRANSFERS_VALUE_OUT"
+    evidence_refs:
+      - "ev-auth-bypass"
+
+impact_invariants:
+  - id: "impact-001"
+    description: "Unauthorized fund transfers by impersonating legitimate owner"
+    evidence_refs:
+      - "ev-fund-theft"
+  - id: "impact-002"
+    description: "Administrative actions performed without owner's direct intent"
+    evidence_refs:
+      - "ev-admin-action"
+  - id: "impact-003"
+    description: "Contract ownership or critical parameters modified"
+    evidence_refs:
+      - "ev-ownership-change"
+
+# =============================================================================
+# OPERATION SIGNATURES (Required)
+# =============================================================================
+
+op_signatures:
+  required_ops:
+    - "CHECKS_TX_ORIGIN"
+
+  ordering_variants:
+    - id: "seq-001"
+      description: "tx.origin check followed by privileged operation"
+      sequence:
+        - "CHECKS_TX_ORIGIN"
+        - "TRANSFERS_VALUE_OUT"
+    - id: "seq-002"
+      description: "tx.origin check followed by state modification"
+      sequence:
+        - "CHECKS_TX_ORIGIN"
+        - "WRITES_STATE"
+
+  forbidden_ops: []
+
+# =============================================================================
+# ANTI-SIGNALS
+# =============================================================================
+
+anti_signals:
+  - id: "guard.msg-sender-auth"
+    guard_type: "access_control"
+    severity: "critical"
+    expected_context: "msg.sender used for authorization instead of tx.origin"
+    evidence_refs:
+      - "ev-msg-sender-check"
+    bypass_notes:
+      - "Some contracts use both; vulnerability exists if tx.origin is the gate"
+      - "msg.sender check may be in different function than tx.origin check"
+
+  - id: "guard.non-auth-purpose"
+    guard_type: "custom"
+    severity: "critical"
+    expected_context: "tx.origin used for non-auth purpose (e.g., fee recipient, logging)"
+    evidence_refs:
+      - "ev-non-auth-usage"
+    bypass_notes:
+      - "Determine actual usage context; fee recipient is safe, auth check is not"
+
+  - id: "guard.contract-call-prevention"
+    guard_type: "custom"
+    severity: "high"
+    expected_context: "require(tx.origin == msg.sender) to prevent contract calls"
+    evidence_refs:
+      - "ev-eoa-only-check"
+    bypass_notes:
+      - "This pattern itself is often an anti-pattern for composability"
+      - "Flash bots can still front-run with EOA transactions"
+      - "CREATE2 can deploy contracts to EOA addresses"
+
+# =============================================================================
+# COUNTERFACTUALS
+# =============================================================================
+
+counterfactuals:
+  - id: "cf-001"
+    if_removed: "guard.msg-sender-auth"
+    becomes_true: true
+    notes: "Without msg.sender auth, tx.origin can be exploited via phishing"
+  - id: "cf-002"
+    if_removed: "guard.non-auth-purpose"
+    becomes_true: true
+    notes: "If tx.origin is used for auth (not just logging), vulnerability exists"
+
+# =============================================================================
+# GUARD TAXONOMY
+# =============================================================================
+
+guard_taxonomy:
+  - id: "g-001"
+    type: "access_control"
+    description: "msg.sender-based authentication"
+    expected_ops:
+      - "CHECKS_MSG_SENDER"
+    bypass_notes:
+      - "Must replace tx.origin entirely, not supplement it"
+  - id: "g-002"
+    type: "custom"
+    description: "tx.origin == msg.sender EOA-only check"
+    expected_ops:
+      - "CHECKS_TX_ORIGIN"
+      - "CHECKS_MSG_SENDER"
+    bypass_notes:
+      - "Anti-pattern that breaks composability"
+      - "Not a security fix, different purpose"
+
+# =============================================================================
+# ORDERING VARIANTS
+# =============================================================================
+
+ordering_variants:
+  - id: "ov-001"
+    description: "tx.origin gate before sensitive operation"
+    sequence:
+      - "CHECKS_TX_ORIGIN"
+      - "TRANSFERS_VALUE_OUT"
+
+# =============================================================================
+# RISK ENVELOPE
+# =============================================================================
+
+risk_envelope:
+  asset_type: "mixed"
+  trust_boundary: "user->contract"
+  value_movement: "out"
+  severity_floor: "high"
+
+# =============================================================================
+# COMPOSITION HINTS
+# =============================================================================
+
+composition_hints:
+  co_occurs_with:
+    - "tx-origin-public"
+    - "missing-access-control"
+  combine_with:
+    - "phishing-vulnerability"
+
+# =============================================================================
+# ECONOMIC PLACEHOLDERS (Phase 5.11)
+# =============================================================================
+
+economic_placeholders:
+  value_flows:
+    - "victim_wallet -> malicious_contract -> attacker_address"
+  incentive_hooks:
+    - "Attacker gains unauthorized access to victim's funds"
+    - "Social engineering required but highly profitable"
+  role_assumptions:
+    - "User may interact with arbitrary contracts"
+    - "User's EOA is authorized for privileged operations"
+  offchain_dependencies:
+    - "Phishing vector (website, airdrop, fake DEX)"
+  risk_pre_score: "high"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS
+# =============================================================================
+
+evidence_requirements:
+  node_types:
+    - "Function"
+    - "Expression"
+    - "StateVariable"
+  edge_types:
+    - "CHECKS_PERMISSION"
+    - "TRANSFERS_VALUE"
+    - "WRITES_STATE"
+  path_constraints:
+    - "Function -[CHECKS_TX_ORIGIN]-> * -[TRANSFERS_VALUE]-> *"
+
+# =============================================================================
+# UNKNOWNS POLICY
+# =============================================================================
+
+unknowns_policy:
+  missing_required: "unknown"
+  missing_optional: "unknown"
+  missing_anti_signal: "unknown"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: 2026-01-29
+updated: 2026-01-29
+author: "claude-opus-4.5"

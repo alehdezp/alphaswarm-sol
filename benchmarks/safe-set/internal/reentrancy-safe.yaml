@@ -1,0 +1,33 @@
+# Reentrancy Safe Reference Implementation
+id: safe-reentrancy
+name: ReentrancySafe
+category: internal_safe
+source: tests/contracts/safe/ReentrancySafe.sol
+solidity_version: "0.8.x"
+
+contract_info:
+  description: |
+    Reference implementation demonstrating proper reentrancy protection:
+    - Uses nonReentrant modifier
+    - Follows CEI pattern (Checks-Effects-Interactions)
+    - State updates before external calls
+  security_features:
+    - nonReentrant modifier
+    - CEI pattern
+    - State updates before calls
+  safe_since: 2025-12
+  review_status: internal
+
+# Empty = known-safe, any finding is FP
+expected_findings: []
+
+false_positive_categories:
+  - reentrancy-*
+  - vm-001
+  - callback-*
+
+notes: |
+  This contract demonstrates correct reentrancy protection.
+  Any reentrancy-related finding is a false positive.
+
+status: validated

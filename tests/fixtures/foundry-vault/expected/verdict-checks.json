@@ -1,0 +1,26 @@
+{
+  "description": "Expected debate verdicts for Vault contract",
+  "expected_verdicts": [
+    {
+      "pattern_id": "reentrancy-classic",
+      "function": "withdraw",
+      "expected_outcome": "CONFIRMED",
+      "expected_severity": "critical",
+      "expected_defender_finding": "no_guard",
+      "reason": "No ReentrancyGuard or nonReentrant modifier found"
+    },
+    {
+      "pattern_id": "weak-access-control",
+      "function": "setOwner",
+      "expected_outcome": "CONFIRMED",
+      "expected_severity": "critical",
+      "expected_defender_finding": "no_modifier",
+      "reason": "No onlyOwner or access control modifier found"
+    }
+  ],
+  "debate_requirements": {
+    "attacker_must_provide": ["exploit_path", "damage_potential"],
+    "defender_must_search": ["ReentrancyGuard", "nonReentrant", "onlyOwner", "access modifiers"],
+    "verifier_must_include": ["verdict", "severity", "confidence", "reasoning"]
+  }
+}

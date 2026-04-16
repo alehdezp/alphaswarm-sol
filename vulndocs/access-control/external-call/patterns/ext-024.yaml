@@ -1,0 +1,16 @@
+id: ext-024
+vulndoc: access-control/external-call
+name: Oracle Update Without Access Control
+description: Oracle price update functions without access gates.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

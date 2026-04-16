@@ -1,0 +1,22 @@
+# Rebasing Tokens - Subcategory Index
+
+id: rebasing
+name: Rebasing Tokens
+parent_category: token
+
+description: |
+  Tokens with elastic supply that changes balances without transfers,
+  breaking protocols that cache balances.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - tok-003
+
+relevant_properties:
+  - caches_balance
+  - uses_shares
+
+token_estimate: 400

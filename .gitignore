@@ -1,0 +1,65 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env
+.venv/
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Neo4j data
+neo4j-data/
+
+# Chroma
+chroma-data/
+
+# Local data
+.data/
+
+# Generated knowledge graphs (can be very large)
+graphs/
+tests/graphs/
+
+# VKG cache directories (contain graphs and LLM cache)
+**/.true_vkg/
+
+# VRS local config directories (except corpus, context, and baselines for GA validation)
+.vrs/*
+!.vrs/corpus/
+!.vrs/context/
+!.vrs/baselines/
+!.vrs/schemas/
+!.vrs/testing/
+.vrs/testing/*
+!.vrs/testing/schemas/
+!.vrs/testing/contracts/
+!.vrs/debug/
+!.vrs/ground-truth/
+
+# Project-level generated graphs and caches
+tests/projects/**/*.json/
+tests/projects/**/*.kg.json/
+
+# Any graph.json files (generated outputs, can be 1-5MB+)
+**/graph.json
+**/*.kg.json/
+
+# pytest-testmon database (local dev only)
+.testmondata
+
+# MkDocs build output
+site/
+
+# OS noise
+.DS_Store
+**/.DS_Store
+
+# Local SQLite state (rebuilt from sources)
+**/*.db
+**/*.db.bak
+**/*.sqlite
+**/*.sqlite3

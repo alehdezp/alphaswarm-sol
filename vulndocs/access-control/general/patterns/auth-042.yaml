@@ -1,0 +1,16 @@
+id: auth-042
+vulndoc: access-control/general
+name: Weak Authentication Source
+description: Access control based on weak or manipulable sources.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_control_weak_source
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: true

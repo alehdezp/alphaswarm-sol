@@ -1,0 +1,24 @@
+id: arith-002
+vulndoc: arithmetic/general
+name: Division Before Multiplication
+description: Division ordered before multiplication in financial contexts.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: has_division
+    op: eq
+    value: true
+  - property: has_multiplication
+    op: eq
+    value: true
+  - property: division_before_multiplication
+    op: eq
+    value: true
+  - property: in_financial_context
+    op: eq
+    value: true

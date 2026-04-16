@@ -1,0 +1,32 @@
+# token Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: token
+name: Token
+description: 'Vulnerability subcategories for token domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: economics
+  name: Economics
+  path: economics/
+- id: erc20-compliance
+  name: ERC20 Compliance Issues
+  path: erc20-compliance/
+- id: fee-on-transfer
+  name: Fee-on-Transfer Tokens
+  path: fee-on-transfer/
+- id: missing-return
+  name: Missing Return Values
+  path: missing-return/
+- id: rebasing
+  name: Rebasing Tokens
+  path: rebasing/
+- id: transfer
+  name: Transfer
+  path: transfer/
+statistics:
+  subcategory_count: 6
+  last_updated: '2026-02-18'

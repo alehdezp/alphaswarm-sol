@@ -1,0 +1,16 @@
+id: auth-020
+vulndoc: access-control/general
+name: Time-Based Privileged Access
+description: Privileged operations gated by timestamps.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: time_based_access_control
+    op: eq
+    value: true
+  - property: is_privileged_operation
+    op: eq
+    value: true

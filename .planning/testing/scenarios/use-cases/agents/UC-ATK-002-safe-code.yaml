@@ -1,0 +1,83 @@
+id: UC-ATK-002
+name: "Attacker agent correctly dismisses safe code with evidence"
+workflow: vrs-attacker
+category: agents
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyWithGuard.sol"
+  command: "/vrs-audit tests/contracts/ReentrancyWithGuard.sol --agent attacker"
+  context: >
+    ReentrancyWithGuard.sol has external calls but is protected by
+    OpenZeppelin's nonReentrant modifier. The attacker agent should investigate
+    the contract, form a reentrancy hypothesis, but then find the guard via
+    graph queries and correctly dismiss the hypothesis with evidence.
+
+expected_behavior:
+  summary: |
+    The attacker agent should follow graph-first reasoning but arrive at a
+    negative conclusion with evidence:
+    1. Hypothesis: "This contract may have reentrancy due to external calls"
+    2. Graph query: Find TRANSFERS_VALUE_OUT operations (present)
+    3. Graph query: Find reentrancy guard / nonReentrant modifier (present)
+    4. Evidence: Guard covers the external call functions
+    5. Conclusion: "Reentrancy hypothesis dismissed -- nonReentrant guard present"
+    The agent must NOT produce a false positive or silently skip analysis.
+  must_happen:
+    - "Agent forms an initial hypothesis about potential reentrancy"
+    - "Agent queries BSKG for external call patterns"
+    - "Agent queries BSKG for guard/modifier patterns"
+    - "Agent detects the nonReentrant modifier in graph results"
+    - "Agent explicitly dismisses the reentrancy hypothesis"
+    - "Agent provides evidence for dismissal (citing the guard)"
+    - "Agent either produces zero findings or marks findings as mitigated/informational"
+  must_not_happen:
+    - "Agent produces a high-severity reentrancy finding (false positive)"
+    - "Agent skips analysis and produces empty output without explanation"
+    - "Agent ignores the nonReentrant modifier"
+    - "Agent skips graph queries entirely"
+    - "Agent concludes 'safe' without citing the guard as evidence"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 0
+    must_include_category: ""
+    severity: ""
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: graph_first_compliance
+      description: "Did the agent use BSKG queries to discover the guard pattern?"
+    - name: false_positive_avoidance
+      description: "Did the agent correctly avoid flagging guarded code as vulnerable?"
+    - name: evidence_based_dismissal
+      description: "Did the agent cite specific guard evidence when dismissing the hypothesis?"
+    - name: reasoning_chain_quality
+      description: "Is the hypothesis -> investigate -> dismiss chain complete?"
+  regression_signals:
+    - "High-severity reentrancy finding produced -> CRITICAL REGRESSION: false positive"
+    - "Agent dismisses without evidence -> REGRESSION: reasoning chain broken"
+    - "Agent skips graph queries -> REGRESSION: graph-first violation"
+    - "Empty output with no explanation -> REGRESSION: agent failed silently"
+
+links:
+  workflow_doc: "docs/reference/graph-first-template.md"
+  test_contract: "tests/contracts/ReentrancyWithGuard.sol"
+  related_scenarios:
+    - "UC-AUDIT-002"
+    - "UC-ATK-001"
+    - "UC-VER-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Companion to UC-ATK-001. Tests the attacker agent's ability to correctly
+  dismiss safe code with evidence. More important than finding vulnerabilities
+  because false positives erode user trust.

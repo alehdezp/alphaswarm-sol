@@ -1,0 +1,132 @@
+# Ground Truth: Value Handling Labels
+# Manually verified labels for test contracts
+# Used for precision measurement
+
+contract: tests/contracts/ReentrancyClassic.sol
+contract_dir: tests/contracts/
+
+functions:
+  # ReentrancyClassic contract
+  - function_id: "ReentrancyClassic.deposit"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "Public payable function, anyone can deposit"
+      - label_id: value_handling.handles_balance
+        confidence: high
+        reasoning: "Updates balances mapping with msg.value"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Writes to user balance mapping"
+      - label_id: external_interaction.no_external_calls
+        confidence: high
+        reasoning: "No external calls, only state update"
+
+  - function_id: "ReentrancyClassic.withdraw"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "Public function, anyone can withdraw their balance"
+      - label_id: value_handling.transfers_value_out
+        confidence: high
+        reasoning: "Sends ETH via low-level call"
+      - label_id: value_handling.handles_balance
+        confidence: high
+        reasoning: "Reads and writes to balances mapping"
+      - label_id: invariants.enforces_balance_check
+        confidence: high
+        reasoning: "Has require(balances[msg.sender] >= amount)"
+      - label_id: external_interaction.calls_untrusted
+        confidence: high
+        reasoning: "Calls msg.sender with value (potential reentrancy)"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Updates user balance after external call"
+
+# ReentrancyWithGuard contract
+additional_contract: tests/contracts/ReentrancyWithGuard.sol
+
+additional_functions:
+  - function_id: "ReentrancyWithGuard.deposit"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "Public payable function"
+      - label_id: value_handling.handles_balance
+        confidence: high
+        reasoning: "Updates balances mapping"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Writes to balance state"
+
+  - function_id: "ReentrancyWithGuard.withdraw"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "Public function with reentrancy guard (not access control)"
+      - label_id: value_handling.transfers_value_out
+        confidence: high
+        reasoning: "Sends ETH via call"
+      - label_id: value_handling.handles_balance
+        confidence: high
+        reasoning: "Reads and writes balances"
+      - label_id: invariants.enforces_balance_check
+        confidence: high
+        reasoning: "Has balance requirement"
+      - label_id: external_interaction.calls_untrusted
+        confidence: high
+        reasoning: "Calls msg.sender"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Updates balance after call"
+
+# AuthPatternModifiers contract
+auth_contract: tests/contracts/AuthPatternModifiers.sol
+
+auth_functions:
+  - function_id: "AuthPatternModifiers.setOwner"
+    labels:
+      - label_id: access_control.owner_only
+        confidence: high
+        reasoning: "Protected by onlyOwner modifier"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Updates owner state variable"
+
+  - function_id: "AuthPatternModifiers.setAdmin"
+    labels:
+      - label_id: access_control.owner_only
+        confidence: high
+        reasoning: "Protected by onlyOwner modifier"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Updates admin state variable"
+
+  - function_id: "AuthPatternModifiers.updateConfig"
+    labels:
+      - label_id: access_control.role_based
+        confidence: high
+        reasoning: "Protected by onlyAdmin modifier (admin role)"
+
+  - function_id: "AuthPatternModifiers.restrictedAction"
+    labels:
+      - label_id: access_control.permissioned
+        confidence: high
+        reasoning: "Protected by onlyAllowlisted modifier"
+
+# Expected findings for detection testing
+expected_findings:
+  - pattern_id: reentrancy-classic
+    function_id: "ReentrancyClassic.withdraw"
+    should_match: true
+    reason: "External call before state update, no reentrancy guard"
+
+  - pattern_id: reentrancy-classic
+    function_id: "ReentrancyWithGuard.withdraw"
+    should_match: false
+    reason: "Has nonReentrant modifier protection"
+
+  - pattern_id: invariant-balance-unvalidated
+    function_id: "ReentrancyClassic.withdraw"
+    should_match: false
+    reason: "Has balance check in require statement"

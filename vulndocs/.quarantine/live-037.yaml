@@ -1,0 +1,13 @@
+id: live-037
+vulndoc: dos/general
+name: Time Lock Issues
+description: Timelock parameters without bounds.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: time_lock_overflow_risk
+    op: eq
+    value: true

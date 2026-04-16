@@ -1,0 +1,13 @@
+id: read-only-reentrancy
+vulndoc: reentrancy/read-only
+name: Read-Only Reentrancy
+description: View functions reading state modified after external calls.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: read_only_reentrancy_surface
+    op: eq
+    value: true

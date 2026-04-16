@@ -1,0 +1,83 @@
+# Classic Reentrancy - Subcategory Index
+# The most common and historically significant reentrancy pattern
+
+id: classic
+name: Classic Reentrancy
+parent_category: reentrancy
+
+description: |
+  State write after external call allows an attacker to re-enter the function
+  before state is updated. The function reads a balance, makes an external call
+  (which can call back), then writes the balance. The attacker exploits the gap
+  between the external call and the state update.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - vm-001
+  - vm-002
+
+# VKG properties for detection
+relevant_properties:
+  - state_write_after_external_call
+  - has_reentrancy_guard
+  - visibility
+  - external_call_sites
+  - state_variables_written
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: state_write_after_external_call
+    expected: true
+    critical: true
+    description: Function writes state after making external call
+
+  - property: has_reentrancy_guard
+    expected: false
+    critical: true
+    description: No reentrancy protection present
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+  - property: uses_low_level_call
+    expected: true
+    critical: false
+    description: Often uses call() with value
+
+# Behavioral signatures
+behavioral_signatures:
+  - "R:bal->X:out->W:bal"
+  - "R:bal->X:call->W:bal"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "R:bal -> X:out -> W:bal"
+    - "R:bal -> X:call{value} -> W:bal"
+  safe:
+    - "R:bal -> W:bal -> X:out"
+    - "R:bal -> W:bal -> X:call{value}"
+
+# False positive indicators
+false_positive_indicators:
+  - "nonReentrant modifier present"
+  - "All state writes complete before external call"
+  - "External call is to trusted contract (hardcoded)"
+  - "Function is marked as internal or private"
+  - "Lock variable checked before external call"
+
+# Related real-world exploits
+related_exploits:
+  - dao-hack
+  - fei-rari-hack
+
+# Token estimate for this subcategory
+token_estimate: 500

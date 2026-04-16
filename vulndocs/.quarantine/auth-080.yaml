@@ -1,0 +1,13 @@
+id: auth-080
+vulndoc: access-control/general
+name: Weak Auth Using Extcodehash
+description: Authentication relies on extcodehash.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: uses_extcodehash
+    op: eq
+    value: true

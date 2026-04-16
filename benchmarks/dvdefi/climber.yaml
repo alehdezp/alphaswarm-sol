@@ -1,0 +1,51 @@
+# DVDeFi Challenge: Climber
+# Vulnerability: Complex state manipulation via delegatecall
+
+id: dvd-climber
+name: Climber
+version: "4"
+difficulty: 6
+category: Access Control
+
+source_path: examples/damm-vuln-defi/src/climber
+
+vulnerability:
+  type: complex-state-manipulation
+  description: |
+    The timelock executes before checking if scheduled, allowing
+    an attacker to schedule and execute in the same transaction.
+  cwe: CWE-367
+  severity: critical
+
+expected_detections:
+  - pattern: execute-before-schedule-check
+    contract: ClimberTimelock
+    function: execute
+    property: state_check_after_external_call
+    confidence: high
+
+  - pattern: delayed-validation
+    contract: ClimberTimelock
+    function: execute
+    property: missing_pre_validation
+    confidence: medium
+
+expected_functions:
+  vulnerable:
+    - ClimberTimelock.execute
+    - ClimberVault.sweepFunds
+  safe:
+    - ClimberTimelock.schedule
+
+false_positive_exclusions:
+  - description: "schedule has proper access control"
+    reason: PROPOSER_ROLE required
+
+verification:
+  exploit_summary: "Call execute with payload that grants PROPOSER, schedules itself, upgrades vault"
+  fix_summary: "Check scheduled status before executing operations"
+
+status: not-detected
+detection_date: null
+reason: "Requires builder.py property for execute-before-validation pattern"
+improvement_needed: "Add state_check_after_external_call property for execute-schedule order"

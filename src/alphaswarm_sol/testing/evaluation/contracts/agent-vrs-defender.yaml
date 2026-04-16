@@ -1,0 +1,71 @@
+workflow_id: agent-vrs-defender
+category: agent
+grader_type: hybrid
+rule_refs:
+  - GRAPH-FIRST
+  - EVIDENCE-QUALITY
+  - EXEC-INTEGRITY
+reasoning_dimensions:
+  - graph_utilization
+  - evidence_quality
+  - reasoning_depth
+  - guard_identification
+  - rebuttal_quality
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+  - id: bskg_query_issued
+    description: Defender issued BSKG queries for guard detection
+    expected_behavior: Tool sequence contains Bash with alphaswarm query
+    grader_type: code
+  - id: graph_first_compliance
+    description: BSKG queries precede manual code reading
+    expected_behavior: First Bash(alphaswarm) call occurs before first Read call
+    grader_type: code
+  - id: guards_cited_with_evidence
+    description: Defender cited specific guards with graph evidence
+    expected_behavior: Response references access controls with node IDs or code locations
+    grader_type: model
+  - id: session_completed
+    description: Defense session completed with structured output
+    expected_behavior: session_completed is true and response contains structured assessment
+    grader_type: code
+evidence_requirements:
+  - type: graph_nodes
+    description: Guard-related graph nodes
+  - type: code_locations
+    description: Location of security mechanisms in source
+hooks:
+  - SessionStart
+  - Stop
+  - PreCompact
+  - TeammateIdle
+  - TaskCompleted
+  - SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+  model_tier: sonnet
+ground_truth_rubric: >-
+  Agent queries BSKG for access control patterns and state guard nodes before
+  examining source code. Agent systematically searches for modifiers, require
+  statements, and role-based access controls using graph queries. Agent evaluates
+  the scope and completeness of each identified guard. Agent constructs rebuttals
+  to attacker claims by citing specific guard mechanisms with graph evidence.
+  Agent acknowledges gaps in protection where guards are absent or insufficient.
+  Agent performs self-critique by evaluating whether identified guards truly
+  mitigate the claimed attack vectors.
+active_dimensions:
+  - graph_utilization
+  - evidence_quality
+  - reasoning_depth
+  - guard_identification
+  - rebuttal_quality
+  - conclusion_support
+  - verification_thoroughness
+  - rubric_coverage
+  - investigation_depth

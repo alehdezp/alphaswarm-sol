@@ -1,0 +1,23 @@
+id: vm-016
+vulndoc: reentrancy/general
+name: Composition Reentrancy Surface
+description: External call before state write in composed contracts.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: contract_has_composition
+    op: eq
+    value: true
+  - property: has_external_calls
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

@@ -1,0 +1,835 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alphaswarm.dev/schemas/alphaswarm-codex-output.json",
+  "title": "AlphaSwarm Codex Audit Output",
+  "description": "Schema for AlphaSwarm security audit results compatible with OpenAI Codex --output-schema",
+  "type": "object",
+  "required": ["findings", "summary", "metadata"],
+  "definitions": {
+    "EvidenceRef": {
+      "type": "string",
+      "description": "Stable evidence reference: node:*, edge:*, fn:* use colon separator; EVD-* uses hyphen (e.g., node:fn:withdraw:123, EVD-abc123)"
+    },
+    "UnknownItem": {
+      "type": "object",
+      "required": ["field", "reason"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "The field or aspect that is unknown"
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["missing_evidence", "out_of_scope", "requires_expansion", "conflicting_signals"],
+          "description": "Why this is unknown"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ScoutHypothesis": {
+      "type": "object",
+      "description": "Output contract for Pattern Scout agent - fast pattern triage",
+      "required": ["pattern_id", "status", "evidence_refs", "unknowns"],
+      "properties": {
+        "pattern_id": {
+          "type": "string",
+          "description": "Pattern being evaluated"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["candidate", "not_matched", "unknown"],
+          "description": "Triage result"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/EvidenceRef"},
+          "description": "Evidence supporting the hypothesis (required even if empty)"
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/UnknownItem"},
+          "description": "Explicit unknown handling (required even if empty)"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Scout confidence (max 0.70 for Tier B)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context for verifier"
+        }
+      },
+      "additionalProperties": false
+    },
+    "VerificationResult": {
+      "type": "object",
+      "description": "Output contract for Pattern Verifier agent - evidence-first validation",
+      "required": ["pattern_id", "status", "evidence_refs", "counter_signals", "unknowns"],
+      "properties": {
+        "pattern_id": {
+          "type": "string",
+          "description": "Pattern being verified"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["matched", "not_matched", "unknown"],
+          "description": "Verification result"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/EvidenceRef"},
+          "description": "Evidence confirming the match (required)"
+        },
+        "counter_signals": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Guards or anti-patterns that weaken the finding"
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/UnknownItem"},
+          "description": "Explicit unknown handling (required)"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Verification confidence"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Verification notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Counterargument": {
+      "type": "object",
+      "required": ["type", "claim", "evidence_refs", "strength"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["guard_present", "anti_signal", "safe_ordering", "economic_constraint", "missing_precondition"],
+          "description": "Type of counterargument"
+        },
+        "claim": {
+          "type": "string",
+          "description": "The refutation claim"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/EvidenceRef"},
+          "description": "Evidence supporting the counterargument (required)"
+        },
+        "strength": {
+          "type": "string",
+          "enum": ["strong", "moderate", "weak"],
+          "description": "Counterargument strength"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ContradictionReport": {
+      "type": "object",
+      "description": "Output contract for Contradiction agent - refutation-only with evidence",
+      "required": ["finding_id", "status", "counterarguments"],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "pattern": "^(FND|AS)-[A-Za-z0-9-]+$",
+          "description": "Finding being challenged"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["refuted", "challenged", "insufficient_evidence"],
+          "description": "Refutation outcome"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Refutation confidence"
+        },
+        "counterarguments": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/Counterargument"},
+          "description": "Evidence-backed counterarguments (required even if empty)"
+        },
+        "residual_risk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Remaining risk after refutation"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Refutation notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ComposedPattern": {
+      "type": "object",
+      "required": ["name", "operation", "base_patterns", "evidence_refs", "tier"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Composed pattern name"
+        },
+        "operation": {
+          "type": "string",
+          "description": "Composition operation (e.g., 'A + B', 'A ; B')"
+        },
+        "signature": {
+          "type": "string",
+          "description": "Composed behavioral signature"
+        },
+        "base_patterns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Constituent pattern IDs"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/EvidenceRef"},
+          "description": "Evidence supporting the composition (required)"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.7,
+          "description": "Composition confidence (max 0.70 for Tier B)"
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["B"],
+          "description": "Always Tier B for compositions"
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/UnknownItem"},
+          "description": "Unknown aspects of the composition"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Composition notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CompositionProposal": {
+      "type": "object",
+      "description": "Output contract for Pattern Composer agent - operation-signature algebra",
+      "required": ["composition_id", "status", "compositions"],
+      "properties": {
+        "composition_id": {
+          "type": "string",
+          "pattern": "^COMP-[A-Za-z0-9]+$",
+          "description": "Unique composition batch ID"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "invalid", "duplicate"],
+          "description": "Composition batch status"
+        },
+        "compositions": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/ComposedPattern"},
+          "description": "Proposed composed patterns"
+        },
+        "rejected": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["operation", "reason"],
+            "properties": {
+              "operation": {"type": "string"},
+              "reason": {"type": "string"}
+            }
+          },
+          "description": "Rejected compositions with reasons"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConfidenceBounds": {
+      "type": "object",
+      "required": ["lower", "upper", "method"],
+      "properties": {
+        "lower": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Lower confidence bound (pessimistic)"
+        },
+        "upper": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Upper confidence bound (optimistic)"
+        },
+        "method": {
+          "type": "string",
+          "description": "Method used to compute bounds"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SynthesizedCluster": {
+      "type": "object",
+      "required": ["cluster_id", "name", "severity", "constituent_findings", "confidence_bounds"],
+      "properties": {
+        "cluster_id": {
+          "type": "string",
+          "pattern": "^CLU-[A-Za-z0-9]+$",
+          "description": "Unique cluster ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Synthesized finding name"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "description": "Synthesized severity"
+        },
+        "constituent_findings": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Finding IDs that were merged"
+        },
+        "convergent_evidence": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/EvidenceRef"},
+          "description": "Evidence shared across findings"
+        },
+        "confidence_bounds": {
+          "$ref": "#/definitions/ConfidenceBounds",
+          "description": "Confidence range from synthesis"
+        },
+        "affected_functions": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Functions affected by this cluster"
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/UnknownItem"},
+          "description": "Propagated unknowns"
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Unresolved conflict IDs"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Synthesis notes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SynthesisConflict": {
+      "type": "object",
+      "required": ["finding_a", "finding_b", "conflict_type", "resolution"],
+      "properties": {
+        "finding_a": {"type": "string"},
+        "finding_b": {"type": "string"},
+        "conflict_type": {
+          "type": "string",
+          "enum": ["contradictory_evidence", "confidence_disagreement", "scope_overlap", "temporal_conflict"],
+          "description": "Type of conflict"
+        },
+        "description": {
+          "type": "string",
+          "description": "Conflict description"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": ["human_review_required", "use_confidence_bounds", "merge_with_union", "verify_with_ordering_proof"],
+          "description": "Resolution strategy"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SynthesizedFinding": {
+      "type": "object",
+      "description": "Output contract for Finding Synthesizer agent - convergent evidence merging",
+      "required": ["synthesis_id", "status", "synthesized_findings"],
+      "properties": {
+        "synthesis_id": {
+          "type": "string",
+          "pattern": "^SYN-[A-Za-z0-9]+$",
+          "description": "Unique synthesis batch ID"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["synthesized", "conflicted", "insufficient"],
+          "description": "Synthesis outcome"
+        },
+        "synthesized_findings": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/SynthesizedCluster"},
+          "description": "Merged finding clusters"
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/SynthesisConflict"},
+          "description": "Unresolved conflicts requiring human review"
+        },
+        "evidence_stats": {
+          "type": "object",
+          "properties": {
+            "total_evidence_refs": {"type": "integer", "minimum": 0},
+            "unique_evidence_refs": {"type": "integer", "minimum": 0},
+            "convergent_refs": {"type": "integer", "minimum": 0},
+            "orphan_refs": {"type": "integer", "minimum": 0}
+          },
+          "description": "Evidence aggregation statistics"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiversityPath": {
+      "type": "object",
+      "description": "Reasoning path assignment for diversity enforcement",
+      "required": ["path_type", "focus", "constraints"],
+      "properties": {
+        "path_type": {
+          "type": "string",
+          "enum": ["operation_first", "guard_first", "invariant_first"],
+          "description": "Primary reasoning mode"
+        },
+        "focus": {
+          "type": "string",
+          "description": "What to prioritize (e.g., 'semantic operations', 'guards and counter-signals', 'protocol invariants')"
+        },
+        "constraints": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Constraints on this reasoning path"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiversityPolicy": {
+      "type": "object",
+      "description": "Policy enforcing distinct reasoning modes across parallel agents",
+      "required": ["policy_id", "paths", "min_distinct_paths"],
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "description": "Policy identifier"
+        },
+        "paths": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/DiversityPath"},
+          "minItems": 3,
+          "description": "Available reasoning paths (at least 3)"
+        },
+        "min_distinct_paths": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 3,
+          "description": "Minimum distinct paths required in parallel execution"
+        },
+        "assignment_strategy": {
+          "type": "string",
+          "enum": ["round_robin", "random", "cost_balanced"],
+          "description": "How to assign paths to agents"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "findings": {
+      "type": "array",
+      "description": "List of security findings detected by AlphaSwarm",
+      "items": {
+        "type": "object",
+        "required": ["id", "pattern_id", "severity", "confidence", "title", "description", "location"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^AS-[A-F0-9]{8}$",
+            "description": "Unique finding identifier (e.g., AS-A1B2C3D4)"
+          },
+          "pattern_id": {
+            "type": "string",
+            "description": "Pattern that triggered this finding (e.g., reentrancy-001)"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "info"],
+            "description": "Severity level of the finding"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Confidence level in the detection"
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["tier_a", "tier_b"],
+            "description": "Detection tier: tier_a=deterministic, tier_b=LLM-verified"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Short title of the finding"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the vulnerability"
+          },
+          "location": {
+            "type": "object",
+            "required": ["file", "line"],
+            "description": "Source code location of the finding",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "File path relative to project root"
+              },
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Line number (1-indexed)"
+              },
+              "column": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Column number (0-indexed)"
+              },
+              "end_line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "End line number for ranges"
+              },
+              "end_column": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "End column number for ranges"
+              },
+              "function": {
+                "type": "string",
+                "description": "Function name where finding was detected"
+              },
+              "contract": {
+                "type": "string",
+                "description": "Contract name where finding was detected"
+              }
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "description": "Evidence supporting the finding",
+            "properties": {
+              "behavioral_signature": {
+                "type": "string",
+                "description": "Behavioral signature (e.g., R:bal->X:out->W:bal)"
+              },
+              "semantic_operations": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Semantic operations detected (e.g., TRANSFERS_VALUE_OUT)"
+              },
+              "properties_matched": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Security properties that matched"
+              },
+              "properties_missing": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Expected security properties that were missing"
+              },
+              "code_snippet": {
+                "type": "string",
+                "description": "Relevant code snippet"
+              },
+              "why_vulnerable": {
+                "type": "string",
+                "description": "Plain English explanation of why this is vulnerable"
+              },
+              "attack_scenario": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Step-by-step attack scenario"
+              },
+              "data_flow": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Taint/data flow path"
+              },
+              "guard_analysis": {
+                "type": "string",
+                "description": "Analysis of guards present or missing"
+              }
+            }
+          },
+          "verification_steps": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Steps to verify/reproduce the finding"
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "Recommended fix for the vulnerability"
+          },
+          "references": {
+            "type": "array",
+            "description": "External references (CWE, SWC, CVE, etc.)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["cwe", "swc", "cve", "exploit", "documentation"],
+                  "description": "Type of reference"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Reference identifier (e.g., CWE-841)"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URL to reference"
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "investigating", "confirmed", "false_positive", "escalated", "fixed"],
+            "description": "Current status of the finding"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_findings", "by_severity", "by_tier"],
+      "description": "Summary statistics of the audit",
+      "properties": {
+        "total_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of findings"
+        },
+        "by_severity": {
+          "type": "object",
+          "description": "Findings count by severity level",
+          "properties": {
+            "critical": {"type": "integer", "minimum": 0},
+            "high": {"type": "integer", "minimum": 0},
+            "medium": {"type": "integer", "minimum": 0},
+            "low": {"type": "integer", "minimum": 0},
+            "info": {"type": "integer", "minimum": 0}
+          }
+        },
+        "by_tier": {
+          "type": "object",
+          "description": "Findings count by detection tier",
+          "properties": {
+            "tier_a": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Deterministic detections"
+            },
+            "tier_b": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "LLM-verified detections"
+            }
+          }
+        },
+        "by_confidence": {
+          "type": "object",
+          "description": "Findings count by confidence level",
+          "properties": {
+            "high": {"type": "integer", "minimum": 0},
+            "medium": {"type": "integer", "minimum": 0},
+            "low": {"type": "integer", "minimum": 0}
+          }
+        },
+        "risk_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Overall risk score (0-100)"
+        },
+        "top_risk_areas": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Top risk areas identified"
+        }
+      }
+    },
+    "contracts_analyzed": {
+      "type": "array",
+      "description": "List of contracts that were analyzed",
+      "items": {
+        "type": "object",
+        "required": ["name", "file"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Contract name"
+          },
+          "file": {
+            "type": "string",
+            "description": "File path"
+          },
+          "function_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of functions in contract"
+          },
+          "findings_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of findings in this contract"
+          },
+          "properties_extracted": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of security properties extracted"
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Overall recommendations for the codebase",
+      "items": {
+        "type": "object",
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "Priority level"
+          },
+          "category": {
+            "type": "string",
+            "description": "Recommendation category (e.g., Access Control, Reentrancy)"
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "The recommendation text"
+          },
+          "affected_findings": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Finding IDs this recommendation addresses"
+          }
+        }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "description": "Overall audit verdict",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "needs_review"],
+          "description": "Overall audit status"
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "Explanation for the verdict"
+        },
+        "critical_issues_found": {
+          "type": "boolean",
+          "description": "Whether critical issues were found"
+        },
+        "deployment_recommended": {
+          "type": "boolean",
+          "description": "Whether deployment is recommended"
+        }
+      }
+    },
+    "role_outputs": {
+      "type": "object",
+      "description": "Role-specific agent outputs with strict input/output contracts",
+      "properties": {
+        "scout_hypotheses": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/ScoutHypothesis"},
+          "description": "Pattern Scout outputs - fast pattern triage"
+        },
+        "verification_results": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/VerificationResult"},
+          "description": "Pattern Verifier outputs - evidence-first validation"
+        },
+        "contradiction_reports": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/ContradictionReport"},
+          "description": "Contradiction agent outputs - refutation with evidence"
+        },
+        "composition_proposals": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/CompositionProposal"},
+          "description": "Pattern Composer outputs - operation-signature algebra"
+        },
+        "synthesized_findings": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/SynthesizedFinding"},
+          "description": "Finding Synthesizer outputs - convergent evidence merging"
+        },
+        "diversity_policy": {
+          "$ref": "#/definitions/DiversityPolicy",
+          "description": "Policy enforcing distinct reasoning modes"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["timestamp", "alphaswarm_version", "schema_version"],
+      "description": "Audit metadata",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Audit timestamp in ISO 8601 format"
+        },
+        "alphaswarm_version": {
+          "type": "string",
+          "description": "AlphaSwarm version used for analysis"
+        },
+        "schema_version": {
+          "type": "string",
+          "description": "Output schema version"
+        },
+        "codex_model": {
+          "type": "string",
+          "description": "Codex model used (if applicable)"
+        },
+        "graph_properties_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total security properties extracted"
+        },
+        "patterns_evaluated": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Patterns that were evaluated"
+        },
+        "analysis_duration_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Time taken for analysis in seconds"
+        },
+        "project_path": {
+          "type": "string",
+          "description": "Path to analyzed project"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

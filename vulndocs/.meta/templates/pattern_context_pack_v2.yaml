@@ -1,0 +1,286 @@
+# Pattern Context Pack (PCP) v2 Template
+# Authoring template for deterministic, evidence-first pattern context packs.
+#
+# Path: vulndocs/{category}/{subcategory}/patterns/{pattern-id}.pcp.yaml
+# Reference: docs/reference/pattern-context-pack-v2.md
+#
+# Key Invariants:
+# - Deterministic: No RAG, no name heuristics, stable serialization
+# - Evidence-first: Every claim references explicit evidence
+# - Unknown != Safe: Missing signals = unknown, never safe
+# - Graph-first: Operations describe behavior, not names
+
+schema_version: "2.0"
+
+# =============================================================================
+# IDENTITY (Required)
+# =============================================================================
+
+# Unique PCP identifier: pcp-<pattern_id>
+id: pcp-<pattern-id>
+
+# Schema version (must match 2.x)
+version: "2.0"
+
+# Associated pattern ID (must exist in patterns/)
+pattern_id: "<pattern-id>"
+
+# Human-readable pattern name (2-5 words)
+name: "<Pattern Name>"
+
+# Brief summary of what this pattern detects (1-2 sentences)
+summary: |
+  <Brief description of what this pattern detects and why it's dangerous>
+
+# Pattern scope: Function, Contract, or Transaction
+scope: Function
+
+# =============================================================================
+# DETERMINISM CONSTRAINTS (Required - do not modify defaults)
+# =============================================================================
+
+determinism:
+  # No retrieval-augmented generation
+  no_rag: true
+  # No function/variable name heuristics
+  no_name_heuristics: true
+  # Canonical serialization order for deterministic hashing
+  serialization_order:
+    - pcp
+    - slice
+    - protocol
+    - evidence
+  # Cache key formula
+  hash_seed: "graph_hash + pcp_version + pattern_id"
+
+# =============================================================================
+# TOKEN BUDGET
+# =============================================================================
+
+budget:
+  # Maximum tokens for PCP itself
+  pcp_max_tokens: 800
+  # Maximum for full context (PCP + slice + protocol)
+  context_max_tokens: 2200
+  # Budget for cheap/fast pass
+  cheap_pass_tokens: 1200
+  # Budget for verification pass
+  verify_pass_tokens: 1800
+  # Budget for deep analysis pass
+  deep_pass_tokens: 2400
+
+# NOTE: Budget ordering constraint: cheap < verify < deep
+
+# =============================================================================
+# EVIDENCE WEIGHTS (Categorize evidence by importance)
+# =============================================================================
+
+evidence_weights:
+  # Evidence refs that MUST exist for a match
+  required: []
+  # Evidence refs that strongly support a match
+  strong: []
+  # Evidence refs that weakly support a match
+  weak: []
+  # Evidence refs that are nice-to-have
+  optional: []
+
+# =============================================================================
+# WITNESS REQUIREMENTS (Critical for quality patterns)
+# =============================================================================
+
+witness:
+  # Minimal evidence set that must exist for plausible match
+  # High/critical severity patterns SHOULD have at least one entry
+  minimal_required: []
+
+  # Evidence that must NOT exist for match to hold
+  # Guards/protections that invalidate the pattern
+  negative_required: []
+
+# =============================================================================
+# EXPLOIT MODELING (Optional but recommended)
+# =============================================================================
+
+# Preconditions that must be true for pattern to apply
+preconditions:
+  - id: "pre-001"
+    description: "<Precondition description>"
+    evidence_refs: []
+
+# Steps in the exploit sequence
+exploit_steps:
+  - id: "step-001"
+    description: "<Exploit step description>"
+    required_ops:
+      - "OPERATION_1"
+      - "OPERATION_2"
+    evidence_refs: []
+
+# Impact invariants describing the vulnerability's effect
+impact_invariants:
+  - id: "impact-001"
+    description: "<Impact description>"
+    evidence_refs: []
+
+# =============================================================================
+# OPERATION SIGNATURES (Required - must have at least one required_op)
+# =============================================================================
+
+op_signatures:
+  # Semantic operations required for this pattern (MINIMUM 1)
+  required_ops:
+    - "OPERATION_1"
+    - "OPERATION_2"
+
+  # Valid operation orderings (for sequence-dependent vulnerabilities)
+  ordering_variants:
+    - id: "seq-001"
+      description: "<Ordering description, e.g., CEI violated>"
+      sequence:
+        - "READS_STATE"
+        - "EXTERNAL_CALL"
+        - "WRITES_STATE"
+
+  # Semantic operations that must NOT be present
+  forbidden_ops: []
+
+# =============================================================================
+# ANTI-SIGNALS (Guards/Mitigations that negate the pattern)
+# High/critical patterns SHOULD have at least one anti-signal OR negative witness
+# =============================================================================
+
+anti_signals:
+  - id: "guard.<guard-name>"
+    # Guard type: reentrancy_guard, access_control, pausable, timelock,
+    #             oracle_check, slippage_check, balance_check, custom
+    guard_type: "reentrancy_guard"
+    # How severely this negates the pattern: critical, high, medium, low
+    severity: "critical"
+    # Expected context when guard is present
+    expected_context: "<Description of guard, e.g., nonReentrant modifier present>"
+    # Evidence references supporting this anti-signal
+    evidence_refs: []
+    # Notes on how this guard might be bypassed
+    bypass_notes:
+      - "<Bypass scenario, e.g., Guard only applies to one entry point>"
+      - "<Bypass scenario, e.g., Cross-contract reentrancy may bypass>"
+
+# =============================================================================
+# COUNTERFACTUALS (Tier-B What-If Scenarios)
+# =============================================================================
+
+counterfactuals:
+  - id: "cf-001"
+    # ID of anti-signal/guard to hypothetically remove
+    if_removed: "guard.<guard-name>"
+    # Whether pattern would hold if guard removed
+    becomes_true: true
+    # Additional notes
+    notes: "<Notes about this counterfactual scenario>"
+
+# =============================================================================
+# GUARD TAXONOMY (Describe guard types relevant to this pattern)
+# =============================================================================
+
+guard_taxonomy:
+  - id: "g-001"
+    # Guard type classification
+    type: "reentrancy_guard"
+    # Human-readable description
+    description: "<Guard description, e.g., Global reentrancy lock>"
+    # Semantic operations expected when guard present
+    expected_ops:
+      - "CHECKS_REENTRANCY_GUARD"
+    # Potential bypass notes
+    bypass_notes:
+      - "<Bypass scenario>"
+
+# =============================================================================
+# ORDERING VARIANTS (Convenience duplicate of op_signatures.ordering_variants)
+# =============================================================================
+
+ordering_variants:
+  - id: "ov-001"
+    description: "<Ordering description>"
+    sequence:
+      - "READS_STATE"
+      - "EXTERNAL_CALL"
+      - "WRITES_STATE"
+
+# =============================================================================
+# RISK ENVELOPE (Semantic risk framing)
+# =============================================================================
+
+risk_envelope:
+  # Type of asset at risk: native, token, governance, mixed, unknown
+  asset_type: "native"
+  # Trust boundary being crossed: user->contract, contract->contract,
+  #                               external->internal, admin->user, unknown
+  trust_boundary: "user->contract"
+  # Direction of value movement: in, out, internal, bidirectional, unknown
+  value_movement: "out"
+  # Minimum severity for this pattern: critical, high, medium, low
+  severity_floor: "high"
+
+# =============================================================================
+# COMPOSITION HINTS (Pattern relationships)
+# =============================================================================
+
+composition_hints:
+  # Patterns that frequently co-occur with this pattern
+  co_occurs_with: []
+  # Patterns to combine for compound detection
+  combine_with: []
+
+# =============================================================================
+# ECONOMIC PLACEHOLDERS (Phase 5.11 - Leave empty)
+# =============================================================================
+
+economic_placeholders:
+  # Value flow descriptors (populated in Phase 5.11)
+  value_flows: []
+  # Incentive mechanism hooks (populated in Phase 5.11)
+  incentive_hooks: []
+  # Role/actor assumptions (populated in Phase 5.11)
+  role_assumptions: []
+  # Off-chain dependency flags (populated in Phase 5.11)
+  offchain_dependencies: []
+  # Pre-computed risk score: critical, high, medium, low, unknown
+  risk_pre_score: "unknown"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS (Graph-based matching)
+# =============================================================================
+
+evidence_requirements:
+  # Required node types in evidence subgraph
+  node_types:
+    - "Function"
+    - "Call"
+  # Required edge types in evidence subgraph
+  edge_types:
+    - "CALLS"
+    - "WRITES_STATE"
+  # Path constraint expressions
+  path_constraints: []
+
+# =============================================================================
+# UNKNOWNS POLICY (Critical - never infer safety from missing)
+# =============================================================================
+
+unknowns_policy:
+  # How to treat missing required evidence: unknown, fail, warn
+  missing_required: "unknown"
+  # How to treat missing optional evidence: unknown, fail, warn
+  missing_optional: "unknown"
+  # How to treat missing anti-signals: unknown, fail, warn
+  missing_anti_signal: "unknown"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+author: "<author>"

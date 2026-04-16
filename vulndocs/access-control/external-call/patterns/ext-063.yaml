@@ -1,0 +1,16 @@
+id: ext-063
+vulndoc: access-control/external-call
+name: Oracle Aggregation Weighted Reliability Missing
+description: Aggregation without weighting by source reliability.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_weighted_aggregation
+    op: eq
+    value: false

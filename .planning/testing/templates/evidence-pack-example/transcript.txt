@@ -1,0 +1,13 @@
+[ALPHASWARM-START] audit-entrypoint-001 2026-02-04T12:00:00Z
+Session: vrs-demo-audit-entrypoint-20260204-120000
+Pane: 0:1.2
+>>> /vrs-audit contracts/
+[PREFLIGHT_PASS]
+[GRAPH_BUILD_START]
+[GRAPH_BUILD_SUCCESS]
+[VQL-MIN-01]
+TaskCreate(task-001)
+SubagentStart(vrs-attacker)
+TaskUpdate(task-001, confirmed)
+[REPORT_GENERATED]
+[ALPHASWARM-END] audit-entrypoint-001 0 62000

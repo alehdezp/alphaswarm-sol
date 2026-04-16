@@ -1,0 +1,19 @@
+id: ext-080
+vulndoc: access-control/external-call
+name: Collateral Oracle Staleness Missing
+description: Collateral valuation uses oracle price without staleness checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: balance_used_for_collateralization
+    op: eq
+    value: true
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_staleness_check
+    op: eq
+    value: false

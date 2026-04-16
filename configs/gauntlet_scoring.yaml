@@ -1,0 +1,148 @@
+# Gauntlet Scoring Configuration
+#
+# This config defines scoring rules for adversarial gauntlet challenges.
+# All gauntlet suites use binary pass/fail with penalties for errors.
+#
+# Reference: .planning/phases/07.3.3-adversarial-gauntlet/07.3.3-GAUNTLET-SPEC.md
+# Gates: G4 (Mutation Robustness), G6 (Regression Baseline)
+
+version: "1.0.0"
+
+# =============================================================================
+# POINT VALUES
+# =============================================================================
+#
+# False positives/negatives penalized 2x because:
+# - FPs waste auditor time and erode trust
+# - FNs leave real vulnerabilities undetected
+# - A system that flags everything/nothing scores negative
+
+scoring:
+  correct_vulnerable: +1    # True positive (correctly identified vulnerability)
+  correct_safe: +1          # True negative (correctly identified safe code)
+  false_positive: -2        # False alarm (reported vuln in safe code)
+  false_negative: -2        # Missed vulnerability (did not report real vuln)
+
+# =============================================================================
+# PASS THRESHOLDS PER GAUNTLET
+# =============================================================================
+
+thresholds:
+  # Reentrancy challenge: Must achieve perfect score
+  gauntlet-reentrancy:
+    pass_rate: 1.0          # 100% accuracy required (10/10)
+    max_false_positives: 0  # Zero FPs allowed
+    max_false_negatives: 0  # Zero FNs allowed
+    min_score: 10           # Minimum point total (all correct)
+
+  # Access/Oracle challenge: Must achieve perfect score
+  gauntlet-access-oracle:
+    pass_rate: 1.0          # 100% accuracy required (10/10)
+    max_false_positives: 0  # Zero FPs allowed
+    max_false_negatives: 0  # Zero FNs allowed
+    min_score: 10           # Minimum point total (all correct)
+
+  # Mutation robustness: Detection rate with clean negative controls
+  gauntlet-mutation:
+    pass_rate: 0.75         # 75% detection on mutated contracts
+    max_false_positives: 0  # Zero FPs on safe baselines
+    max_false_negatives: 10 # Up to 10 missed mutations allowed (of 25)
+    min_detection_rate: 0.75
+
+  # Default thresholds (for any unlisted suite)
+  default:
+    pass_rate: 0.9          # 90% accuracy
+    max_false_positives: 1  # 1 FP tolerated
+    max_false_negatives: 1  # 1 FN tolerated
+
+# =============================================================================
+# GATE INTEGRATION
+# =============================================================================
+#
+# Gauntlet results tie to existing validation gates:
+
+gate_integration:
+  # G4: Mutation Robustness - gauntlet-mutation enforces this gate
+  G4:
+    enforced_by: gauntlet-mutation
+    threshold: mutation_detection_rate >= 0.75
+    description: |
+      Mutation gauntlet directly validates G4.
+      If gauntlet-mutation passes, G4 passes.
+      If gauntlet-mutation fails, G4 fails.
+
+  # G6: Regression Baseline - no regression in gauntlet scores
+  G6:
+    baseline_file: .vrs/baselines/gauntlet_baseline.json
+    max_score_drop: 0       # No score regression allowed
+    max_new_failures: 0     # No new failing cases allowed
+    description: |
+      Gauntlet scores must not regress vs locked baseline.
+      Any score drop or new failure = G6 fail.
+
+# =============================================================================
+# ANTI-PERFECT METRICS RULE
+# =============================================================================
+#
+# Prevent overfitting and silent regressions
+
+anti_perfect:
+  enabled: true
+  trigger:
+    precision: 1.0          # 100% precision triggers investigation
+    recall: 1.0             # 100% recall triggers investigation
+  action: mark_suspicious
+  response: |
+    When precision AND recall both reach 100%:
+    1. Mark run as SUSPICIOUS
+    2. Expand test set with additional edge cases
+    3. Investigate for overfitting or data leakage
+    4. Re-validate with expanded corpus
+
+# =============================================================================
+# SCORING CALCULATION
+# =============================================================================
+#
+# Score = (TP * correct_vulnerable) + (TN * correct_safe) +
+#         (FP * false_positive) + (FN * false_negative)
+#
+# Example for 10-case suite with 5 vuln + 5 safe:
+#   Perfect: 5*1 + 5*1 = 10 points
+#   All FPs: 0*1 + 0*1 + 5*(-2) + 0*(-2) = -10 points
+#   All FNs: 0*1 + 5*1 + 0*(-2) + 5*(-2) = -5 points
+#   Random (50/50): ~0 points (expected value)
+
+calculation:
+  formula: "(TP * +1) + (TN * +1) + (FP * -2) + (FN * -2)"
+  pass_condition: "score >= min_score AND FP <= max_false_positives AND FN <= max_false_negatives"
+  fail_condition: "score < min_score OR FP > max_false_positives OR FN > max_false_negatives"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS
+# =============================================================================
+#
+# Every scored gauntlet run MUST produce valid evidence
+
+evidence:
+  required: true
+  proof_tokens:
+    - stage_graph
+    - stage_context
+    - stage_pattern
+    - stage_agents
+    - stage_debate
+    - stage_report
+  transcript_required: true
+  min_duration_ms: 5000     # No instant/mock runs
+  mode: live                # MUST be "live", not "mock" or "simulated"
+
+# =============================================================================
+# NOTES
+# =============================================================================
+
+notes:
+  - "Binary pass/fail scoring; partial credit does not pass."
+  - "False positives and negatives penalized 2x vs correct classifications."
+  - "If precision and recall both reach 1.0, mark run as SUSPICIOUS."
+  - "Gauntlet results directly enforce G4 and G6 gates."
+  - "All runs require valid evidence packs with proof tokens."

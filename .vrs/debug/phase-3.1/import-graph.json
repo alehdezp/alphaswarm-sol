@@ -1,0 +1,1821 @@
+{
+  "generated_at": "2026-02-11T17:05:15.841138+00:00",
+  "root": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg",
+  "cli_symbols": [
+    "QualityTracker",
+    "TIER_DEFINITIONS",
+    "TestTier",
+    "batch_generate_with_quality",
+    "detect_project_structure",
+    "format_tier_summary",
+    "generate_with_fallback",
+    "write_scaffold_to_file"
+  ],
+  "cli_source_modules": [
+    "src/alphaswarm_sol/testing/detection.py",
+    "src/alphaswarm_sol/testing/generator.py",
+    "src/alphaswarm_sol/testing/quality.py",
+    "src/alphaswarm_sol/testing/tiers.py"
+  ],
+  "barrel_files_excluded": [
+    "src/alphaswarm_sol/testing/__init__.py",
+    "src/alphaswarm_sol/testing/benchmarks/__init__.py",
+    "src/alphaswarm_sol/testing/chaos/__init__.py",
+    "src/alphaswarm_sol/testing/corpus/__init__.py",
+    "src/alphaswarm_sol/testing/e2e/__init__.py",
+    "src/alphaswarm_sol/testing/evolution/__init__.py",
+    "src/alphaswarm_sol/testing/flexible/__init__.py",
+    "src/alphaswarm_sol/testing/harness/__init__.py",
+    "src/alphaswarm_sol/testing/integration/__init__.py",
+    "src/alphaswarm_sol/testing/scenarios/__init__.py",
+    "src/alphaswarm_sol/testing/trajectory/__init__.py",
+    "src/alphaswarm_sol/testing/unit/__init__.py",
+    "src/alphaswarm_sol/testing/workflow/__init__.py"
+  ],
+  "files": {
+    "src/alphaswarm_sol/testing/__init__.py": {
+      "category": "PRODUCTION_DEPENDENT",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "BenchmarkConfig",
+        "CategoryMetrics",
+        "CorpusDB",
+        "QUICK_BENCHMARK",
+        "QualityTracker",
+        "STANDARD_BENCHMARK",
+        "SegmentMetrics",
+        "THOROUGH_BENCHMARK",
+        "TIER_DEFINITIONS",
+        "TestMetrics",
+        "TestTier",
+        "batch_generate_with_quality",
+        "detect_project_structure",
+        "format_tier_summary",
+        "generate_with_fallback",
+        "initialize_corpus_db",
+        "load_benchmark",
+        "write_scaffold_to_file"
+      ],
+      "real_callers": {
+        "production": [
+          "src/alphaswarm_sol/cli/main.py"
+        ],
+        "test": [
+          "tests/testing/test_corpus.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 456
+    },
+    "src/alphaswarm_sol/testing/agent_teams_harness.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 1
+    },
+    "src/alphaswarm_sol/testing/agentic_runner.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 45
+    },
+    "src/alphaswarm_sol/testing/anti_lazy.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 166
+    },
+    "src/alphaswarm_sol/testing/benchmarks/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "BenchmarkConfig",
+        "BenchmarkSuite",
+        "load_benchmark"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_scenarios.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py",
+          "src/alphaswarm_sol/testing/e2e/benchmark_runner.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 99
+    },
+    "src/alphaswarm_sol/testing/benchmarks/config.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/benchmarks/__init__.py"
+      ],
+      "loc": 275
+    },
+    "src/alphaswarm_sol/testing/blind_sandbox.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 268
+    },
+    "src/alphaswarm_sol/testing/chaos/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ChaosLayer",
+        "FailureConfig",
+        "FailureType",
+        "ScenarioCategory",
+        "VKG_CHAOS_SCENARIOS",
+        "create_chaos_layer_for_scenario",
+        "create_combined_chaos_layer",
+        "get_scenario"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_chaos_layer.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 24
+    },
+    "src/alphaswarm_sol/testing/chaos/layer.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 160
+    },
+    "src/alphaswarm_sol/testing/chaos/scenarios.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 216
+    },
+    "src/alphaswarm_sol/testing/corpus/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "CorpusDB",
+        "Finding",
+        "GroundTruthManager",
+        "MatchResult",
+        "Severity",
+        "initialize_corpus_db"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_scenarios.py",
+          "tests/e2e/test_audit_pipeline.py"
+        ],
+        "script": [
+          "scripts/run_shadow_audit.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py",
+          "src/alphaswarm_sol/testing/e2e/benchmark_runner.py",
+          "src/alphaswarm_sol/testing/e2e/audit_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 82
+    },
+    "src/alphaswarm_sol/testing/corpus/coverage.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "CANONICAL_OPERATIONS",
+        "CategoryCoverage",
+        "CoverageAuditor",
+        "CoverageReport",
+        "LabelCoverage",
+        "OperationCoverage",
+        "run_coverage_audit"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_gaps.py"
+        ],
+        "script": [
+          "scripts/corpus_coverage.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/corpus/__init__.py"
+      ],
+      "loc": 661
+    },
+    "src/alphaswarm_sol/testing/corpus/db.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "CorpusDB",
+        "initialize_corpus_db"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/validate_behavioral_signatures.py",
+          "scripts/run_context_ab_test.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/corpus/ingest.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/corpus/__init__.py"
+      ],
+      "loc": 431
+    },
+    "src/alphaswarm_sol/testing/corpus/ground_truth.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/corpus/__init__.py"
+      ],
+      "loc": 427
+    },
+    "src/alphaswarm_sol/testing/corpus/ingest.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "CorpusIngest",
+        "IngestSummary"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/corpus_ingest.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/corpus/__init__.py"
+      ],
+      "loc": 633
+    },
+    "src/alphaswarm_sol/testing/debug_artifacts.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 505
+    },
+    "src/alphaswarm_sol/testing/debug_mode.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "DebugRecord",
+        "DebugRecorder"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/debug_artifacts.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 613
+    },
+    "src/alphaswarm_sol/testing/detection.py": {
+      "category": "PRODUCTION_DEPENDENT",
+      "is_cli_source": true,
+      "symbols_imported_by_callers": [
+        "ProjectConfig",
+        "ProjectType",
+        "detect_project_structure",
+        "get_test_file_extension",
+        "is_foundry_project",
+        "is_hardhat_project"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_generator.py",
+          "tests/test_testing_remappings.py",
+          "tests/test_testing_detection.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/verification.py",
+          "src/alphaswarm_sol/testing/remappings.py",
+          "src/alphaswarm_sol/testing/generator.py",
+          "src/alphaswarm_sol/testing/quality.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 367
+    },
+    "src/alphaswarm_sol/testing/e2e/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AuditConditions",
+        "AuditConfig",
+        "AuditPhase",
+        "AuditTester",
+        "BenchmarkResult",
+        "BenchmarkRunner",
+        "BlindConfig",
+        "BlindTester",
+        "IsolationLevel",
+        "ModelComparison",
+        "RealWorldSimulator",
+        "ScenarioResult",
+        "SimulationConfig"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/e2e/test_full_audit.py",
+          "tests/e2e/test_benchmark_suite.py",
+          "tests/e2e/test_blind_simulation.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 73
+    },
+    "src/alphaswarm_sol/testing/e2e/audit_tester.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AuditConfig",
+        "AuditTestResult",
+        "AuditTester"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/run_agent_e2e_validation.py",
+          "scripts/run_context_ab_test.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/e2e/real_world_simulator.py",
+          "src/alphaswarm_sol/testing/e2e/benchmark_runner.py",
+          "src/alphaswarm_sol/testing/e2e/blind_testing.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/e2e/__init__.py"
+      ],
+      "loc": 556
+    },
+    "src/alphaswarm_sol/testing/e2e/benchmark_runner.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/e2e/__init__.py"
+      ],
+      "loc": 440
+    },
+    "src/alphaswarm_sol/testing/e2e/blind_testing.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "BlindConfig",
+        "BlindTester",
+        "IsolationLevel"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/run_shadow_audit.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/e2e/real_world_simulator.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/e2e/__init__.py"
+      ],
+      "loc": 245
+    },
+    "src/alphaswarm_sol/testing/e2e/real_world_simulator.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/e2e/__init__.py"
+      ],
+      "loc": 212
+    },
+    "src/alphaswarm_sol/testing/evidence_pack.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "EVIDENCE_PACK_SCHEMA_VERSION",
+        "EvidencePackBuilder",
+        "EvidencePackManifest",
+        "MIN_DURATION_MS",
+        "assemble_evidence_pack",
+        "load_evidence_pack",
+        "validate_evidence_pack"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/e2e/validate_gate_g1_g2.py",
+          "scripts/e2e/collect_evidence_pack.py",
+          "scripts/e2e/validate_evidence_pack.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 798
+    },
+    "src/alphaswarm_sol/testing/evolution/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AgentConfig",
+        "AgentEvolver",
+        "AgentMutation",
+        "FeedbackCollector",
+        "MutationType",
+        "PerformanceRecord",
+        "SelectionStrategy",
+        "apply_mutation"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_evolution.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 18
+    },
+    "src/alphaswarm_sol/testing/evolution/evolver.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 248
+    },
+    "src/alphaswarm_sol/testing/evolution/feedback.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 241
+    },
+    "src/alphaswarm_sol/testing/evolution/mutations.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 161
+    },
+    "src/alphaswarm_sol/testing/failure_catalog.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 748
+    },
+    "src/alphaswarm_sol/testing/fix_retest_loop.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 310
+    },
+    "src/alphaswarm_sol/testing/flexible/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ActiveEnvironment",
+        "CHECKPOINTS_DIR",
+        "CHECKPOINT_PREFIX",
+        "COMPONENTS",
+        "COMPONENTS_REGISTRY",
+        "Checkpoint",
+        "CheckpointError",
+        "CheckpointManager",
+        "ComponentDefinition",
+        "ComponentResult",
+        "ComponentRunner",
+        "DEFAULT_WORKERS",
+        "ENVIRONMENTS",
+        "ENVIRONMENTS_CONFIG",
+        "Environment",
+        "EnvironmentManager",
+        "MAX_CHECKPOINTS",
+        "MAX_WORKERS",
+        "MAX_WORKTREES",
+        "ParallelResult",
+        "ParallelRunner",
+        "PlanState",
+        "PlanStatus",
+        "SelectionConfig",
+        "SelectionResult",
+        "SessionStateManager",
+        "StateCorruptionError",
+        "TASK_REGISTRY_PATH",
+        "TaskDefinition",
+        "TaskSelector",
+        "TaskState",
+        "TaskStatus",
+        "TestSession",
+        "WORKTREE_BASE",
+        "WorkerResult",
+        "Worktree",
+        "WorktreeError",
+        "WorktreeManager"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_flexible_integration.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 160
+    },
+    "src/alphaswarm_sol/testing/flexible/checkpoint.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "Checkpoint",
+        "CheckpointError",
+        "CheckpointManager"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_checkpoint.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 442
+    },
+    "src/alphaswarm_sol/testing/flexible/component_runner.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "COMPONENTS",
+        "ComponentDefinition",
+        "ComponentResult",
+        "ComponentRunner"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_component_runner.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 389
+    },
+    "src/alphaswarm_sol/testing/flexible/environment.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ENVIRONMENTS",
+        "Environment",
+        "EnvironmentManager"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_workspace_manager.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 299
+    },
+    "src/alphaswarm_sol/testing/flexible/parallel_runner.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "DEFAULT_WORKERS",
+        "MAX_WORKERS",
+        "ParallelResult",
+        "ParallelRunner",
+        "WorkerResult"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_parallel_runner.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 328
+    },
+    "src/alphaswarm_sol/testing/flexible/session_state.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "PlanState",
+        "PlanStatus",
+        "SessionStateManager",
+        "StateCorruptionError",
+        "TaskState",
+        "TaskStatus",
+        "TestSession"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_session_state.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 465
+    },
+    "src/alphaswarm_sol/testing/flexible/task_selector.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "SelectionConfig",
+        "SelectionResult",
+        "TaskDefinition",
+        "TaskSelector"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_task_selector.py",
+          "tests/test_parallel_runner.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 405
+    },
+    "src/alphaswarm_sol/testing/flexible/workspace_manager.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "Workspace",
+        "WorkspaceError",
+        "WorkspaceManager"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_workspace_manager.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 351
+    },
+    "src/alphaswarm_sol/testing/full_testing_orchestrator.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 1037
+    },
+    "src/alphaswarm_sol/testing/full_testing_schema.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 713
+    },
+    "src/alphaswarm_sol/testing/gaps.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "Gap",
+        "GapCategory",
+        "GapSeverity",
+        "GapStatus",
+        "GapTracker"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_gaps.py",
+          "tests/e2e/test_audit_pipeline.py"
+        ],
+        "script": [
+          "scripts/generate_ga_limitations.py",
+          "scripts/run_adversarial_stress_tests.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py",
+          "src/alphaswarm_sol/testing/corpus/coverage.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 398
+    },
+    "src/alphaswarm_sol/testing/generator.py": {
+      "category": "PRODUCTION_DEPENDENT",
+      "is_cli_source": true,
+      "symbols_imported_by_callers": [
+        "TestScaffold",
+        "_extract_category",
+        "_extract_contract_name",
+        "_make_safe_identifier",
+        "generate_scaffolds",
+        "generate_tier1_scaffold",
+        "generate_tier2_scaffold",
+        "write_scaffold_to_file"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_quality.py",
+          "tests/test_testing_generator.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/verification.py",
+          "src/alphaswarm_sol/testing/quality.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 690
+    },
+    "src/alphaswarm_sol/testing/harness/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AgentSpawner",
+        "ClaudeCodeRunner",
+        "OutputParser",
+        "ScenarioLoader",
+        "TestScenario"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_autonomous_harness.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/unit/subagent_tester.py",
+          "src/alphaswarm_sol/testing/e2e/benchmark_runner.py",
+          "src/alphaswarm_sol/testing/e2e/audit_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [],
+      "loc": 54
+    },
+    "src/alphaswarm_sol/testing/harness/agent_spawner.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AgentResult",
+        "AgentTask"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_autonomous_harness.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/harness/__init__.py"
+      ],
+      "loc": 419
+    },
+    "src/alphaswarm_sol/testing/harness/output_parser.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ParsedFinding"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_autonomous_harness.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/harness/__init__.py"
+      ],
+      "loc": 434
+    },
+    "src/alphaswarm_sol/testing/harness/runner.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ClaudeCodeResult",
+        "ClaudeCodeRunner"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_autonomous_harness.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/harness/agent_spawner.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/harness/__init__.py"
+      ],
+      "loc": 488
+    },
+    "src/alphaswarm_sol/testing/harness/scenario_loader.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ContractCase"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_autonomous_harness.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/harness/__init__.py"
+      ],
+      "loc": 394
+    },
+    "src/alphaswarm_sol/testing/integration/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "FlowOutcome",
+        "InvocationMode",
+        "MessageType",
+        "OrchestratorTester",
+        "StepAssertion"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/integration/test_verification_loop.py",
+          "tests/integration/test_routing.py",
+          "tests/integration/test_debate_flow.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/e2e/audit_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [],
+      "loc": 65
+    },
+    "src/alphaswarm_sol/testing/integration/flow_simulator.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "FlowOutcome",
+        "FlowSimulator",
+        "SimulatedFlow"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/run_agent_e2e_validation.py",
+          "scripts/run_solo_vs_swarm.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/integration/orchestrator_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/integration/__init__.py"
+      ],
+      "loc": 467
+    },
+    "src/alphaswarm_sol/testing/integration/message_recorder.py": {
+      "category": "TRANSITIVE",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ConversationTrace",
+        "MessageRecorder",
+        "MessageType"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/integration/flow_simulator.py",
+          "src/alphaswarm_sol/testing/integration/orchestrator_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/integration/__init__.py"
+      ],
+      "loc": 327
+    },
+    "src/alphaswarm_sol/testing/integration/orchestrator_tester.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "FlowTestResult",
+        "InvocationMode",
+        "OrchestratorTester",
+        "StepAssertion"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/run_agent_e2e_validation.py",
+          "scripts/run_solo_vs_swarm.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/integration/__init__.py"
+      ],
+      "loc": 397
+    },
+    "src/alphaswarm_sol/testing/master_orchestrator.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 377
+    },
+    "src/alphaswarm_sol/testing/metrics.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "SegmentMetrics",
+        "TestMetrics",
+        "TierCStabilityMetrics"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_tier_c_harness.py",
+          "tests/testing/test_ranking.py",
+          "tests/e2e/test_audit_pipeline.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py",
+          "src/alphaswarm_sol/testing/ranking.py",
+          "src/alphaswarm_sol/testing/corpus/db.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 778
+    },
+    "src/alphaswarm_sol/testing/mutations.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "CounterfactualGenerator",
+        "CounterfactualResult",
+        "CounterfactualType",
+        "MutationEngine",
+        "MutationResult",
+        "MutationType",
+        "ValidationStatus",
+        "create_hard_negative_contract"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_mutations.py"
+        ],
+        "script": [
+          "scripts/counterfactual_factory.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 1008
+    },
+    "src/alphaswarm_sol/testing/pragma.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "CompatibilityResult",
+        "CompatibilityStatus",
+        "SemVer",
+        "VersionRange",
+        "check_pragma_compatibility",
+        "find_common_pragma",
+        "get_pragma_from_file",
+        "parse_pragma",
+        "suggest_test_pragma"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_pragma.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/generator.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 457
+    },
+    "src/alphaswarm_sol/testing/proof_tokens.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "PROOF_SCHEMA_VERSION",
+        "ProofToken",
+        "ProofTokenCollector",
+        "Stage",
+        "ToolVersions",
+        "compute_transcript_hash",
+        "load_all_proof_tokens",
+        "load_proof_token",
+        "verify_nonce_in_transcript"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [
+          "scripts/e2e/validate_proof_tokens.py",
+          "scripts/e2e/validate_gate_g1_g2.py",
+          "scripts/e2e/validate_evidence_pack.py",
+          "scripts/e2e/collect_proof_tokens.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/evidence_pack.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 656
+    },
+    "src/alphaswarm_sol/testing/quality.py": {
+      "category": "PRODUCTION_DEPENDENT",
+      "is_cli_source": true,
+      "symbols_imported_by_callers": [
+        "CompilationStatus",
+        "ContextTTLEntry",
+        "ContextTTLManager",
+        "EvidenceDebtEntry",
+        "EvidenceDebtTracker",
+        "EvidenceStrength",
+        "ExecutionStatus",
+        "PatternEvidenceDebt",
+        "PlausibilityFactors",
+        "PlausibilityScore",
+        "PlausibilityScorer",
+        "QualityMetrics",
+        "QualityTracker",
+        "ScaffoldQualityRecord",
+        "batch_generate_with_quality",
+        "generate_with_fallback"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_quality.py",
+          "tests/testing/test_innovations.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/metrics.py",
+          "src/alphaswarm_sol/testing/verification.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 1316
+    },
+    "src/alphaswarm_sol/testing/ranking.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ModelBenchmarkResult",
+        "RankingUpdater",
+        "calculate_composite_score",
+        "calculate_ema_score"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_ranking.py",
+          "tests/e2e/test_audit_pipeline.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 501
+    },
+    "src/alphaswarm_sol/testing/remappings.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ImportResolver",
+        "extract_imports_from_source",
+        "extract_pragma_from_source",
+        "parse_import_statement"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_remappings.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/pragma.py",
+          "src/alphaswarm_sol/testing/generator.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 375
+    },
+    "src/alphaswarm_sol/testing/runner.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "TestMode",
+        "TestRunConfig",
+        "TestRunResult",
+        "TestRunner",
+        "run_tests"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/e2e/test_audit_pipeline.py"
+        ],
+        "script": [
+          "scripts/run_pattern_tier_validation.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 1113
+    },
+    "src/alphaswarm_sol/testing/scenarios/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ContractCase",
+        "GroundTruth",
+        "IsolationConfig",
+        "ScenarioConfig"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_scenarios.py"
+        ],
+        "script": [
+          "scripts/run_shadow_audit.py"
+        ],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py",
+          "src/alphaswarm_sol/testing/corpus/ground_truth.py",
+          "src/alphaswarm_sol/testing/e2e/benchmark_runner.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 25
+    },
+    "src/alphaswarm_sol/testing/scenarios/config_schema.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ContractCase",
+        "GroundTruth"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_innovations.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/scenarios/__init__.py"
+      ],
+      "loc": 167
+    },
+    "src/alphaswarm_sol/testing/self_improving_loop.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 618
+    },
+    "src/alphaswarm_sol/testing/state_persistence.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 303
+    },
+    "src/alphaswarm_sol/testing/supervision_loop.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 226
+    },
+    "src/alphaswarm_sol/testing/tier_c_harness.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "DEFAULT_STABILITY_RUNS",
+        "PatternStabilityResult",
+        "SHADOW_MODE_CONSENSUS_THRESHOLD",
+        "STABILITY_THRESHOLD",
+        "ShadowModeResult",
+        "TierCStabilityHarness",
+        "TierCStabilityReport",
+        "load_tier_c_stability_report",
+        "run_tier_c_stability"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_tier_c_harness.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/runner.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 640
+    },
+    "src/alphaswarm_sol/testing/tiers.py": {
+      "category": "PRODUCTION_DEPENDENT",
+      "is_cli_source": true,
+      "symbols_imported_by_callers": [
+        "TIER_DEFINITIONS",
+        "TestTier",
+        "TierDefinition",
+        "format_tier_summary",
+        "get_tier_definition",
+        "validate_tier_success_rate"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_quality.py",
+          "tests/test_testing_tiers.py",
+          "tests/test_testing_generator.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/verification.py",
+          "src/alphaswarm_sol/testing/generator.py",
+          "src/alphaswarm_sol/testing/quality.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 200
+    },
+    "src/alphaswarm_sol/testing/trajectory/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "StepType",
+        "Trajectory",
+        "TrajectoryEvaluator",
+        "TrajectoryMetrics",
+        "TrajectoryRecorder",
+        "TrajectoryStep"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/testing/test_trajectory.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 13
+    },
+    "src/alphaswarm_sol/testing/trajectory/evaluator.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 240
+    },
+    "src/alphaswarm_sol/testing/trajectory/recorder.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 205
+    },
+    "src/alphaswarm_sol/testing/unit/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AgentContract",
+        "ExpectedOutput",
+        "InvocationMode",
+        "MockToolProvider",
+        "MockVKGContext",
+        "OutputSchema",
+        "SubagentTestResult",
+        "SubagentTester"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/agents/test_attacker_agent.py",
+          "tests/agents/test_verifier_agent.py",
+          "tests/agents/test_defender_agent.py",
+          "tests/testing/test_subagent_unit.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 52
+    },
+    "src/alphaswarm_sol/testing/unit/contracts.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "AGENT_CONTRACTS",
+        "ATTACKER_CONTRACT",
+        "AgentContract",
+        "DEFENDER_CONTRACT",
+        "ExpectedOutput",
+        "OutputSchema",
+        "VERIFIER_CONTRACT"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/agents/test_attacker_agent.py",
+          "tests/agents/test_verifier_agent.py",
+          "tests/agents/test_defender_agent.py",
+          "tests/testing/test_subagent_unit.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/unit/subagent_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/unit/__init__.py"
+      ],
+      "loc": 230
+    },
+    "src/alphaswarm_sol/testing/unit/mock_context.py": {
+      "category": "TRANSITIVE",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "MockToolProvider"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/unit/subagent_tester.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/unit/__init__.py"
+      ],
+      "loc": 260
+    },
+    "src/alphaswarm_sol/testing/unit/subagent_tester.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "SubagentTestResult",
+        "SubagentTestSuite"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/agents/test_attacker_agent.py",
+          "tests/agents/test_verifier_agent.py",
+          "tests/agents/test_defender_agent.py",
+          "tests/testing/test_subagent_unit.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/unit/contracts.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/unit/__init__.py"
+      ],
+      "loc": 468
+    },
+    "src/alphaswarm_sol/testing/verification.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "VerificationLoop",
+        "VerificationResult",
+        "VerificationSummary",
+        "format_finding_result",
+        "format_verification_summary"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_testing_verification.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/__init__.py"
+      ],
+      "loc": 475
+    },
+    "src/alphaswarm_sol/testing/wave_gate.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 293
+    },
+    "src/alphaswarm_sol/testing/workflow/__init__.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ClaudeTestSession",
+        "EvalCriteria",
+        "EvalError",
+        "EvalResult",
+        "EvalStatus",
+        "Improvement",
+        "ImprovementCategory",
+        "ImprovementComplexity",
+        "ImprovementLoop",
+        "ImprovementLoopConfig",
+        "SelfImprovingRunner",
+        "WorkflowEvaluator",
+        "run_self_improving_smoke_test",
+        "run_smoke_test",
+        "verify_claude_available"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/e2e/test_workflow_infrastructure.py"
+        ],
+        "script": [
+          "scripts/test_real_workflow.py",
+          "scripts/validate_testing_workflow.py"
+        ],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 76
+    },
+    "src/alphaswarm_sol/testing/workflow/claude_code_controller.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 1
+    },
+    "src/alphaswarm_sol/testing/workflow/claude_code_controller_wrapper.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [],
+      "loc": 1
+    },
+    "src/alphaswarm_sol/testing/workflow/improvement_loop.py": {
+      "category": "TRULY_DEAD",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [],
+      "real_callers": {
+        "production": [],
+        "test": [],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/workflow/__init__.py"
+      ],
+      "loc": 591
+    },
+    "src/alphaswarm_sol/testing/workflow/self_improving_runner.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "DetectedIssue",
+        "FixResult",
+        "IssueCategory",
+        "PromptResult",
+        "SelfImprovingRunner",
+        "TestResult"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/test_self_improving_runner.py"
+        ],
+        "script": [],
+        "testing_internal": []
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/workflow/__init__.py"
+      ],
+      "loc": 473
+    },
+    "src/alphaswarm_sol/testing/workflow/workflow_evaluator.py": {
+      "category": "TEST_ONLY",
+      "is_cli_source": false,
+      "symbols_imported_by_callers": [
+        "ErrorType",
+        "EvalError",
+        "EvalResult",
+        "EvalStatus"
+      ],
+      "real_callers": {
+        "production": [],
+        "test": [
+          "tests/e2e/test_workflow_infrastructure.py"
+        ],
+        "script": [],
+        "testing_internal": [
+          "src/alphaswarm_sol/testing/workflow/improvement_loop.py"
+        ]
+      },
+      "barrel_callers_excluded": [
+        "src/alphaswarm_sol/testing/workflow/__init__.py"
+      ],
+      "loc": 553
+    }
+  },
+  "summary": {
+    "PRODUCTION_DEPENDENT": 5,
+    "TRULY_DEAD": 29,
+    "TEST_ONLY": 46,
+    "TRANSITIVE": 2
+  },
+  "loc_by_category": {
+    "PRODUCTION_DEPENDENT": 3029,
+    "TRULY_DEAD": 9641,
+    "TEST_ONLY": 17635,
+    "TRANSITIVE": 587
+  },
+  "total_files": 82,
+  "total_loc": 30892
+}

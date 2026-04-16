@@ -1,0 +1,57 @@
+workflow_id: orchestrator-verify
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- coordination_quality
+- evidence_flow
+- verification_thoroughness
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: agents_spawned
+  description: Verification agents spawned
+  expected_behavior: Task tool calls for attacker/defender/verifier roles
+  grader_type: code
+- id: evidence_routed
+  description: Evidence routed between verification agents
+  expected_behavior: SendMessage calls pass evidence between agent roles
+  grader_type: code
+- id: session_completed
+  description: Verification completed with verdict
+  expected_behavior: session_completed is true and response contains verdict
+  grader_type: code
+evidence_requirements:
+- type: transcript
+  description: Per-agent verification transcripts
+- type: graph_nodes
+  description: Graph evidence from verification
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Orchestrator spawns verification agents with clear roles and
+  scope. Orchestrator routes attacker findings to defender for rebuttal. Orchestrator
+  ensures verifier receives both perspectives before arbitrating. Orchestrator monitors
+  verification progress and escalates deadlocks. Orchestrator synthesizes final verdict
+  from multi-agent evidence chain.
+active_dimensions:
+- coordination_quality
+- evidence_flow
+- verification_thoroughness
+- task_delegation
+- consensus_quality
+- rubric_coverage
+- evidence_quality
+- arbitration_quality

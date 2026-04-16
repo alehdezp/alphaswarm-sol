@@ -1,0 +1,33 @@
+# ERC721 Reentrancy via onERC721Received callback
+id: smartbugs-erc721-reentrancy
+name: ERC721 safeMint/safeTransfer Reentrancy
+category: reentrancy
+source: examples/semgrep-smart-contracts/solidity/security/erc721-reentrancy.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: reentrancy-callback
+  description: |
+    ERC721 _safeMint and safeTransfer functions call onERC721Received() on the
+    recipient, allowing reentrancy through malicious receiver contracts.
+  severity: high
+  cwe: CWE-841
+  references:
+    - https://blocksecteam.medium.com/when-safemint-becomes-unsafe-lessons-from-the-hypebears-security-incident-2965209bda2a
+
+expected_detections:
+  - pattern: vm-001
+    confidence: high
+    description: State write after _checkOnERC721Received callback
+
+vkg_pattern_mapping:
+  primary: vm-001
+  secondary: [reentrancy-callback]
+
+false_positives: []
+
+notes: |
+  The vulnerability occurs when state is modified after calling _safeMint or
+  safeTransferFrom without proper reentrancy protection.
+
+status: pending

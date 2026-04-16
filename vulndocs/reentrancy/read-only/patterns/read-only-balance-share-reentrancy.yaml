@@ -1,0 +1,23 @@
+id: read-only-balance-share-reentrancy
+vulndoc: reentrancy/read-only
+name: Read-Only Balance/Share Exploitation
+description: View functions reading balances/shares during reentrancy windows.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: read_only_reentrancy_surface
+    op: eq
+    value: true
+  - property: is_view
+    op: eq
+    value: true
+  any:
+  - property: reads_balance_state
+    op: eq
+    value: true
+  - property: reads_share_state
+    op: eq
+    value: true

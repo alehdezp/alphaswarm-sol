@@ -1,0 +1,22 @@
+# Solmate Auth
+id: solmate-auth
+name: Solmate Auth
+category: solmate
+source: "solmate/auth/Auth.sol"
+version: "6.x"
+
+contract_info:
+  description: |
+    Solmate's gas-optimized authorization primitives.
+  deployed_since: 2021
+  audit_sources:
+    - Paradigm
+
+expected_findings: []
+
+false_positive_categories:
+  - auth-*
+  - access-control-*
+  - ownership-*
+
+status: validated

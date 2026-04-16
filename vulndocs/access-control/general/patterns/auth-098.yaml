@@ -1,0 +1,41 @@
+id: auth-098
+vulndoc: access-control/general
+name: Multisig Execute Without Signature Validation
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `multisig-003-execution-without-signature-validation`
+  instead.
+
+
+  Location: `patterns/semantic/multisig/multisig-003-execution-without-signature-validation.yaml`
+
+
+  The semantic pattern uses `executes_multisig_operation` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Multisig execute without signature validation.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: multisig-003-execution-without-signature-validation
+match:
+  all:
+  - property: contract_has_multisig
+    op: eq
+    value: true
+  - property: label
+    op: regex
+    value: (?i)execute|submit|confirm
+  - property: uses_ecrecover
+    op: eq
+    value: false

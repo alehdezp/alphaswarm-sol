@@ -1,0 +1,47 @@
+id: auth-108
+vulndoc: access-control/general
+name: Unprotected Pause/Unpause
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `circuit-001-unprotected-pause` instead.
+
+
+  Location: `patterns/semantic/circuit-breaker/circuit-001-unprotected-pause.yaml`
+
+
+  The semantic pattern uses `toggles_circuit_breaker` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Pause/unpause or halt operations without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: circuit-001-unprotected-pause
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)\b(pause|unpause|setpause|setpaused|halt|freeze|unfreeze|emergencystop)\b
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

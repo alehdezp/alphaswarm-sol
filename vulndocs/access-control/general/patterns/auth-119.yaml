@@ -1,0 +1,19 @@
+id: auth-119
+vulndoc: access-control/general
+name: Implementation Initializer Without Proxy Guard
+description: Initializer on implementation contract without proxy-only guard.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_initializer_function
+    op: eq
+    value: true
+  - property: contract_is_implementation_contract
+    op: eq
+    value: true
+  - property: has_only_proxy_modifier
+    op: eq
+    value: false

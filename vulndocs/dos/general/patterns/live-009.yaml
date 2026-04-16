@@ -1,0 +1,19 @@
+id: live-009
+vulndoc: dos/general
+name: Economic DoS via Fees
+description: Fee parameters without bounds checks.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_fee_parameter
+    op: eq
+    value: true
+  - property: has_fee_bounds
+    op: eq
+    value: false
+  - property: writes_state
+    op: eq
+    value: true

@@ -1,0 +1,22 @@
+id: ext-001
+vulndoc: access-control/external-call
+name: Spot Price Manipulation
+description: Spot price from a single pool without TWAP or multi-source validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: critical
+match:
+  all:
+  - property: reads_pool_reserves
+    op: eq
+    value: true
+  - property: price_input_flows_to_value
+    op: eq
+    value: true
+  - property: has_twap_validation
+    op: eq
+    value: false
+  - property: has_multi_source_oracle
+    op: eq
+    value: false

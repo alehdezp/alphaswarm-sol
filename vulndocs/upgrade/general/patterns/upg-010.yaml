@@ -1,0 +1,22 @@
+id: upg-010
+vulndoc: upgrade/general
+name: Diamond Storage Collision
+description: Diamond proxy storage isolation missing.
+scope: Contract
+lens:
+- Upgradeability
+severity: high
+match:
+  all:
+  - property: is_diamond_proxy
+    op: eq
+    value: true
+  - property: contract_has_diamond_cut
+    op: eq
+    value: true
+  - property: uses_libdiamond
+    op: eq
+    value: false
+  - property: state_var_count
+    op: gt
+    value: 0

@@ -1,0 +1,22 @@
+id: live-034
+vulndoc: dos/general
+name: Calldata or Stack Exhaustion
+description: Calldata slicing without bounds or recursive calls.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  any:
+  - property: calldata_slice_without_check
+    op: eq
+    value: true
+  - property: recursive_call_without_guard
+    op: eq
+    value: true
+  all:
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

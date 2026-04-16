@@ -1,0 +1,22 @@
+id: arith-003
+vulndoc: arithmetic/general
+name: Unsafe Narrowing Cast
+description: Narrowing casts without bounds validation.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 681
+match:
+  all:
+  - property: has_explicit_cast
+    op: eq
+    value: true
+  - property: cast_is_narrowing
+    op: eq
+    value: true
+  none:
+  - property: has_bounds_check_before_cast
+    op: eq
+    value: true

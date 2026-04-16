@@ -1,0 +1,13 @@
+id: vm-018
+vulndoc: reentrancy/general
+name: Callback Chain Reentrancy Surface
+description: Cross-contract external calls before state commit.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: callback_chain_surface
+    op: eq
+    value: true

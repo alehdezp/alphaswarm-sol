@@ -1,0 +1,86 @@
+# Stale Price Data - Subcategory Index
+# Using outdated price data without freshness validation
+
+id: staleness
+name: Stale Price Data
+parent_category: oracle
+
+description: |
+  Stale price vulnerabilities occur when protocols consume oracle data without
+  validating its freshness. Chainlink and other oracles may return outdated
+  prices during network congestion, oracle maintenance, or market volatility.
+  Using stale prices can lead to unfair liquidations, arbitrage opportunities,
+  or protocol insolvency.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - oracle-003
+  - oracle-004
+
+# VKG properties for detection
+relevant_properties:
+  - reads_oracle_price
+  - has_staleness_check
+  - checks_round_completeness
+  - oracle_freshness_seconds
+  - external_call_sites
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: reads_oracle_price
+    expected: true
+    critical: true
+    description: Function reads from price oracle
+
+  - property: has_staleness_check
+    expected: false
+    critical: true
+    description: No freshness validation on oracle data
+
+  - property: checks_round_completeness
+    expected: false
+    critical: false
+    description: No answeredInRound >= roundId check
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+# Behavioral signatures
+behavioral_signatures:
+  - "X:oracle->C:price->W:state"
+  - "X:chainlink->R:price->W:bal"
+  - "R:latestRound->C:price->W:collateral"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "READS_ORACLE -> MODIFIES_CRITICAL_STATE"
+    - "CALLS_EXTERNAL(oracle) -> PERFORMS_DIVISION -> MODIFIES_CRITICAL_STATE"
+  safe:
+    - "READS_ORACLE -> VALIDATES_FRESHNESS -> MODIFIES_CRITICAL_STATE"
+    - "CALLS_EXTERNAL(oracle) -> VALIDATES_ROUND -> PERFORMS_DIVISION"
+
+# False positive indicators
+false_positive_indicators:
+  - "updatedAt timestamp checked against threshold"
+  - "answeredInRound >= roundId validation present"
+  - "Heartbeat interval validation implemented"
+  - "Fallback oracle configured for stale data"
+  - "Price age limit enforced before usage"
+
+# Related real-world exploits
+related_exploits:
+  - compound-dai-liquidation
+  - venus-protocol
+  - synthetix-kwon-incident
+
+# Token estimate for this subcategory
+token_estimate: 500

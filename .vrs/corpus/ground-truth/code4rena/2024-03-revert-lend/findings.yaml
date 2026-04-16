@@ -1,0 +1,149 @@
+# Code4rena Contest: 2024-03-revert-lend
+# Ground Truth Findings - External Source
+# DO NOT modify based on tool output
+
+contest:
+  id: "2024-03-revert-lend"
+  name: "Revert Lend"
+  report_url: "https://code4rena.com/reports/2024-03-revert-lend"
+  findings_repo: "https://github.com/code-423n4/2024-03-revert-lend-findings"
+  audit_period: "March 2024"
+  prize_pool: "$60,500"
+
+metadata:
+  imported_date: "2026-02-04"
+  source: "Code4rena"
+  trust_level: "high"
+  external_ground_truth: true
+
+statistics:
+  total_findings: 5
+  high: 2
+  medium: 3
+  vulnerability_classes:
+    - oracle_manipulation
+    - reentrancy
+    - access_control
+    - arithmetic
+    - flash_loan
+
+findings:
+  - id: "H-01"
+    title: "Oracle price can be manipulated via Uniswap V3 TWAP in same block"
+    severity: "high"
+    vulnerability_class: "oracle_manipulation"
+    swc_id: "SWC-120"
+    affected_contracts:
+      - "V3Oracle.sol"
+    affected_functions:
+      - "getPositionValue"
+      - "_getReferencePrice"
+    ground_truth_verdict: "confirmed"
+    auditor: "Trust"
+    judge_confirmed: true
+    description: |
+      TWAP oracle with short observation window can be manipulated
+      within the same block using flash loans to inflate position values.
+    exploit_requirements:
+      - "Flash loan large amount"
+      - "Manipulate Uniswap V3 pool"
+      - "Borrow against inflated value"
+    code_location:
+      file: "V3Oracle.sol"
+      line_start: 234
+      line_end: 278
+
+  - id: "H-02"
+    title: "Reentrancy in transform allows draining of collateral"
+    severity: "high"
+    vulnerability_class: "reentrancy"
+    swc_id: "SWC-107"
+    affected_contracts:
+      - "V3Vault.sol"
+    affected_functions:
+      - "transform"
+      - "_transform"
+    ground_truth_verdict: "confirmed"
+    auditor: "0xDjango"
+    judge_confirmed: true
+    description: |
+      Transform function callback allows malicious transformer contract
+      to re-enter and manipulate position state.
+    exploit_requirements:
+      - "Deploy malicious transformer"
+      - "Trigger transform with callback"
+      - "Re-enter during execution"
+    code_location:
+      file: "V3Vault.sol"
+      line_start: 467
+      line_end: 512
+
+  - id: "M-01"
+    title: "Missing permission check in setTransformer allows arbitrary transformer"
+    severity: "medium"
+    vulnerability_class: "access_control"
+    swc_id: "SWC-105"
+    affected_contracts:
+      - "V3Vault.sol"
+    affected_functions:
+      - "setTransformer"
+    ground_truth_verdict: "confirmed"
+    auditor: "carrotsmuggler"
+    judge_confirmed: true
+    description: |
+      setTransformer lacks sufficient validation, allowing malicious
+      transformers to be registered for any position.
+    exploit_requirements:
+      - "Call setTransformer with malicious address"
+    code_location:
+      file: "V3Vault.sol"
+      line_start: 789
+      line_end: 812
+
+  - id: "M-02"
+    title: "Precision loss in interest calculation causes loss of user funds"
+    severity: "medium"
+    vulnerability_class: "arithmetic"
+    swc_id: "SWC-101"
+    affected_contracts:
+      - "V3Vault.sol"
+    affected_functions:
+      - "_calculateInterest"
+      - "borrow"
+    ground_truth_verdict: "confirmed"
+    auditor: "Stormy"
+    judge_confirmed: true
+    description: |
+      Interest calculation rounds down aggressively, causing accumulated
+      precision loss that benefits borrowers over depositors.
+    exploit_requirements:
+      - "Repeated small borrows"
+      - "Accumulate precision loss"
+    code_location:
+      file: "V3Vault.sol"
+      line_start: 345
+      line_end: 378
+
+  - id: "M-03"
+    title: "Flash loan can bypass collateral check during liquidation"
+    severity: "medium"
+    vulnerability_class: "flash_loan"
+    swc_id: "SWC-119"
+    affected_contracts:
+      - "V3Vault.sol"
+    affected_functions:
+      - "liquidate"
+    ground_truth_verdict: "confirmed"
+    auditor: "IllIllI"
+    judge_confirmed: true
+    description: |
+      Liquidation check can be bypassed using flash loans to temporarily
+      inflate collateral value during the transaction.
+    exploit_requirements:
+      - "Position close to liquidation threshold"
+      - "Flash loan to inflate value"
+      - "Prevent legitimate liquidation"
+    code_location:
+      file: "V3Vault.sol"
+      line_start: 567
+      line_end: 612

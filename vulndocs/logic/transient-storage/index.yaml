@@ -1,0 +1,158 @@
+# Transient Storage Misuse - Subcategory Index
+# Category: logic/transient-storage
+# Phase 17: Knowledge Aggregation
+#
+# Source: DeFiVulnLabs - Transient Storage Misuse
+# Reference: https://www.coveragelabs.io/blog/post/sir-exploit
+# EIP: EIP-1153 (Cancun network upgrade, 2024)
+
+id: transient-storage
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Transient Storage Misuse
+description: |
+  Vulnerabilities arising from incorrect use of transient storage (EIP-1153,
+  introduced in Solidity 0.8.24 with Cancun upgrade). Transient storage values
+  persist only within a single transaction and reset between transactions.
+
+  Attackers can manipulate transient storage during callback functions to bypass
+  access controls by injecting arbitrary values into storage slots that the
+  protocol expects to be empty or controlled.
+
+  This is NOT a flaw in EIP-1153 itself, but rather development errors in
+  handling transient storage semantics.
+
+severity: high
+
+# VKG graph signals for detection
+graph_signals:
+  - property: uses_transient_storage
+    expected: true
+    critical: true
+    description: Function uses TSTORE/TLOAD opcodes
+    confidence: 0.95
+
+  - property: has_callback_receiver
+    expected: true
+    critical: true
+    description: Function calls external contracts that may callback
+    confidence: 0.85
+
+  - property: transient_value_in_access_check
+    expected: true
+    critical: true
+    description: Access control logic reads from transient storage
+    confidence: 0.90
+
+  - property: no_transient_validation
+    expected: true
+    critical: true
+    description: Missing validation of transient storage values before use
+    confidence: 0.80
+
+# Semantic operations
+semantic_operations:
+  - STORES_TRANSIENT_VALUE
+  - LOADS_TRANSIENT_VALUE
+  - CALLS_EXTERNAL
+  - CHECKS_PERMISSION
+
+# Behavioral signatures
+behavioral_signatures:
+  vulnerable:
+    - "T:store->X:call->C:access{T:load}"  # Store transient, external call, access check reads transient
+    - "T:load->C:permission"  # Permission check reads transient without validation
+  safe:
+    - "T:store->C:validate->T:load"  # Validate before use
+    - "T:load->C:check{expected}->use"  # Check value matches expected
+
+# Real-world exploits
+exploits:
+  - name: "SIR Protocol"
+    date: "2024-11-01"
+    loss: "Not disclosed"
+    chain: "Ethereum"
+    description: |
+      Attacker manipulated transient storage during callback to bypass access
+      controls. The protocol stored authentication state in transient storage
+      and checked it after external calls, but didn't validate the value was
+      set by the protocol itself.
+    source: "https://www.coveragelabs.io/blog/post/sir-exploit"
+    cve: null
+
+# Attack preconditions
+preconditions:
+  - "Contract uses transient storage for state flags or access control"
+  - "External call is made after storing transient value"
+  - "Called contract can callback into original contract"
+  - "No validation that transient value was set by authorized code"
+
+# Attack postconditions
+postconditions:
+  - "Attacker gains unauthorized access to protected functions"
+  - "Access control bypassed via injected transient values"
+
+# Remediation
+remediation:
+  - approach: "Validate transient storage values"
+    description: |
+      Never trust transient storage values blindly. Validate that values match
+      expected patterns or were set by authorized code paths.
+    effectiveness: high
+
+  - approach: "Use reentrancy guards"
+    library: "ReentrancyGuard.nonReentrant"
+    description: |
+      Prevent callback attacks that manipulate transient storage by blocking
+      reentrancy entirely.
+    effectiveness: high
+
+  - approach: "Avoid transient storage for security-critical state"
+    description: |
+      Use regular storage for access control flags. Reserve transient storage
+      for non-critical temporary values within single transactions.
+    effectiveness: high
+
+# Safe properties
+safe_properties:
+  - validates_transient_before_use: true
+  - has_reentrancy_guard: true
+  - transient_only_for_read_caching: true
+
+# Related CWE
+related_cwes:
+  - CWE-284  # Improper Access Control
+  - CWE-841  # Improper Enforcement of Behavioral Workflow
+
+# Related vulnerabilities
+related_vulnerabilities:
+  - category: reentrancy
+    subcategory: cross-function
+    relationship: "Transient storage manipulation often occurs during reentrant callbacks"
+  - category: access-control
+    subcategory: weak-modifier
+    relationship: "Transient-based access checks can be weaker than storage-based"
+
+# Detection complexity
+detection_complexity: medium
+
+# Pattern ID reference
+pattern_id: logic-transient-001
+
+# Context cache key
+context_cache_key: "logic-transient-storage-v1"
+
+# External references
+external_refs:
+  - "EIP-1153: Transient Storage Opcodes - https://eips.ethereum.org/EIPS/eip-1153"
+  - "SIR Exploit Analysis - https://www.coveragelabs.io/blog/post/sir-exploit"
+  - "Solidity 0.8.24 Release - Transient Storage Support"
+
+# Tags
+tags:
+  - cancun-upgrade
+  - eip-1153
+  - callback-vulnerability
+  - access-control-bypass
+  - new-in-2024

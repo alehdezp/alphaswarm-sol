@@ -1,0 +1,17 @@
+{
+  "pass": 19,
+  "total_items": 14,
+  "items_per_area": {
+    "_coord-gaps": 0,
+    "full-context-p19": 6,
+    "full-context": 8
+  },
+  "pipeline": {
+    "prereqs_pending": 0,
+    "research_pending": 0,
+    "mergeable": 0,
+    "implemented": 0
+  },
+  "validation": [],
+  "warnings": []
+}

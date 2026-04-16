@@ -1,0 +1,78 @@
+id: UC-INV-003
+name: "Trace cross-function data flow through graph"
+workflow: vrs-investigate
+category: investigate
+tier: important
+
+input:
+  contract: "tests/contracts/CrossFunctionReentrancy.sol"
+  command: "/vrs-investigate tests/contracts/CrossFunctionReentrancy.sol --hypothesis cross-function-reentrancy"
+  context: >
+    CrossFunctionReentrancy.sol has a reentrancy vulnerability that spans
+    multiple functions: one function performs an external call, and a different
+    function reads shared state that the callback can manipulate. This requires
+    tracing data flow across function boundaries through the graph, not just
+    analyzing individual functions in isolation.
+
+expected_behavior:
+  summary: |
+    The investigation workflow should build a BSKG and trace the data flow
+    across function boundaries. It must identify that function A makes an
+    external call while function B reads shared state that can be modified
+    during the callback. The evidence chain must cross function boundaries
+    via graph edges, not just per-function analysis.
+  must_happen:
+    - "Build BSKG from CrossFunctionReentrancy.sol"
+    - "Query graph for CALLS_EXTERNAL and WRITES_USER_BALANCE operations"
+    - "Trace data flow across at least two functions through graph edges"
+    - "Identify that shared state is accessible during external call callback"
+    - "Produce evidence chain that references both functions involved"
+    - "Finding explains the cross-function attack vector"
+  must_not_happen:
+    - "Analyze each function in isolation without cross-function tracing"
+    - "Miss the cross-function dependency"
+    - "Only find simple same-function reentrancy"
+    - "Skip graph queries for cross-function edges"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "reentrancy"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 55
+  key_dimensions:
+    - name: cross_function_tracing
+      description: "Did the investigator trace data flow across function boundaries via graph?"
+    - name: graph_edge_utilization
+      description: "Were cross-function graph edges (not just per-function nodes) used?"
+    - name: evidence_chain_completeness
+      description: "Does the evidence chain reference both functions and their shared state?"
+    - name: attack_vector_clarity
+      description: "Is the cross-function attack vector clearly explained?"
+  regression_signals:
+    - "Only per-function analysis performed -> REGRESSION: cross-function reasoning broken"
+    - "Cross-function reentrancy missed -> REGRESSION: data flow tracing degraded"
+    - "Evidence doesn't reference both functions -> REGRESSION: evidence completeness degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/CrossFunctionReentrancy.sol"
+  related_scenarios:
+    - "UC-INV-001"
+    - "UC-AUDIT-001"
+    - "UC-ATK-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier because cross-function analysis is a key differentiator from
+  simple pattern matching. Lower threshold (55) because cross-function
+  reasoning is genuinely harder than single-function analysis.

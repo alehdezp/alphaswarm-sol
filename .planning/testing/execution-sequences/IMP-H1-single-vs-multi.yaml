@@ -1,0 +1,399 @@
+# Execution Sequence: IMP-H1 Single-Agent vs Multi-Agent Comparison
+# Purpose: Concrete claude-code-controller commands to validate multi-agent debate value
+
+name: "Single-Agent vs Multi-Agent Comparison Execution"
+version: "1.0"
+created: "2026-02-04"
+decision_tree: ".planning/testing/decision-trees/IMP-H1-multi-agent.yaml"
+existential: true
+
+# Session Configuration
+session:
+  single_agent:
+    label: "vrs-demo-single-agent-{timestamp}"
+    description: "Audit with single vrs-secure-reviewer (baseline)"
+  multi_agent:
+    label: "vrs-demo-multi-agent-{timestamp}"
+    description: "Audit with attacker/defender/verifier (test)"
+
+# Test Targets (from decision tree)
+targets:
+  - contract: "tests/contracts/CrossFunctionReentrancy.sol"
+    known_vulns: 1
+    ground_truth: "reentrancy via cross-function state manipulation"
+  - contract: "tests/contracts/semantic-test-set/AuthBypass.sol"
+    known_vulns: 2
+    ground_truth: "authorization bypass, privilege escalation"
+  - contract: "tests/fixtures/dvd/side-entrance/"
+    known_vulns: 3
+    ground_truth: "economic vulnerabilities (flashloan, accounting)"
+
+# Execution Sequences
+sequences:
+  single_agent_baseline:
+    description: "Run audit with vrs-secure-reviewer only (no debate)"
+    pre_conditions:
+      - "Target contract exists"
+      - "alphaswarm CLI installed"
+      - "No existing .vrs/ state from previous runs"
+      - "Ground truth file exists for contract"
+
+    commands:
+      - step: 1
+        description: "Launch isolated shell"
+        command: "claude-code-controller launch zsh"
+        capture: "pane_id"
+        timeout: 10
+
+      - step: 2
+        description: "Navigate to project"
+        command: "claude-code-controller send 'cd {project_dir}' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 3
+        description: "Clean previous state"
+        command: "claude-code-controller send 'rm -rf .vrs/state .vrs/reports' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 4
+        description: "Launch Claude Code"
+        command: "claude-code-controller send 'claude' --pane={pane_id}"
+        wait: "idle --idle-time=15.0 --timeout=30"
+
+      - step: 5
+        description: "Execute single-agent audit (secure-reviewer only)"
+        command: "claude-code-controller send 'Review {contract} for security vulnerabilities using vrs-secure-reviewer. Do NOT spawn attacker/defender/verifier debate. Produce findings with graph evidence.' --pane={pane_id}"
+        wait: "idle --idle-time=45.0 --timeout=600"
+        notes: |
+          This invokes single-agent mode explicitly.
+          Alternative: /vrs-audit {contract} --single-agent
+          If single-agent flag not implemented, rely on prompt instructions.
+
+      - step: 6
+        description: "Capture transcript"
+        command: "claude-code-controller capture --pane={pane_id}"
+        output: ".vrs/testing/runs/single-agent-{timestamp}/transcript.txt"
+
+      - step: 7
+        description: "Save report"
+        command: "claude-code-controller send 'cp .vrs/reports/latest.json .vrs/testing/runs/single-agent-{timestamp}/report.json' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 8
+        description: "Record token usage"
+        command: "claude-code-controller send 'cat ~/.claude/usage.json | jq .last_session > .vrs/testing/runs/single-agent-{timestamp}/tokens.json' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+        notes: "Token tracking requires Claude Code usage export"
+
+      - step: 9
+        description: "Exit Claude Code"
+        command: "claude-code-controller send '/exit' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+
+      - step: 10
+        description: "Cleanup session"
+        command: "claude-code-controller kill --pane={pane_id}"
+
+    post_conditions:
+      - "transcript.txt exists with >= 80 lines"
+      - "report.json exists and is valid JSON"
+      - "NO SubagentStart(vrs-attacker) markers in transcript"
+      - "NO SubagentStart(vrs-defender) markers in transcript"
+      - "vrs-secure-reviewer activity visible in transcript"
+
+    metrics_to_extract:
+      - name: "single_finding_count"
+        source: "report.json"
+        path: "$.findings | length"
+      - name: "single_evidence_depth"
+        source: "report.json"
+        path: "$.findings[*].evidence.graph_nodes | length | average"
+      - name: "single_reasoning_tokens"
+        source: "transcript.txt"
+        pattern: "token count or word count proxy"
+      - name: "single_total_tokens"
+        source: "tokens.json"
+        path: "$.total_tokens"
+      - name: "single_false_positives"
+        source: "comparison script"
+        path: "findings not in ground_truth"
+      - name: "single_false_negatives"
+        source: "comparison script"
+        path: "ground_truth not in findings"
+
+  multi_agent_test:
+    description: "Run audit with full attacker/defender/verifier debate"
+    pre_conditions:
+      - "Target contract exists"
+      - "alphaswarm CLI installed"
+      - "No existing .vrs/ state from previous runs"
+      - "Ground truth file exists for contract"
+      - "Single-agent baseline completed for same contract"
+
+    commands:
+      - step: 1
+        description: "Launch isolated shell"
+        command: "claude-code-controller launch zsh"
+        capture: "pane_id"
+        timeout: 10
+
+      - step: 2
+        description: "Navigate to project"
+        command: "claude-code-controller send 'cd {project_dir}' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 3
+        description: "Clean previous state"
+        command: "claude-code-controller send 'rm -rf .vrs/state .vrs/reports' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 4
+        description: "Launch Claude Code"
+        command: "claude-code-controller send 'claude' --pane={pane_id}"
+        wait: "idle --idle-time=15.0 --timeout=30"
+
+      - step: 5
+        description: "Execute multi-agent audit (full debate)"
+        command: "claude-code-controller send '/vrs-audit {contract}' --pane={pane_id}"
+        wait: "idle --idle-time=60.0 --timeout=900"
+        notes: |
+          Default /vrs-audit spawns attacker/defender/verifier.
+          Longer timeout due to multi-agent coordination overhead.
+
+      - step: 6
+        description: "Capture transcript"
+        command: "claude-code-controller capture --pane={pane_id}"
+        output: ".vrs/testing/runs/multi-agent-{timestamp}/transcript.txt"
+
+      - step: 7
+        description: "Save report"
+        command: "claude-code-controller send 'cp .vrs/reports/latest.json .vrs/testing/runs/multi-agent-{timestamp}/report.json' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 8
+        description: "Record token usage"
+        command: "claude-code-controller send 'cat ~/.claude/usage.json | jq .last_session > .vrs/testing/runs/multi-agent-{timestamp}/tokens.json' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 9
+        description: "Exit Claude Code"
+        command: "claude-code-controller send '/exit' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+
+      - step: 10
+        description: "Cleanup session"
+        command: "claude-code-controller kill --pane={pane_id}"
+
+    post_conditions:
+      - "transcript.txt exists with >= 150 lines"
+      - "report.json exists and is valid JSON"
+      - "SubagentStart(vrs-attacker) marker present"
+      - "SubagentStart(vrs-defender) marker present"
+      - "SubagentStart(vrs-verifier) marker present"
+      - "SubagentComplete markers for all 3 agents"
+      - "[DEBATE_VERDICT marker present"
+
+    metrics_to_extract:
+      - name: "multi_finding_count"
+        source: "report.json"
+        path: "$.findings | length"
+      - name: "multi_evidence_depth"
+        source: "report.json"
+        path: "$.findings[*].evidence.graph_nodes | length | average"
+      - name: "multi_total_tokens"
+        source: "tokens.json"
+        path: "$.total_tokens"
+      - name: "multi_false_positives"
+        source: "comparison script"
+        path: "findings not in ground_truth"
+      - name: "multi_false_negatives"
+        source: "comparison script"
+        path: "ground_truth not in findings"
+      - name: "cross_references"
+        source: "transcript.txt"
+        pattern: "agent cites other agent's claim"
+        count: true
+      - name: "synthesis_present"
+        source: "transcript.txt"
+        pattern: "verifier cites both attacker AND defender"
+        boolean: true
+
+# Comparison Protocol
+comparison:
+  script: "scripts/compare_single_vs_multi.py"
+
+  inputs:
+    - single: ".vrs/testing/runs/single-agent-{timestamp}/"
+    - multi: ".vrs/testing/runs/multi-agent-{timestamp}/"
+    - ground_truth: ".vrs/corpus/ground-truth/{contract}.yaml"
+
+  computations:
+    false_negative_reduction: "(single_fn - multi_fn) / max(single_fn, 1)"
+    false_positive_reduction: "(single_fp - multi_fp) / max(single_fp, 1)"
+    evidence_depth_improvement: "multi_evidence_depth / max(single_evidence_depth, 1)"
+    quality_improvement: "(multi_score - single_score) / max(single_score, 1)"
+    cost_ratio: "multi_total_tokens / max(single_total_tokens, 1)"
+
+  quality_score:
+    description: "Composite quality score"
+    formula: |
+      quality = (
+        (1 - false_negative_rate) * 0.4 +
+        (1 - false_positive_rate) * 0.3 +
+        evidence_depth_normalized * 0.2 +
+        reasoning_coherence * 0.1
+      )
+
+  output:
+    path: ".vrs/testing/runs/comparison-{timestamp}/results.json"
+    format: |
+      {
+        "contract": "{contract}",
+        "single_agent": {
+          "findings": N,
+          "false_positives": N,
+          "false_negatives": N,
+          "evidence_depth": N.NN,
+          "total_tokens": N
+        },
+        "multi_agent": {
+          "findings": N,
+          "false_positives": N,
+          "false_negatives": N,
+          "evidence_depth": N.NN,
+          "total_tokens": N,
+          "cross_references": N,
+          "synthesis_present": true|false
+        },
+        "metrics": {
+          "false_negative_reduction": N.NN,
+          "false_positive_reduction": N.NN,
+          "evidence_depth_improvement": N.NN,
+          "quality_improvement": N.NN,
+          "cost_ratio": N.NN
+        },
+        "verdict": "L1_ESSENTIAL|L2_HELPFUL|L3_MARGINAL|L4_NOT_VALUABLE",
+        "recommendation": "..."
+      }
+
+# Decision Tree Integration
+decision_tree_evaluation:
+  input_metrics:
+    - false_negative_reduction
+    - evidence_depth_improvement
+    - synthesis_present
+    - cost_ratio
+
+  L1_clear_improvement:
+    conditions:
+      - "false_negative_reduction > 0"
+      - "evidence_depth_improvement >= 1.3"
+      - "synthesis_present == true"
+      - "cost_ratio <= 4.0"
+    verdict: "MULTI_AGENT_ESSENTIAL"
+    action: "Proceed with multi-agent architecture"
+
+  L2_moderate_value:
+    conditions:
+      - "evidence_depth_improvement >= 1.1"
+      - "synthesis_present == true"
+    verdict: "MULTI_AGENT_HELPFUL"
+    action: "Document trade-offs, consider optional single-agent mode"
+
+  L3_marginal_value:
+    conditions:
+      - "cost_ratio > 4.0"
+      - "evidence_depth_improvement < 1.2"
+    verdict: "MULTI_AGENT_MARGINAL"
+    action: "HALT: Simplify architecture"
+
+  L4_no_value:
+    conditions:
+      - "false_negative_reduction <= 0"
+      - "evidence_depth_improvement < 1.0"
+    verdict: "MULTI_AGENT_NOT_VALUABLE"
+    action: "CRITICAL: Redesign required"
+
+# Evidence Requirements
+evidence:
+  required_files:
+    - "single-agent-{timestamp}/transcript.txt"
+    - "single-agent-{timestamp}/report.json"
+    - "single-agent-{timestamp}/tokens.json"
+    - "multi-agent-{timestamp}/transcript.txt"
+    - "multi-agent-{timestamp}/report.json"
+    - "multi-agent-{timestamp}/tokens.json"
+    - "comparison-{timestamp}/results.json"
+
+  validation_checks:
+    - "Both runs used same contract"
+    - "Both runs completed successfully"
+    - "Ground truth matches contract"
+    - "Token counts are realistic"
+    - "Transcript line counts meet minimums"
+
+  anti_fabrication:
+    single_agent:
+      min_lines: 80
+      min_duration_ms: 30000
+      max_duration_ms: 300000
+      forbidden_markers:
+        - "SubagentStart(vrs-attacker)"
+        - "SubagentStart(vrs-defender)"
+
+    multi_agent:
+      min_lines: 150
+      min_duration_ms: 60000
+      max_duration_ms: 600000
+      required_markers:
+        - "SubagentStart(vrs-attacker)"
+        - "SubagentStart(vrs-defender)"
+        - "SubagentStart(vrs-verifier)"
+
+    comparison:
+      forbidden_patterns:
+        - "100% improvement"
+        - "perfect quality"
+        - "no false negatives"
+      realistic_ranges:
+        false_negative_reduction: [-0.5, 0.8]
+        evidence_depth_improvement: [0.8, 3.0]
+        cost_ratio: [1.5, 6.0]
+
+# Iteration Protocol (if L3 or borderline)
+iteration:
+  max_iterations: 3
+
+  on_L3_verdict:
+    iteration_1:
+      action: "Improve agent prompts for better synthesis"
+      changes:
+        - "Add cross-reference requirement to verifier prompt"
+        - "Require attacker to respond to defender claims"
+      re_run: true
+
+    iteration_2:
+      action: "Adjust debate structure"
+      changes:
+        - "Extend debate rounds"
+        - "Add explicit synthesis step"
+      re_run: true
+
+    iteration_3:
+      action: "Accept result and document"
+      changes: []
+      re_run: false
+      final_decision: "Use L3 verdict, proceed to architecture review"
+
+  abort_conditions:
+    - condition: "L4 verdict on any iteration"
+      action: "ABORT immediately"
+      escalation: "Architecture review within 48h"
+
+    - condition: "multi_fn >= single_fn for 2+ contracts"
+      action: "ABORT"
+      reason: "Multi-agent not catching more bugs"
+
+    - condition: "cost_ratio > 5 with improvement < 1.2"
+      action: "ABORT"
+      reason: "Cost not justified"

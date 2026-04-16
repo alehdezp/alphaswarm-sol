@@ -1,0 +1,35 @@
+id: live-028
+vulndoc: dos/general
+name: Economic Barrier DoS
+description: Amount parameters lack bounds checks.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_threshold_parameter
+    op: eq
+    value: true
+  - property: has_threshold_check
+    op: eq
+    value: false
+  - property: writes_state
+    op: eq
+    value: true
+  any:
+  - property: is_deposit_like
+    op: eq
+    value: true
+  - property: is_withdraw_like
+    op: eq
+    value: true
+  - property: is_mint_like
+    op: eq
+    value: true
+  - property: is_burn_like
+    op: eq
+    value: true
+  - property: is_value_transfer
+    op: eq
+    value: true

@@ -1,0 +1,15 @@
+id: arith-021
+vulndoc: arithmetic/general
+name: Timestamp Arithmetic
+description: Timestamp arithmetic that can overflow or underflow.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: timestamp_arithmetic
+    op: eq
+    value: true

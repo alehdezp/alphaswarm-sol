@@ -1,0 +1,1 @@
+../../../src/alphaswarm_sol/shipping/skills/tool-coordinator.md

@@ -1,0 +1,33 @@
+id: invariant-ratio-violation
+vulndoc: logic/invariants
+name: Ratio/Proportion Violation Risk
+description: 'Function modifies values that should maintain a ratio without validation.
+
+  DeFi protocols often have invariants like x*y=k or collateral ratios.
+
+
+  Risk: Breaking ratio invariants can enable economic exploits like
+
+  oracle manipulation, reserve draining, or undercollateralization.
+
+  '
+severity: medium
+scope: Function
+lens:
+- DeFi
+- Invariants
+aggregation_mode: tier_abc_all
+match:
+  tier_c:
+    all:
+    - type: has_any_label
+      value:
+      - value_handling.modifies_reserves
+      - value_handling.modifies_collateral
+      - state_mutation.modifies_ratio
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: invariants.enforces_ratio
+    - type: has_label
+      value: invariants.validates_proportion

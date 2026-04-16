@@ -1,0 +1,13 @@
+id: precision-accounting
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Precision Loss Accounting
+category: logic
+severity: high
+cwe: CWE-682
+description: |
+  Micro-operation accumulation exploits rounding to create accounting drift,
+  draining funds through repeated small operations.
+discovered: "2026-01-09"
+source: "Sherlock AI Detection ($2M)"

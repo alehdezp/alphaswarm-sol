@@ -1,0 +1,145 @@
+{
+  "id": "grimoire-mev",
+  "name": "MEV Vulnerability Verification Grimoire",
+  "category": "mev",
+  "subcategories": ["sandwich", "frontrunning", "backrunning", "slippage", "deadline"],
+  "skill": "/test-mev",
+  "aliases": ["/verify-mev", "/check-mev", "/test-sandwich"],
+  "description": "Expert procedure for verifying MEV vulnerabilities. Tests for sandwich attacks, missing slippage protection, missing deadlines, and frontrunning susceptibility.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["high", "defi", "foundry", "fork-testing"],
+
+  "required_context": [
+    "function_code",
+    "swap_parameters",
+    "external_calls"
+  ],
+  "optional_context": [
+    "slippage_checks",
+    "deadline_checks",
+    "pool_addresses"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE swap_like = true AND risk_missing_slippage_parameter = true",
+    "FIND functions WHERE swap_like = true AND risk_missing_deadline_check = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check MEV Properties",
+        "action": "check_graph",
+        "description": "Query VKG for MEV vulnerability indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["graph_matches", "missing_slippage", "missing_deadline", "is_swap_like"],
+        "queries": [
+          "swap_like",
+          "risk_missing_slippage_parameter",
+          "risk_missing_deadline_check",
+          "calls_external"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Analyze Swap Parameters",
+        "action": "check_property",
+        "description": "Verify slippage and deadline parameters",
+        "inputs": ["swap_parameters", "node_properties"],
+        "outputs": ["has_min_amount", "has_deadline", "slippage_tolerance"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 3,
+        "name": "Generate Sandwich Test",
+        "action": "generate_test",
+        "description": "Generate Foundry test simulating sandwich attack",
+        "inputs": ["function_code", "contract_name", "function_name", "pool_addresses"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_sandwich",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 4,
+        "name": "Execute Fork Test",
+        "action": "execute_fork",
+        "description": "Run sandwich simulation on mainnet fork",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed", "profit_extracted"],
+        "tools": ["foundry", "anvil"],
+        "command": "forge test --fork-url ${FORK_RPC} --match-test testSandwich -vvv",
+        "timeout_seconds": 300,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 5,
+        "name": "Analyze Results",
+        "action": "analyze_results",
+        "description": "Analyze sandwich attack simulation results",
+        "inputs": ["test_output", "graph_matches", "profit_extracted"],
+        "outputs": ["exploit_successful", "sandwich_profitable", "analysis_complete"],
+        "timeout_seconds": 30
+      },
+      {
+        "step_number": 6,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["exploit_successful", "missing_slippage", "missing_deadline", "sandwich_profitable"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "exploit_successful && sandwich_profitable",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Sandwich attack simulation extracted profit"
+      },
+      {
+        "condition": "missing_slippage && is_swap_like",
+        "verdict": "likely_vulnerable",
+        "confidence": "high",
+        "explanation": "Swap function missing slippage protection"
+      },
+      {
+        "condition": "missing_deadline && is_swap_like",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Swap function missing deadline check"
+      },
+      {
+        "condition": "is_swap_like && !missing_slippage && !missing_deadline",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "Swap has slippage and deadline protection"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": false,
+    "echidna_enabled": false,
+    "medusa_duration": 60,
+    "echidna_duration": 60,
+    "fork_enabled": true,
+    "fork_rpc": "",
+    "fork_block": "latest",
+    "testnet_enabled": false,
+    "testnet_network": "sepolia"
+  },
+
+  "test_templates": {
+    "foundry_sandwich": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ncontract SandwichTest is Test {\n    ${CONTRACT_NAME} public target;\n    address public attacker;\n    address public victim;\n\n    function setUp() public {\n        target = ${CONTRACT_NAME}(${CONTRACT_ADDRESS});\n        attacker = makeAddr(\"attacker\");\n        victim = makeAddr(\"victim\");\n    }\n\n    function testSandwich() public {\n        // Front-run: Attacker buys first\n        vm.prank(attacker);\n        // target.swap(...); // Buy to move price\n\n        // Victim's transaction\n        vm.prank(victim);\n        // target.${FUNCTION_NAME}(...);\n\n        // Back-run: Attacker sells\n        vm.prank(attacker);\n        // target.swap(...); // Sell at higher price\n\n        // Verify attacker profit\n        // assertGt(attacker.balance, initial, \"Sandwich should be profitable\");\n    }\n\n    function testMissingSlippage() public {\n        // Manipulate price significantly\n        // Then execute swap without slippage check\n        // Verify user receives much less than expected\n    }\n}"
+  }
+}

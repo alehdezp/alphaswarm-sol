@@ -1,0 +1,212 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Skill Schema v2",
+  "description": "JSON schema for AlphaSwarm.sol skill and subagent frontmatter with evidence-first contracts",
+  "type": "object",
+  "required": [
+    "name",
+    "description",
+    "slash_command",
+    "context",
+    "role",
+    "model_tier",
+    "tools",
+    "evidence_requirements",
+    "output_contract",
+    "failure_modes",
+    "version"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique skill identifier (kebab-case, e.g., vrs-audit, pattern-forge)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of skill purpose and when to use it"
+    },
+    "slash_command": {
+      "type": "string",
+      "description": "Slash command trigger (e.g., vrs:audit, agent-skillcraft)",
+      "pattern": "^[a-z0-9:-]+$"
+    },
+    "context": {
+      "type": "string",
+      "enum": ["fork", "inline"],
+      "description": "Context isolation mode: fork for isolated execution, inline for direct"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "attacker",
+        "defender",
+        "verifier",
+        "auditor",
+        "researcher",
+        "triage",
+        "orchestrator",
+        "architect",
+        "curator",
+        "tester"
+      ],
+      "description": "Primary role this skill fulfills in multi-agent workflows"
+    },
+    "model_tier": {
+      "type": "string",
+      "enum": ["haiku", "sonnet", "opus", "adaptive"],
+      "description": "Recommended model tier: haiku (fast), sonnet (balanced), opus (creative), adaptive (runtime decision)"
+    },
+    "tools": {
+      "type": "array",
+      "description": "Allowed tool permissions for this skill",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "evidence_requirements": {
+      "type": "object",
+      "description": "Evidence contract for skill outputs",
+      "required": [
+        "must_link_code",
+        "min_evidence_items",
+        "cite_graph_nodes"
+      ],
+      "properties": {
+        "must_link_code": {
+          "type": "boolean",
+          "description": "Requires exact code locations (file, line, function) for claims"
+        },
+        "min_evidence_items": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum number of evidence items required per finding"
+        },
+        "cite_graph_nodes": {
+          "type": "boolean",
+          "description": "Requires BSKG node references (function IDs, contract names)"
+        },
+        "graph_first": {
+          "type": "boolean",
+          "description": "Must query BSKG before reading code manually"
+        },
+        "require_behavioral_signature": {
+          "type": "boolean",
+          "description": "Requires semantic operation signatures (e.g., R:bal→X:out→W:bal)"
+        }
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "description": "Structured output contract for skill results",
+      "required": ["format", "schema"],
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["json", "yaml", "markdown", "toon"],
+          "description": "Output format"
+        },
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "Path to external JSON schema file"
+            },
+            {
+              "type": "object",
+              "description": "Inline JSON schema definition"
+            }
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "description": "Required output fields",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "failure_modes": {
+      "type": "array",
+      "description": "Known failure modes and how to handle them",
+      "items": {
+        "type": "object",
+        "required": ["condition", "resolution"],
+        "properties": {
+          "condition": {
+            "type": "string",
+            "description": "Failure condition (e.g., 'No Solidity files found')"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "How to resolve the failure"
+          },
+          "recoverable": {
+            "type": "boolean",
+            "description": "Whether this failure is recoverable automatically"
+          }
+        }
+      }
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version (e.g., 1.0.0)"
+    },
+    "max_token_budget": {
+      "type": "integer",
+      "default": 6000,
+      "minimum": 1000,
+      "maximum": 10000,
+      "description": "Maximum token budget for skill execution (default: 6000, hard limit: 10000)"
+    },
+    "deprecated": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this skill is deprecated"
+    },
+    "replaces": {
+      "type": "string",
+      "description": "Name of skill this one replaces (if applicable)"
+    },
+    "deprecates": {
+      "type": "array",
+      "description": "List of skills this one deprecates",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sunset_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when deprecated skill will be removed (YYYY-MM-DD)"
+    },
+    "disable_model_invocation": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, only users can invoke this skill (not agents/orchestrators)"
+    },
+    "tags": {
+      "type": "array",
+      "description": "Searchable tags for skill discovery",
+      "items": {
+        "type": "string"
+      }
+    },
+    "references": {
+      "type": "array",
+      "description": "External documentation or context files",
+      "items": {
+        "type": "string"
+      }
+    },
+    "write_boundaries": {
+      "type": "array",
+      "description": "Directories this skill is allowed to write to",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

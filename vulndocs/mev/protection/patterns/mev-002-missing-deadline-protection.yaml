@@ -1,0 +1,941 @@
+# =============================================================================
+# PATTERN: mev-002-missing-deadline-protection
+# =============================================================================
+#
+# COMPREHENSIVE MEV PROTECTION - Missing Deadline Protection
+#
+# This pattern detects swap/trade functions vulnerable to stale transaction
+# execution due to either:
+#   1. Missing deadline parameter entirely (no expiration timestamp)
+#   2. Deadline parameter exists but is NOT enforced (no require check)
+#
+# Consolidates minimal patterns into a single comprehensive pattern.
+#
+# =============================================================================
+
+id: mev-002
+vulndoc: mev/protection
+name: "Missing Deadline Protection"
+
+description: |
+  ## What This Detects
+
+  Swap and trade functions without deadline protection that allow transactions
+  to be executed at stale prices, enabling value loss through delayed execution
+  during network congestion or volatile market conditions.
+
+  This pattern detects BOTH vulnerability types:
+  1. **No deadline parameter** - Function lacks expiration timestamp parameter
+  2. **Unenforced deadline parameter** - Parameter exists but isn't validated
+
+  ## Why It's Dangerous
+
+  Without deadline protection, users are vulnerable to stale transaction execution:
+
+  ### Stale Transaction Attack Mechanism:
+  1. **Submission**: User submits swap at current market price (e.g., ETH = $2000)
+  2. **Network Congestion**: Transaction sits in mempool for hours or days
+  3. **Price Movement**: Market price changes significantly (e.g., ETH = $1500)
+  4. **Delayed Execution**: Validators include transaction at stale price
+  5. **User Loss**: User receives unfavorable exchange rate from outdated transaction
+
+  ### Distinction from Slippage Protection:
+  - **Slippage**: Protects against price impact DURING execution (MEV sandwich attacks)
+  - **Deadline**: Protects against execution at STALE prices (time-based expiration)
+  - **Both Required**: Comprehensive MEV protection needs BOTH mechanisms
+
+  ### Real-World Impact:
+  - **Gas Price Spikes (2020-2021)**: Transactions sat in mempool for days
+  - **Network Congestion**: DeFi Summer, NFT mints, market crashes
+  - **User Losses**: Transactions execute at significantly worse prices
+  - **Standard Protection**: Uniswap, SushiSwap require deadline parameter
+  - **Audit Finding**: Common medium severity finding in DeFi audits
+
+  ### Vulnerability Variants:
+
+  **Variant 1 - No Deadline Parameter:**
+  ```solidity
+  // ❌ VULNERABLE: No deadline parameter
+  contract VulnerableSwap1 {
+      function swap(
+          address tokenIn,
+          address tokenOut,
+          uint256 amountIn,
+          uint256 minAmountOut
+      ) external {
+          // ❌ No deadline parameter
+          // Transaction can execute at ANY time, even weeks later at stale price
+          uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+          require(amountOut >= minAmountOut, "Slippage");
+          // User has slippage protection but no time-based expiration
+      }
+  }
+  ```
+
+  **Variant 2 - Deadline Parameter but Not Enforced:**
+  ```solidity
+  // ❌ VULNERABLE: Parameter exists but NOT checked
+  contract VulnerableSwap2 {
+      function swap(
+          address tokenIn,
+          address tokenOut,
+          uint256 amountIn,
+          uint256 minAmountOut,
+          uint256 deadline  // ✓ Parameter exists
+      ) external {
+          // ❌ Deadline is NEVER checked!
+          uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+          require(amountOut >= minAmountOut, "Slippage");
+          // Should have: require(block.timestamp <= deadline, "Expired");
+      }
+  }
+  ```
+
+  **Real Attack Scenario:**
+  ```
+  Day 1, 10:00 AM: User submits swap(1000 USDC → ETH, minOut=0.5 ETH, deadline=?)
+    - Current ETH price: $2000
+    - Expected output: ~0.5 ETH
+    - Slippage protection: minOut = 0.5 ETH
+    - ❌ NO DEADLINE PROTECTION
+
+  Day 1-3: Network congestion (gas price spike to 500+ gwei)
+    - Transaction sits in mempool for 3 days
+    - User's transaction is valid but unincluded
+
+  Day 3, 2:00 PM: ETH price drops to $1500 (-25%)
+    - Validator includes transaction (gas price normalizes)
+    - Swap executes: 1000 USDC → 0.66 ETH
+    - Transaction SUCCEEDS (meets minOut = 0.5 ETH)
+    - But market rate should give: 1000 USDC / $1500 = 0.66 ETH
+
+  User Loss Calculation:
+    - Expected at original price: 0.5 ETH (worth $750 now)
+    - Received: 0.66 ETH (worth $990 now)
+    - ✓ Slippage protection prevented sandwich attack
+    - ❌ But user LOST OPPORTUNITY: could have gotten 1000/1500 = 0.66 ETH if they
+        cancelled and resubmitted, OR 0.66 ETH * (2000/1500) = 0.88 ETH in original terms
+    - Effective loss: ~$330 due to stale execution
+
+  With Deadline (e.g., block.timestamp + 15 minutes):
+    - Transaction would revert after 15 minutes
+    - User could cancel/resubmit at current market price
+    - Protected from stale execution
+  ```
+
+  **Safe Implementation:**
+  ```solidity
+  // ✅ SAFE: Deadline parameter AND enforcement
+  contract SafeSwap {
+      function swap(
+          address tokenIn,
+          address tokenOut,
+          uint256 amountIn,
+          uint256 minAmountOut,
+          uint256 deadline
+      ) external {
+          require(block.timestamp <= deadline, "Transaction expired"); // ✓ Enforced
+          uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+          require(amountOut >= minAmountOut, "Slippage too high");
+      }
+  }
+  ```
+
+  ## Detection Logic
+
+  This pattern triggers when ALL of these conditions are met:
+  1. Function is swap-like (`swap_like: true` - detects swaps semantically)
+  2. Function is externally callable (`visibility: [public, external]`)
+  3. Function is NOT read-only (`is_view: false`, `is_pure: false`)
+  4. **EITHER**:
+     - `risk_missing_deadline_parameter: true` (no parameter at all)
+     - `risk_missing_deadline_check: true` (parameter exists but not validated)
+
+  ## Builder Properties Used
+
+  - `swap_like`: Semantic swap detection (name + token calls + parameters)
+  - `risk_missing_deadline_parameter`: swap_like AND NOT has_deadline_parameter
+  - `risk_missing_deadline_check`: has_deadline_parameter AND NOT has_deadline_check
+  - `has_deadline_parameter`: Detects deadline, expiry, expiration params
+  - `has_deadline_check`: Validates deadline with block.timestamp in require
+  - `visibility`: Function accessibility
+  - `is_view`, `is_pure`: State mutability
+
+  ## Real-World Examples
+
+  ### Historical Network Congestion Events:
+  - **Ethereum Gas Crisis (2020-2021)**: 500+ gwei gas prices, multi-day delays
+  - **DeFi Summer (2020)**: Yield farming launches caused mempool congestion
+  - **NFT Mint Events**: CryptoPunks, Bored Apes caused gas spikes
+  - **Black Thursday (March 2020)**: ETH crash + congestion = stale liquidations
+  - **The Merge (Sept 2022)**: Network upgrades caused transaction delays
+
+  ### Reference Implementations:
+  - **Uniswap V2 Router**: Mandatory deadline parameter on all swaps
+  - **Uniswap V3 Router**: Same deadline requirement
+  - **SushiSwap**: Identical deadline enforcement
+  - **1inch Aggregator**: Enforces deadline on all routes
+  - **Curve Finance**: Deadline on token swaps
+
+  ### Audit Findings:
+  - Trail of Bits: "Missing deadline allows stale transaction execution"
+  - OpenZeppelin: "Swap functions should include deadline parameter"
+  - ConsenSys Diligence: "Transaction expiration missing"
+  - Quantstamp: "No deadline protection on swap operations"
+
+scope: Function
+
+lens:
+  - Ordering
+  - ExternalInfluence
+
+severity: medium
+
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be swap-like function (semantic detection)
+    - property: swap_like
+      op: eq
+      value: true
+
+    # Must be externally callable (entry points for stale execution)
+    - property: visibility
+      op: in
+      value: [public, external]
+
+  # At least ONE must match (OR logic) - Either vulnerability variant
+  any:
+    # Variant 1: No deadline parameter at all
+    - property: risk_missing_deadline_parameter
+      op: eq
+      value: true
+
+    # Variant 2: Deadline parameter exists but NOT enforced
+    - property: risk_missing_deadline_check
+      op: eq
+      value: true
+
+  # NONE can match (NOT logic) - Exclude safe patterns
+  none:
+    # Exclude view/pure functions (read-only, no execution risk)
+    - property: is_view
+      op: eq
+      value: true
+
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [mev-swap]
+  true_positives: 19
+  true_negatives: 8
+  false_positives: 6
+  false_negatives: 1
+  edge_cases: 6
+  precision: 0.76
+  recall: 0.95
+  variation_score: 1.00
+  last_tested: "2025-12-31"
+  notes: |
+    Pattern successfully detects BOTH missing deadline parameter AND unenforced parameter.
+
+    Test Results Summary:
+    - Status: READY (precision 76%, recall 95%, variation 100%)
+    - 19/20 true positives detected (95% recall)
+    - 8/13 true negatives correctly ignored
+    - 6 false positives (24% FP rate)
+    - 1 false negative: exchange(int128,...) - Curve-style with int128 params
+
+    Test Coverage:
+    ✓ TP: Swaps without deadline parameter (7 cases)
+    ✓ TP: Swaps with deadline parameter but NO validation (7 cases)
+    ✓ TN: Swaps with proper deadline enforcement (8 cases)
+    ✓ Edge: Internal/view/pure functions (3 cases)
+    ✓ Edge: Alternative time mechanisms (block.number) (1 case)
+    ✓ Edge: Reentrancy guard vs deadline (1 case)
+    ✓ Variation: deadline/expiry/expiration/validUntil naming (5 cases - 100% detected)
+
+    Known Limitations (Builder):
+    - swap_like flags view/pure functions → FP on calculateSwapOutput, computeSwapRatio
+    - swap_like misses int128 parameters → FN on Curve exchange(int128,...)
+    - has_deadline_check misses custom error patterns → FP on swapWithCustomError
+    - has_deadline_check may not detect validUntil checks → FP on swapWithValidUntilSafe
+    - Contract disambiguation issue → FP on safe swapExactTokensForTokens overload
+
+    Improvement Recommendations:
+    1. Add is_view/is_pure: false to none conditions (reduces FP from 6 to 4)
+    2. Enhance has_deadline_check to detect custom error if-revert patterns
+    3. Enhance has_deadline_parameter to recognize validUntil parameter
+    4. Enhance swap_like to handle int128 parameter types (Curve compatibility)
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Stale Transaction Execution During Congestion"
+    description: |
+      Network congestion causes transaction to sit in mempool for extended period.
+      Price moves significantly, but transaction still executes at stale price.
+    preconditions:
+      - User submits swap without deadline protection
+      - Network experiences congestion (high gas prices, block full)
+      - Market price changes significantly during delay
+      - Transaction eventually included when congestion clears
+    steps:
+      - User broadcasts swap: 1000 USDC → WETH (no deadline)
+      - Network congestion: gas price spikes to 500+ gwei
+      - User's transaction sits in mempool (insufficient gas price)
+      - Market moves: ETH price drops 25% over 3 days
+      - Congestion clears: gas price normalizes
+      - Validator includes user's stale transaction
+      - Swap executes at significantly worse price than current market
+      - User receives unfavorable exchange rate
+    impact: |
+      User loses opportunity cost due to stale execution. While slippage
+      protection prevents sandwich attacks, lack of deadline allows execution
+      at outdated prices. Loss magnitude depends on market movement during
+      delay period (often 2-10% in volatile markets).
+
+  - name: "Unenforced Parameter Attack"
+    description: |
+      Function signature includes deadline parameter but doesn't enforce it,
+      giving false sense of security to users and frontends.
+    preconditions:
+      - Function signature includes deadline parameter
+      - Frontend/SDK passes reasonable deadline value (e.g., +15 minutes)
+      - Contract does NOT validate deadline in code
+      - Users assume protection exists based on parameter name
+    steps:
+      - User calls swap(tokenIn, tokenOut, amountIn, minOut, deadline=now+15min)
+      - User expects transaction to expire after 15 minutes
+      - Contract IGNORES deadline parameter (no require check)
+      - Network congestion delays transaction for 2 days
+      - Market moves significantly during delay
+      - Transaction executes after deadline has passed
+      - User discovers stale execution post-transaction
+    impact: |
+      False sense of security leads to unexpected losses. Users and frontends
+      trust the parameter naming convention, but contract doesn't enforce it.
+      More insidious than missing parameter because it's harder to detect.
+      Users believe they have protection when they don't.
+
+  - name: "Gas Price War Delay"
+    description: |
+      During popular events (NFT mints, token launches), users submit swaps
+      that get delayed for hours/days due to gas price competition.
+    preconditions:
+      - Popular event causes gas price war (e.g., NFT mint)
+      - Users submit swap transactions with normal gas prices
+      - Market is volatile due to event-related trading
+      - Transactions delayed until event concludes
+    steps:
+      - NFT mint announced: gas price spikes to 1000+ gwei
+      - User submits swap at 100 gwei (standard price)
+      - Transaction sits unconfirmed for 6+ hours
+      - NFT mint completes: gas price drops to normal
+      - User's swap executes at post-event prices
+      - Market has moved significantly during mint frenzy
+    impact: |
+      Event-driven gas spikes can delay swaps for hours. Without deadline
+      protection, swaps execute after event concludes at significantly
+      different prices. Common during DeFi launches, NFT mints, airdrops.
+
+  - name: "MEV Bundle Delay Attack"
+    description: |
+      MEV searchers can intentionally delay transactions to profit from
+      stale execution when market moves favorably.
+    preconditions:
+      - Swap lacks deadline protection
+      - MEV searcher has block-building influence
+      - Market price movement creates opportunity
+    steps:
+      - User submits swap at current price
+      - MEV searcher identifies swap transaction
+      - Searcher monitors market for favorable price movement
+      - Market moves in direction that benefits delayed execution
+      - Searcher includes transaction in block at optimal time
+      - User executes at stale price; searcher profits from timing
+    impact: |
+      Advanced MEV attack where searchers profit by controlling transaction
+      inclusion timing. Deadline protection prevents this by enforcing
+      expiration. Less common than sandwich attacks but growing concern
+      with MEV-Boost and block builder centralization.
+
+verification_steps:
+  - "Identify swap-like operation (function name, token transfers, AMM calls)"
+  - "Check function visibility (must be public/external for stale execution risk)"
+  - "Locate deadline parameter in function signature:"
+  - "  - Common names: deadline, expiry, expiration"
+  - "  - Type: Usually uint256 representing Unix timestamp"
+  - "  - NOT duration: deadline should be absolute timestamp, not relative seconds"
+  - "If parameter EXISTS, verify enforcement:"
+  - "  - Search for require(block.timestamp <= deadline) or equivalent"
+  - "  - Check for require(deadline >= block.timestamp) (same logic, reversed)"
+  - "  - Confirm revert on deadline expiration (not silent failure)"
+  - "  - Verify deadline is checked BEFORE swap execution (not after)"
+  - "If parameter MISSING, confirm vulnerability (no expiration at all)"
+  - "Check for alternative time-based protections:"
+  - "  - Nonce-based expiration (rare, usually insufficient)"
+  - "  - Block number expiration (less reliable than timestamp)"
+  - "  - Oracle timestamp validation (rare, not standard)"
+  - "Assess stale execution risk based on volatility and gas patterns"
+  - "Review frontend/SDK integration (does UI set reasonable deadline?)"
+  - "Confirm deadline is user-controlled or has reasonable default (e.g., +15 min)"
+
+fix_recommendations:
+  - name: "Add Deadline Parameter and Enforcement (Recommended)"
+    description: |
+      Add deadline parameter and enforce it with require statement using
+      block.timestamp. This is the industry-standard approach used by all
+      major DEXs (Uniswap, SushiSwap, Curve, 1inch).
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      // ✅ SAFE: Deadline parameter AND enforcement
+      contract SafeSwap {
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline  // ← Add deadline parameter (Unix timestamp)
+          ) external returns (uint256) {
+              // ✅ CRITICAL: Enforce deadline BEFORE swap execution
+              require(
+                  block.timestamp <= deadline,
+                  "Transaction expired"
+              );
+
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              require(
+                  amountOut >= minAmountOut,
+                  "Slippage too high"
+              );
+
+              return amountOut;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // AMM swap logic here
+              // ...
+          }
+      }
+
+      // Frontend usage example:
+      // const deadline = Math.floor(Date.now() / 1000) + 900; // +15 minutes
+      // await contract.swap(tokenIn, tokenOut, amountIn, minOut, deadline);
+
+  - name: "Use Established Router Contracts"
+    description: |
+      Delegate swap execution to battle-tested routers like Uniswap V2/V3 Router
+      which have built-in deadline protection (and slippage protection).
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+
+      contract RouterBasedSwap {
+          IUniswapV2Router02 public immutable router;
+
+          constructor(address _router) {
+              router = IUniswapV2Router02(_router);
+          }
+
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline
+          ) external {
+              address[] memory path = new address[](2);
+              path[0] = tokenIn;
+              path[1] = tokenOut;
+
+              // ✅ Uniswap Router enforces deadline protection
+              router.swapExactTokensForTokens(
+                  amountIn,
+                  minAmountOut,
+                  path,
+                  msg.sender,
+                  deadline  // Enforced by router
+              );
+          }
+      }
+
+  - name: "Comprehensive MEV Protection (Deadline + Slippage)"
+    description: |
+      Combine deadline protection with slippage protection for comprehensive
+      MEV defense. Both mechanisms serve different purposes and should be used
+      together.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract ComprehensiveMEVProtection {
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline
+          ) external returns (uint256) {
+              // ✅ Deadline prevents STALE execution
+              require(
+                  block.timestamp <= deadline,
+                  "Transaction expired"
+              );
+
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              // ✅ Slippage prevents SANDWICH attacks
+              require(
+                  amountOut >= minAmountOut,
+                  "Slippage too high"
+              );
+
+              return amountOut;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // Swap logic
+              // ...
+          }
+      }
+
+      /*
+      PROTECTION COMPARISON:
+
+      Without both protections:
+      ❌ Vulnerable to sandwich attacks (no slippage)
+      ❌ Vulnerable to stale execution (no deadline)
+
+      With slippage only:
+      ✅ Protected from sandwich attacks
+      ❌ Vulnerable to stale execution during congestion
+
+      With deadline only:
+      ❌ Vulnerable to sandwich attacks
+      ✅ Protected from stale execution
+
+      With both (RECOMMENDED):
+      ✅ Protected from sandwich attacks
+      ✅ Protected from stale execution
+      ✅ Comprehensive MEV defense
+      */
+
+  - name: "Deadline with Reasonable Bounds"
+    description: |
+      Enforce reasonable deadline bounds to prevent excessively long expiration
+      periods that defeat the purpose of deadline protection.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract BoundedDeadlineSwap {
+          // Maximum deadline: 1 hour from now
+          uint256 public constant MAX_DEADLINE_DURATION = 1 hours;
+
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline
+          ) external returns (uint256) {
+              // ✅ Enforce deadline in future
+              require(
+                  block.timestamp <= deadline,
+                  "Transaction expired"
+              );
+
+              // ✅ Prevent excessively long deadlines
+              require(
+                  deadline <= block.timestamp + MAX_DEADLINE_DURATION,
+                  "Deadline too far in future"
+              );
+
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              require(
+                  amountOut >= minAmountOut,
+                  "Slippage too high"
+              );
+
+              return amountOut;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // Swap logic
+              // ...
+          }
+      }
+
+      /*
+      RECOMMENDED DEADLINE DURATIONS:
+      - Normal swaps: 15 minutes (900 seconds)
+      - Time-sensitive: 5 minutes (300 seconds)
+      - Limit orders: Longer acceptable (hours/days)
+      - High volatility: Shorter deadlines (1-5 minutes)
+      */
+
+  - name: "Event-Based Deadline Tracking"
+    description: |
+      Emit events when swaps are rejected due to deadline expiration to help
+      users and frontends track stale transactions.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract EventTrackedSwap {
+          event SwapExecuted(
+              address indexed user,
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 amountOut,
+              uint256 deadline
+          );
+
+          event SwapExpired(
+              address indexed user,
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 deadline,
+              uint256 currentTimestamp
+          );
+
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline
+          ) external returns (uint256) {
+              if (block.timestamp > deadline) {
+                  // ✅ Emit event for monitoring/analytics
+                  emit SwapExpired(
+                      msg.sender,
+                      tokenIn,
+                      tokenOut,
+                      amountIn,
+                      deadline,
+                      block.timestamp
+                  );
+
+                  revert("Transaction expired");
+              }
+
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              require(amountOut >= minAmountOut, "Slippage too high");
+
+              emit SwapExecuted(
+                  msg.sender,
+                  tokenIn,
+                  tokenOut,
+                  amountIn,
+                  amountOut,
+                  deadline
+              );
+
+              return amountOut;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // Swap logic
+              // ...
+          }
+      }
+
+  - name: "Documentation and Best Practices"
+    description: |
+      Document recommended deadline values and usage patterns for users
+      and frontend developers.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      /// @title Safe Swap Contract
+      /// @notice Swap tokens with comprehensive MEV protection
+      /// @dev Implements deadline and slippage protection
+      contract DocumentedSwap {
+          /// @notice Swap exact input tokens for output tokens
+          /// @param tokenIn Input token address
+          /// @param tokenOut Output token address
+          /// @param amountIn Exact amount of input tokens
+          /// @param minAmountOut Minimum acceptable output (slippage protection)
+          /// @param deadline Unix timestamp after which transaction expires
+          /// @dev Recommended deadline: block.timestamp + 900 (15 minutes)
+          /// @dev For volatile markets, use shorter deadline: + 300 (5 minutes)
+          /// @dev For limit orders, longer deadlines acceptable
+          /// @return amountOut Actual amount of output tokens received
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline
+          ) external returns (uint256 amountOut) {
+              require(block.timestamp <= deadline, "Transaction expired");
+
+              amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              require(amountOut >= minAmountOut, "Slippage too high");
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // Implementation
+              // ...
+          }
+      }
+
+      /*
+      BEST PRACTICES FOR DEADLINE:
+
+      1. Use absolute timestamps (not relative durations)
+         ✅ deadline = block.timestamp + 900 (Unix timestamp)
+         ❌ deadline = 900 (ambiguous - duration or timestamp?)
+
+      2. Set reasonable defaults
+         - 15 minutes for normal swaps
+         - 5 minutes for high-frequency trading
+         - 1 hour maximum for safety
+
+      3. Check deadline BEFORE swap execution
+         ✅ require(block.timestamp <= deadline);
+         ❌ Don't check after swap (wastes gas)
+
+      4. Use <= not < for deadline comparison
+         ✅ block.timestamp <= deadline (includes exact deadline)
+         ⚠️  block.timestamp < deadline (excludes exact deadline)
+
+      5. Combine with slippage protection
+         Both mechanisms serve different purposes
+
+      6. Emit events for monitoring
+         Track expired transactions for analytics
+
+      7. Document recommended values
+         Help users and frontends set appropriate deadlines
+      */
+
+related_patterns:
+  - mev-001  # Missing slippage protection (related MEV pattern)
+  - oracle-003  # Oracle manipulation (price-related)
+  - ext-001  # Unprotected external calls (general external interaction)
+
+owasp_mapping:
+  - SC02  # Oracle Manipulation (price staleness via delayed execution)
+  - SC04  # Input Validation (missing deadline validation)
+
+cwe_mapping:
+  - CWE-20   # Improper Input Validation
+  - CWE-754  # Improper Check for Unusual or Exceptional Conditions
+  - CWE-672  # Operation on a Resource after Expiration or Release
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations
+semantic_ops:
+  has_all_operations:
+    - TRANSFERS_VALUE_OUT  # Swaps move value/tokens
+  # Note: swap_like property already provides semantic detection
+
+# Behavioral Signature
+behavioral_signature:
+  pattern: "T:in→S:swap→T:out"
+  description: "Token transfer in → swap operation → token transfer out (without deadline validation)"
+
+# Tier A/B Matching
+tier_match:
+  tier_a:
+    all:
+      - property: swap_like
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+    any:
+      - property: risk_missing_deadline_parameter
+        value: true
+      - property: risk_missing_deadline_check
+        value: true
+    none:
+      - property: is_view
+        value: true
+      - property: is_pure
+        value: true
+  tier_b:
+    any: []
+  aggregation:
+    mode: tier_a_only  # Purely deterministic pattern
+
+# Multi-Agent Verification Hints
+verification_agents:
+  pattern:
+    require_all_conditions: true
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 5.0  # Medium exploitability
+  consensus:
+    min_agents_agree: 2
+    mode: voting
+
+# =============================================================================
+# ADDITIONAL METADATA
+# =============================================================================
+
+# Pattern Classification
+pattern_type: vulnerability
+quality_indicator: false
+
+# Auditor Guidance
+auditor_notes: |
+  This pattern identifies swap functions vulnerable to stale transaction execution.
+
+  ⚠️ VULNERABILITY INDICATORS:
+  - Function performs token swaps (swap_like: true)
+  - No deadline parameter (risk_missing_deadline_parameter: true)
+  - OR parameter exists but not enforced (risk_missing_deadline_check: true)
+
+  VERIFICATION CHECKLIST:
+  1. Confirm function performs swaps (check token transfers, AMM calls)
+  2. Check for deadline parameter (deadline, expiry, expiration)
+  3. If parameter exists, verify enforcement:
+     - Search for require(block.timestamp <= deadline)
+     - Check if parameter is actually used in logic
+     - Verify check happens BEFORE swap execution
+  4. Assess stale execution risk:
+     - Public/external functions are exposed to stale execution
+     - Internal functions may be safe if callers are protected
+  5. Review frontend integration:
+     - Does UI calculate and pass deadline?
+     - Are default deadline values reasonable (15 minutes)?
+  6. Check for comprehensive MEV protection:
+     - Should have BOTH deadline AND slippage protection
+
+  FALSE POSITIVE SCENARIOS:
+  - Internal helper functions (not externally callable)
+  - View/pure functions (read-only, no state changes)
+  - Swaps protected by alternative time mechanisms (rare)
+  - Router-based swaps where router enforces deadline
+
+  SEVERITY ASSESSMENT:
+  - MEDIUM: Standard for swaps without deadline protection
+  - HIGH: High-value swaps or volatile market conditions
+  - LOW: Internal swaps or those with alternative protections
+
+  COMMON MISUNDERSTANDINGS:
+  - Deadline ≠ Slippage: They protect against different attack vectors
+  - Both Required: Comprehensive MEV protection needs both
+  - Absolute Timestamp: Deadline should be Unix timestamp, not duration
+
+# Real-World Reference Implementations
+reference_implementations:
+  - name: "Uniswap V2 Router"
+    url: "https://github.com/Uniswap/v2-periphery/blob/master/contracts/UniswapV2Router02.sol"
+    description: "Industry-standard router with mandatory deadline on all swaps"
+
+  - name: "Uniswap V3 SwapRouter"
+    url: "https://github.com/Uniswap/v3-periphery/blob/main/contracts/SwapRouter.sol"
+    description: "Advanced router with deadline enforcement"
+
+  - name: "SushiSwap Router"
+    url: "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/UniswapV2Router02.sol"
+    description: "Fork of Uniswap V2 Router with identical deadline protection"
+
+  - name: "Curve StableSwap"
+    url: "https://github.com/curvefi/curve-contract"
+    description: "Stablecoin AMM with deadline parameter"
+
+  - name: "1inch AggregationRouterV5"
+    url: "https://github.com/1inch/limit-order-protocol"
+    description: "DEX aggregator with mandatory deadline enforcement"
+
+# Historical Network Events
+network_events:
+  - name: "Ethereum Gas Crisis (2020-2021)"
+    description: "Gas prices regularly exceeded 500 gwei, causing multi-day transaction delays"
+    impact: "Thousands of swaps executed at stale prices"
+
+  - name: "DeFi Summer (2020)"
+    description: "Yield farming launches caused extreme mempool congestion"
+    impact: "Transactions delayed for hours during protocol launches"
+
+  - name: "NFT Mint Events"
+    description: "Popular NFT mints (CryptoPunks, BAYC) caused gas spikes to 1000+ gwei"
+    impact: "Swap transactions delayed until after mint completion"
+
+  - name: "Black Thursday (March 2020)"
+    description: "ETH crash + network congestion caused liquidation delays"
+    impact: "DeFi protocols failed due to transaction timing issues"
+
+  - name: "The Merge (September 2022)"
+    description: "Network upgrade caused temporary transaction delays"
+    impact: "Swaps executed after upgrade at different prices"
+
+# Success Metrics
+success_metrics:
+  has_deadline_parameter: "Parameter exists in function signature"
+  has_deadline_check: "Parameter is enforced with require(block.timestamp <= deadline)"
+  has_slippage_parameter: "Additional MEV protection (should have both)"
+  recommended_deadline: "15 minutes (900 seconds) for normal swaps"
+  max_deadline: "1 hour maximum for safety"
+  check_before_execution: "Deadline checked BEFORE swap, not after"
+
+# Migration Notes
+migration_notes: |
+  This pattern is a COMPREHENSIVE version of minimal deadline patterns.
+
+  CONSOLIDATION:
+  - Single pattern covers both missing parameter AND unenforced parameter
+  - Detailed attack scenarios and fix recommendations
+  - Better auditor guidance and verification steps
+  - Consistent with mev-001 (slippage protection pattern)
+  - Easier maintenance and testing
+
+  USAGE:
+  - This pattern (mev-002) is the production-ready version
+  - Old minimal patterns should be deprecated
+  - Use this pattern for all deadline-related vulnerability detection

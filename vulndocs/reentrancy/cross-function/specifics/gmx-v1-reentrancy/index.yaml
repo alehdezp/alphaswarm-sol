@@ -1,0 +1,454 @@
+# =============================================================================
+# SPECIFIC EXPLOIT DOCUMENTATION: GMX V1 Reentrancy + Accounting Bug
+# =============================================================================
+# Category: reentrancy/cross-function
+# This document describes the actual GMX v1 exploit from July 2025
+# =============================================================================
+
+id: gmx-v1-reentrancy
+name: "GMX v1 Reentrancy + Circular Accounting Bug"
+parent_category: cross-function
+subcategory_parent: reentrancy/cross-function
+
+description: |
+  GMX v1 suffered a $42M exploit on July 9, 2025, exploiting cross-function
+  reentrancy combined with circular accounting dependencies between order
+  execution, position tracking, and GLP token valuation.
+
+  The vulnerability spanned multiple functions that updated shared state
+  non-atomically: executeDecreaseOrder() refunded ETH to untrusted addresses,
+  triggering attacker callbacks that re-entered position management functions
+  before global accounting was updated. This created a temporal inconsistency
+  where the system believed short positions were opened at artificially
+  depressed prices, inflating AUM calculations and GLP token values.
+
+  The attacker exploited the gap between:
+  1. Short position list being updated
+  2. Global average short price NOT being updated
+  3. AUM calculations reading the stale global price
+  4. GLP tokens being valued based on inflated AUM
+
+severity: critical
+loss_usd: 42000000
+chain: arbitrum
+date: 2025-07-09
+attacker_type: Sophisticated contract-based attacker exploiting protocol economics
+
+# =============================================================================
+# DETECTION: Graph Signals for VKG Detection
+# =============================================================================
+
+detection:
+  graph_signals:
+    # Primary reentrancy signal: state write after external call
+    - property: state_write_after_external_call
+      expected: true
+      critical: true
+      description: "External call (ETH refund) before state updates in position tracking"
+      confidence: 0.95
+
+    # Key signal: cross-function shared state
+    - property: shared_state_variables
+      expected: ">1"
+      critical: true
+      description: "Multiple functions updating global position list and average price without atomicity"
+      confidence: 0.90
+
+    # Safety signal: reentrancy guard presence
+    - property: has_reentrancy_guard
+      expected: false
+      critical: true
+      description: "While nonReentrant existed on executeDecreaseOrder(), it only guards same-contract reentrancy. Cross-function reentrancy via callback not protected."
+      confidence: 0.92
+
+    # Function visibility
+    - property: visibility
+      expected: ["public", "external"]
+      critical: true
+      description: "executeDecreaseOrder() is external, callable by order-keeper but accepts arbitrary account parameter"
+      confidence: 0.88
+
+    # External call with value transfer (the callback trigger)
+    - property: has_call_with_value
+      expected: true
+      critical: true
+      description: "call{value: gasRefund}() transfers ETH to potentially malicious contracts"
+      confidence: 0.93
+
+  # Semantic operations that characterize the vulnerability
+  semantic_operations:
+    # The refund mechanism that enables reentrancy
+    - TRANSFERS_VALUE_OUT
+    - CALLS_EXTERNAL
+    - WRITES_SHARED_STATE
+
+    # Position tracking operations across functions
+    - READS_SHARED_STATE
+    - MODIFIES_CRITICAL_STATE
+    - MODIFIES_PRICE_ORACLE
+
+    # AUM/GLP interdependency
+    - READS_AUM_CALCULATION
+    - MODIFIES_TOKEN_SUPPLY
+
+  # Behavioral signature: The attack sequence
+  behavioral_signatures:
+    # executeDecreaseOrder context: refund triggers callback
+    - "X:call->F:fallback->R:shared->M:state"
+
+    # Cross-function attack: F1 updates position, F2 reads stale price
+    - "F1:M:poslist|M:state->F2:R:price->F3:M:aum->F4:M:gltokens"
+
+    # The temporal vulnerability: gap between two state updates
+    - "W:poslist->X:out(callback)->R:price(stale)->M:aum"
+
+  # Operation sequences that expose the vulnerability
+  operation_sequences:
+    vulnerable:
+      # executeDecreaseOrder context
+      - "R:poslist -> M:poslist -> X:call{value} -> (callback triggers)"
+      - "F1: M:poslist | M:price -> X:out | F2: R:price (reads stale)"
+      - "M:shortpositions -> X:refund -> R:globalprice(stale) -> M:aum -> M:glpvalue"
+
+    safe:
+      # Atomic state updates before external calls
+      - "M:poslist -> M:price(both in one tx) -> X:out"
+      - "M:shortpositions -> M:globalprice -> M:aum(all before external call) -> X:out"
+      - "CEI: All state updates -> X:out(no callback opportunity)"
+      - "Cross-contract locks: Global reentrancy guard across all position-affecting functions"
+
+# =============================================================================
+# ATTACK MECHANISM: How The Exploit Works
+# =============================================================================
+
+attack_mechanism:
+  preconditions:
+    - "executeDecreaseOrder() accepts attacker-controlled account parameter"
+    - "Refund mechanism uses call{value:} to attacker's contract address"
+    - "Global short position list and average price updated separately (non-atomically)"
+    - "AUM calculation depends on global average price"
+    - "GLP token value depends on AUM"
+    - "executeDecreaseOrder() has nonReentrant but only same-contract scope"
+
+  attack_steps:
+    - step: 1
+      description: "Attacker crafts a malicious contract with a receive() fallback"
+      semantic_ops: ["CREATES_CONTRACT"]
+
+    - step: 2
+      description: "Attacker calls executeDecreaseOrder() with their contract as _account parameter"
+      semantic_ops: ["CALLS_EXTERNAL"]
+
+    - step: 3
+      description: "executeDecreaseOrder() updates the global short position list, removing the position"
+      semantic_ops: ["MODIFIES_CRITICAL_STATE", "WRITES_SHARED_STATE"]
+
+    - step: 4
+      description: "Function executes call{value: gasRefund}(attacker_contract) to refund gas"
+      semantic_ops: ["TRANSFERS_VALUE_OUT", "CALLS_EXTERNAL"]
+
+    - step: 5
+      description: "Attacker's receive() fallback fires before state settlement"
+      semantic_ops: ["EXECUTES_CALLBACK"]
+
+    - step: 6
+      description: "Within callback, attacker re-enters other position management functions"
+      semantic_ops: ["CALLS_EXTERNAL", "REENTERS_CONTEXT"]
+
+    - step: 7
+      description: "Attacker reads global short price (not yet updated from step 3)"
+      semantic_ops: ["READS_SHARED_STATE", "READS_ORACLE"]
+
+    - step: 8
+      description: "Attacker's callback operations manipulate positions while price is stale, artificially lowering BTC short price from $109,515 to $1,913"
+      semantic_ops: ["MODIFIES_CRITICAL_STATE", "MODIFIES_PRICE_ORACLE"]
+
+    - step: 9
+      description: "Stale price feeds into AUM calculation, inflating Assets Under Management"
+      semantic_ops: ["READS_ORACLE", "MODIFIES_TOKEN_VALUATION"]
+
+    - step: 10
+      description: "GLP tokens now valued higher based on inflated AUM"
+      semantic_ops: ["MODIFIES_TOKEN_VALUATION"]
+
+    - step: 11
+      description: "Attacker calls GLP redemption functions with overvalued tokens"
+      semantic_ops: ["CALLS_EXTERNAL", "TRANSFERS_VALUE_OUT"]
+
+    - step: 12
+      description: "Attacker drains $42M by redeeming overvalued GLP tokens"
+      semantic_ops: ["TRANSFERS_VALUE_OUT", "DRAINS_VALUE"]
+
+  circular_dependency_chain:
+    - "Short position list changes -> (gap here) -> Global average price doesn't update"
+    - "Global average price (stale) feeds into AUM calculation"
+    - "AUM feeds into GLP token valuation"
+    - "Overvalued GLP tokens can be redeemed for underlying assets"
+
+# =============================================================================
+# EXPLOITS: Real-World Evidence
+# =============================================================================
+
+exploits:
+  - id: gmx-v1-arbitrum-2025
+    name: "GMX V1 Arbitrum Reentrancy Exploit"
+    date: 2025-07-09
+    loss_usd: 42000000
+    protocol: GMX v1
+    chain: arbitrum
+    recovery: 37500000  # White hat returned $37.5M, kept $5M bounty
+    description: |
+      Attacker exploited cross-function reentrancy in GMX v1's position management
+      system. By manipulating the executeDecreaseOrder() refund mechanism and
+      exploiting non-atomic state updates across order execution and price tracking,
+      the attacker created a temporal accounting inconsistency.
+
+      The attack leveraged a circular dependency:
+      1. Short position updates without immediate price updates
+      2. Stale global average price fed into AUM calculations
+      3. Inflated AUM led to overvalued GLP tokens
+      4. Attacker redeemed overvalued GLP for $42M
+
+    attack_flow:
+      - "Call executeDecreaseOrder with malicious contract as account parameter"
+      - "Receive reentrancy window during ETH refund (call{value:} to attacker's contract)"
+      - "Within callback, manipulate positions and read stale global price"
+      - "Circular dependency: low price -> high AUM -> high GLP value"
+      - "Redeem overvalued GLP tokens to drain protocol"
+
+    postmortem_url: "https://www.halborn.com/blog/post/explained-the-gmx-hack-july-2025"
+    incident_timeline:
+      - date: 2025-07-09
+        event: "GMX v1 exploited for $42M via reentrancy + accounting bug"
+      - date: 2025-07-09
+        event: "GMX pauses trading and engages with attacker"
+      - date: 2025-07-10
+        event: "Attacker returns $37.5M (white hat bounty recovery)"
+
+    vulnerable_functions:
+      - "executeDecreaseOrder()"
+      - "Position management functions (reentrant-callable)"
+      - "GLP valuation and redemption logic"
+
+    vulnerable_operations:
+      - "call{value:} refund to untrusted contract address"
+      - "Non-atomic updates: position list -> (gap) -> global average price"
+      - "AUM calculation reading stale global price state"
+
+# =============================================================================
+# FALSE POSITIVE INDICATORS
+# =============================================================================
+
+false_positive_indicators:
+  - property: "has_global_reentrancy_guard"
+    description: "If a global reentrancy lock guards ALL position-affecting functions"
+    confidence: 0.95
+
+  - property: "atomic_state_updates"
+    description: "If position list and global price are updated atomically in same transaction context"
+    confidence: 0.92
+
+  - property: "no_external_call_with_value"
+    description: "If no ETH/value transfers occur to untrusted addresses (no callback trigger)"
+    confidence: 0.90
+
+  - property: "no_cross_function_shared_state"
+    description: "If functions don't share mutable state variables"
+    confidence: 0.88
+
+  - property: "refund_to_trusted_address"
+    description: "If refunds go to whitelisted/trusted addresses only, not msg.sender"
+    confidence: 0.85
+
+  - property: "all_functions_internal"
+    description: "If vulnerable functions are internal, not external/public"
+    confidence: 0.95
+
+# =============================================================================
+# REMEDIATION: How to Fix
+# =============================================================================
+
+fixes:
+  recommended:
+    - id: fix-atomic-updates
+      priority: critical
+      description: "Ensure all related state updates happen atomically before any external calls"
+      implementation: |
+        Update BOTH position list AND global average price in the same transaction block
+        before making any call{value:} transfers. This closes the temporal gap that
+        enables the attack.
+
+    - id: fix-global-reentrancy
+      priority: critical
+      description: "Implement a global reentrancy guard across all position-affecting functions"
+      implementation: |
+        Create a contract-level mutex or flag that prevents reentrancy into ANY position-
+        management function. The nonReentrant modifier only guards same-function reentrancy;
+        cross-function reentrancy requires broader protection.
+
+    - id: fix-refund-mechanism
+      priority: high
+      description: "Refund to trusted address instead of arbitrary _account parameter"
+      implementation: |
+        Instead of:
+          call{value: gasRefund}(_account)  // Attacker can pass any contract
+
+        Use:
+          call{value: gasRefund}(msg.sender)  // Refund caller, not arbitrary address
+
+        This eliminates the callback trigger mechanism.
+
+    - id: fix-oracle-staleness
+      priority: high
+      description: "Cache global state at function entry to detect manipulation"
+      implementation: |
+        At the start of executeDecreaseOrder(), cache the current global average price.
+        After external calls, verify that price hasn't changed unexpectedly or use
+        cached value instead of re-reading.
+
+    - id: fix-accounting-dependency
+      priority: medium
+      description: "Break circular dependencies in accounting calculations"
+      implementation: |
+        Decouple GLP valuation from real-time price feeds. Use snapshot-based accounting
+        that's updated only in controlled, protected functions. Prevent attacker from
+        triggering price-feed reevaluations via callbacks.
+
+  effectiveness_matrix:
+    - fix_id: fix-atomic-updates
+      prevents_gmx_exploit: true
+      effort: "Medium"
+      testing_difficulty: "High"
+      notes: "Requires careful sequencing; must update all interdependent state before external calls"
+
+    - fix_id: fix-global-reentrancy
+      prevents_gmx_exploit: true
+      effort: "Low"
+      testing_difficulty: "Low"
+      notes: "This is the most direct fix - prevents cross-function reentrancy by design"
+
+    - fix_id: fix-refund-mechanism
+      prevents_gmx_exploit: true
+      effort: "Low"
+      testing_difficulty: "Low"
+      notes: "Eliminates the callback trigger; simple parameter change"
+
+    - fix_id: fix-oracle-staleness
+      prevents_gmx_exploit: true
+      effort: "Medium"
+      testing_difficulty: "Medium"
+      notes: "Adds state caching/verification; prevents price manipulation"
+
+    - fix_id: fix-accounting-dependency
+      prevents_gmx_exploit: true
+      effort: "High"
+      testing_difficulty: "High"
+      notes: "Architectural change; may require protocol redesign"
+
+# =============================================================================
+# PATTERN LINKAGE
+# =============================================================================
+
+related_patterns:
+  - pattern_id: vm-001-classic
+    linkage_type: exact_match
+    description: "Classic reentrancy detection applies to the initial vulnerability vector"
+
+  - pattern_id: vm-003-cross-function
+    linkage_type: exact_match
+    description: "Cross-function reentrancy pattern directly models this exploit"
+
+  - pattern_id: vm-004-callback-guard
+    linkage_type: partial_match
+    description: "Call guard pattern prevents untrusted callbacks"
+
+  - pattern_id: ac-001-access-control
+    linkage_type: partial_match
+    description: "Applies to parameter validation (_account should be trusted)"
+
+related_vulnerability_categories:
+  - reentrancy/classic
+  - reentrancy/cross-function
+  - oracle-manipulation
+  - accounting-inconsistency
+
+# =============================================================================
+# HISTORICAL CONTEXT
+# =============================================================================
+
+historical_context:
+  prior_vulnerability_2022: |
+    In 2022, GMX had a bug bounty for issues with non-atomic updates of global
+    short size and average global short price ($1M bounty paid). The fix for that
+    vulnerability introduced THIS new vulnerability, which went unaudited.
+    This is a critical lesson: fixes must be security-audited.
+
+  why_it_existed: |
+    The vulnerability persisted because:
+    1. nonReentrant modifier was assumed to be sufficient (wrong for cross-function)
+    2. Circular dependencies between order execution, position tracking, and pricing weren't documented
+    3. The refund mechanism wasn't designed to resist malicious callbacks
+    4. The fix for the 2022 issue wasn't audited for new attack vectors
+
+  lessons_learned:
+    - "Global reentrancy guards are needed for protocols with complex order-book accounting"
+    - "Refunds should go to trusted addresses, not arbitrary parameters"
+    - "Atomic state updates are critical when interdependent logic exists"
+    - "Fixing one vulnerability can introduce another (audit the fix)"
+    - "Cross-contract reentrancy is harder to reason about than same-function reentrancy"
+
+# =============================================================================
+# VKGJKGRAPH DETECTION SPECIFICS
+# =============================================================================
+
+vkg_detection:
+  trigger_conditions:
+    - |
+      FUNCTION properties:
+      - visibility = public OR external
+      - state_write_after_external_call = true
+      - shared_state_variables > 1
+      - has_reentrancy_guard = false
+      - calls_external_with_value = true
+
+    - |
+      OPERATION SEQUENCES:
+      - TRANSFERS_VALUE_OUT (via call{value:})
+      - Followed by callback opportunity
+      - Followed by READS_SHARED_STATE (attacker's re-entrant call)
+      - MODIFIES_CRITICAL_STATE observed in attacker's callback
+
+  high_confidence_signals:
+    - "state_write_after_external_call AND shared_state_variables > 1 AND NOT has_reentrancy_guard"
+    - "calls_external_with_value to dynamic address"
+    - "Cross-function shared state accessed in callbacks"
+
+  lower_confidence_signals:
+    - "nonReentrant present but only on some functions (false confidence)"
+    - "Global lock present but not on all state-modifying functions"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+cve_id: ~  # No official CVE assigned yet
+solodit_id: gmx-v1-reentrancy-2025
+sources:
+  - title: "GMX V1 Hack Analysis - SolidityScan"
+    url: "https://blog.solidityscan.com/gmx-v1-hack-analysis-ed0ab0c0dd0f"
+  - title: "Explained: The GMX Hack (July 2025) - Halborn"
+    url: "https://www.halborn.com/blog/post/explained-the-gmx-hack-july-2025"
+  - title: "How GMX V1 Lost $42 Million to a Reentrancy Attack - Quill Audits"
+    url: "https://www.quillaudits.com/blog/hack-analysis/how-gmx-lost-42m"
+  - title: "GMX V1 Exploit Analysis - DEV Community"
+    url: "https://dev.to/abdelrahman_elsaheir_11d8/gmx-v1-exploit-analysis-how-a-42m-classic-reentrancy-attack-unfolded-9o1"
+  - title: "GMX Incident Analysis - CertiK"
+    url: "https://www.certik.com/resources/blog/gmx-incident-analysis"
+  - title: "Sherlock — GMX Exchange Hack Explained"
+    url: "https://sherlock.xyz/post/gmx-exchange-hack-explained"
+
+version: "1.0"
+last_updated: "2026-01-09"
+status: "published"
+token_estimate: 2800
+context_cache_key: "gmx-v1-reentrancy-v1"

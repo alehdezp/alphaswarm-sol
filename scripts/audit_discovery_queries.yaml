@@ -1,0 +1,259 @@
+# Audit Discovery Query Pack
+# Reusable Exa queries for discovering post-2025 audits and contests
+# Used by /vrs-discover skill with knowledge-aggregation-worker
+#
+# Schema version: 1.0
+# Created: 2026-01-29 (Phase 7.2-03)
+
+schema_version: "1.0"
+updated: "2026-01-29"
+purpose: "Post-2025 audit and contest discovery for corpus expansion"
+
+# Query categories organized by vulnerability type and technology focus
+query_categories:
+  # Core vulnerability classes (OWASP Smart Contract Top 10 2025 aligned)
+  access_control:
+    description: "Access control and authorization vulnerabilities"
+    queries:
+      - query: "smart contract audit finding access control vulnerability 2025 2026"
+        priority: high
+        expected_sources: [audit_firms, bug_bounty, contests]
+      - query: "missing modifier exploit solidity audit report 2025"
+        priority: medium
+        expected_sources: [audit_firms, research]
+      - query: "role escalation smart contract audit critical finding"
+        priority: high
+        expected_sources: [audit_firms, bug_bounty]
+      - query: "EIP-7702 smart account delegation vulnerability audit"
+        priority: high
+        expected_sources: [audit_firms, research]
+        notes: "New Pectra upgrade - smart account vulnerabilities"
+
+  oracle_manipulation:
+    description: "Oracle and price feed vulnerabilities"
+    queries:
+      - query: "price oracle manipulation exploit audit report 2025 2026"
+        priority: high
+        expected_sources: [audit_firms, postmortem]
+      - query: "L2 sequencer uptime feed grace period vulnerability audit"
+        priority: high
+        expected_sources: [audit_firms, chainlink]
+        notes: "Key for exemplar pattern oracle-l2-sequencer-grace-missing"
+      - query: "TWAP manipulation flash loan attack audit finding"
+        priority: high
+        expected_sources: [audit_firms, research]
+      - query: "Chainlink oracle stale price vulnerability audit 2025"
+        priority: medium
+        expected_sources: [audit_firms, chainlink]
+
+  reentrancy:
+    description: "Reentrancy and callback vulnerabilities"
+    queries:
+      - query: "cross-function reentrancy audit finding 2025 2026 critical"
+        priority: high
+        expected_sources: [audit_firms, contests]
+      - query: "read-only reentrancy exploit audit report solidity"
+        priority: high
+        expected_sources: [audit_firms, research]
+      - query: "callback reentrancy ERC777 ERC721 audit vulnerability"
+        priority: medium
+        expected_sources: [audit_firms, research]
+
+  logic_errors:
+    description: "Business logic and state machine vulnerabilities"
+    queries:
+      - query: "logic error smart contract audit critical finding 2025 2026"
+        priority: high
+        expected_sources: [audit_firms, contests]
+      - query: "invariant violation exploit audit report DeFi"
+        priority: high
+        expected_sources: [audit_firms, postmortem]
+      - query: "state machine vulnerability audit finding solidity"
+        priority: medium
+        expected_sources: [audit_firms, research]
+      - query: "liquidation logic error audit finding lending protocol"
+        priority: high
+        expected_sources: [audit_firms, postmortem]
+
+  arithmetic:
+    description: "Arithmetic and precision vulnerabilities"
+    queries:
+      - query: "rounding error precision loss audit finding 2025 DeFi"
+        priority: high
+        expected_sources: [audit_firms, postmortem]
+      - query: "integer overflow unchecked solidity audit vulnerability"
+        priority: medium
+        expected_sources: [audit_firms, research]
+      - query: "share inflation attack first depositor audit finding"
+        priority: high
+        expected_sources: [audit_firms, research]
+
+  # New architecture-specific (post-2025)
+  uniswap_v4:
+    description: "Uniswap v4 hooks and singleton vulnerabilities"
+    queries:
+      - query: "Uniswap v4 hooks audit vulnerability finding 2025 2026"
+        priority: high
+        expected_sources: [audit_firms, openzeppelin, contests]
+        notes: "New Uniswap v4 singleton architecture"
+      - query: "Uniswap v4 singleton reentrancy hook audit"
+        priority: high
+        expected_sources: [audit_firms, research]
+      - query: "pool key validation hook bypass Uniswap audit"
+        priority: medium
+        expected_sources: [audit_firms, contests]
+      - query: "beforeSwap afterSwap hook vulnerability audit finding"
+        priority: medium
+        expected_sources: [audit_firms, research]
+
+  l2_sequencer:
+    description: "L2 sequencer and chain-specific vulnerabilities"
+    queries:
+      - query: "L2 sequencer downtime exploit oracle grace period 2025"
+        priority: high
+        expected_sources: [audit_firms, chainlink, postmortem]
+      - query: "Arbitrum sequencer feed integration vulnerability audit"
+        priority: high
+        expected_sources: [audit_firms, chainlink]
+      - query: "Optimism sequencer uptime feed audit finding critical"
+        priority: high
+        expected_sources: [audit_firms, chainlink]
+      - query: "Base chain sequencer oracle vulnerability audit"
+        priority: medium
+        expected_sources: [audit_firms, research]
+      - query: "L2 bridge sequencer dependency audit finding"
+        priority: medium
+        expected_sources: [audit_firms, research]
+
+  pectra_eip7702:
+    description: "Pectra upgrade and EIP-7702 smart accounts"
+    queries:
+      - query: "EIP-7702 smart account audit vulnerability 2025 2026"
+        priority: high
+        expected_sources: [audit_firms, research, ethereum]
+        notes: "Pectra upgrade introduces account abstraction changes"
+      - query: "Pectra upgrade security audit finding Ethereum"
+        priority: high
+        expected_sources: [audit_firms, ethereum, research]
+      - query: "EOA code execution EIP-7702 vulnerability audit"
+        priority: medium
+        expected_sources: [audit_firms, research]
+      - query: "smart account delegation chain attack audit"
+        priority: medium
+        expected_sources: [audit_firms, research]
+
+  restaking:
+    description: "Restaking and LST/LRT vulnerabilities"
+    queries:
+      - query: "restaking protocol audit vulnerability 2025 EigenLayer"
+        priority: high
+        expected_sources: [audit_firms, contests]
+      - query: "liquid restaking token LRT audit finding critical"
+        priority: high
+        expected_sources: [audit_firms, research]
+      - query: "AVS operator slashing vulnerability audit"
+        priority: medium
+        expected_sources: [audit_firms, research]
+
+  cross_chain:
+    description: "Cross-chain and bridge vulnerabilities"
+    queries:
+      - query: "cross-chain bridge exploit audit 2025 2026"
+        priority: high
+        expected_sources: [audit_firms, postmortem]
+      - query: "LayerZero message replay vulnerability audit"
+        priority: high
+        expected_sources: [audit_firms, contests]
+      - query: "Wormhole bridge audit finding critical 2025"
+        priority: medium
+        expected_sources: [audit_firms, research]
+
+# Platform-specific discovery sources
+discovery_sources:
+  solodit:
+    description: "Aggregated audit findings from multiple firms"
+    base_url: "https://solodit.xyz"
+    queries:
+      - query: "site:solodit.xyz high critical finding 2025"
+        priority: high
+      - query: "site:solodit.xyz reentrancy finding 2025"
+        priority: high
+      - query: "site:solodit.xyz oracle manipulation 2025"
+        priority: high
+      - query: "site:solodit.xyz access control 2025"
+        priority: high
+    notes: "Solodit aggregates findings from Code4rena, Sherlock, Immunefi, etc."
+
+  code4rena:
+    description: "Code4rena audit contest findings"
+    base_url: "https://code4rena.com"
+    queries:
+      - query: "site:code4rena.com high finding 2025"
+        priority: high
+      - query: "site:code4rena.com critical severity 2025 report"
+        priority: high
+    notes: "Major audit contest platform with public findings"
+
+  sherlock:
+    description: "Sherlock audit contest findings"
+    base_url: "https://sherlock.xyz"
+    queries:
+      - query: "site:sherlock.xyz audit finding high 2025"
+        priority: high
+      - query: "Sherlock audit contest critical vulnerability 2025"
+        priority: high
+    notes: "Audit contest platform with insurance-backed findings"
+
+  immunefi:
+    description: "Immunefi bug bounty disclosures"
+    base_url: "https://immunefi.com"
+    queries:
+      - query: "Immunefi bug bounty disclosure 2025 critical"
+        priority: high
+      - query: "site:immunefi.com vulnerability disclosure 2025"
+        priority: medium
+    notes: "Major bug bounty platform with disclosed vulnerabilities"
+
+  audit_firms:
+    description: "Major audit firm public reports"
+    firms:
+      - name: "Trail of Bits"
+        base_url: "https://github.com/trailofbits/publications"
+        query: "Trail of Bits audit report 2025 solidity"
+      - name: "OpenZeppelin"
+        base_url: "https://blog.openzeppelin.com"
+        query: "OpenZeppelin audit 2025 solidity vulnerability"
+      - name: "Consensys Diligence"
+        base_url: "https://consensys.io/diligence/audits"
+        query: "Consensys Diligence audit 2025 finding"
+      - name: "Halborn"
+        base_url: "https://halborn.com"
+        query: "Halborn security audit 2025 critical"
+      - name: "Certik"
+        base_url: "https://www.certik.com"
+        query: "Certik audit report 2025 vulnerability"
+      - name: "Spearbit"
+        base_url: "https://spearbit.com"
+        query: "Spearbit audit 2025 high finding"
+
+# CVE tracking for 2025+
+cve_sources:
+  description: "CVE and vulnerability databases"
+  queries:
+    - query: "CVE 2025 smart contract solidity vulnerability"
+      priority: high
+    - query: "CVE 2026 Ethereum DeFi exploit"
+      priority: high
+    - query: "NVD smart contract vulnerability 2025"
+      priority: medium
+
+# Execution configuration
+execution:
+  batch_size: 5
+  rate_limit_ms: 1000
+  max_results_per_query: 20
+  dedup_strategy: "url_normalize"
+  model_routing:
+    url_filtering: "haiku-4.5"
+    synthesis: "sonnet-4.5"
+    categorization: "sonnet-4.5"

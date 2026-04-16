@@ -1,0 +1,302 @@
+# Worktree Snapshot Policy Configuration
+# Defines required snapshot stages per scenario category for E2E testing
+#
+# This policy is machine-readable and used by:
+# - scripts/e2e/validate_snapshot_matrix.py
+# - scripts/e2e/full_testing_runner.sh
+# - /vrs-full-testing orchestrator
+#
+# Version: 1.0.0
+# Last Updated: 2026-01-30
+
+version: "1.0.0"
+
+# Canonical snapshot stages in execution order
+stages:
+  - id: pre-graph
+    description: Before BSKG construction
+    artifacts:
+      - "contracts/**/*.sol"
+      - "foundry.toml"
+      - "hardhat.config.*"
+      - ".env"
+    order: 1
+
+  - id: post-graph
+    description: After BSKG construction
+    artifacts:
+      - ".vrs/graph/*.toon"
+      - ".vrs/graph/*.json"
+      - ".vrs/logs/build-*.log"
+    order: 2
+
+  - id: post-context
+    description: After protocol context pack generation
+    artifacts:
+      - ".vrs/context/*.yaml"
+      - ".vrs/context/evidence/*.json"
+    order: 3
+
+  - id: post-patterns
+    description: After pattern matching
+    artifacts:
+      - ".vrs/patterns/*.yaml"
+      - ".vrs/patterns/matches/*.json"
+    order: 4
+
+  - id: post-agents
+    description: After specialized agent runs
+    artifacts:
+      - ".vrs/agents/*.json"
+      - ".vrs/agents/transcripts/*.md"
+    order: 5
+
+  - id: post-debate
+    description: After multi-agent debate
+    artifacts:
+      - ".vrs/debate/*.json"
+      - ".vrs/debate/verdicts/*.yaml"
+    order: 6
+
+  - id: post-report
+    description: After final report generation
+    artifacts:
+      - ".vrs/reports/*.md"
+      - ".vrs/reports/metrics.yaml"
+      - ".vrs/evidence-pack.tar.gz"
+    order: 7
+
+# Category to required stages mapping
+categories:
+  reentrancy:
+    description: Reentrancy and external call hazards
+    scenario_range: [S01, S10]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for CEI ordering and cross-function analysis
+
+  access_control:
+    description: Access control and authorization
+    scenario_range: [S11, S20]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for role and permission analysis
+
+  oracle_pricing:
+    description: Oracle and pricing vulnerabilities
+    scenario_range: [S21, S30]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for oracle dependency and price manipulation analysis
+
+  upgradeability:
+    description: Upgradeability and initialization
+    scenario_range: [S31, S38]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for proxy pattern and takeover analysis
+
+  flash_loans:
+    description: Flash loans and economic exploits
+    scenario_range: [S39, S46]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for economic model and value flow analysis
+
+  governance:
+    description: Governance and timelock
+    scenario_range: [S47, S54]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for governance role and proposal analysis
+
+  erc_standards:
+    description: ERC standards and token edge cases
+    scenario_range: [S55, S62]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for token interface and callback analysis
+
+  math_precision:
+    description: Math and precision errors
+    scenario_range: [S63, S70]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for arithmetic and decimal analysis
+
+  cross_contract:
+    description: Cross-contract and protocol interaction
+    scenario_range: [S71, S75]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for multi-contract flow analysis
+
+  mev:
+    description: MEV and market abuse
+    scenario_range: [S76, S79]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Full pipeline required for transaction ordering and slippage analysis
+
+  parser_edge:
+    description: Parser and tool integration edge cases
+    scenario_range: [S80, S84]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-report
+    optional_stages:
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+    rationale: Parser stress tests focus on graph construction and error handling
+
+  tier_c_labels:
+    description: Tier-C label-dependent detection
+    scenario_range: [S85, S89]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-report
+    optional_stages:
+      - post-agents
+      - post-debate
+    rationale: Label tests focus on graph, context, and pattern stages
+
+  workflow_resume:
+    description: Human-auditor workflow simulations
+    scenario_range: [S90, S92]
+    required_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+    rationale: Resume testing requires all stages to verify checkpoint functionality
+
+  failure_injection:
+    description: Failure injection scenarios
+    scenario_range: [S93, S95]
+    required_stages:
+      - pre-graph
+      - post-report
+    conditional_stages:
+      - post-graph
+      - post-context
+      - post-patterns
+    optional_stages:
+      - post-agents
+      - post-debate
+    rationale: Error handling tests may fail before reaching later stages
+
+# Validation rules
+validation:
+  # All scenarios must have at least these stages
+  minimum_stages:
+    - pre-graph
+    - post-report
+
+  # Stages must be captured in order
+  enforce_order: true
+
+  # Maximum time between stage captures (seconds)
+  max_stage_gap: 3600
+
+  # Require checksum verification
+  verify_checksums: true
+
+  # Fail validation if any required stage is missing
+  strict_mode: true
+
+# Snapshot storage configuration
+storage:
+  base_path: "${ALPHASWARM_WORKTREE_BASE:-/tmp/alphaswarm-tests}"
+  snapshot_format: tar.gz
+  compression_level: 6
+  retention_days: 30
+  max_snapshots_per_run: 100
+
+  # File naming template
+  path_template: "{base_path}/{run_id}/snapshots/{scenario_id}/{stage}.tar.gz"
+
+  # Manifest file location
+  manifest_path: "{base_path}/{run_id}/snapshots/{scenario_id}/manifest.yaml"
+
+# Resume configuration
+resume:
+  # Allow resuming from any stage
+  allow_any_stage: true
+
+  # Verify snapshot integrity before resume
+  verify_before_resume: true
+
+  # Re-run failed stages only
+  retry_failed_only: true
+
+  # Maximum retry attempts per stage
+  max_retries: 3

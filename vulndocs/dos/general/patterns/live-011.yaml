@@ -1,0 +1,19 @@
+id: live-011
+vulndoc: dos/general
+name: Missing Emergency Recovery
+description: Contract lacks emergency withdrawal or pause functions.
+scope: Contract
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_emergency_withdraw
+    op: eq
+    value: false
+  - property: has_emergency_pause
+    op: eq
+    value: false
+  - property: has_privileged_operations
+    op: eq
+    value: true

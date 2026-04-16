@@ -1,0 +1,870 @@
+# =============================================================================
+# PATTERN: reentrancy-002-gmx-cross-function
+# GMX v1 Cross-Function Reentrancy via Circular Accounting Dependencies
+# =============================================================================
+# Detects GMX v1-style cross-function reentrancy where external calls trigger
+# callbacks that re-enter different functions sharing critical state variables,
+# exploiting non-atomic updates and circular dependencies in accounting logic.
+#
+# Source: GMX v1 Exploit Analysis (July 9, 2025) - $42M loss
+# VulnDocs Reference: knowledge/vulndocs/categories/reentrancy/subcategories/cross-function/specifics/gmx-v1-reentrancy/
+# =============================================================================
+
+id: reentrancy-002
+vulndoc: reentrancy/classic
+name: "Cross-Function Reentrancy via Circular Accounting Dependencies"
+
+description: |
+  ## What This Detects
+
+  Cross-function reentrancy where external calls (e.g., refunds, callbacks) trigger
+  attacker callbacks that re-enter DIFFERENT functions sharing critical state,
+  exploiting circular dependencies in accounting logic. Unlike classic reentrancy
+  (same function re-entry), this pattern involves:
+
+  1. Function A updates shared state (position list) and makes external call with value
+  2. External call triggers attacker callback during execution window
+  3. Attacker callback re-enters Function B (different function) that reads same state
+  4. Function B observes stale/inconsistent state (position updated but price not)
+  5. Circular dependency: stale price feeds into AUM → inflates token valuation
+  6. Attacker exploits the gap between interdependent state updates
+
+  ## Why It's Dangerous
+
+  This vulnerability is MORE SUBTLE than classic reentrancy because:
+  - The reentrancy guard on Function A doesn't prevent re-entry into Function B
+  - Interdependent state (position list ↔ global average price ↔ AUM ↔ token value)
+    is updated non-atomically, creating temporal windows
+  - The attack exploits these windows to manipulate price feeds and token valuation
+  - Multiple functions must be protected, not just the one with the external call
+
+  Real-World Impact: GMX v1 (July 2025) - $42M stolen through orchestrated
+  re-entries exploiting circular dependencies between position tracking, price
+  feeds, and GLP token valuation.
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external)
+  2. Function has state_write_after_external_call = true (external call before state update)
+  3. Multiple shared state variables accessed across functions (shared_state_variables > 1)
+  4. External call with value transfer (calls_external_with_value = true)
+  5. NO reentrancy guard protection (has_reentrancy_guard = false)
+  6. Function reads/writes to critical state (positions, balances, prices, AUM)
+  7. NOT view/pure/constructor/initializer function
+
+  **Key Differentiator from Classic Reentrancy**: Cross-function shared state and
+  circular accounting dependencies. Vulnerable to re-entry into OTHER functions,
+  not just same function re-entry.
+
+scope: Function
+lens:
+  - ValueMovement
+  - ExternalInfluence
+  - CrossContractState
+
+severity: critical
+
+# =============================================================================
+# VULNDOCS REFERENCE
+# =============================================================================
+
+vulndocs_reference:
+  category: reentrancy
+  subcategory: cross-function
+  specific_exploit: gmx-v1-reentrancy
+  file_path: knowledge/vulndocs/categories/reentrancy/subcategories/cross-function/specifics/gmx-v1-reentrancy/index.yaml
+
+# =============================================================================
+# MATCH CONDITIONS - SEMANTIC PROPERTIES ONLY
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Must be externally callable
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Core vulnerability signal: State written after external call
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+
+      # Critical signal: Multiple shared state variables across functions
+      - property: shared_state_variables
+        op: gt
+        value: 1
+
+      # External call with value transfer (the callback trigger mechanism)
+      - property: has_call_with_value
+        op: eq
+        value: true
+
+      # Core semantic operations present
+      - has_all_operations:
+          - TRANSFERS_VALUE_OUT
+          - WRITES_SHARED_STATE
+          - MODIFIES_CRITICAL_STATE
+
+    # At least ONE must match (OR logic)
+    any:
+      # Could be position management function
+      - property: modifies_position_state
+        op: eq
+        value: true
+
+      # Or order execution function
+      - property: modifies_order_state
+        op: eq
+        value: true
+
+      # Or any function with circular dependency involvement
+      - property: reads_oracle_price
+        op: eq
+        value: true
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # Safe pattern: Has reentrancy guard
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+      # Safe pattern: Has global reentrancy guard across all affected functions
+      - property: has_global_reentrancy_guard
+        op: eq
+        value: true
+
+      # Not applicable to view/pure functions
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Constructors are initialization-only
+      - property: is_constructor
+        op: eq
+        value: true
+
+      # Initializers are one-time setup
+      - property: is_initializer_function
+        op: eq
+        value: true
+
+      # Safe if refunds go to trusted addresses only (not arbitrary parameters)
+      - property: refund_to_trusted_address
+        op: eq
+        value: true
+
+      # Safe if all related state updates are atomic
+      - property: atomic_state_updates
+        op: eq
+        value: true
+
+# =============================================================================
+# SEMANTIC OPERATIONS FOR BEHAVIORAL DETECTION
+# =============================================================================
+
+semantic_ops:
+  # Operations that characterize cross-function reentrancy
+  has_all_operations:
+    - TRANSFERS_VALUE_OUT          # External call with value (callback trigger)
+    - CALLS_EXTERNAL               # Untrusted callback execution
+    - WRITES_SHARED_STATE          # Updates to cross-function state
+    - MODIFIES_CRITICAL_STATE      # Position/price/AUM updates
+    - READS_SHARED_STATE           # Re-entrant calls read stale state
+
+  sequence_order:
+    # The vulnerable pattern: External call BEFORE state updates
+    before: TRANSFERS_VALUE_OUT
+    after: WRITES_SHARED_STATE
+
+  # Alternative detection via price oracle manipulation
+  or_operations:
+    - READS_ORACLE_PRICE           # Reads price during reentrancy window
+    - MODIFIES_TOKEN_VALUATION     # AUM/token value depends on price
+
+# =============================================================================
+# BEHAVIORAL SIGNATURES - CROSS-FUNCTION ATTACK SEQUENCES
+# =============================================================================
+
+behavioral_signature:
+  # Cross-function reentrancy signature: F1 transfers, callback enters F2, F2 reads stale price
+  primary_pattern: "X:call->F:callback->R:stale_price->M:state"
+  description: |
+    External call triggers callback that enters different function reading stale state.
+    This is more subtle than classic "R:bal→X:out→W:bal" because the reentrancy
+    happens in a DIFFERENT function (cross-function).
+
+  # Circular dependency signature: position update → price gap → AUM → token value
+  circular_dependency: "F1:W:poslist->X:call->(gap)->F2:R:price(stale)->F3:M:aum->F4:M:glpvalue"
+  description: |
+    F1 updates position list, external call creates window, callback re-enters F2 which
+    reads global price (not yet updated), F3 uses stale price for AUM, F4 inflates
+    token valuation. The gap between W:poslist and R:price is the vulnerability.
+
+  # GMX-specific pattern
+  gmx_exploit_pattern: "M:shortpositions->X:refund(call)->R:globalprice(stale)->M:aum"
+  description: |
+    Short position list modified, ETH refund triggers callback, callback reads stale
+    global short price, stale price used in AUM calculation to inflate GLP value.
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Cross-Function Reentrancy via Position Management"
+    description: |
+      Attacker exploits reentrancy window in order execution to manipulate position
+      tracking, creating stale price feeds that inflate token valuation.
+    preconditions:
+      - "Function A (executeDecreaseOrder) updates position list and makes call{value:}"
+      - "Function B (other position functions) reads global position price (shared state)"
+      - "Position list and global average price are NOT updated atomically"
+      - "No global reentrancy guard across all position-affecting functions"
+      - "No protection against arbitrary _account parameter in refund mechanism"
+      - "Circular dependency: AUM calculation depends on global position price"
+    steps:
+      - "Attacker crafts malicious contract with receive() fallback"
+      - "Attacker calls executeDecreaseOrder(account=attacker_contract, ...)"
+      - "Function A: Updates short position list (position removed)"
+      - "Function A: Calls call{value: gasRefund}(attacker_contract) for refund"
+      - "Attacker's receive() fallback executes before state settlement"
+      - "Within callback, attacker calls other position management functions"
+      - "Attacker's calls read global short price (NOT updated yet, still stale)"
+      - "Attacker manipulates positions while price is stale"
+      - "Stale price feeds into AUM calculation (circular dependency)"
+      - "Inflated AUM causes GLP tokens to be overvalued"
+      - "Attacker redeems overvalued GLP tokens to drain protocol"
+    impact: "Complete protocol fund drainage - attacker steals $40M+ through coordinated re-entries"
+
+  - name: "Circular Dependency Exploitation"
+    description: |
+      Attacker exploits the gap between interdependent state updates in accounting.
+    preconditions:
+      - "Multiple functions update related state (positions, prices, AUM, token value)"
+      - "These updates are not atomic - gaps exist between them"
+      - "Price feeds depend on position state"
+      - "Token valuation depends on price feeds"
+    steps:
+      - "Attacker identifies circular dependency: positions → prices → AUM → tokens"
+      - "Attacker triggers reentrancy window in position function"
+      - "Attacker calls into price-dependent function during window"
+      - "Price function reads stale position state"
+      - "Stale price propagates through AUM calculation"
+      - "Overvalued tokens enable attacker to drain underlying assets"
+    impact: "Artificial price inflation enabling massive fund theft"
+
+  - name: "Multi-Step Callback Chain"
+    description: |
+      Attacker chains multiple callback levels to manipulate state across many functions.
+    preconditions:
+      - "Multiple external calls with value transfers exist"
+      - "Callbacks can trigger other external calls"
+      - "Circular dependencies exist across 3+ functions"
+    steps:
+      - "Attacker triggers Function A with value transfer"
+      - "Attacker's receive() callback calls Function B"
+      - "Function B has another external call"
+      - "Attacker's second callback calls Function C"
+      - "By third-level callback, attacker has manipulated state in 3 functions"
+      - "Circular dependencies now fully exploited"
+    impact: "Compound manipulation across multiple protocol functions"
+
+# =============================================================================
+# SAFE PATTERNS - REFERENCE IMPLEMENTATIONS
+# =============================================================================
+
+safe_patterns:
+  - name: "CEI Pattern with Multiple State Updates"
+    description: |
+      Checks-Effects-Interactions (CEI) pattern applied to cross-function reentrancy.
+      All interdependent state is updated BEFORE external calls. Critical for protocols
+      with circular dependencies (positions → prices → AUM → token value).
+    code: |
+      contract SafePositionManager {
+          // State variables with interdependencies
+          mapping(bytes32 => Position) public positions;
+          uint256 public globalAveragePrice;
+          uint256 public cachedAUM;
+
+          function executeDecreaseOrder(
+              bytes32 _positionKey,
+              address payable _refundRecipient
+          ) external {
+              // CHECKS: Validate all preconditions
+              require(_positionKey != bytes32(0), "Invalid position");
+              require(_refundRecipient != address(0), "Invalid recipient");
+              require(positions[_positionKey].exists, "Position not found");
+
+              uint256 positionSize = positions[_positionKey].size;
+              uint256 gasRefund = calculateGasRefund();
+
+              // EFFECTS: Update ALL interdependent state ATOMICALLY
+              // This is the critical part - MUST all happen before external call
+              delete positions[_positionKey];  // Remove position
+              globalAveragePrice = recalculateGlobalPrice();  // Update price
+              cachedAUM = calculateAUM(globalAveragePrice);  // Update AUM using new price
+
+              // INTERACTIONS: External call LAST, when all state is consistent
+              // Callbacks cannot exploit stale state because everything is updated
+              (bool success, ) = _refundRecipient.call{value: gasRefund}("");
+              require(success, "Refund failed");
+          }
+
+          // Helper function to recalculate global price
+          function recalculateGlobalPrice() internal view returns (uint256) {
+              // Uses all current positions to calculate average price
+              // Will return updated price if positions were modified above
+              // ... calculation logic
+          }
+
+          function calculateAUM(uint256 _priceSnapshot) internal view returns (uint256) {
+              // AUM based on CURRENT price, not stale price
+              // Because price was updated in EFFECTS phase
+              // ... calculation logic
+          }
+      }
+
+    semantic_operations: |
+      - WRITES_SHARED_STATE: globalAveragePrice update happens BEFORE external call
+      - MODIFIES_CRITICAL_STATE: cachedAUM updated from current price
+      - TRANSFERS_VALUE_OUT: External call happens AFTER all state updates
+      - Behavioral signature: W:state->W:price->W:aum->X:call (SAFE)
+      - NOT the vulnerable: X:call->W:state pattern
+
+  - name: "Global Reentrancy Guard (OpenZeppelin ReentrancyGuard)"
+    description: |
+      Contract-level mutex preventing re-entry into ANY protected function.
+      Essential when multiple functions share state and make external calls.
+      Must be applied to ALL affected functions, not just the one with external call.
+    code: |
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+      contract SafePositionManager is ReentrancyGuard {
+          mapping(bytes32 => Position) public positions;
+          uint256 public globalPrice;
+
+          // Apply nonReentrant to EVERY function that:
+          // 1. Makes external calls with value
+          // 2. Reads/writes shared state
+          // 3. Could be called by attacker during callback
+
+          function executeDecreaseOrder(bytes32 _positionKey, address payable _refund)
+              external
+              nonReentrant  // Prevents re-entry into ANY nonReentrant function
+          {
+              require(positions[_positionKey].exists, "Position not found");
+
+              delete positions[_positionKey];
+              globalPrice = recalculatePrice();
+
+              // External call is safe - callbacks cannot re-enter ANY nonReentrant function
+              (bool success, ) = _refund.call{value: msg.value}("");
+              require(success, "Refund failed");
+          }
+
+          // This read-only function MUST ALSO be protected
+          // Otherwise attacker can read stale price during executeDecreaseOrder
+          function getGlobalPrice() external view nonReentrant returns (uint256) {
+              return globalPrice;
+          }
+
+          // This modifying function MUST ALSO be protected
+          // Otherwise attacker can modify state during executeDecreaseOrder
+          function updatePrice(uint256 _newPrice) external nonReentrant {
+              globalPrice = _newPrice;
+          }
+
+          // Private function (internal logic helper) doesn't need nonReentrant
+          // It can only be called from other functions that are protected
+          function recalculatePrice() private view returns (uint256) {
+              // ... calculation
+          }
+
+          // Constructor and initializer don't need nonReentrant
+          // They run once during setup, before any attacker interaction
+          constructor() {
+              globalPrice = 0;
+          }
+      }
+
+    semantic_operations: |
+      - ALL externally-callable functions with shared state access have nonReentrant
+      - TRANSFERS_VALUE_OUT: External call inside nonReentrant modifier
+      - WRITES_SHARED_STATE: All state writes inside nonReentrant
+      - READS_SHARED_STATE: All state reads inside nonReentrant
+      - Behavioral signature: Guard(X:call) + Guard(R:state) = Safe
+
+  - name: "State Snapshot and Verification (Defense in Depth)"
+    description: |
+      Cache critical state before external calls and verify integrity after.
+      Detects callback manipulation. Use alongside atomic updates or guards.
+    code: |
+      contract SafePositionManager {
+          mapping(bytes32 => Position) public positions;
+          uint256 public globalPrice;
+
+          function executeDecreaseOrder(bytes32 _positionKey, address payable _refund)
+              external
+          {
+              // SNAPSHOT: Capture critical state BEFORE external call
+              uint256 priceBeforeCall = globalPrice;
+              uint256 positionCountBefore = countPositions();
+
+              // EFFECTS: Update state
+              require(positions[_positionKey].exists, "Position not found");
+              delete positions[_positionKey];
+
+              // INTERACTIONS: External call
+              uint256 refundAmount = calculateRefund();
+              (bool success, ) = _refund.call{value: refundAmount}("");
+              require(success, "Refund failed");
+
+              // VERIFICATION: Check state integrity AFTER callback
+              require(
+                  globalPrice == priceBeforeCall,
+                  "Price was manipulated during callback"
+              );
+              require(
+                  countPositions() == positionCountBefore - 1,
+                  "Position count inconsistent"
+              );
+
+              // If we reach here, callback didn't manipulate state
+              // This is a detection mechanism, not primary prevention
+          }
+
+          function countPositions() internal view returns (uint256) {
+              // Count current positions
+          }
+      }
+
+    semantic_operations: |
+      - Snapshots prevent but don't fix the vulnerability
+      - Used as detection/reversion layer
+      - Best combined with atomic updates or reentrancy guards
+      - Behavioral signature: Snapshot(R:state)->X:call->Verify(R:state)
+
+# =============================================================================
+# VERIFICATION STEPS
+# =============================================================================
+
+verification_steps:
+  - "Confirm function is externally callable (public/external)"
+  - "Verify state_write_after_external_call = true (external call before state update)"
+  - "Identify the shared state variables accessed by multiple functions"
+  - "Trace which functions read/write these shared variables"
+  - "Check if all these functions are protected by reentrancy guards"
+  - "If protection is only on SOME functions, it's insufficient (need global guard)"
+  - "Identify circular dependencies: does output of Function A feed into Function B?"
+  - "Check for gaps in non-atomic state updates (position → price → AUM → tokens)"
+  - "Verify this is not intentional multi-step pattern or legitimate callback"
+  - "Assess exploitability: can attacker control the callback (msg.sender parameter)?"
+  - "Evaluate impact: are circular dependencies being exploited for value inflation?"
+
+# =============================================================================
+# FIX RECOMMENDATIONS
+# =============================================================================
+
+fix_recommendations:
+  - name: "Atomic State Updates (Recommended)"
+    priority: critical
+    description: |
+      Ensure ALL interdependent state is updated atomically before ANY external calls.
+      This closes the temporal gap that enables the attack. Implements the
+      Checks-Effects-Interactions (CEI) pattern: validate, update ALL state, then external call.
+    example: |
+      // VULNERABLE: position list updated separately from global price
+      function executeDecreaseOrder(address _account, ...) external {
+          // Updates position list (but NOT global price yet)
+          shortPositions.remove(_positionKey);
+
+          // External call creates reentrancy window
+          call{value: gasRefund}(_account);
+
+          // Global price updated AFTER external call (too late!)
+          globalAveragePriceTracker.update(...);
+      }
+
+      // FIXED: Both position AND price updated atomically before external call
+      // This follows Checks-Effects-Interactions (CEI) pattern:
+      function executeDecreaseOrder(address _account, ...) external {
+          // CHECKS: Validate preconditions
+          require(_account != address(0), "Invalid account");
+          require(shortPositions.exists(_positionKey), "Position not found");
+
+          // EFFECTS: Update ALL interdependent state BEFORE external call
+          shortPositions.remove(_positionKey);
+          globalAveragePriceTracker.update(...);  // CRITICAL: Must happen before external call
+          cachedAUM.recalculate();  // Update AUM snapshot
+
+          // INTERACTIONS: External call LAST, after all state settled
+          call{value: gasRefund}(_account);
+      }
+
+    safe_pattern_explanation: |
+      The fixed version implements the Checks-Effects-Interactions (CEI) pattern:
+      - CHECKS: All preconditions validated first
+      - EFFECTS: ALL state updates (position, price, AUM) happen atomically
+      - INTERACTIONS: External call last, after state consistency guaranteed
+
+      This prevents cross-function reentrancy because callbacks cannot observe
+      stale state - all interdependent variables are already updated.
+
+  - name: "Global Reentrancy Guard (Most Direct Fix)"
+    priority: critical
+    description: |
+      Implement a contract-level mutex using OpenZeppelin's ReentrancyGuard that
+      prevents reentrancy into ANY position-affecting function. The nonReentrant
+      modifier blocks re-entry at the contract level, protecting against cross-
+      function reentrancy when applied to ALL externally-callable functions that
+      share state or make external calls.
+    example: |
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+      contract PositionManager is ReentrancyGuard {
+          // VULNERABLE: nonReentrant only on one function leaves others accessible
+          function executeDecreaseOrder(...) external nonReentrant {
+              // This is protected...
+              shortPositions.remove(_positionKey);
+              call{value: gasRefund}(msg.sender);
+          }
+
+          // But this can STILL be re-entered while executeDecreaseOrder is executing!
+          function getPositionPrice() external view returns (uint256) {
+              return globalAveragePriceTracker.price;  // Stale!
+          }
+
+          // FIXED: Apply nonReentrant to ALL functions sharing state
+          function executeDecreaseOrder(...) external nonReentrant {
+              shortPositions.remove(_positionKey);
+              call{value: gasRefund}(msg.sender);
+          }
+
+          function getPositionPrice() external nonReentrant view returns (uint256) {
+              return globalAveragePriceTracker.price;  // Protected!
+          }
+
+          function updatePositionPrice(uint256 _newPrice) external nonReentrant {
+              globalAveragePriceTracker.price = _newPrice;  // Protected!
+          }
+
+          // The KEY: nonReentrant on ALL position-affecting functions
+          // This prevents callbacks from re-entering into ANY of them
+      }
+
+    how_it_works: |
+      OpenZeppelin's ReentrancyGuard uses a reentrancy status flag that tracks
+      whether execution is already inside a nonReentrant function. When a
+      nonReentrant function is called:
+      1. Check if reentrancy guard is already "entered"
+      2. If yes, revert (reentrancy attempt detected)
+      3. If no, set guard to "entered"
+      4. Execute function logic
+      5. Reset guard to "not entered"
+
+      This prevents nested calls into any nonReentrant function, blocking
+      cross-function reentrancy when applied consistently.
+
+  - name: "Restrict Refund Address"
+    priority: critical
+    description: |
+      Refund to trusted addresses only (msg.sender or whitelisted), not arbitrary
+      parameters. This eliminates the callback trigger mechanism.
+    example: |
+      // VULNERABLE: arbitrary _account parameter can be attacker contract
+      function executeDecreaseOrder(address _account, ...) external {
+          call{value: gasRefund}(_account);  // Attacker passes their contract
+      }
+
+      // FIXED: Only refund to msg.sender (the order keeper, trusted)
+      function executeDecreaseOrder(...) external {
+          call{value: gasRefund}(msg.sender);  // Only refund caller, not arbitrary address
+      }
+
+  - name: "State Snapshot and Verification"
+    priority: high
+    description: |
+      Cache critical state at function entry, verify consistency after external calls.
+      Detects if state was manipulated by callback.
+    example: |
+      function executeDecreaseOrder(...) external {
+          // Snapshot critical state BEFORE external call
+          uint256 cachedGlobalPrice = globalAveragePriceTracker.price;
+          uint256 cachedPositionCount = shortPositions.length;
+
+          // Normal execution...
+          shortPositions.remove(_positionKey);
+
+          // External call
+          call{value: gasRefund}(msg.sender);
+
+          // Verify state integrity AFTER external call
+          require(
+              globalAveragePriceTracker.price == cachedGlobalPrice,
+              "State was manipulated during callback"
+          );
+
+          // Update price only if unmanipulated
+          globalAveragePriceTracker.update(...);
+      }
+
+  - name: "Break Circular Dependencies"
+    priority: high
+    description: |
+      Decouple AUM/token valuation from real-time position price feeds. Use
+      snapshot-based accounting updated only in protected functions.
+    example: |
+      // VULNERABLE: AUM calculation reads live price during external call window
+      function getAUM() public view returns (uint256) {
+          return shortPositions.length * globalAveragePriceTracker.price;  // Stale price!
+      }
+
+      // FIXED: AUM uses snapshot, updated only in protected functions
+      uint256 private cachedAUM;  // Snapshot updated only in protected context
+
+      function recalculateAUM() internal {  // Internal, protected
+          cachedAUM = shortPositions.length * globalAveragePriceTracker.price;
+      }
+
+      function getAUM() public view returns (uint256) {
+          return cachedAUM;  // Always returns consistent snapshot
+      }
+
+      function executeDecreaseOrder(...) external nonReentrant {
+          shortPositions.remove(_positionKey);
+          globalAveragePriceTracker.update(...);
+          recalculateAUM();  // Update AUM in protected context
+          call{value: gasRefund}(msg.sender);  // Now safe
+      }
+
+  - name: "Multi-Level Protection"
+    priority: high
+    description: |
+      Combine multiple fixes: atomic updates + global guard + state verification.
+      Defense-in-depth approach for critical protocols.
+    example: |
+      contract SecurePositionManager is ReentrancyGuard {
+          function executeDecreaseOrder(...)
+              external
+              nonReentrant  // Global reentrancy guard
+          {
+              // 1. Snapshot state
+              uint256 priceSnapshot = globalPrice;
+
+              // 2. Atomic updates (both before external call)
+              shortPositions.remove(_key);
+              globalPrice.update(...);
+              cachedAUM.recalculate();
+
+              // 3. Verify before external call
+              require(
+                  globalPrice != priceSnapshot,
+                  "Price should be updated"
+              );
+
+              // 4. Safe to make external call (state fully settled)
+              call{value: gasRefund}(msg.sender);
+
+              // 5. Final verification
+              assert(shortPositions.isConsistent());
+          }
+      }
+
+# =============================================================================
+# EFFECTIVENESS MATRIX
+# =============================================================================
+
+effectiveness_matrix:
+  - fix_id: atomic-state-updates
+    prevents_gmx_exploit: true
+    prevents_cross_function_reentrancy: true
+    effort: "Medium"
+    testing_difficulty: "High"
+    notes: "Requires careful sequencing of all interdependent state updates"
+
+  - fix_id: global-reentrancy-guard
+    prevents_gmx_exploit: true
+    prevents_cross_function_reentrancy: true
+    effort: "Low"
+    testing_difficulty: "Low"
+    notes: "Most direct fix - prevents all re-entry into protected functions"
+
+  - fix_id: restrict-refund-address
+    prevents_gmx_exploit: true
+    prevents_callback_trigger: true
+    effort: "Low"
+    testing_difficulty: "Low"
+    notes: "Eliminates the callback mechanism entirely"
+
+  - fix_id: state-snapshot-verification
+    prevents_gmx_exploit: true
+    detects_manipulation: true
+    effort: "Medium"
+    testing_difficulty: "Medium"
+    notes: "Adds detection layer for callback manipulation"
+
+  - fix_id: break-circular-dependencies
+    prevents_gmx_exploit: true
+    architectural_change: true
+    effort: "High"
+    testing_difficulty: "High"
+    notes: "Requires protocol redesign of accounting logic"
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Pattern created from GMX v1 exploit documentation (July 2025). Awaiting test fixtures."
+
+status: draft
+
+# =============================================================================
+# RELATED PATTERNS
+# =============================================================================
+
+related_patterns:
+  - pattern_id: vm-001-classic
+    linkage_type: parent_pattern
+    description: "Classic reentrancy (same-function) is the foundation; this extends to cross-function"
+
+  - pattern_id: vm-003-read-only-reentrancy
+    linkage_type: sibling
+    description: "Read-only reentrancy where view functions return stale data"
+
+  - pattern_id: logic-001-circular-dependency
+    linkage_type: related
+    description: "Circular dependencies in accounting logic enable this vulnerability"
+
+  - pattern_id: oracle-manipulation-001
+    linkage_type: related
+    description: "Stale oracle prices are the enabler of the circular dependency exploit"
+
+# =============================================================================
+# REAL-WORLD EXPLOITS
+# =============================================================================
+
+exploits:
+  - name: "GMX v1 Arbitrum Reentrancy Exploit"
+    date: "2025-07-09"
+    loss_usd: 42000000
+    chain: "Arbitrum"
+    protocol: "GMX v1"
+    recovery: 37500000
+    description: |
+      Attacker exploited cross-function reentrancy in GMX v1's position management
+      system by:
+
+      1. Calling executeDecreaseOrder() with malicious contract as _account
+      2. Function updates short position list and calls {value:} for refund
+      3. Attacker's receive() callback re-enters position management functions
+      4. Callback observes stale global short price (position updated but price not)
+      5. Attacker manipulates positions while price is stale
+      6. Stale price feeds into AUM, inflating GLP token valuation
+      7. Attacker redeems overvalued GLP for $42M
+
+      Root cause: Non-atomic state updates (position → price → AUM) with external
+      call creating reentrancy window. nonReentrant on executeDecreaseOrder only
+      guarded same-function reentrancy, not cross-function reentrancy.
+
+    attack_flow:
+      - "Call executeDecreaseOrder with malicious contract"
+      - "Receive reentrancy window during ETH refund (call{value:})"
+      - "Within callback, re-enter other position management functions"
+      - "Read stale global short price"
+      - "Manipulate positions while price outdated"
+      - "Circular dependency: low price → high AUM → high GLP value"
+      - "Redeem overvalued GLP for $42M"
+
+    vulnerable_functions:
+      - "executeDecreaseOrder()"
+      - "Position management functions (reentrant-callable)"
+      - "GLP valuation and redemption functions"
+
+    postmortem_url: "https://www.halborn.com/blog/post/explained-the-gmx-hack-july-2025"
+    solodit_url: "https://solodit.xyz/exploits/gmx-v1-reentrancy"
+
+# =============================================================================
+# OWASP & CWE MAPPING
+# =============================================================================
+
+owasp_mapping:
+  - SC05  # Reentrancy (Smart Contract Top 10)
+
+cwe_mapping:
+  - CWE-841   # Improper Enforcement of Behavioral Workflow
+  - CWE-696   # Incorrect Behavior Order
+  - CWE-362   # Concurrent Execution using Shared Resource with Improper Synchronization
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+version: "1.0"
+created: "2026-01-09"
+last_updated: "2026-01-09"
+status: "draft"
+token_estimate: 4200
+context_cache_key: "reentrancy-002-gmx-cross-function-v1"
+
+# References to source documentation
+sources:
+  - title: "GMX V1 Hack Analysis - SolidityScan"
+    url: "https://blog.solidityscan.com/gmx-v1-hack-analysis-ed0ab0c0dd0f"
+  - title: "Explained: The GMX Hack (July 2025) - Halborn"
+    url: "https://www.halborn.com/blog/post/explained-the-gmx-hack-july-2025"
+  - title: "How GMX V1 Lost $42 Million - Quill Audits"
+    url: "https://www.quillaudits.com/blog/hack-analysis/how-gmx-lost-42m"
+  - title: "Sherlock — GMX Exchange Hack Explained"
+    url: "https://sherlock.xyz/post/gmx-exchange-hack-explained"
+
+# Safe pattern references from research
+safe_pattern_references:
+  - title: "Checks-Effects-Interactions (CEI) Pattern - Solidity Patterns"
+    url: "https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html"
+    key_concept: |
+      The CEI pattern is fundamental to preventing reentrancy:
+      1. CHECKS: Validate preconditions
+      2. EFFECTS: Modify all interdependent state
+      3. INTERACTIONS: Make external calls last
+      When applied to cross-function reentrancy, ALL interdependent state must
+      be updated in the EFFECTS phase before any external call.
+
+  - title: "ReentrancyGuard - OpenZeppelin Contracts Documentation"
+    url: "https://docs.openzeppelin.com/contracts/4.x/api/security#ReentrancyGuard"
+    key_concept: |
+      OpenZeppelin's ReentrancyGuard uses a reentrancy status flag that tracks
+      whether execution is already inside a nonReentrant function. Critical for
+      cross-function reentrancy: must apply nonReentrant to ALL functions sharing
+      state or making external calls, not just the function with the external call.
+
+  - title: "Cross-Function Reentrancy - Medium by Phuwanai Thummavet"
+    url: "https://medium.com/valixconsulting/solidity-smart-contract-security-by-example-04-cross-function-reentrancy-de9cbce0558e"
+    key_concept: |
+      Cross-function reentrancy occurs when external calls trigger callbacks that
+      re-enter DIFFERENT functions sharing state. More subtle than classic reentrancy
+      because the vulnerable state is accessed through different entry points. Multiple
+      functions must be protected, and interdependent state updates must be atomic.
+
+  - title: "The Ultimate Guide to Reentrancy - Immunefi"
+    url: "https://medium.com/immunefi/the-ultimate-guide-to-reentrancy-19526f105ac"
+    key_concept: |
+      Comprehensive guide covering reentrancy attack patterns including cross-function
+      scenarios. Emphasizes that reentrancy guards alone are insufficient if applied
+      to only some functions. Defense-in-depth approach recommended: atomic updates +
+      global guards + state verification.

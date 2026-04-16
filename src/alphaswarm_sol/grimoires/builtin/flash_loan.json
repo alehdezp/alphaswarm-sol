@@ -1,0 +1,151 @@
+{
+  "id": "grimoire-flash-loan",
+  "name": "Flash Loan Attack Verification Grimoire",
+  "category": "flash-loan",
+  "subcategories": ["reward-draining", "governance-manipulation", "collateral-manipulation", "price-manipulation"],
+  "skill": "/test-flashloan",
+  "aliases": ["/verify-flashloan", "/check-flashloan", "/test-flash"],
+  "description": "Expert procedure for verifying flash loan attack vulnerabilities. Tests for reward draining, governance manipulation, and collateral/price manipulation via flash loans.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["critical", "defi", "foundry", "fork-testing"],
+
+  "required_context": [
+    "function_code",
+    "token_operations",
+    "balance_checks"
+  ],
+  "optional_context": [
+    "flash_loan_providers",
+    "reward_calculations",
+    "governance_checks"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE reads_user_balance = true AND reads_external_value = true",
+    "FIND functions WHERE calculates_rewards = true OR calculates_shares = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check Flash Loan Properties",
+        "action": "check_graph",
+        "description": "Query VKG for flash loan susceptibility indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["graph_matches", "balance_dependent", "reward_calculations"],
+        "queries": [
+          "reads_user_balance",
+          "calculates_rewards",
+          "calculates_shares",
+          "single_block_operation"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Identify Attack Vectors",
+        "action": "check_property",
+        "description": "Identify specific flash loan attack vectors",
+        "inputs": ["token_operations", "node_properties"],
+        "outputs": ["attack_vectors", "reward_draining_possible", "governance_manipulation_possible"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 3,
+        "name": "Generate Flash Loan Test",
+        "action": "generate_test",
+        "description": "Generate Foundry test with flash loan attack",
+        "inputs": ["function_code", "contract_name", "function_name", "attack_vectors"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_flash_loan",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 4,
+        "name": "Execute Fork Test",
+        "action": "execute_fork",
+        "description": "Run test on mainnet fork with real flash loan providers",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed"],
+        "tools": ["foundry", "anvil"],
+        "command": "forge test --fork-url ${FORK_RPC} --match-test testFlashLoanAttack -vvv",
+        "timeout_seconds": 300,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 5,
+        "name": "Analyze Results",
+        "action": "analyze_results",
+        "description": "Analyze flash loan attack results",
+        "inputs": ["test_output", "graph_matches"],
+        "outputs": ["exploit_successful", "profit_extracted", "analysis_complete"],
+        "timeout_seconds": 30
+      },
+      {
+        "step_number": 6,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["exploit_successful", "profit_extracted", "balance_dependent", "reward_calculations"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "exploit_successful && profit_extracted",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Flash loan attack extracted profit"
+      },
+      {
+        "condition": "exploit_successful",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Flash loan attack successful"
+      },
+      {
+        "condition": "balance_dependent && reward_calculations",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Reward calculation based on spot balance - flash loan susceptible"
+      },
+      {
+        "condition": "governance_manipulation_possible",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Governance voting based on current balance"
+      },
+      {
+        "condition": "!balance_dependent",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "Operations not dependent on spot balances"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": false,
+    "echidna_enabled": false,
+    "medusa_duration": 60,
+    "echidna_duration": 60,
+    "fork_enabled": true,
+    "fork_rpc": "",
+    "fork_block": "latest",
+    "testnet_enabled": false,
+    "testnet_network": "sepolia"
+  },
+
+  "test_templates": {
+    "foundry_flash_loan": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ninterface IERC20 {\n    function balanceOf(address) external view returns (uint256);\n    function transfer(address, uint256) external returns (bool);\n    function approve(address, uint256) external returns (bool);\n}\n\ninterface IFlashLoanProvider {\n    function flashLoan(\n        address receiver,\n        address token,\n        uint256 amount,\n        bytes calldata data\n    ) external;\n}\n\ncontract FlashLoanAttacker {\n    ${CONTRACT_NAME} public target;\n    IFlashLoanProvider public lender;\n    IERC20 public token;\n\n    constructor(address _target, address _lender, address _token) {\n        target = ${CONTRACT_NAME}(_target);\n        lender = IFlashLoanProvider(_lender);\n        token = IERC20(_token);\n    }\n\n    function attack(uint256 amount) external {\n        lender.flashLoan(address(this), address(token), amount, \"\");\n    }\n\n    function onFlashLoan(\n        address initiator,\n        address tokenAddr,\n        uint256 amount,\n        uint256 fee,\n        bytes calldata data\n    ) external returns (bytes32) {\n        // Exploit with borrowed funds\n        token.approve(address(target), amount);\n        target.${FUNCTION_NAME}(amount);\n\n        // Repay flash loan\n        token.transfer(msg.sender, amount + fee);\n\n        return keccak256(\"ERC3156FlashBorrower.onFlashLoan\");\n    }\n}\n\ncontract FlashLoanTest is Test {\n    ${CONTRACT_NAME} public target;\n    FlashLoanAttacker public attacker;\n\n    function setUp() public {\n        // Setup with fork state\n        target = ${CONTRACT_NAME}(${CONTRACT_ADDRESS});\n    }\n\n    function testFlashLoanAttack() public {\n        // Record balances before\n        uint256 targetBalanceBefore = address(target).balance;\n\n        // Execute flash loan attack\n        // Add attack execution here\n\n        // Verify profit was extracted\n        assertLt(address(target).balance, targetBalanceBefore, \"Attack should have drained funds\");\n    }\n}"
+  }
+}

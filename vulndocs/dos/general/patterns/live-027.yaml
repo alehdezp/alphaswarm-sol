@@ -1,0 +1,16 @@
+id: live-027
+vulndoc: dos/general
+name: Storage Cleanup Failures
+description: Unbounded deletion in loops.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_delete_in_loop
+    op: eq
+    value: true
+  - property: has_unbounded_deletion
+    op: eq
+    value: true

@@ -1,0 +1,19 @@
+id: ext-065
+vulndoc: access-control/external-call
+name: Array Loop Without Bounds
+description: Array input used in an unbounded loop without length checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_array_parameter
+    op: eq
+    value: true
+  - property: has_unbounded_loop
+    op: eq
+    value: true
+  - property: has_array_length_check
+    op: eq
+    value: false

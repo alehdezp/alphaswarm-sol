@@ -1,0 +1,334 @@
+# Golden Transcript Configuration for /vrs-full-testing Orchestrator
+#
+# This file defines scenarios for golden transcript capture (record mode)
+# and regression diffing (diff mode). Golden transcripts serve as baselines
+# for detecting behavioral regressions in the full-testing workflow.
+#
+# Usage:
+#   Record mode:  ./scripts/e2e/run_full_testing_golden.sh --record <scenario-id>
+#   Diff mode:    ./scripts/e2e/run_full_testing_golden.sh --diff <scenario-id>
+#
+# Each scenario defines:
+#   - id: Unique scenario identifier
+#   - name: Human-readable name
+#   - suites: Which test suites to run
+#   - scenarios: Specific scenario IDs (optional, empty = all in suite)
+#   - record: Baseline capture configuration
+#   - diff: Comparison rules for regression detection
+
+version: "1.0.0"
+updated: "2026-01-30"
+
+# Global configuration
+config:
+  # Base directory for golden transcripts
+  golden_dir: tests/e2e/golden
+
+  # Default diff tolerance settings
+  default_tolerance:
+    timing_variance_ms: 500
+    timestamp_pattern: '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'
+    run_id_pattern: 'run-\d{8}-\d{6}-[a-f0-9]+'
+    duration_pattern: 'duration[=:]\s*\d+(\.\d+)?(ms|s)'
+
+  # Lines to normalize before comparison
+  normalize_patterns:
+    - pattern: 'Started: \d{4}-\d{2}-\d{2}.*'
+      replace: 'Started: <timestamp>'
+    - pattern: 'Run ID: run-\d{8}-\d{6}-[a-f0-9]+'
+      replace: 'Run ID: <run-id>'
+    - pattern: 'duration_ms: \d+'
+      replace: 'duration_ms: <duration>'
+    - pattern: '/tmp/alphaswarm-tests/alphaswarm-test-[a-zA-Z0-9-]+'
+      replace: '<worktree-path>'
+    - pattern: 'evidence-pack-run-\d{8}-\d{6}-[a-f0-9]+'
+      replace: 'evidence-pack-<run-id>'
+    - pattern: '\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]'
+      replace: '[<timestamp>]'
+
+# Golden scenarios for baseline capture
+scenarios:
+  # Scenario 1: Command Suite Baseline
+  - id: golden-s1-command-suite
+    name: "Command Suite Full Baseline"
+    description: |
+      Captures the full command suite workflow including:
+      - build-kg command with various contracts
+      - query command with NL and VQL2
+      - vulndocs validate command
+      - context generation
+    suites:
+      - s1_command
+    scenarios: []  # All scenarios in suite
+
+    record:
+      # Output locations for recorded baseline
+      baseline_dir: tests/e2e/golden/s1-command-suite
+      artifacts:
+        - type: transcript
+          file: transcript.txt
+          description: "Full transcript of command suite"
+        - type: markers
+          file: markers.log
+          description: "ALPHASWARM-START/END marker log"
+        - type: exit_codes
+          file: exit_codes.json
+          description: "Exit codes for each command"
+        - type: output_hashes
+          file: output_hashes.json
+          description: "SHA256 hashes of key outputs"
+
+      # Capture settings for record mode
+      capture:
+        include_debug: true
+        hash_outputs: true
+        preserve_ansi: false
+
+    diff:
+      # Comparison rules for regression detection
+      mode: structural  # structural | exact | semantic
+
+      # Lines to ignore entirely
+      ignore_lines:
+        - '^\s*$'  # Empty lines
+        - '^#.*'   # Comments
+        - 'Waiting for Claude Code to initialize'
+
+      # Sections with strict comparison (no normalization)
+      strict_sections:
+        - section: exit_codes
+          description: "Exit codes must match exactly"
+        - section: marker_sequence
+          description: "Marker order must match"
+
+      # Sections with loose comparison (timing-tolerant)
+      loose_sections:
+        - section: timing
+          tolerance_ms: 1000
+
+      # Structural checks (order matters, values may differ)
+      structural_checks:
+        - check: marker_count
+          description: "Same number of START/END markers"
+        - check: command_sequence
+          description: "Commands executed in same order"
+        - check: artifact_presence
+          description: "Same artifacts produced"
+
+      # Stop on first mismatch
+      fail_fast: true
+
+      # Output on mismatch
+      on_mismatch:
+        emit_diff: true
+        emit_evidence_paths: true
+        exit_code: 1
+
+  # Scenario 2: Agent Suite Baseline
+  - id: golden-s2-agent-suite
+    name: "Agent Suite Full Baseline"
+    description: |
+      Captures the agent suite workflow including:
+      - /vrs-audit invocation
+      - /vrs-investigate multi-agent flow
+      - /vrs-debate attacker/defender/verifier
+      - Evidence pack generation
+    suites:
+      - s2_agent
+    scenarios: []  # All scenarios in suite
+
+    record:
+      baseline_dir: tests/e2e/golden/s2-agent-suite
+      artifacts:
+        - type: transcript
+          file: transcript.txt
+          description: "Full transcript of agent suite"
+        - type: markers
+          file: markers.log
+          description: "ALPHASWARM-START/END marker log"
+        - type: agent_outputs
+          file: agent_outputs.json
+          description: "Aggregated agent output summaries"
+        - type: debate_transcript
+          file: debate_transcript.md
+          description: "Multi-agent debate transcript"
+        - type: evidence_manifest
+          file: evidence_manifest.json
+          description: "Evidence pack manifest"
+
+      capture:
+        include_debug: true
+        hash_outputs: true
+        preserve_ansi: false
+
+    diff:
+      mode: structural
+
+      ignore_lines:
+        - '^\s*$'
+        - '^#.*'
+        - 'Waiting for'
+        - 'tokens used'
+
+      strict_sections:
+        - section: finding_count
+          description: "Number of findings must match"
+        - section: severity_distribution
+          description: "Critical/High/Medium/Low counts must match"
+        - section: marker_sequence
+          description: "Marker order must match"
+
+      loose_sections:
+        - section: timing
+          tolerance_ms: 5000  # Agent workflows have higher variance
+        - section: token_usage
+          tolerance_percent: 20
+
+      structural_checks:
+        - check: agent_invocation_order
+          description: "Agents invoked in correct order"
+        - check: debate_rounds
+          description: "Same number of debate rounds"
+        - check: evidence_completeness
+          description: "All expected evidence items present"
+
+      fail_fast: true
+
+      on_mismatch:
+        emit_diff: true
+        emit_evidence_paths: true
+        exit_code: 1
+
+  # Scenario 3: Context Suite Baseline
+  - id: golden-s3-context-suite
+    name: "Context Suite Full Baseline"
+    description: |
+      Captures the context suite workflow including:
+      - Protocol context generation
+      - Oracle detection
+      - Role identification
+      - Context pack validation
+    suites:
+      - s3_context
+    scenarios: []
+
+    record:
+      baseline_dir: tests/e2e/golden/s3-context-suite
+      artifacts:
+        - type: transcript
+          file: transcript.txt
+        - type: markers
+          file: markers.log
+        - type: context_pack
+          file: context_pack.yaml
+          description: "Generated protocol context pack"
+        - type: oracle_detection
+          file: oracle_detection.json
+          description: "Detected oracle dependencies"
+
+      capture:
+        include_debug: true
+        hash_outputs: true
+
+    diff:
+      mode: structural
+
+      strict_sections:
+        - section: role_detection
+          description: "Detected roles must match"
+        - section: oracle_count
+          description: "Oracle count must match"
+
+      structural_checks:
+        - check: context_sections
+          description: "Context pack has same sections"
+        - check: dependency_graph
+          description: "Contract dependencies match"
+
+      fail_fast: true
+
+  # Scenario 4: Resume Matrix Baseline
+  - id: golden-s4-resume-matrix
+    name: "Resume Matrix Full Baseline"
+    description: |
+      Captures the resume matrix workflow including:
+      - Stop/resume capability
+      - Partial run handling
+      - Stage skip controls
+      - Snapshot integrity
+    suites:
+      - s4_resume
+    scenarios: []
+
+    record:
+      baseline_dir: tests/e2e/golden/s4-resume-matrix
+      artifacts:
+        - type: transcript
+          file: transcript.txt
+        - type: markers
+          file: markers.log
+        - type: snapshots
+          file: snapshot_manifest.json
+          description: "Snapshot manifest with checksums"
+        - type: resume_log
+          file: resume_log.txt
+          description: "Resume operation log"
+
+      capture:
+        include_debug: true
+        hash_outputs: true
+
+    diff:
+      mode: structural
+
+      strict_sections:
+        - section: snapshot_integrity
+          description: "Snapshot checksums must match"
+        - section: resume_capability
+          description: "Resume succeeds from each checkpoint"
+
+      structural_checks:
+        - check: snapshot_count
+          description: "Same snapshots captured"
+        - check: resume_sequence
+          description: "Resume operations in correct order"
+
+      fail_fast: true
+
+# Minimal quick-check scenarios for CI
+quick_scenarios:
+  - id: golden-quick-s1
+    name: "Quick Command Suite Check"
+    description: "Single scenario from S1 for fast CI validation"
+    suites:
+      - s1_command
+    scenarios:
+      - S01  # Basic reentrancy detection
+    record:
+      baseline_dir: tests/e2e/golden/quick-s1
+      artifacts:
+        - type: transcript
+          file: transcript.txt
+        - type: markers
+          file: markers.log
+    diff:
+      mode: structural
+      fail_fast: true
+
+  - id: golden-quick-s2
+    name: "Quick Agent Suite Check"
+    description: "Single scenario from S2 for fast CI validation"
+    suites:
+      - s2_agent
+    scenarios:
+      - S09  # Basic access control
+    record:
+      baseline_dir: tests/e2e/golden/quick-s2
+      artifacts:
+        - type: transcript
+          file: transcript.txt
+        - type: markers
+          file: markers.log
+    diff:
+      mode: structural
+      fail_fast: true

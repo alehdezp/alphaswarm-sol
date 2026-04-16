@@ -1,0 +1,486 @@
+# =============================================================================
+# PATTERN: logic-tierb-002-invariant-violation
+# Tier B LLM Reasoning: Invariant Violation Detection
+# =============================================================================
+
+id: logic-tierb-002-invariant-violation
+vulndoc: logic/business-logic
+name: "Invariant Violation (Tier B LLM Reasoning)"
+
+description: |
+  ## What This Detects
+
+  Functions that violate implicit protocol invariants - expected relationships
+  between state variables that should always hold true, but are NOT enforced
+  by explicit require() statements or guards. This is a Tier B (LLM-reasoning)
+  pattern that requires semantic understanding of protocol intent.
+
+  **Tier A Prerequisites** (deterministic):
+  - Function modifies state (writes_state = true)
+  - Function has external interactions (has_external_calls = true)
+  - Function lacks explicit invariant validation
+
+  **Tier B Semantic Understanding** (LLM-powered):
+  - Identifies implicit protocol invariants from code structure, naming, comments
+  - Detects state transitions that violate these invariants
+  - Recognizes missing constraints and relationship validations
+  - Assesses whether invariant violation is intentional vs. oversight
+
+  **Key Semantic Tags**:
+  - `invariant_violation`: State transition breaks expected relationship
+  - `state_inconsistency`: Multiple state variables drift out of sync
+  - `unbacked_shares`: Shares/LP tokens not backed by corresponding assets
+  - `supply_mismatch`: Total supply != sum of underlying assets
+  - `missing_constraint`: Expected validation absent or incomplete
+  - `borrowed_exceeds_collateral`: Debt > collateral relationship
+  - `price_oracle_dependency`: Uses external price without validation
+  - `first_depositor_risk`: Initialization vulnerability
+  - `precision_loss_accumulation`: Rounding errors compound
+
+  ## Why It's Dangerous
+
+  ### Real-World Exploits
+
+  **1. Cream Finance Oracle Manipulation ($130M, Feb 2021)**
+  - Invariant: "Borrowed value < Collateral value at all times"
+  - Attack: Manipulate price oracle to inflate collateral, borrow phantom assets
+  - Root cause: No invariant validation after price updates
+  - Impact: $130M extracted by borrowing against phantom collateral
+
+  **2. Compound Governance Attack (May 2020)**
+  - Invariant: "Only proposals with quorum can execute"
+  - Attack: Use unchecked voting delay to grant votes during voting period
+  - Root cause: Voting power check not enforced at execution time
+  - Impact: Attacker passed malicious proposal with minority voting power
+
+  **3. Yearn First-Deposit Vulnerability (Multi-chain, 2021)**
+  - Invariant: "Share price must increase monotonically"
+  - Attack: Inflate share price by depositing 1 wei, then sending 1M tokens directly
+  - Root cause: No minimum share validation on first deposit
+  - Impact: Second depositor loses 99.9% of value instantly
+
+  **4. Balancer V2 Rounding Invariant ($128.64M, Nov 2025)**
+  - Invariant: "Pool's invariant D >= sum of token values at all times"
+  - Attack: Execute 65+ micro-swaps atomically to compound rounding errors
+  - Root cause: No invariant validation after multiple state modifications
+  - Impact: $128.64M extracted across Ethereum, Base, L2s
+
+scope: Function
+
+lens:
+  - Logic
+  - StateConsistency
+  - Invariants
+
+severity: high
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic Prerequisites)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Core: Function modifies state
+      - property: writes_state
+        op: eq
+        value: true
+
+      # Core: Has external interactions
+      - property: has_external_calls
+        op: eq
+        value: true
+
+    # At least ONE must match (OR logic) - additional signals
+    any:
+      - property: modifies_critical_state
+        op: eq
+        value: true
+
+      - property: arithmetic_operations_on_balances
+        op: eq
+        value: true
+
+      - property: loops_over_array
+        op: eq
+        value: true
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # Not applicable to view/pure functions
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Extensive validation suggests invariant IS protected
+      - property: has_explicit_invariant_validation
+        op: eq
+        value: true
+
+      # Pre-condition checks on all state relationships
+      - property: has_comprehensive_precondition_checks
+        op: eq
+        value: true
+
+  # =============================================================================
+  # TIER B (LLM SEMANTIC REASONING)
+  # =============================================================================
+
+  tier_b:
+    # LLM evaluates these semantic risk factors
+    risk_factors:
+      - invariant_violation
+      - state_inconsistency
+      - unbacked_shares
+      - supply_mismatch
+      - missing_constraint
+      - borrowed_exceeds_collateral
+      - price_oracle_dependency
+      - first_depositor_risk
+      - precision_loss_accumulation
+
+    # LLM reasoning prompts (guides LLM analysis)
+    reasoning_prompts:
+      invariant_identification: |
+        Based on function name, state variables, and NatSpec comments,
+        what implicit invariants should this function maintain?
+        Look for patterns like:
+        - "X should always be >= Y" (collateral >= borrowed)
+        - "X must increase monotonically" (sharePrice, totalSupply)
+        - "sum(A) == B" (sum of user balances == totalSupply)
+        - "X is only valid if Y" (execution only if quorum)
+
+      violation_detection: |
+        After analyzing the function's state modifications:
+        1. What is the state BEFORE the function executes?
+        2. What are the state changes the function makes?
+        3. AFTER those changes, are the invariants still satisfied?
+        4. Are there gaps where invariants could be violated temporarily?
+        5. Is there code that RESTORES the invariant, or is it missing?
+
+      constraint_assessment: |
+        For each identified invariant:
+        - Is there an explicit require() statement that validates it?
+        - Is the check in the right place (before, after, or both)?
+        - Does the check cover all edge cases?
+        - Could the invariant be violated between operations?
+
+      impact_analysis: |
+        If this invariant is violated:
+        1. What is the immediate impact? (theft, inflation, insolvency)
+        2. Can an attacker exploit this violation directly?
+        3. Or does it enable a secondary attack?
+        4. How easy is the exploit to execute?
+        5. What is the maximum capital at risk?
+
+    # Severity adjustment based on LLM findings
+    severity_modifiers:
+      critical:
+        - "Unbacked shares/LP tokens can be minted and drained"
+        - "Borrowed value exceeds collateral without check"
+        - "Share price can be artificially manipulated below fair value"
+        - "Total supply constraint violated with direct loss"
+      high:
+        - "Invariant can be violated but requires complex attack chain"
+        - "Protocol continues operating with inconsistent state"
+        - "Missing constraint enables griefing or MEV extraction"
+      medium:
+        - "Invariant violated in bounded context (single transaction)"
+        - "Attacker gains advantage but full loss unlikely"
+        - "Missing validation enables suboptimal operations"
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_required
+
+# =============================================================================
+# MULTI-AGENT VERIFICATION HINTS
+# =============================================================================
+
+verification_agents:
+  explorer:
+    entry_points: [EntryPoint]
+    track_state_writes: true
+    identify_critical_state: true
+    extract_invariants_from_comments: true
+    max_depth: 4
+
+  pattern:
+    detect_missing_validation: true
+    detect_state_inconsistency: true
+    identify_external_call_positions: true
+    check_restoration_code: true
+
+  risk:
+    assess_unbacked_assets_risk: true
+    check_supply_consistency: true
+    evaluate_collateral_coverage: true
+    identify_temporal_violations: true
+    min_risk_score: 4.0
+
+  constraint:
+    enabled: true
+    identify_state_relationships: true
+    timeout_ms: 5000
+
+  consensus:
+    min_agents_agree: 3
+    mode: voting
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Unbacked Shares Attack (First Depositor)"
+    description: |
+      Attacker exploits initialization vulnerability to mint shares
+      without backing, stealing subsequent depositors' assets
+    preconditions:
+      - "Protocol mints shares based on deposit amount"
+      - "No minimum deposit or share supply validation"
+      - "Share price calculation uses division that can be inflated"
+    steps:
+      - "Attacker calls deposit(1 wei) as first depositor"
+      - "Receives 1 share (totalShares = 1)"
+      - "Directly sends 1M tokens to contract (without deposit)"
+      - "Share price inflates from 1 to 1M per share"
+      - "Normal user deposits 1M tokens, receives 1 share"
+      - "Attacker withdraws all shares, receives 2M tokens"
+      - "User can only withdraw 1M (owns minority of shares)"
+    impact: "Complete loss of 50%+ of second depositor's assets"
+    example_exploit: "Yearn vaults, Uniswap V4 hooks, any ERC4626 without protections"
+
+  - name: "Borrowed Exceeds Collateral (Oracle Manipulation)"
+    description: |
+      Attacker manipulates price oracle to create false collateral value,
+      borrowing assets not actually backed by collateral
+    preconditions:
+      - "Protocol checks: borrowedValue <= collateralValue * multiplier"
+      - "Check exists but ONLY uses external price oracle"
+      - "No backup price source or staleness protection"
+      - "Check happens BEFORE collateral is received"
+    steps:
+      - "Attacker controls flash loan source and price oracle"
+      - "Takes flash loan of 100M ETH"
+      - "Deposits as collateral (via oracle: worth 100M * $3000 = $300B)"
+      - "Borrows maximum allowed: $200B of stablecoins"
+      - "Invariant broken: borrowed > collateral at real prices"
+      - "Returns flash loan, exits with $200B stolen"
+    impact: "Protocol insolvency, total loss of borrowed assets"
+    example_exploit: "Cream Finance ($130M), Pancake Bunny ($45M)"
+
+  - name: "Supply Mismatch (Mint Without Burn)"
+    description: |
+      Attacker mints tokens without corresponding asset deposits,
+      breaking the invariant: totalSupply == underlyingAssets
+    preconditions:
+      - "Protocol allows selective minting of shares"
+      - "No invariant validation after minting"
+      - "Redemption uses sharesOf[user] / totalShares * totalAssets"
+    steps:
+      - "Attacker mints 50% of total shares without deposits"
+      - "Now: totalShares = 2x original, totalAssets = same"
+      - "Invariant broken: shares > backed assets"
+      - "Redeems shares at inflated value"
+      - "Legitimate users receive 50% less assets on withdrawal"
+    impact: "Direct theft of 50% of legitimate user assets"
+
+  - name: "Compound Governance Execution Without Quorum"
+    description: |
+      Attacker passes proposal and executes without meeting quorum requirement
+      by voting during unchecked voting delay
+    preconditions:
+      - "Voting delay exists (90 blocks)"
+      - "Votes checked at proposal creation, NOT at execution"
+      - "Attacker can gain voting power during delay"
+    steps:
+      - "Attacker buys 2% of voting tokens"
+      - "Proposes malicious action"
+      - "During 90-block voting delay, attacker obtains 5% more tokens"
+      - "Casts votes (now 7% control)"
+      - "Proposal fails normal voting but has votes >= some threshold"
+      - "Attacker executes proposal with 7% control (quorum is 4%)"
+      - "Invariant broken: execution_votes < quorum"
+    impact: "Malicious governance execution with minority control"
+
+# =============================================================================
+# VERIFICATION STEPS
+# =============================================================================
+
+verification_steps:
+  - step: 1
+    name: "Identify Function Intent"
+    description: |
+      From function name and NatSpec, understand what state transitions
+      the function is expected to perform.
+    checklist:
+      - "Read function name and description"
+      - "Check @notice and @dev comments"
+      - "Understand pre-conditions (what must be true before)"
+      - "Understand post-conditions (what must be true after)"
+
+  - step: 2
+    name: "Extract Implicit Invariants"
+    description: |
+      From code structure and comments, identify relationships between
+      state variables that should ALWAYS hold true.
+    checklist:
+      - "Look for comparison operators: >=, <=, >, <, =="
+      - "Identify state variable relationships: X >= Y, sum(A) == B"
+      - "Check for comments mentioning 'invariant', 'require', 'must', 'always'"
+      - "Look at similar functions for consistent patterns"
+      - "Check external interfaces (ERC standards) for expected behaviors"
+
+  - step: 3
+    name: "Trace State Modifications"
+    description: |
+      For each line that modifies state, verify whether it maintains
+      or violates the identified invariants.
+    checklist:
+      - "Identify each state write: x = ..., y += ..."
+      - "For each write, ask: does this maintain invariants?"
+      - "Trace through several sequential writes"
+      - "Check order of operations (should invariants hold after each step?)"
+      - "Identify any temporary invariant violations"
+
+  - step: 4
+    name: "Verify Constraint Checks"
+    description: |
+      For each invariant, verify that explicit checks exist
+      at appropriate locations (before, after, or both).
+    checklist:
+      - "Before state modification: require() or assert()"
+      - "After state modification: require() or assert()"
+      - "Check covers all conditions: >= or just >?"
+      - "Check handles edge cases: empty state, max values, zero?"
+      - "Verify check actually prevents violation (not just logging)"
+
+  - step: 5
+    name: "Assess External Call Impact"
+    description: |
+      For external calls, verify invariants are still valid after
+      the call returns (since external code may modify state).
+    checklist:
+      - "Identify each external call: IERC20.transfer(), exchange.swap()"
+      - "What state might this call modify? (balances, prices, allowances)"
+      - "After call returns, are invariants still satisfied?"
+      - "Does code re-validate invariants after call?"
+      - "Could malicious contract break assumptions?"
+
+  - step: 6
+    name: "Test Exploit Scenarios"
+    description: |
+      Attempt to craft an attack that violates the identified
+      invariants and extracts value.
+    checklist:
+      - "Can attacker cause invariant violation directly?"
+      - "Can attacker chain multiple calls to trigger violation?"
+      - "What is maximum extraction amount?"
+      - "Does violation require privileged access?"
+      - "How many transactions/blocks needed?"
+
+  - step: 7
+    name: "Rate Severity"
+    description: |
+      Based on findings, assign severity and confidence level.
+    checklist:
+      - "Critical: Direct theft, protocol insolvency, unbacked assets"
+      - "High: Complex exploit required, loss limited to attacker's capital"
+      - "Medium: Requires timing/knowledge, impact limited"
+      - "Low: Inefficiency, no direct financial impact"
+
+# =============================================================================
+# FIX RECOMMENDATIONS
+# =============================================================================
+
+fix_recommendations:
+  - name: "Add Explicit Invariant Validation"
+    description: |
+      For each identified invariant, add explicit require() or assert()
+      checks at appropriate points in the code.
+    severity: "Critical"
+
+  - name: "Implement Minimum Deposit Protection"
+    description: |
+      Prevent first-depositor attacks by requiring minimum initial
+      deposit or minimum share supply.
+    severity: "Critical for ERC4626"
+
+  - name: "Separate Precondition and Postcondition Checks"
+    description: |
+      Use distinct verification phases: pre-check assumptions,
+      then update state, then post-check invariants.
+    severity: "High"
+
+  - name: "Add Oracle Validation and Fallback"
+    description: |
+      For oracle-dependent invariants, validate prices and provide
+      fallback mechanisms to detect manipulation.
+    severity: "Critical for DeFi"
+
+  - name: "Implement Restoration Code for Temporary Violations"
+    description: |
+      If invariants must be temporarily violated during operations,
+      add explicit code to restore them before returning.
+    severity: "High"
+
+# =============================================================================
+# RELATED PATTERNS
+# =============================================================================
+
+related_patterns:
+  - logic-002-balancer-rounding
+  - arith-001-integer-overflow
+  - ext-002-unvalidated-external-call
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: |
+    Pattern is Tier A + Tier B (LLM-required).
+
+    Tier A Prerequisites (deterministic):
+    - writes_state = true
+    - has_external_calls = true
+    - NOT view/pure function
+    - NONE of the safety properties match
+
+    Tier B LLM Reasoning (after Tier A match):
+    - Identify implicit invariants
+    - Detect violations
+    - Assess severity
+    - Verify missing constraints
+
+status: draft
+
+# =============================================================================
+# CWEAND OWASP MAPPING
+# =============================================================================
+
+owasp_mapping:
+  - SC04  # Unchecked Math / Logic Errors
+  - SC07  # Insufficient Access Control
+  - SC08  # Function Default Visibility
+
+cwe_mapping:
+  - CWE-99   # Improper Control of Resource Identifiers
+  - CWE-670  # Always-Incorrect Control Flow Implementation
+  - CWE-682  # Incorrect Calculation
+  - CWE-697  # Incorrect Comparison

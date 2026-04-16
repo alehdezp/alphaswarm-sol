@@ -1,0 +1,16 @@
+id: live-036
+vulndoc: dos/general
+name: Conditional Unlock Failures
+description: Unlock paths are potentially impossible.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: locks_funds
+    op: eq
+    value: true
+  - property: unlock_condition_potentially_impossible
+    op: eq
+    value: true

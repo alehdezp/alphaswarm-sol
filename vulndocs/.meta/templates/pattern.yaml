@@ -1,0 +1,154 @@
+# Pattern Template
+# Patterns live in vulndocs/{category}/{subcategory}/patterns/
+# Path: vulndocs/{category}/{subcategory}/patterns/{pattern-id}.yaml
+
+schema_version: "1.0"
+
+# =============================================================================
+# REQUIRED FIELDS
+# =============================================================================
+
+# Unique identifier for the pattern
+# Format: {category-abbrev}-{number}-{variant} (e.g., vm-001-classic, oracle-002-twap)
+id: pattern-id
+
+# Human-readable name (2-5 words)
+name: "Pattern Name"
+
+# Severity level: critical, high, medium, low
+severity: critical
+
+# What the pattern matches against: Function, Contract, Transaction
+scope: Function
+
+# Which security lens(es) this pattern belongs to
+lens:
+  - LensName1
+  - LensName2
+
+# CRITICAL: Link back to vulnerability folder
+# This enables bidirectional linking between patterns and documentation
+vulndoc: category/subcategory
+
+# =============================================================================
+# MATCH LOGIC
+# =============================================================================
+
+match:
+  # Tier A: Strict, graph-only, high confidence
+  # Pure graph property matching - no LLM reasoning required
+  tier_a:
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+      - has_all_operations:
+          - OPERATION_1
+          - OPERATION_2
+      - sequence_order:
+          before: OPERATION_1
+          after: OPERATION_2
+    any: []  # At least one must match (OR logic)
+    none:
+      - property: has_protection
+        op: eq
+        value: true
+
+  # Tier B: LLM-verified, exploratory (optional)
+  # Use when pattern too complex for pure graph matching
+  tier_b:
+    prompt: |
+      Analyze if this function exhibits [specific behavior].
+      Look for [pattern details].
+      Consider edge cases: [list].
+
+  # Tier C: Label-dependent (optional, Phase 5+)
+  # Detection using semantic labels
+  tier_c:
+    - has_label: label_category.label_name
+    - missing_label: protection_category.guard_name
+    - has_any_label:
+        - value_flow.external_transfer
+        - value_flow.native_transfer
+
+  # Aggregation mode when using multiple tiers (optional)
+  # Options: tier_a_only, tier_a_required, tier_abc_all, voting
+  # aggregation_mode: tier_a_required
+
+# =============================================================================
+# DESCRIPTION AND CONTEXT
+# =============================================================================
+
+description: |
+  Clear description of what this pattern detects.
+  Why is it a vulnerability?
+  What are the consequences?
+
+confidence: high  # high, medium, low
+
+tags:
+  - tag1
+  - tag2
+
+# =============================================================================
+# TEST COVERAGE (populated during testing)
+# =============================================================================
+
+test_coverage:
+  # Which test project(s) cover this pattern
+  projects: []
+  # Calculated metrics (0.0 to 1.0)
+  precision: null
+  recall: null
+  variation_score: null
+  # Pattern quality status: draft, ready, excellent
+  # draft: precision < 70% OR recall < 50%
+  # ready: precision >= 70% AND recall >= 50%
+  # excellent: precision >= 90% AND recall >= 85%
+  status: draft
+  # Last test date (ISO format)
+  last_tested: null
+  # Notes from testing
+  notes: ""
+
+# =============================================================================
+# OPTIONAL: LLM CONTEXT FIELDS
+# =============================================================================
+
+# Attack scenarios this pattern can detect
+attack_scenarios: []
+  # - name: "<Attack Name>"
+  #   description: "<How the attack works>"
+  #   preconditions:
+  #     - "<Condition 1>"
+  #   steps:
+  #     - "<Step 1>"
+  #   impact: "<What the attacker gains>"
+
+# Steps to verify this is not a false positive
+verification_steps: []
+  # - "<Verification step 1>"
+
+# Recommended fixes with examples
+fix_recommendations: []
+  # - name: "<Fix Name>"
+  #   description: "<How to fix>"
+
+# Related patterns for cross-referencing
+related_patterns: []
+  # - <pattern-id>
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping: []
+  # - SC01  # Access Control
+
+# CWE mapping
+cwe_mapping: []
+  # - CWE-284
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: YYYY-MM-DD
+updated: YYYY-MM-DD

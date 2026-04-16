@@ -1,0 +1,13 @@
+id: auth-101
+vulndoc: access-control/general
+name: Weak Auth Using Contract Address
+description: Authentication relies on address(this) comparisons.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_gate_uses_contract_address
+    op: eq
+    value: true

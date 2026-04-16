@@ -1,0 +1,22 @@
+id: mev-risk-summary
+vulndoc: mev/protection
+name: MEV Risk Summary
+description: Swap-like functions missing slippage/deadline parameters or checks.
+scope: Function
+lens:
+  - Ordering
+severity: medium
+match:
+  any:
+    - property: risk_missing_slippage_parameter
+      op: eq
+      value: true
+    - property: risk_missing_deadline_parameter
+      op: eq
+      value: true
+    - property: risk_missing_slippage_check
+      op: eq
+      value: true
+    - property: risk_missing_deadline_check
+      op: eq
+      value: true

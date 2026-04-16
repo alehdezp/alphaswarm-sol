@@ -1,0 +1,16 @@
+id: ext-071
+vulndoc: access-control/external-call
+name: TWAP Gap Handling Missing
+description: TWAP usage without gap interpolation handling.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_twap
+    op: eq
+    value: true
+  - property: has_twap_gap_handling
+    op: eq
+    value: false

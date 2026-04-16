@@ -1,0 +1,17 @@
+{
+  "contract": "TxOriginAuth",
+  "contract_id": "cal-04",
+  "contract_path": "tests/contracts/TxOriginAuth.sol",
+  "built_at": "2026-03-02T14:52:41Z",
+  "identity": "7bb4e87a0109",
+  "nodes": 7,
+  "edges": 8,
+  "graph_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/ground-truth/cal-04/graph.toon",
+  "expected_vulnerability_class": "access-control",
+  "semantic_fingerprint": "tx_origin_auth_privileged",
+  "function_names": [
+    "privileged"
+  ],
+  "has_external_calls": false,
+  "has_state_modification_after_call": false
+}

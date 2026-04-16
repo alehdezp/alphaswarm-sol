@@ -1,0 +1,510 @@
+# Corpus Source Manifest
+# Provides reproducible corpus ingestion from pinned sources
+# Schema version: 1.0
+
+schema_version: "1.0"
+updated: "2026-01-29"
+
+# Source repositories for corpus ingestion
+# Each entry must have:
+#   - repo_url: GitHub repository URL
+#   - commit_sha: Pinned commit for reproducibility
+#   - category: Target category in .vrs/corpus/contracts/
+#   - local_path: Path within repo to Solidity files
+#   - query: Search/discovery query used to find this source
+#   - notes: Additional context
+#   - expected_contracts: Expected contract count (for validation)
+
+sources:
+  # ============================================================
+  # EXISTING SOURCES (Phase 7.2 baseline)
+  # ============================================================
+
+  # DVDeFi - Primary vulnerable contract source (educational)
+  - id: dvdefi-v3
+    repo_url: https://github.com/tinchoabbate/damn-vulnerable-defi
+    commit_sha: "64fddf9f96de2782f8868898d68673acb295119c"  # Pinned from initial clone
+    branch: main
+    category: vulnerable
+    local_path: src
+    query: "damn vulnerable defi solidity CTF"
+    notes: "Educational vulnerable contracts, well-documented vulnerabilities"
+    expected_contracts: 30
+    vulnerability_classes:
+      - reentrancy
+      - access_control
+      - flash_loan
+      - price_manipulation
+      - oracle_manipulation
+
+  # Ethernaut - OpenZeppelin CTF
+  - id: ethernaut
+    repo_url: https://github.com/OpenZeppelin/ethernaut
+    commit_sha: "d05643a40aa98c45d66247c69ffceab8f44dd8cb"  # To be pinned on first ingest
+    branch: master
+    category: vulnerable
+    local_path: contracts
+    query: "ethernaut solidity CTF OpenZeppelin"
+    notes: "Classic Solidity CTF with progressively harder challenges"
+    expected_contracts: 25
+    vulnerability_classes:
+      - reentrancy
+      - delegatecall
+      - tx_origin
+      - integer_overflow
+      - access_control
+
+  # Security Patterns - Safe reference implementations
+  - id: oz-contracts
+    repo_url: https://github.com/OpenZeppelin/openzeppelin-contracts
+    commit_sha: "dde766bd542e4a1695fe8e4a07dc03b77305f367"  # To be pinned on first ingest
+    branch: master
+    category: safe
+    local_path: contracts
+    query: "openzeppelin contracts security patterns"
+    notes: "Audited, battle-tested contract patterns - negative control"
+    expected_contracts: 50
+    vulnerability_classes: []  # Known safe
+
+  # Solady - Gas-optimized Solidity patterns (Vectorized)
+  - id: solady
+    repo_url: https://github.com/Vectorized/solady
+    commit_sha: "90db92ce173856605d24a554969f2c67cadbc7e9"  # To be pinned on first ingest
+    branch: main
+    category: safe
+    local_path: src
+    query: "solady gas optimized solidity patterns"
+    notes: "Highly audited, gas-optimized implementations - safe reference"
+    expected_contracts: 40
+    vulnerability_classes: []  # Known safe
+
+  # Solmate - Modern Solidity building blocks (Transmissions11)
+  - id: solmate
+    repo_url: https://github.com/transmissions11/solmate
+    commit_sha: "89365b880c4f3c786bdd453d4b8e8fe410344a69"  # To be pinned on first ingest
+    branch: main
+    category: safe
+    local_path: src
+    query: "solmate modern solidity building blocks"
+    notes: "Modern, gas-efficient building blocks - safe reference"
+    expected_contracts: 25
+    vulnerability_classes: []  # Known safe
+
+  # Uniswap v3-core - Battle-tested AMM contracts
+  - id: uniswap-v3
+    repo_url: https://github.com/Uniswap/v3-core
+    commit_sha: "d8b1c635c275d2a9450bd6a78f3fa2484fef73eb"  # To be pinned on first ingest
+    branch: main
+    category: safe
+    local_path: contracts
+    query: "uniswap v3 core contracts audited"
+    notes: "Battle-tested AMM - multiple audits, high-value protection"
+    expected_contracts: 15
+    vulnerability_classes: []  # Known safe
+
+  # Security research - Not-so-smart contracts (vulnerable educational)
+  - id: not-so-smart
+    repo_url: https://github.com/crytic/not-so-smart-contracts
+    commit_sha: "020dbdbde3e0c2e8de5f3944e7455e438b0995d5"  # To be pinned on first ingest
+    branch: master
+    category: vulnerable
+    local_path: ""
+    query: "crytic not so smart contracts vulnerabilities"
+    notes: "Trail of Bits vulnerable contract examples"
+    expected_contracts: 20
+    vulnerability_classes:
+      - reentrancy
+      - integer_overflow
+      - denial_of_service
+      - bad_randomness
+      - race_condition
+
+  # ============================================================
+  # TIER 1 - CRITICAL (Must add - 2025-2026 coverage)
+  # Added: 2026-01-29 (Phase 7.3-01 corpus expansion)
+  # ============================================================
+
+  # DeFiHackLabs - Primary real-world exploit collection (SunWeb3Sec)
+  - id: defihacklabs
+    repo_url: https://github.com/SunWeb3Sec/DeFiHackLabs
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: src/test
+    query: "defi hack labs POC exploit foundry"
+    notes: "600+ real DeFi exploits with Foundry POCs - highest priority"
+    expected_contracts: 600
+    vulnerability_classes:
+      - flash_loan
+      - oracle_manipulation
+      - reentrancy
+      - access_control
+      - price_manipulation
+      - bridge_exploit
+      - mev
+      - business_logic
+
+  # DeFiVulnLabs - Comprehensive vulnerability taxonomy (SunWeb3Sec)
+  - id: defivulnlabs
+    repo_url: https://github.com/SunWeb3Sec/DeFiVulnLabs
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: src
+    query: "defi vuln labs vulnerability types educational"
+    notes: "48 vulnerability types with educational focus"
+    expected_contracts: 150
+    vulnerability_classes:
+      - reentrancy
+      - integer_overflow
+      - access_control
+      - oracle_manipulation
+      - flash_loan
+      - signature_replay
+      - erc20_vulnerabilities
+      - proxy_vulnerabilities
+      - randomness
+      - frontrunning
+
+  # Damn Vulnerable DeFi v4 - Industry standard CTF
+  - id: dvdefi-v4
+    repo_url: https://github.com/theredguild/damn-vulnerable-defi
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: src
+    query: "damn vulnerable defi v4 CTF red guild"
+    notes: "17 progressive challenges - V4 with 2024 patterns"
+    expected_contracts: 30
+    vulnerability_classes:
+      - flash_loan
+      - oracle_manipulation
+      - governance
+      - nft_vulnerabilities
+      - lending
+      - wallet
+      - timelock
+      - dex_manipulation
+
+  # ============================================================
+  # TIER 1 - NOVEL 2025-2026 EXPLOITS
+  # Added: 2026-01-29 (Phase 7.3-01 corpus expansion)
+  # From: 07.3-01-NOVEL-PROTOCOLS.md research
+  # ============================================================
+
+  # Balancer V2 - Precision loss via cumulative rounding ($128M)
+  - id: balancer-v2-exploit
+    repo_url: https://github.com/balancer/balancer-v2-monorepo
+    commit_sha: "HEAD"  # Target vulnerable version before Nov 2025 patch
+    branch: master
+    category: vulnerable
+    local_path: pkg/pool-stable/contracts
+    query: "balancer v2 stable pool rounding exploit nov 2025"
+    notes: "$128M exploit - cumulative rounding in ComposableStablePool"
+    expected_contracts: 15
+    vulnerability_classes:
+      - precision_loss
+      - rounding_direction
+      - cumulative_arithmetic
+
+  # Yearn yETH - Cached storage poisoning ($9M)
+  - id: yearn-yeth-exploit
+    repo_url: https://github.com/yearn/yearn-vaults
+    commit_sha: "HEAD"  # Target vulnerable version
+    branch: master
+    category: vulnerable
+    local_path: contracts
+    query: "yearn yeth cached storage poisoning exploit"
+    notes: "$9M exploit - multi-tx state corruption via cached values"
+    expected_contracts: 12
+    vulnerability_classes:
+      - cached_storage
+      - multi_tx_corruption
+      - zero_supply_edge_case
+
+  # ZKSwap Bridge - ZK proof verification bypass ($5M)
+  - id: zkswap-bridge-exploit
+    repo_url: ""  # Etherscan verified contracts
+    commit_sha: ""
+    branch: ""
+    category: vulnerable
+    local_path: ""
+    query: "zkswap bridge zk proof bypass exodus mode"
+    notes: "$5M exploit - verifyExitProof no-op vulnerability"
+    expected_contracts: 12
+    vulnerability_classes:
+      - zk_proof_bypass
+      - bridge_exodus_mode
+      - l2_vulnerability
+    etherscan_addresses:
+      - "0x5cdaf83e077dbac2692b5864ca18b61d67453be8"  # ZKSpace Bridge
+      - "0x6de5bdc580f55bc9dacafcb67b91674040a247e3"  # V2 Bridge
+
+  # TrueBit Protocol - Legacy Solidity integer overflow ($26.4M)
+  - id: truebit-exploit
+    repo_url: ""  # Etherscan verified contract
+    commit_sha: ""
+    branch: ""
+    category: vulnerable
+    local_path: ""
+    query: "truebit protocol integer overflow solidity 0.6.10"
+    notes: "$26.4M exploit - legacy Solidity (0.6.10) integer overflow"
+    expected_contracts: 10
+    vulnerability_classes:
+      - integer_overflow
+      - legacy_solidity
+      - price_manipulation
+    etherscan_addresses:
+      - "0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2"  # Purchase contract
+
+  # 1inch Fusion v1 - Signature buffer overflow ($5M)
+  - id: 1inch-fusion-exploit
+    repo_url: https://github.com/1inch/limit-order-protocol
+    commit_sha: "HEAD"  # Target Fusion v1 version
+    branch: master
+    category: vulnerable
+    local_path: contracts
+    query: "1inch fusion v1 buffer overflow calldata"
+    notes: "$5M exploit - Web2-style buffer overflow in calldata"
+    expected_contracts: 8
+    vulnerability_classes:
+      - buffer_overflow
+      - calldata_manipulation
+      - memory_corruption
+
+  # ============================================================
+  # TIER 1 - EIP-7702 EXPLOITS (Zero existing coverage)
+  # Added: 2026-01-29 (Phase 7.3-01 corpus expansion)
+  # ============================================================
+
+  # IPOR Fusion PlasmaVault - EIP-7702 delegation exploit ($336K)
+  - id: ipor-eip7702-exploit
+    repo_url: https://github.com/IPOR-Labs/ipor-fusion
+    commit_sha: "HEAD"  # Target vulnerable version
+    branch: main
+    category: vulnerable
+    local_path: contracts
+    query: "ipor fusion plasma vault eip-7702 delegation"
+    notes: "$336K exploit - EIP-7702 delegation hijacking"
+    expected_contracts: 8
+    vulnerability_classes:
+      - eip7702_delegation
+      - fuse_injection
+      - admin_hijack
+
+  # GANA Payment - EIP-7702 + key compromise ($3.1M)
+  - id: gana-eip7702-exploit
+    repo_url: ""  # BSC deployment
+    commit_sha: ""
+    branch: ""
+    category: vulnerable
+    local_path: ""
+    query: "gana payment eip-7702 onlyeoa bypass bsc"
+    notes: "$3.1M exploit - EIP-7702 bypasses onlyEOA check"
+    expected_contracts: 6
+    vulnerability_classes:
+      - eip7702_delegation
+      - onlyeoa_bypass
+      - key_compromise
+
+  # ============================================================
+  # TIER 2 - PRACTICE REPOSITORIES
+  # Added: 2026-01-29 (Phase 7.3-01 corpus expansion)
+  # From: 07.3-01-PRACTICE-REPOS.md research
+  # ============================================================
+
+  # minaminao CTF blockchain - 200+ CTF challenges
+  - id: ctf-blockchain
+    repo_url: https://github.com/minaminao/ctf-blockchain
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: ""
+    query: "ctf blockchain challenges solutions"
+    notes: "200+ CTF challenges with solutions - comprehensive"
+    expected_contracts: 200
+    vulnerability_classes:
+      - delegatecall
+      - reentrancy
+      - arithmetic
+      - access_control
+      - oracle_manipulation
+      - flash_loan
+      - mev
+      - storage_collision
+
+  # Secureum A-MAZE-X - DeFi-focused CTF
+  - id: secureum-amazex
+    repo_url: https://github.com/secureum/secureum-a-maze-x-challenges
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: ""
+    query: "secureum a-maze-x ctf challenges"
+    notes: "15-20 challenges per edition - DeFi focused"
+    expected_contracts: 30
+    vulnerability_classes:
+      - defi_vulnerabilities
+      - solidity_edge_cases
+      - access_control
+      - storage_manipulation
+      - economic_attacks
+
+  # GCTF 2024 - Recent CTF with modern patterns
+  - id: gctf-2024
+    repo_url: https://github.com/X3-Security/GCTF-2024-Smart-Contract-Challenges
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: ""
+    query: "gctf 2024 smart contract challenges foundry"
+    notes: "2024 CTF with Foundry solve scripts - modern patterns"
+    expected_contracts: 15
+    vulnerability_classes:
+      - overflow
+      - reentrancy
+      - access_control
+
+  # Trail of Bits - building-secure-contracts
+  - id: building-secure-contracts
+    repo_url: https://github.com/crytic/building-secure-contracts
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: master
+    category: vulnerable
+    local_path: not_so_smart_contracts
+    query: "trail of bits building secure contracts"
+    notes: "Authoritative security examples from Trail of Bits"
+    expected_contracts: 40
+    vulnerability_classes:
+      - reentrancy
+      - access_control
+      - arithmetic
+      - unchecked_returns
+      - denial_of_service
+      - bad_randomness
+      - frontrunning
+      - time_manipulation
+
+  # Quillhash DeFi Attack Vectors
+  - id: quillhash-defi-attacks
+    repo_url: https://github.com/Quillhash/DeFi-Attack-Vectors
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: ""
+    query: "quillhash defi attack vectors"
+    notes: "DeFi attack vector catalog with examples"
+    expected_contracts: 30
+    vulnerability_classes:
+      - flash_loan
+      - oracle_manipulation
+      - reentrancy
+      - access_control
+
+  # Quillhash Proxies Security
+  - id: quillhash-proxies
+    repo_url: https://github.com/Quillhash/Proxies-Security
+    commit_sha: "HEAD"  # To be pinned on first ingest
+    branch: main
+    category: vulnerable
+    local_path: ""
+    query: "quillhash proxies security vulnerabilities"
+    notes: "Proxy/upgradeable contract security examples"
+    expected_contracts: 20
+    vulnerability_classes:
+      - proxy_uups
+      - proxy_transparent
+      - storage_collision
+      - function_clashing
+      - uninitialized_proxy
+
+  # ============================================================
+  # ADDITIONAL TIER 2 - L2 AND EMERGING PATTERNS
+  # Added: 2026-01-29 (Phase 7.3-01 corpus expansion)
+  # ============================================================
+
+  # Bunni DEX - Uniswap v4 rounding direction ($8.4M)
+  - id: bunni-exploit
+    repo_url: https://github.com/Bunniapp/bunni-v2
+    commit_sha: "HEAD"  # Target vulnerable version
+    branch: main
+    category: vulnerable
+    local_path: src
+    query: "bunni dex uniswap v4 rounding exploit"
+    notes: "$8.4M exploit - rounding direction error in Uniswap v4 liquidity"
+    expected_contracts: 12
+    vulnerability_classes:
+      - rounding_direction
+      - uniswap_v4
+      - flash_loan_sandwich
+
+  # zkLend - Flash loan donation precision ($9.57M)
+  - id: zklend-exploit
+    repo_url: ""  # Starknet deployment - different VM
+    commit_sha: ""
+    branch: ""
+    category: vulnerable
+    local_path: ""
+    query: "zklend starknet precision flash loan donation"
+    notes: "$9.57M exploit - Starknet flash loan donation inflation"
+    expected_contracts: 8
+    vulnerability_classes:
+      - precision_loss
+      - flash_loan_donation
+      - accumulator_inflation
+      - starknet_l2
+
+  # Radiant Capital - Fork vulnerability ($4.5M)
+  - id: radiant-exploit
+    repo_url: https://github.com/radiant-capital/radiant-protocol
+    commit_sha: "HEAD"  # Target vulnerable version
+    branch: main
+    category: vulnerable
+    local_path: contracts
+    query: "radiant capital aave fork empty market exploit"
+    notes: "$4.5M exploit - Aave v2 fork empty market rounding"
+    expected_contracts: 10
+    vulnerability_classes:
+      - fork_vulnerability
+      - empty_market
+      - liquidity_index_manipulation
+
+# Categories align with .vrs/corpus/contracts/ structure
+categories:
+  vulnerable:
+    description: "Contracts with known vulnerabilities"
+    target_ratio: 0.30  # Updated from 0.20 - more vulnerable contracts added
+  safe:
+    description: "Audited contracts without known vulnerabilities"
+    target_ratio: 0.70  # Updated from 0.80
+  adversarial:
+    description: "Hand-crafted challenge contracts (FP traps, obfuscation)"
+    target_ratio: 0.0  # Added in later plans
+  mutations:
+    description: "Programmatically derived variants"
+    target_ratio: 0.0  # Added in later plans
+  recent-audits:
+    description: "Protocols from recent audit contests"
+    target_ratio: 0.0  # Added in later plans
+
+# New vulnerability categories added in expansion
+new_categories_added:
+  - precision_loss
+  - eip7702_delegation
+  - zk_proof_bypass
+  - cached_storage
+  - buffer_overflow
+  - fork_vulnerability
+  - multi_tx_corruption
+  - accumulator_inflation
+
+# Statistics (after expansion)
+statistics:
+  total_sources: 24
+  tier1_critical: 10
+  tier2_practice: 7
+  existing_baseline: 7
+  estimated_contracts:
+    vulnerable: 1207  # 600 + 150 + 30 + 15 + 12 + 12 + 10 + 8 + 8 + 6 + 200 + 30 + 15 + 40 + 30 + 20 + 12 + 8 + 10 + from existing
+    safe: 130  # oz-contracts + solady + solmate + uniswap-v3
+    total: 1337  # Estimated after full ingestion

@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlphaSwarm Testing Scenario Manifest",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id",
+      "tier",
+      "doc",
+      "workflow_ref",
+      "context_ref",
+      "command",
+      "expected_markers",
+      "min_duration_ms",
+      "min_lines",
+      "requires_ground_truth",
+      "ground_truth_ref",
+      "artifacts",
+      "behavior_model_ref",
+      "vql_bundle",
+      "tool_requirements",
+      "evidence_pack_required",
+      "min_markers",
+      "status"
+    ],
+    "properties": {
+      "id": {"type": "string", "minLength": 3},
+      "tier": {
+        "type": "string",
+        "enum": ["skill", "agent", "workflow", "e2e", "tools", "graph", "golden"]
+      },
+      "doc": {"type": "string"},
+      "workflow_ref": {"type": "string"},
+      "context_ref": {"type": ["string", "null"]},
+      "command": {"type": "string"},
+      "expected_markers": {"type": "array", "items": {"type": "string"}},
+      "min_duration_ms": {"type": "integer", "minimum": 0},
+      "min_lines": {"type": "integer", "minimum": 0},
+      "requires_ground_truth": {"type": "boolean"},
+      "ground_truth_ref": {"type": ["string", "null"]},
+      "artifacts": {"type": "array", "items": {"type": "string"}},
+      "behavior_model_ref": {"type": ["string", "null"]},
+      "vql_bundle": {"type": ["string", "null"]},
+      "tool_requirements": {"type": "array", "items": {"type": "string"}},
+      "evidence_pack_required": {"type": "boolean"},
+      "min_markers": {"type": "array", "items": {"type": "string"}},
+      "status": {"type": "string", "enum": ["ready", "blocked"]},
+      "blocked_reason": {"type": "string"},
+      "notes": {"type": "string"}
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {"status": {"const": "blocked"}},
+          "required": ["status"]
+        },
+        "then": {"required": ["blocked_reason"]}
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+id: arith-017
+vulndoc: arithmetic/general
+name: Price * Amount Overflow
+description: Price multiplied by amount without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: high
+cwe:
+- 190
+match:
+  all:
+  - property: price_amount_overflow_risk
+    op: eq
+    value: true

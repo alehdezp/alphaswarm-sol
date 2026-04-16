@@ -1,0 +1,22 @@
+# ERC20 Public Transfer
+id: smartbugs-erc20-public-transfer
+name: ERC20 Public Transfer
+category: token
+source: examples/semgrep-smart-contracts/solidity/security/erc20-public-transfer.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: access-control-missing
+  description: Internal transfer function exposed publicly
+  severity: high
+  cwe: CWE-284
+
+expected_detections:
+  - pattern: auth-001
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: auth-001
+  secondary: [token-transfer-public]
+
+status: pending

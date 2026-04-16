@@ -1,0 +1,61 @@
+{
+  "plan": "3.1-03",
+  "timestamp": "2026-02-11T17:36:27Z",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "manifest-exists",
+      "description": "MANIFEST.yaml exists and parses as valid YAML",
+      "command": "uv run python3 -c \"import yaml; yaml.safe_load(open('src/alphaswarm_sol/shipping/MANIFEST.yaml'))\"",
+      "result": "PASS"
+    },
+    {
+      "id": "manifest-skill-count",
+      "description": "Skill count in manifest matches filesystem",
+      "command": "ls src/alphaswarm_sol/shipping/skills/*.md | wc -l",
+      "expected": 30,
+      "actual": 30,
+      "result": "PASS"
+    },
+    {
+      "id": "manifest-agent-count",
+      "description": "Agent count in manifest matches filesystem",
+      "command": "ls src/alphaswarm_sol/shipping/agents/*.md | wc -l",
+      "expected": 21,
+      "actual": 21,
+      "result": "PASS"
+    },
+    {
+      "id": "evaluator-audit-exists",
+      "description": "Evaluator audit documents public API methods",
+      "file": ".vrs/debug/phase-3.1/evaluator-audit.md",
+      "checks": ["WorkflowEvaluator.evaluate signature", "TrajectoryEvaluator.evaluate signature", "6 gaps each"],
+      "result": "PASS"
+    },
+    {
+      "id": "harness-audit-exists",
+      "description": "Harness audit has per-file assessment and gaps",
+      "file": ".vrs/debug/phase-3.1/harness-audit.md",
+      "checks": ["12 files assessed", "9 gaps identified", "gaps assigned to 3.1b/3.1c plans"],
+      "result": "PASS"
+    },
+    {
+      "id": "sample-contracts-valid",
+      "description": "3 sample contracts are valid JSON with >= 3 capability_checks",
+      "files": [
+        "tests/workflow_harness/contracts/samples/skill-audit.json",
+        "tests/workflow_harness/contracts/samples/agent-attacker.json",
+        "tests/workflow_harness/contracts/samples/orchestrator-debate.json"
+      ],
+      "checks_per_file": [5, 4, 5],
+      "result": "PASS"
+    },
+    {
+      "id": "settings-json-valid",
+      "description": "settings.json is valid JSON with no orphaned hooks",
+      "command": "python3 -c \"import json; json.load(open('.claude/settings.json'))\"",
+      "orphaned_hooks_found": 0,
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+id: ext-079
+vulndoc: access-control/external-call
+name: Oracle Update Without Multisig Guard
+description: Oracle update in multisig context without access gating.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: contract_has_multisig
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

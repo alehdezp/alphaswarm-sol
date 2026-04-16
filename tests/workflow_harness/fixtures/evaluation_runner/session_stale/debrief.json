@@ -1,0 +1,8 @@
+{
+  "agent_name": "vrs-attacker",
+  "agent_type": "attacker",
+  "layer_used": "transcript_analysis",
+  "questions": ["What did you find?"],
+  "answers": ["Stale session data"],
+  "confidence": 0.3
+}

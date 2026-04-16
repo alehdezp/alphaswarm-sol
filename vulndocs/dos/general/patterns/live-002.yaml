@@ -1,0 +1,20 @@
+id: live-002
+vulndoc: dos/general
+name: Block Gas Limit Exhaustion
+description: External calls or unbounded deletions in loops.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  any:
+  - property: external_calls_in_loop
+    op: eq
+    value: true
+  - property: has_unbounded_deletion
+    op: eq
+    value: true

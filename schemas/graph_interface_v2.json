@@ -1,0 +1,444 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://alphaswarm.sol/schemas/graph_interface_v2.json",
+  "title": "Graph Interface Contract v2",
+  "description": "Normative schema for all LLM-facing graph outputs in AlphaSwarm.sol",
+  "type": "object",
+  "required": [
+    "interface_version",
+    "build_hash",
+    "timestamp",
+    "query",
+    "summary",
+    "findings",
+    "omissions"
+  ],
+  "properties": {
+    "interface_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semver version string (X.Y.Z)"
+    },
+    "build_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{12}$",
+      "description": "12-character hex graph build hash"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO8601 generation timestamp"
+    },
+    "query": {
+      "$ref": "#/$defs/Query"
+    },
+    "summary": {
+      "$ref": "#/$defs/Summary"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "description": "Array of findings (may be empty)"
+    },
+    "omissions": {
+      "$ref": "#/$defs/OmissionLedger"
+    },
+    "debug": {
+      "$ref": "#/$defs/DebugInfo"
+    }
+  },
+  "$defs": {
+    "Query": {
+      "type": "object",
+      "required": ["kind", "id", "source"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["pattern", "logic", "flow", "edges", "fetch"],
+          "description": "Query type"
+        },
+        "id": {
+          "type": "string",
+          "description": "Query identifier"
+        },
+        "source": {
+          "type": "string",
+          "description": "Raw query string"
+        }
+      }
+    },
+    "Summary": {
+      "type": "object",
+      "required": [
+        "nodes",
+        "edges",
+        "findings",
+        "coverage_score",
+        "omissions_present",
+        "unknowns_count"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of nodes in result"
+        },
+        "edges": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of edges in result"
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of findings"
+        },
+        "coverage_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Coverage ratio (0.0-1.0)"
+        },
+        "omissions_present": {
+          "type": "boolean",
+          "description": "Whether any omissions exist"
+        },
+        "unknowns_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total count of unknown clauses across all findings"
+        }
+      }
+    },
+    "Finding": {
+      "type": "object",
+      "required": [
+        "id",
+        "pattern_id",
+        "severity",
+        "confidence",
+        "matched_clauses",
+        "failed_clauses",
+        "unknown_clauses",
+        "clause_matrix",
+        "omissions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique finding identifier"
+        },
+        "pattern_id": {
+          "type": "string",
+          "description": "Pattern that matched"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low"],
+          "description": "Severity level"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Confidence score (0.0-1.0)"
+        },
+        "matched_clauses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Clauses that matched"
+        },
+        "failed_clauses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Clauses that failed"
+        },
+        "unknown_clauses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Clauses with unknown status"
+        },
+        "clause_matrix": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ClauseMatrixEntry"
+          },
+          "description": "Truth table for all clauses"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "description": "Evidence references for this finding"
+        },
+        "evidence_missing": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceMissing"
+          },
+          "description": "Reasons why evidence is missing"
+        },
+        "omissions": {
+          "$ref": "#/$defs/OmissionLedger"
+        },
+        "insufficient_evidence": {
+          "type": "boolean",
+          "description": "True if unknowns budget exceeded"
+        }
+      },
+      "anyOf": [
+        {
+          "required": ["evidence_refs"],
+          "properties": {
+            "evidence_refs": {
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "required": ["evidence_missing"],
+          "properties": {
+            "evidence_missing": {
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "ClauseMatrixEntry": {
+      "type": "object",
+      "required": ["clause", "status"],
+      "properties": {
+        "clause": {
+          "type": "string",
+          "description": "Clause identifier"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["matched", "failed", "unknown"],
+          "description": "Clause evaluation status"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "description": "Evidence for this clause"
+        },
+        "omission_refs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Omission reason codes"
+        }
+      }
+    },
+    "EvidenceRef": {
+      "type": "object",
+      "required": ["file", "line", "node_id", "snippet_id", "build_hash"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Source file name"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Line number (1-indexed)"
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Column number (1-indexed)"
+        },
+        "node_id": {
+          "type": "string",
+          "description": "Graph node identifier"
+        },
+        "snippet_id": {
+          "type": "string",
+          "pattern": "^EVD-[a-f0-9]{8}$",
+          "description": "Deterministic evidence ID (EVD-xxxxxxxx)"
+        },
+        "snippet": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Code snippet (max 200 chars)"
+        },
+        "build_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{12}$",
+          "description": "Build hash this evidence is tied to"
+        }
+      }
+    },
+    "EvidenceMissing": {
+      "type": "object",
+      "required": ["reason", "clause"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "taint_dataflow_unavailable",
+            "dominance_unknown",
+            "interprocedural_truncated",
+            "external_return_untracked",
+            "aliasing_unknown",
+            "sanitizer_uncertain",
+            "legacy_no_evidence"
+          ],
+          "description": "Reason code for missing evidence"
+        },
+        "clause": {
+          "type": "string",
+          "description": "Clause this applies to"
+        },
+        "details": {
+          "type": "string",
+          "description": "Additional explanation"
+        }
+      }
+    },
+    "OmissionLedger": {
+      "type": "object",
+      "required": ["coverage_score", "cut_set", "excluded_edges", "slice_mode"],
+      "properties": {
+        "coverage_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Coverage ratio (0.0-1.0)"
+        },
+        "cut_set": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CutSetEntry"
+          },
+          "description": "Traversal blockers"
+        },
+        "excluded_edges": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Omitted edge types"
+        },
+        "omitted_nodes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Dropped node IDs"
+        },
+        "slice_mode": {
+          "type": "string",
+          "enum": ["standard", "debug"],
+          "description": "Current slicing mode"
+        }
+      }
+    },
+    "CutSetEntry": {
+      "type": "object",
+      "required": ["blocker", "reason"],
+      "properties": {
+        "blocker": {
+          "type": "string",
+          "description": "Node or edge ID that blocked traversal"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "modifier_not_traversed",
+            "inherited_not_traversed",
+            "external_target_unknown",
+            "budget_exceeded",
+            "depth_limit_reached",
+            "library_excluded"
+          ],
+          "description": "Reason code for omission"
+        },
+        "impact": {
+          "type": "string",
+          "description": "Description of impact"
+        }
+      }
+    },
+    "DebugInfo": {
+      "type": "object",
+      "properties": {
+        "execution_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Execution time in milliseconds"
+        },
+        "cache_hit": {
+          "type": "boolean",
+          "description": "Whether result was cached"
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Warning messages"
+        },
+        "slice_mode": {
+          "type": "string",
+          "enum": ["standard", "debug"],
+          "description": "Slicing mode used"
+        },
+        "pruning_bypassed": {
+          "type": "boolean",
+          "description": "Whether pruning was bypassed (debug mode)"
+        },
+        "full_omissions": {
+          "type": "object",
+          "properties": {
+            "nodes_considered": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nodes_captured": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "edges_considered": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "edges_captured": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "Full omission details (debug mode only)"
+        },
+        "traversal_trace": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Traversal trace (debug mode only)"
+        }
+      }
+    },
+    "UnknownsBudget": {
+      "type": "object",
+      "required": ["max_ratio", "max_absolute"],
+      "properties": {
+        "max_ratio": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Maximum unknown/total ratio"
+        },
+        "max_absolute": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum absolute unknown count"
+        },
+        "critical_clauses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Clauses that cannot be unknown"
+        }
+      }
+    }
+  }
+}

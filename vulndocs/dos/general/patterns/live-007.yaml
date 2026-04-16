@@ -1,0 +1,18 @@
+id: live-007
+vulndoc: dos/general
+name: Assert Gas Consumption
+description: Uses assert in public/external functions.
+scope: Function
+lens:
+- Liveness
+severity: low
+match:
+  all:
+  - property: uses_assert
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

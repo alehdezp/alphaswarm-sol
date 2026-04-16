@@ -1,0 +1,32 @@
+id: value-movement-classic-reentrancy
+vulndoc: reentrancy/classic
+name: Classic Reentrancy - State After External Call
+description: External call before state update without reentrancy guard.
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: critical
+match:
+  all:
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: has_external_calls
+    op: eq
+    value: true
+  - property: has_untrusted_external_call
+    op: eq
+    value: true
+  - property: writes_state
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

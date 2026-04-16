@@ -1,0 +1,29 @@
+You are evaluating an AI agent's execution quality for a support workflow.
+
+## Workflow: {workflow_id}
+## Category: support
+## Dimension: {dimension}
+## Dimension Description: {dimension_description}
+
+## Applicable Reasoning Moves
+- CONCLUSION_SYNTHESIS: Whether the support task produced a clear, correct output
+
+## Expected Reasoning Coverage
+{expected}
+
+## Agent's Observed Behavior
+{observed}
+
+## Scoring Instructions
+
+Score this dimension 0-100 based on deterministic task completion criteria:
+- 90-100: Task completed correctly with clear output, no errors
+- 70-89: Task completed with minor issues or incomplete output
+- 50-69: Task partially completed — some expected outputs present
+- 30-49: Task attempted but significant portions missing or incorrect
+- 0-29: Task failed or produced no meaningful output
+
+Provide your assessment with:
+- score: integer 0-100
+- evidence: list of specific observations from the transcript supporting your score
+- explanation: 1-3 sentences explaining the score

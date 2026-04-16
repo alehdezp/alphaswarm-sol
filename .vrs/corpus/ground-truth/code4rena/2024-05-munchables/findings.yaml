@@ -1,0 +1,122 @@
+# Code4rena Contest: 2024-05-munchables
+# Ground Truth Findings - External Source
+# DO NOT modify based on tool output
+
+contest:
+  id: "2024-05-munchables"
+  name: "Munchables"
+  report_url: "https://code4rena.com/reports/2024-05-munchables"
+  findings_repo: "https://github.com/code-423n4/2024-05-munchables-findings"
+  audit_period: "May 2024"
+  prize_pool: "$24,500"
+
+metadata:
+  imported_date: "2026-02-04"
+  source: "Code4rena"
+  trust_level: "high"
+  external_ground_truth: true
+
+statistics:
+  total_findings: 4
+  high: 2
+  medium: 2
+  vulnerability_classes:
+    - logic_error
+    - oracle_manipulation
+    - denial_of_service
+    - access_control
+
+findings:
+  - id: "H-01"
+    title: "Lock duration can be reset to lock tokens indefinitely"
+    severity: "high"
+    vulnerability_class: "logic_error"
+    swc_id: "SWC-110"
+    affected_contracts:
+      - "LockManager.sol"
+    affected_functions:
+      - "lock"
+      - "_updateLockDuration"
+    ground_truth_verdict: "confirmed"
+    auditor: "Ch_301"
+    judge_confirmed: true
+    description: |
+      Calling lock() with a new duration resets the lock timer without
+      requiring unlock, effectively trapping user tokens indefinitely.
+    exploit_requirements:
+      - "User has existing locked position"
+      - "Call lock() with extended duration"
+    code_location:
+      file: "LockManager.sol"
+      line_start: 145
+      line_end: 172
+
+  - id: "H-02"
+    title: "Price manipulation via oracle in unfairly weighted token swaps"
+    severity: "high"
+    vulnerability_class: "oracle_manipulation"
+    swc_id: "SWC-120"
+    affected_contracts:
+      - "LockManager.sol"
+    affected_functions:
+      - "configureLockdrop"
+      - "_calculateTokenValue"
+    ground_truth_verdict: "confirmed"
+    auditor: "bronze_pickaxe"
+    judge_confirmed: true
+    description: |
+      Admin can manipulate token prices in lockdrop configuration to
+      unfairly weight conversions in favor of specific tokens.
+    exploit_requirements:
+      - "Admin access to configureLockdrop"
+      - "Set manipulated price ratios"
+    code_location:
+      file: "LockManager.sol"
+      line_start: 89
+      line_end: 118
+
+  - id: "M-01"
+    title: "DoS attack possible through unbounded loop in reward calculation"
+    severity: "medium"
+    vulnerability_class: "denial_of_service"
+    swc_id: "SWC-113"
+    affected_contracts:
+      - "RewardsManager.sol"
+    affected_functions:
+      - "claimRewards"
+      - "_calculateRewards"
+    ground_truth_verdict: "confirmed"
+    auditor: "kutugu"
+    judge_confirmed: true
+    description: |
+      Unbounded iteration over reward epochs can exceed gas limits,
+      preventing users from claiming accumulated rewards.
+    exploit_requirements:
+      - "Let many epochs accumulate"
+      - "claimRewards runs out of gas"
+    code_location:
+      file: "RewardsManager.sol"
+      line_start: 201
+      line_end: 234
+
+  - id: "M-02"
+    title: "Missing access control on setUSDPrice allows price manipulation"
+    severity: "medium"
+    vulnerability_class: "access_control"
+    swc_id: "SWC-105"
+    affected_contracts:
+      - "LockManager.sol"
+    affected_functions:
+      - "setUSDPrice"
+    ground_truth_verdict: "confirmed"
+    auditor: "0xSmartContract"
+    judge_confirmed: true
+    description: |
+      setUSDPrice lacks proper role checks, allowing unauthorized
+      addresses to manipulate token valuations.
+    exploit_requirements:
+      - "Call setUSDPrice without required role"
+    code_location:
+      file: "LockManager.sol"
+      line_start: 129
+      line_end: 138

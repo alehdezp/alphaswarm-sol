@@ -1,0 +1,22 @@
+id: logic-002
+vulndoc: logic/general
+name: Balance Invariant Violation
+description: Balance state modified without invariant checks.
+scope: Function
+lens:
+- LogicState
+severity: high
+cwe:
+- 682
+match:
+  all:
+  - property: modifies_balance_state
+    op: eq
+    value: true
+  - property: touches_invariant_unchecked
+    op: eq
+    value: true
+  none:
+  - property: maintains_balance_invariant
+    op: eq
+    value: true

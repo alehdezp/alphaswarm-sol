@@ -1,0 +1,22 @@
+# ECRecover Zero Address - Subcategory Index
+
+id: ecrecover-zero
+name: ECRecover Zero Address
+parent_category: crypto
+
+description: |
+  ecrecover returns address(0) for invalid signatures rather than
+  reverting, enabling bypass if not checked.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - crypto-002
+
+relevant_properties:
+  - uses_ecrecover
+  - checks_zero_address
+
+token_estimate: 400

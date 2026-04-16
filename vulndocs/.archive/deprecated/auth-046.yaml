@@ -1,0 +1,13 @@
+id: auth-046
+vulndoc: access-control/general
+name: Governance Vote Without Snapshot
+description: Governance voting uses live balances without a snapshot.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: governance_vote_without_snapshot
+    op: eq
+    value: true

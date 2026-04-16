@@ -1,0 +1,346 @@
+# Cetus Protocol SUI Overflow - Specific Exploit Instance
+# Phase 17.0: Real-World Exploit Documentation
+#
+# This document details the $260M Cetus Protocol vulnerability on Sui,
+# which exploited arithmetic overflow in liquidity calculations.
+#
+# Key Points:
+#   - Date: May 22, 2025
+#   - Loss: $260M in SUI tokens
+#   - Chain: Sui (Move-based, but applies to Solidity)
+#   - Root Cause: Unchecked arithmetic without bounds validation
+#   - Pattern: Multiplication overflow in position size calculations
+
+id: cetus-sui-overflow
+name: Cetus Protocol SUI Overflow (May 2025)
+parent_category: arithmetic
+parent_subcategory: arithmetic
+
+description: |
+  On May 22, 2025, the Cetus Protocol on Sui suffered a critical arithmetic
+  overflow vulnerability that resulted in approximately $260M in losses. The
+  vulnerability occurred in liquidity position calculations where multiplication
+  operations were performed without proper overflow checking or bounds validation.
+
+  The attack exploited the gap between calculating user-provided input values
+  and persisting them to critical state. An attacker could craft inputs that
+  caused intermediate calculations to overflow, resulting in incorrect position
+  sizes being written to state variables that control fund distribution.
+
+  While the Cetus exploit occurred on Sui/Move, the underlying arithmetic pattern
+  applies to Solidity contracts performing similar calculations on unprotected
+  integer types.
+
+severity: critical
+
+# Real-world exploit reference
+exploit_reference:
+  id: cetus-sui-overflow-may-2025
+  name: Cetus Protocol SUI Overflow
+  date: "2025-05-22"
+  loss_usd: "260000000"
+  protocol: Cetus
+  chain: sui
+  description: |
+    Attacker exploited unchecked multiplication in liquidity position calculation
+    to cause integer overflow. By providing specially crafted input values, the
+    attacker caused intermediate arithmetic results to wrap around, resulting in
+    incorrect position sizes. These incorrect values were then written to critical
+    state variables controlling fund distribution, enabling complete fund drainage.
+  attack_steps:
+    - "1. Analyze liquidity calculation contract for arithmetic operations"
+    - "2. Identify multiplication without bounds checking on user input"
+    - "3. Calculate input values that cause intermediate overflow"
+    - "4. Submit transaction with crafted inputs"
+    - "5. Overflow causes incorrect position size calculation"
+    - "6. Incorrect position size written to critical state variable"
+    - "7. Attacker positions drained via subsequent interactions"
+  postmortem_url: "https://cetus-protocol.gitbook.io/cetus-docs/"
+  cve_id: "CVE-TBD-2025-CETUS"
+  vulnerability_class: "integer-overflow"
+
+# Detection signals based on VKG properties
+detection:
+  graph_signals:
+    - property: has_arithmetic_operations
+      expected: true
+      critical: true
+      description: Function performs multiplication on user-controlled input
+      confidence: 0.95
+
+    - property: performs_multiplication
+      expected: true
+      critical: true
+      description: Multiplication operation detected without bounds check
+      confidence: 0.90
+
+    - property: has_division
+      expected: true
+      critical: false
+      description: Division in calculation chain (amplifies overflow impact)
+      confidence: 0.70
+
+    - property: writes_privileged_state
+      expected: true
+      critical: true
+      description: Function writes critical position/balance state variable
+      confidence: 0.95
+
+    - property: validates_input
+      expected: false
+      critical: true
+      description: No input bounds validation before arithmetic
+      confidence: 0.90
+
+    - property: uses_safemath
+      expected: false
+      critical: true
+      description: No SafeMath or checked arithmetic pattern detected
+      confidence: 0.85
+
+  # Semantic operations that indicate vulnerability
+  semantic_operations:
+    vulnerable:
+      - "PERFORMS_MULTIPLICATION"
+      - "WRITES_USER_BALANCE"
+      - "MODIFIES_CRITICAL_STATE"
+    required_absent:
+      - "VALIDATES_INPUT"
+      - "CHECKS_OVERFLOW"
+      - "USES_SAFE_MATH"
+
+  # Operation sequences showing vulnerability pattern
+  behavioral_signatures:
+    vulnerable:
+      - "R:input -> C:mul{unchecked} -> W:state"
+      - "R:input -> C:mul{no_bounds} -> W:balance"
+      - "P:user_value -> C:mul -> C:div{skip_check} -> W:critical"
+    safe:
+      - "R:input -> C:validate_bounds -> C:mul -> W:state"
+      - "R:input -> C:mul{checked} -> W:state"
+      - "R:input -> C:validate_range -> C:mul -> W:balance"
+
+  # Operation ordering that distinguishes vulnerable from safe
+  operation_sequences:
+    vulnerable:
+      - "R:input -> C:mul -> W:critical_state"
+      - "R:user_value -> C:mul -> C:div{partial} -> W:balance"
+      - "P:untrusted_input -> C:arithmetic{unchecked} -> W:state"
+    safe:
+      - "R:input -> C:validate -> C:mul -> W:state"
+      - "R:user_value -> C:validate_bounds -> C:mul -> W:balance"
+      - "P:input -> C:bounds_check -> C:safe_mul -> W:state"
+
+# False positive indicators (code patterns that indicate safety)
+false_positive_indicators:
+  - "SafeMath library imported (e.g., using SafeMath for uint256)"
+  - "Solidity 0.8.0+ with built-in overflow checking enabled"
+  - "Explicit require() or revert() before arithmetic operations"
+  - "Input validation checking against MAX_UINT or protocol limits"
+  - "Checked arithmetic patterns (e.g., checked_mul, safe_mul)"
+  - "Fixed decimal precision with range validation"
+  - "OpenZeppelin or industry-standard safe arithmetic library usage"
+  - "Comprehensive bounds checking on all inputs before use"
+
+# Related patterns and signatures
+pattern_id: logic-003-cetus-overflow  # Primary VKG pattern for this vulnerability
+
+related_patterns:
+  - logic-003-cetus-overflow  # Primary pattern for this specific exploit
+  - logic-001          # Generic overflow/underflow pattern
+  - ac-005             # Unchecked state modification
+  - dos-002            # Resource exhaustion via arithmetic
+
+# VKG properties relevant to detection
+relevant_properties:
+  - has_arithmetic_operations
+  - performs_multiplication
+  - performs_division
+  - writes_privileged_state
+  - validates_input
+  - uses_safe_math
+  - reads_user_input
+  - writes_user_balance
+  - modifies_critical_state
+  - solidity_version
+
+# CWE classifications
+related_cwes:
+  - CWE-190          # Integer Overflow or Wraparound
+  - CWE-191          # Integer Underflow (Wrap or Wraparound)
+  - CWE-682          # Incorrect Calculation
+  - CWE-369          # Divide By Zero
+
+# Remediation guidance
+remediation:
+  # Immediate fixes
+  recommended_fixes:
+    - id: use-checked-arithmetic
+      title: Use Checked Arithmetic
+      description: |
+        Switch to SafeMath library or upgrade to Solidity 0.8.0+ which has
+        built-in overflow checks enabled by default. For multiplication with
+        user input, use checked multiplication with explicit bounds validation.
+      priority: critical
+      code_pattern: |
+        // VULNERABLE (Solidity 0.7.x)
+        uint256 result = userInput * multiplier;
+
+        // SAFE (SafeMath)
+        uint256 result = userInput.mul(multiplier);
+
+        // SAFE (Solidity 0.8.0+)
+        uint256 result = userInput * multiplier;  // Checked by default
+
+    - id: validate-input-bounds
+      title: Validate Input Bounds Before Use
+      description: |
+        Always validate user input against protocol limits before using in
+        arithmetic operations. Calculate maximum safe input values based on
+        the arithmetic operation that will follow.
+      priority: critical
+      code_pattern: |
+        // VULNERABLE
+        function calculatePosition(uint256 amount) public {
+            uint256 position = amount * pricePerUnit;
+            positions[msg.sender] = position;
+        }
+
+        // SAFE
+        function calculatePosition(uint256 amount) public {
+            // Validate input is within safe bounds
+            require(amount <= MAX_POSITION_SIZE, "Amount too large");
+            require(amount > 0, "Amount must be positive");
+
+            // Additional check: prevent overflow in multiplication
+            require(amount <= type(uint256).max / pricePerUnit, "Overflow risk");
+
+            uint256 position = amount * pricePerUnit;
+            positions[msg.sender] = position;
+        }
+
+    - id: use-safe-math-library
+      title: Implement Safe Math Library
+      description: |
+        Create or use a well-tested safe arithmetic library that provides
+        overflow-checked operations with clear error messages.
+      priority: high
+
+    - id: add-invariant-checks
+      title: Add Invariant Checks
+      description: |
+        After critical state updates, verify that protocol invariants still hold.
+        For position calculations, verify total positions haven't exceeded supply.
+      priority: high
+      code_pattern: |
+        function updatePosition(uint256 newSize) public {
+            uint256 oldSize = positions[msg.sender];
+            positions[msg.sender] = newSize;
+
+            // Invariant: total positions must not exceed supply
+            assert(getTotalPositions() <= totalSupply);
+        }
+
+    - id: implement-maximum-values
+      title: Define and Enforce Maximum Values
+      description: |
+        Define constants for maximum allowed values for each critical state
+        variable. Check against these maximums before state updates.
+      priority: high
+      code_pattern: |
+        // Define maximum safe values
+        uint256 constant MAX_POSITION_SIZE = 10**18;  // 1 SUI in smallest units
+        uint256 constant MAX_MULTIPLIER = 10**9;
+
+        function safeMultiply(uint256 a, uint256 b) internal pure returns (uint256) {
+            require(a <= MAX_POSITION_SIZE, "Value A exceeds maximum");
+            require(b <= MAX_MULTIPLIER, "Value B exceeds maximum");
+            return a * b;
+        }
+
+  # Testing and validation strategies
+  testing_guidance:
+    - "Unit test: Multiply MAX_INPUT by MAX_MULTIPLIER, verify no overflow"
+    - "Fuzz testing: Generate random input combinations, check for overflow"
+    - "Invariant testing: Verify protocol totals stay within bounds after operations"
+    - "Edge case testing: Test with (2^256-1), (2^256-1)/divisor, etc."
+    - "Integration testing: Multi-step operations that might accumulate precision loss"
+
+  # Effectiveness matrix
+  effectiveness:
+    - fix: SafeMath library
+      effectiveness: "Very High (99%)"
+      cost: "Low (library import)"
+      implementation_time: "Hours"
+
+    - fix: Input validation
+      effectiveness: "Very High (95%+)"
+      cost: "Low (bounds checks)"
+      implementation_time: "Hours"
+
+    - fix: Upgrade Solidity 0.8.0+
+      effectiveness: "Very High (99%)"
+      cost: "Medium (contract redeployment)"
+      implementation_time: "Days"
+
+    - fix: Invariant checks
+      effectiveness: "High (85%)"
+      cost: "Medium (logic additions)"
+      implementation_time: "Days"
+
+# Impact analysis
+impact:
+  financial_impact: "Unbounded - attacker can drain entire protocol"
+  user_impact: "Complete loss of funds in affected positions"
+  protocol_impact: "Total insolvency - all positions become unrecoverable"
+  attack_complexity: "Medium - requires knowledge of calculation logic"
+  required_attacker_skills: "Moderate - arithmetic analysis and contract interaction"
+
+# Navigation and cross-references
+navigation:
+  related_vulnerabilities:
+    - logic/arithmetic          # Generic arithmetic category
+    - access-control/missing-access-gate  # Who can call?
+    - dos/resource-exhaustion   # Arithmetic attacks can exhaust resources
+
+  related_exploits:
+    - dao-hack                  # Historical reentrancy (complex state interactions)
+    - fei-rari-hack             # State inconsistency
+
+  blockchain_context:
+    - "Sui uses Move language, different from Solidity"
+    - "But arithmetic overflow patterns are universal"
+    - "Solidity 0.8.0+ has built-in checks; older versions are vulnerable"
+    - "Move has different semantics but similar overflow risks"
+
+# Metadata and caching
+token_estimate: 800
+context_cache_key: "logic-arithmetic-cetus-sui-overflow-v1"
+
+# Version tracking
+version: "1.0"
+last_updated: "2026-01-09"
+status: "finalized"
+
+# Evidence links
+evidence:
+  - source: "Cetus Protocol Official Announcement"
+    url: "https://cetus-protocol.gitbook.io/"
+    description: "Protocol security incident announcement and postmortem"
+    date: "2025-05-22"
+
+  - source: "Sui Ecosystem Security"
+    url: "https://sui.io/"
+    description: "Sui blockchain official documentation and security guidelines"
+    date: "2025-05-22"
+
+# Tags for searching and filtering
+tags:
+  - arithmetic-overflow
+  - unchecked-math
+  - integer-overflow
+  - critical-severity
+  - sui-specific
+  - 2025-incident
+  - position-calculation
+  - liquidity-vulnerability

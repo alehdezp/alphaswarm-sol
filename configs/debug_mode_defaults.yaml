@@ -1,0 +1,436 @@
+# Debug Mode Defaults Configuration
+#
+# This file defines default debug settings per skill and global on/off toggles.
+# Debug mode is MANDATORY for all E2E validation. Runs without debug artifacts are invalid.
+#
+# Schema: Based on debug-mode-spec.md
+# Updated: 2026-01-30
+
+version: "1.0"
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+
+global:
+  # Master switch for debug mode (can be overridden by ALPHASWARM_DEBUG_MODE env var)
+  enabled: false
+
+  # Default output directory for debug artifacts
+  output_dir: "evidence/debug"
+
+  # Maximum characters to capture in result summaries
+  max_result_chars: 500
+
+  # Whether to redact secrets from debug outputs
+  redact_secrets: true
+
+  # Performance targets (overhead thresholds)
+  performance:
+    max_overhead_per_tool_call_ms: 5
+    max_overhead_per_query_ms: 10
+    max_serialization_ms: 50
+    max_total_overhead_percent: 5
+
+  # Validation rules (all must pass for record to be "success")
+  validation:
+    require_record_id: true
+    require_valid_timestamps: true
+    require_positive_duration: true
+    require_prompt: true
+    require_tool_calls_array: true
+    require_bskg_queries_array: true
+    require_output: true
+
+# =============================================================================
+# SKILL-SPECIFIC SETTINGS
+# =============================================================================
+
+skills:
+  # Primary audit entry point
+  "/vrs-audit":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 8000
+    extra_fields: []
+
+  # Investigation skill
+  "/vrs-investigate":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 6000
+    extra_fields: []
+
+  # Verification skill
+  "/vrs-verify":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 6000
+    extra_fields: []
+
+  # Debate skill (includes debate_turns)
+  "/vrs-debate":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 8000
+    extra_fields:
+      - debate_turns
+      - round_summaries
+
+  # Context generation skill
+  "/vrs-context":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 4000
+    extra_fields: []
+
+  # Labeling skill
+  "/vrs-label":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 4000
+    extra_fields: []
+
+  # Query skill
+  "/vrs-query":
+    enabled: true
+    record_type: query_focused
+    capture:
+      prompts: true
+      tool_calls: false
+      bskg_queries: true
+      intermediate_artifacts: false
+      outputs: true
+    token_budget: 2000
+    extra_fields: []
+
+  # Tool runner skills
+  "/vrs-run-slither":
+    enabled: true
+    record_type: tool_focused
+    capture:
+      prompts: false
+      tool_calls: true
+      bskg_queries: false
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 2000
+    extra_fields:
+      - tool_version
+      - tool_exit_code
+
+  "/vrs-run-aderyn":
+    enabled: true
+    record_type: tool_focused
+    capture:
+      prompts: false
+      tool_calls: true
+      bskg_queries: false
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 2000
+    extra_fields:
+      - tool_version
+      - tool_exit_code
+
+  "/vrs-run-mythril":
+    enabled: true
+    record_type: tool_focused
+    capture:
+      prompts: false
+      tool_calls: true
+      bskg_queries: false
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 2000
+    extra_fields:
+      - tool_version
+      - tool_exit_code
+
+# =============================================================================
+# AGENT-SPECIFIC SETTINGS
+# =============================================================================
+
+agents:
+  # Attacker agent (exploit construction)
+  "vrs-attacker":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 8000
+    extra_fields:
+      - exploit_chain
+      - attack_vectors
+
+  # Defender agent (guard discovery)
+  "vrs-defender":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 6000
+    extra_fields:
+      - guards_found
+      - mitigations
+
+  # Verifier agent (evidence cross-check)
+  "vrs-verifier":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 8000
+    extra_fields:
+      - arbitration_notes
+      - evidence_conflicts
+
+  # Secure reviewer agent
+  "vrs-secure-reviewer":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 6000
+    extra_fields:
+      - review_mode
+      - creative_paths
+
+  # Pattern verifier agent
+  "vrs-pattern-verifier":
+    enabled: true
+    record_type: pattern_focused
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 4000
+    extra_fields:
+      - patterns_verified
+      - evidence_quality
+
+  # Gap finder agent
+  "vrs-gap-finder":
+    enabled: true
+    record_type: coverage_focused
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 6000
+    extra_fields:
+      - coverage_gaps
+      - fp_hotspots
+
+  # Test conductor agent
+  "vrs-test-conductor":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 6000
+    extra_fields:
+      - test_plan
+      - stage_results
+
+  # Benchmark runner agent
+  "vrs-benchmark-runner":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: false
+      tool_calls: true
+      bskg_queries: false
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 2000
+    extra_fields:
+      - benchmark_results
+      - precision_recall
+
+  # Mutation tester agent
+  "vrs-mutation-tester":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: false
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 4000
+    extra_fields:
+      - mutations_generated
+      - mutation_kill_rate
+
+  # Regression hunter agent
+  "vrs-regression-hunter":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: true
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 4000
+    extra_fields:
+      - regressions_found
+      - baseline_comparison
+
+  # Corpus curator agent
+  "vrs-corpus-curator":
+    enabled: true
+    record_type: full
+    capture:
+      prompts: true
+      tool_calls: true
+      bskg_queries: false
+      intermediate_artifacts: true
+      outputs: true
+    token_budget: 4000
+    extra_fields:
+      - corpus_changes
+      - ground_truth_updates
+
+# =============================================================================
+# RECORD TYPE DEFINITIONS
+# =============================================================================
+
+record_types:
+  full:
+    description: "Complete debug record with all fields"
+    required_fields:
+      - record_id
+      - skill_or_agent
+      - version
+      - timestamp_start
+      - timestamp_end
+      - duration_ms
+      - inputs
+      - tool_calls
+      - bskg_queries
+      - outputs
+      - metadata
+
+  query_focused:
+    description: "Focus on BSKG/VQL queries, minimal tool tracking"
+    required_fields:
+      - record_id
+      - skill_or_agent
+      - timestamp_start
+      - timestamp_end
+      - bskg_queries
+      - outputs
+
+  tool_focused:
+    description: "Focus on external tool invocations"
+    required_fields:
+      - record_id
+      - skill_or_agent
+      - timestamp_start
+      - timestamp_end
+      - tool_calls
+      - outputs
+
+  pattern_focused:
+    description: "Focus on pattern matching and verification"
+    required_fields:
+      - record_id
+      - skill_or_agent
+      - timestamp_start
+      - timestamp_end
+      - bskg_queries
+      - outputs
+      - patterns_verified
+
+  coverage_focused:
+    description: "Focus on coverage analysis"
+    required_fields:
+      - record_id
+      - skill_or_agent
+      - timestamp_start
+      - timestamp_end
+      - outputs
+      - coverage_gaps
+
+# =============================================================================
+# E2E VALIDATION REQUIREMENTS
+# =============================================================================
+
+e2e_validation:
+  # Debug mode MUST be enabled for E2E validation
+  require_debug_mode: true
+
+  # All skills and agents listed above MUST produce debug records
+  require_all_skills: true
+  require_all_agents: true
+
+  # Index must be present and valid
+  require_valid_index: true
+
+  # All records must pass validation
+  require_all_records_valid: true
+
+  # Evidence pack manifest must reference debug records
+  require_manifest_reference: true

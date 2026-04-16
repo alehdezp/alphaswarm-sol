@@ -1,0 +1,16 @@
+id: value-movement-approval-race
+vulndoc: reentrancy/general
+name: Token Approval Race
+description: ERC20 approve without allowance adjustment helpers.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: uses_erc20_approve
+    op: eq
+    value: true
+  - property: uses_allowance_adjust
+    op: eq
+    value: false

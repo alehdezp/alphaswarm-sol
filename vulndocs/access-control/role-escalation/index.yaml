@@ -1,0 +1,86 @@
+# Role/Privilege Escalation - Subcategory Index
+# Unauthorized role assignment or privilege elevation
+
+id: role-escalation
+name: Role/Privilege Escalation
+parent_category: access-control
+
+description: |
+  Vulnerabilities allowing unauthorized users to assign roles to themselves or others,
+  or to elevate their own privileges. This includes flawed role assignment logic,
+  missing checks on who can grant roles, and privilege inheritance issues that allow
+  lower-privileged users to gain higher privileges.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - auth-006
+  - auth-007
+
+# VKG properties for detection
+relevant_properties:
+  - has_role_grant
+  - modifies_owner
+  - has_access_gate
+  - writes_privileged_state
+  - visibility
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: has_role_grant
+    expected: true
+    critical: true
+    description: Function can modify role assignments
+
+  - property: modifies_owner
+    expected: true
+    critical: true
+    description: Function can modify ownership
+
+  - property: has_access_gate
+    expected: false
+    critical: true
+    description: Role modification lacks proper access control
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+# Behavioral signatures
+behavioral_signatures:
+  - "W:role->!G:admin"
+  - "W:owner->!G:owner"
+  - "MODIFIES_ROLES->!CHECKS_PERMISSION"
+  - "grantRole->!hasRole(ADMIN)"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "MODIFIES_ROLES without CHECKS_PERMISSION"
+    - "MODIFIES_OWNER without CHECKS_PERMISSION"
+    - "grantRole(ADMIN) without admin check"
+  safe:
+    - "CHECKS_PERMISSION (admin) -> MODIFIES_ROLES"
+    - "CHECKS_PERMISSION (owner) -> MODIFIES_OWNER"
+    - "hasRole(ADMIN_ROLE) -> grantRole"
+
+# False positive indicators
+false_positive_indicators:
+  - "Role assignment is in constructor only"
+  - "Function requires multi-sig or timelock"
+  - "Role hierarchy properly enforced"
+  - "Self-assignment prevented explicitly"
+
+# Related real-world exploits
+related_exploits:
+  - ronin-bridge-hack
+  - harmony-bridge-hack
+
+# Token estimate for this subcategory
+token_estimate: 450

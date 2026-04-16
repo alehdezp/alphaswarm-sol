@@ -1,0 +1,40 @@
+{
+  "description": "Ground truth for LLM verdict accuracy testing",
+  "version": "1.0",
+  "created": "2026-01-08",
+  "cases": [
+    {
+      "bead_path": "beads/reentrancy-vulnerable.json",
+      "expected": "true_positive",
+      "rationale": "Classic reentrancy vulnerability - external call before state update with no reentrancy guard. This is exploitable.",
+      "source": "Expert review - canonical reentrancy pattern",
+      "vulnerability_class": "reentrancy"
+    },
+    {
+      "bead_path": "beads/reentrancy-guarded.json",
+      "expected": "false_positive",
+      "rationale": "Has nonReentrant modifier that prevents reentrancy. The pattern flagged the code structure but the modifier makes it safe.",
+      "source": "Expert review - protected with ReentrancyGuard",
+      "vulnerability_class": "reentrancy"
+    },
+    {
+      "bead_path": "beads/access-control-missing.json",
+      "expected": "true_positive",
+      "rationale": "Missing access control on privileged function. Anyone can call setOwner and take ownership.",
+      "source": "Expert review - no access restriction",
+      "vulnerability_class": "access_control"
+    },
+    {
+      "bead_path": "beads/access-control-protected.json",
+      "expected": "false_positive",
+      "rationale": "Has onlyOwner modifier with proper implementation. The pattern flagged privileged state modification but access is restricted.",
+      "source": "Expert review - protected with onlyOwner",
+      "vulnerability_class": "access_control"
+    }
+  ],
+  "statistics": {
+    "total": 4,
+    "true_positives": 2,
+    "false_positives": 2
+  }
+}

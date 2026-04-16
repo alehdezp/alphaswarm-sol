@@ -1,0 +1,7 @@
+{
+  "session_id": "09cfb310-8868-49e1-921f-f0071419e77a",
+  "task_id": "task-abc123",
+  "task_subject": "Investigate reentrancy in Vault.sol",
+  "stop_hook_active": false,
+  "_schema_note": "TaskCompleted event stdin from real CC orchestration session. Used by debrief_task_complete.py."
+}

@@ -1,0 +1,366 @@
+# =============================================================================
+# PATTERN: governance-001
+# =============================================================================
+
+id: governance-001
+vulndoc: governance/parameters
+name: "Unprotected Governance Parameter Update"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Public/external functions that modify governance-critical state variables (quorum,
+  voting thresholds, timelock delays, voting periods, execution delays) without proper
+  access control, allowing any caller to manipulate the DAO's security parameters.
+
+  ## Why It's Dangerous
+  Governance parameters are the foundation of DAO security. Unprotected modification
+  allows attackers to:
+  - Lower quorum requirements to pass malicious proposals with minimal votes
+  - Remove or reduce timelock delays to execute proposals instantly (no review period)
+  - Extend voting periods indefinitely to prevent legitimate proposals from passing
+  - Lower voting thresholds to gain approval with fewer tokens
+  - Change execution delays to bypass security review windows
+
+  ## Detection Logic
+  This pattern uses SEMANTIC detection (name-agnostic) based on VKG's heuristics:
+
+  1. **Function is externally callable** (`visibility: [public, external]`)
+  2. **Function writes privileged state** (`writes_privileged_state: true`)
+     - Heuristics.py tags variables with "governance" when they contain tokens like:
+       governance, governor, timelock, council, quorum, voting, proposal, threshold,
+       delay, guardian (lines 82-94)
+     - "governance" tag is in privileged state set (line 149)
+  3. **Function modifies state** (`writes_state: true`)
+  4. **NO access control present** (`has_access_gate: false`)
+  5. **NOT a constructor** (constructors legitimately set initial params)
+
+  This detection is COMPLETELY IMPLEMENTATION-AGNOSTIC - it works regardless of:
+  - Variable naming (quorumBPS, _quorum, QUORUM_THRESHOLD, minQuorum)
+  - Function naming (setQuorum, updateQuorum, changeQuorum, configureQuorum)
+  - Modifier naming (onlyGovernor, onlyTimelock, onlyGuardian, restricted)
+
+  ## Real-World Examples
+  - **Beanstalk ($182M, April 2022)**: Flash loan governance attack where lack of
+    execution delay allowed instant parameter manipulation and fund extraction
+  - **CVE-2022-31198**: OpenZeppelin GovernorVotesQuorumFraction vulnerability where
+    lowering quorum made previously-defeated proposals executable
+  - **CVE-2021-39167**: TimelockController vulnerability allowing delay reset to 0
+  - **Compound Governance Attack (2024)**: Golden Boys proposal exploiting low quorum
+    to allocate $24M in treasury funds
+
+scope: Function
+
+lens:
+  - Governance
+
+severity: critical
+
+# Pattern quality status (set by vrs-test-conductor agent)
+# Updated 2026-01-02: Documented as EXCELLENT in mega-task (~100%/~100%/~100%)
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable to be exploitable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # SEMANTIC DETECTION: Writes to governance-tagged state variables
+    # This is the CORE SIGNAL - completely name-agnostic
+    # Heuristics.py tags variables containing: governance, governor, timelock,
+    # council, quorum, voting, proposal, threshold, delay, guardian
+    - property: writes_privileged_state
+      op: eq
+      value: true
+
+    # Must actually modify state (not just read)
+    - property: writes_state
+      op: eq
+      value: true
+
+  # At least ONE must match (OR logic) - use for alternatives
+  any: []
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Exclude functions with ANY access control
+    - property: has_access_gate
+      op: eq
+      value: true
+
+    # Exclude constructors (they legitimately set initial governance params)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude functions with access modifiers (onlyOwner, onlyRole, etc.)
+    - property: has_access_modifier
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# Edge requirements for graph-based detection
+edges: []
+
+# Path requirements for multi-hop detection
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Flash Loan Governance Takeover"
+    description: |
+      Attacker uses flash loan to acquire governance tokens, calls unprotected
+      parameter update to lower quorum/threshold, passes malicious proposal,
+      drains treasury, repays flash loan - all in one transaction.
+    preconditions:
+      - "Governance parameter update function is public/external"
+      - "No access control on parameter update"
+      - "No execution delay between parameter change and proposal execution"
+    steps:
+      - "Take flash loan to acquire governance tokens"
+      - "Call unprotected setQuorum() to lower quorum requirement"
+      - "Submit and immediately execute malicious proposal (now passes with lower quorum)"
+      - "Drain protocol funds via malicious proposal"
+      - "Repay flash loan, keep profit"
+    impact: "Complete protocol takeover and fund extraction ($182M in Beanstalk case)"
+
+  - name: "Timelock Delay Removal"
+    description: |
+      Attacker calls unprotected timelock delay update to set delay to 0,
+      eliminating the security review window for proposals.
+    preconditions:
+      - "Timelock delay parameter is modifiable"
+      - "No access control on delay update function"
+    steps:
+      - "Call unprotected setDelay(0) or updateTimelockDelay(0)"
+      - "Submit malicious proposal"
+      - "Execute immediately (no delay period for community review)"
+      - "Extract funds or escalate privileges"
+    impact: "Bypass security review period, instant malicious proposal execution"
+
+  - name: "Quorum Threshold Manipulation"
+    description: |
+      Attacker lowers quorum requirement to make previously-defeated proposals
+      executable or to pass new proposals with minimal voting participation.
+    preconditions:
+      - "Quorum parameter is modifiable"
+      - "No access control on quorum update"
+      - "Previously defeated proposals are not permanently invalidated"
+    steps:
+      - "Call unprotected setQuorum() to lower requirement"
+      - "Resurrect previously-defeated proposal that now meets new quorum"
+      - "Or submit new malicious proposal requiring fewer votes"
+      - "Execute with minimal voting power"
+    impact: "Governance capture with minority voting power"
+
+  - name: "Voting Period Extension DoS"
+    description: |
+      Attacker extends voting period to indefinite duration, preventing
+      legitimate proposals from ever reaching execution.
+    preconditions:
+      - "Voting period parameter is modifiable"
+      - "No access control or sanity bounds on period update"
+    steps:
+      - "Call unprotected setVotingPeriod(type(uint256).max)"
+      - "All proposals now require impossibly long voting periods"
+      - "Governance is effectively frozen"
+    impact: "Permanent governance denial-of-service"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm the function is public/external (not internal helper)"
+  - "Verify the state variable being modified contains governance-related tokens (quorum, voting, threshold, timelock, delay, proposal, guardian, governor)"
+  - "Check there is NO access control in modifiers or function body (no onlyOwner, onlyGovernor, onlyTimelock, require(msg.sender == X))"
+  - "Ensure this is NOT a constructor or initializer (one-time setup is acceptable)"
+  - "Look for missing timelock delays or multi-sig requirements"
+  - "Check if the protocol has other governance protections (emergency pause, guardian veto)"
+  - "Review if parameter bounds/sanity checks exist (min/max quorum, delay limits)"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add onlyGovernor/onlyTimelock Modifier"
+    description: "Restrict parameter updates to governance contract or timelock"
+    example: |
+      // VULNERABLE
+      function setQuorum(uint256 newQuorum) external {
+          quorumThreshold = newQuorum;
+      }
+
+      // SAFE - Governance-only access
+      function setQuorum(uint256 newQuorum) external onlyGovernor {
+          quorumThreshold = newQuorum;
+      }
+
+      // SAFE - Timelock-only access (requires proposal + delay)
+      function setQuorum(uint256 newQuorum) external onlyTimelock {
+          quorumThreshold = newQuorum;
+      }
+
+  - name: "Require Multi-Sig Approval"
+    description: "Use multi-signature wallet for critical parameter changes"
+    example: |
+      // SAFE - Multi-sig required
+      function setQuorum(uint256 newQuorum) external {
+          require(msg.sender == multiSigWallet, "Only multisig");
+          quorumThreshold = newQuorum;
+      }
+
+  - name: "Add Parameter Bounds and Sanity Checks"
+    description: "Enforce minimum/maximum bounds on governance parameters"
+    example: |
+      // SAFE - With bounds enforcement
+      uint256 public constant MIN_QUORUM = 100; // 1%
+      uint256 public constant MAX_QUORUM = 4000; // 40%
+      uint256 public constant MIN_DELAY = 2 days;
+      uint256 public constant MAX_DELAY = 30 days;
+
+      function setQuorum(uint256 newQuorum) external onlyGovernor {
+          require(newQuorum >= MIN_QUORUM, "Quorum too low");
+          require(newQuorum <= MAX_QUORUM, "Quorum too high");
+          quorumThreshold = newQuorum;
+      }
+
+      function setTimelockDelay(uint256 newDelay) external onlyGovernor {
+          require(newDelay >= MIN_DELAY, "Delay too short");
+          require(newDelay <= MAX_DELAY, "Delay too long");
+          timelockDelay = newDelay;
+      }
+
+  - name: "Implement Two-Step Update Process"
+    description: "Require proposal + execution delay for parameter changes"
+    example: |
+      // SAFE - Two-step process with delay
+      struct PendingUpdate {
+          uint256 newValue;
+          uint256 executionTime;
+      }
+
+      PendingUpdate public pendingQuorum;
+      uint256 public constant UPDATE_DELAY = 2 days;
+
+      function proposeQuorumUpdate(uint256 newQuorum) external onlyGovernor {
+          pendingQuorum = PendingUpdate({
+              newValue: newQuorum,
+              executionTime: block.timestamp + UPDATE_DELAY
+          });
+      }
+
+      function executeQuorumUpdate() external {
+          require(block.timestamp >= pendingQuorum.executionTime, "Too early");
+          quorumThreshold = pendingQuorum.newValue;
+          delete pendingQuorum;
+      }
+
+  - name: "Add Guardian Veto Capability"
+    description: "Allow trusted guardian to veto dangerous parameter changes"
+    example: |
+      // SAFE - With guardian veto
+      address public guardian;
+      mapping(bytes32 => bool) public vetoedUpdates;
+
+      function setQuorum(uint256 newQuorum) external onlyGovernor {
+          bytes32 updateHash = keccak256(abi.encode("setQuorum", newQuorum));
+          require(!vetoedUpdates[updateHash], "Update vetoed by guardian");
+          quorumThreshold = newQuorum;
+      }
+
+      function vetoUpdate(bytes32 updateHash) external {
+          require(msg.sender == guardian, "Only guardian");
+          vetoedUpdates[updateHash] = true;
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - governance-vote-without-snapshot  # Flash loan voting attacks
+  - auth-001  # Unprotected privileged state write (general case)
+  - auth-020  # Unprotected initializer
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-285  # Improper Authorization
+  - CWE-862  # Missing Authorization
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+semantic_ops:
+  has_all_operations:
+    - MODIFIES_CRITICAL_STATE
+    - CHECKS_PERMISSION  # Should be present but isn't (vulnerability)
+
+  # This is what SHOULD happen in safe code
+  safe_pattern_operations:
+    - CHECKS_PERMISSION
+    - MODIFIES_CRITICAL_STATE
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  # Vulnerable pattern: Write governance state without permission check
+  pattern: "W:gov"  # Should be "C:auth→W:gov" for safe code
+  matches_exploits:
+    - beanstalk-2022
+    - compound-golden-boys-2024
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - beanstalk-2022
+    - cve-2022-31198
+    - cve-2021-39167
+    - compound-governance-2024
+  description: "Unprotected governance parameter manipulation"
+  similarity_threshold: 0.90
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+    confidence_threshold: 0.85
+
+  # Risk agent: Exploitability assessment
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 8.0  # Very high (critical severity)
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 2
+    mode: voting

@@ -1,0 +1,22 @@
+# Function Selector Clashing - Subcategory Index
+
+id: function-clashing
+name: Function Selector Clashing
+parent_category: upgrade
+
+description: |
+  Implementation functions with selectors matching proxy admin functions,
+  causing unexpected routing of calls.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - upg-004
+
+relevant_properties:
+  - proxy_type
+  - function_selectors
+
+token_estimate: 400

@@ -1,0 +1,47 @@
+id: auth-117
+vulndoc: access-control/general
+name: Unprotected Oracle/Price Feed Update
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `oracle-002-unprotected-feed-update` instead.
+
+
+  Location: `patterns/semantic/oracle/oracle-002-unprotected-feed-update.yaml`
+
+
+  The semantic pattern uses `updates_oracle_feed` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Oracle or price feed updates without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: oracle-002-unprotected-feed-update
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(oracle|pricefeed|price_feed)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

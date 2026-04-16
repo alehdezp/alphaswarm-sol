@@ -1,0 +1,80 @@
+# Upgrade Investigation Template
+vulnerability_class: upgrade
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify proxy/upgrade pattern"
+    look_for: |
+      - UUPS proxy pattern
+      - Transparent proxy
+      - Diamond pattern
+      - upgradeTo(), upgradeToAndCall()
+    evidence_needed: "Proxy type and upgrade mechanism"
+
+  - step_number: 2
+    action: "Check initialization protection"
+    look_for: |
+      - initializer modifier
+      - initialized flag
+      - constructor vs initialize()
+    evidence_needed: "Initialization protection code"
+    red_flag: "Initialize can be called multiple times"
+    safe_if: "initializer modifier prevents re-initialization"
+
+  - step_number: 3
+    action: "Check upgrade access control"
+    look_for: |
+      - onlyOwner on upgradeTo
+      - Timelock on upgrades
+      - Multi-sig requirement
+    evidence_needed: "Upgrade access control mechanism"
+    red_flag: "Anyone can upgrade"
+    safe_if: "Admin-only with timelock"
+
+  - step_number: 4
+    action: "Check storage layout safety"
+    look_for: |
+      - Storage gaps (__gap)
+      - Storage collision risks
+      - Inherited storage order
+    evidence_needed: "Storage layout analysis"
+    red_flag: "No storage gaps in upgradeable base"
+    safe_if: "Proper gaps and consistent layout"
+
+  - step_number: 5
+    action: "Check for dangerous functions in implementation"
+    look_for: |
+      - selfdestruct
+      - delegatecall
+      - Implementation direct calls
+    evidence_needed: "Dangerous function analysis"
+    red_flag: "selfdestruct in implementation contract"
+
+questions_to_answer:
+  - "What proxy pattern is used?"
+  - "Can initialize be called multiple times?"
+  - "Who can perform upgrades?"
+  - "Is there a timelock on upgrades?"
+  - "Are there storage layout risks?"
+
+common_false_positives:
+  - "Implementation is not meant to be called directly"
+  - "Upgrade is behind multi-sig + timelock"
+  - "Reinitializer is intentional for version migration"
+  - "Storage gap exists in actual deployed code"
+
+key_indicators:
+  - "Missing initializer protection"
+  - "No access control on upgrade"
+  - "No storage gap in base contract"
+  - "selfdestruct in implementation"
+  - "Constructor in implementation"
+
+safe_patterns:
+  - "OpenZeppelin upgradeable contracts"
+  - "Timelock + multi-sig for upgrades"
+  - "Proper storage gaps (__gap)"
+  - "No selfdestruct in implementation"
+  - "Disable initializers in constructor"

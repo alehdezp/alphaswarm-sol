@@ -1,0 +1,31 @@
+id: price-sensitive-frontrun
+vulndoc: upgrade/general
+name: Price-Sensitive Front-Running
+description: Price-sensitive swaps or trades missing slippage/min-output protections.
+scope: Function
+lens:
+- Ordering
+severity: high
+match:
+  all:
+  - property: performs_swap_or_trade
+    op: eq
+    value: true
+  - property: affects_price
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  any:
+  - property: risk_missing_slippage_parameter
+    op: eq
+    value: true
+  - property: risk_missing_slippage_check
+    op: eq
+    value: true

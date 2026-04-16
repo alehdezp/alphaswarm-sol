@@ -1,0 +1,29 @@
+workflow_id: skill-vrs-bead-update
+category: skill
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+reasoning_dimensions:
+- task_completion
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: session_completed
+  description: Skill session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+- id: bead_updated
+  description: 'TODO: validate against real run - Bead status updated'
+  expected_behavior: Bead file updated with new status
+  grader_type: code
+evidence_requirements: []
+hooks:
+- Stop
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: important

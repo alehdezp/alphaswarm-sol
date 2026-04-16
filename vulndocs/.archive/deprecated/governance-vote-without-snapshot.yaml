@@ -1,0 +1,13 @@
+id: governance-vote-without-snapshot
+vulndoc: governance/voting
+name: Governance Vote Without Snapshot
+description: Voting functions that use live balances without snapshot protections, enabling flash-loan vote manipulation.
+scope: Function
+lens:
+  - Authority
+severity: high
+match:
+  all:
+    - property: governance_vote_without_snapshot
+      op: eq
+      value: true

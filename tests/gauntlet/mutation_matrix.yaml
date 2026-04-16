@@ -1,0 +1,318 @@
+# Mutation Matrix for Adversarial Gauntlet Testing
+#
+# Defines mutation coverage per vulnerability family and expected detection rates.
+# Used by G4 (Mutation Robustness) gate to validate pattern resilience.
+#
+# Reference:
+#   - .planning/phases/07.3.3-adversarial-gauntlet/07.3.3-GAUNTLET-SPEC.md
+#   - .planning/phases/07.3.2-execution-evidence-protocol/07.3.2-GATES.md (G4)
+#   - configs/gauntlet_scoring.yaml
+
+version: "1.0.0"
+updated: "2026-01-31"
+
+# =============================================================================
+# MUTATION TYPES
+# =============================================================================
+#
+# Each mutation type tests a specific pattern recognition capability:
+#
+# - rename: Tests if detection relies on variable/function names vs semantics
+# - reorder: Tests if detection handles statement order variations
+# - comment: Tests if detection ignores misleading comments
+# - wrapper: Tests cross-function analysis through abstraction
+# - split: Tests if detection tracks logic across function boundaries
+
+mutation_types:
+  rename:
+    description: "Rename variables/functions while preserving semantics"
+    tests: "Pattern detection by behavior vs names"
+    expected_impact: minimal
+    notes: |
+      If detection relies on "withdraw" or "balances" names, rename mutations
+      will cause false negatives. Proper semantic operation detection should
+      be unaffected.
+
+  reorder:
+    description: "Reorder semantically independent statements"
+    tests: "Tolerance to statement order variations"
+    expected_impact: minimal
+    notes: |
+      Reordering comments, declarations, and independent statements should not
+      affect detection. Critical operation ordering (e.g., call before state
+      update) is preserved.
+
+  comment:
+    description: "Add misleading comments suggesting safety"
+    tests: "Code analysis vs comment analysis"
+    expected_impact: none
+    notes: |
+      Comments like "// SAFE: follows CEI" are added to vulnerable code.
+      Detection should analyze code, not trust comments.
+
+  wrapper:
+    description: "Add abstraction layers (wrapper functions)"
+    tests: "Cross-function pattern analysis"
+    expected_impact: moderate
+    notes: |
+      External calls may be wrapped in internal functions. Detection must
+      trace through function calls to identify vulnerable patterns.
+
+  split:
+    description: "Split vulnerable logic across multiple functions"
+    tests: "Multi-function vulnerability detection"
+    expected_impact: high
+    notes: |
+      Most challenging mutation type. Requires understanding how multiple
+      functions interact to form a vulnerability.
+
+# =============================================================================
+# VULNERABILITY FAMILY COVERAGE
+# =============================================================================
+#
+# Each vulnerability family has specific mutation coverage targets.
+# Detection rates are per mutation type per family.
+
+vulnerability_families:
+
+  # ---------------------------------------------------------------------------
+  # REENTRANCY FAMILY
+  # ---------------------------------------------------------------------------
+  reentrancy:
+    base_contracts:
+      - Vault_01.sol     # Classic CEI violation
+      - Vault_03.sol     # Guard on wrong function
+      - Vault_05.sol     # Cross-function reentrancy
+      - Vault_07.sol     # Read-only reentrancy
+      - Vault_09.sol     # Callback reentrancy
+
+    safe_baselines:
+      - Vault_02.sol     # Has ReentrancyGuard
+      - Vault_04.sol     # Uses pull pattern
+      - Vault_06.sol     # Follows CEI
+      - Vault_08.sol     # Has mutex lock
+      - Vault_10.sol     # No external calls
+
+    mutation_targets:
+      # Detection rate targets per mutation type
+      rename:
+        target: 0.95       # 95% - names shouldn't affect detection
+        rationale: "Semantic operations should detect regardless of naming"
+      reorder:
+        target: 0.95       # 95% - order of independent statements
+        rationale: "Critical ordering preserved in mutations"
+      comment:
+        target: 1.00       # 100% - comments must not affect detection
+        rationale: "Code analysis must ignore comments"
+      wrapper:
+        target: 0.75       # 75% - abstraction layers are harder
+        rationale: "Requires cross-function analysis"
+      split:
+        target: 0.60       # 60% - most challenging
+        rationale: "Multi-function patterns are hardest to detect"
+
+    aggregate_target: 0.75  # G4 gate threshold
+    false_positive_threshold: 0     # Zero FP on safe baselines
+
+  # ---------------------------------------------------------------------------
+  # ACCESS CONTROL FAMILY
+  # ---------------------------------------------------------------------------
+  access_control:
+    base_contracts:
+      - AccessVault_01.sol  # Missing onlyOwner
+      - AccessVault_03.sol  # tx.origin auth
+      - AccessVault_05.sol  # Ownership manipulation
+
+    safe_baselines:
+      - AccessVault_02.sol  # Proper role checks
+      - AccessVault_04.sol  # OpenZeppelin Ownable
+
+    mutation_targets:
+      rename:
+        target: 0.90       # 90% - role names may vary
+        rationale: "Role patterns should detect regardless of naming"
+      reorder:
+        target: 0.95       # 95% - order rarely matters for access
+        rationale: "Modifier presence is key, not position"
+      comment:
+        target: 1.00       # 100% - comments must not affect
+        rationale: "// onlyOwner comment doesn't add protection"
+      wrapper:
+        target: 0.80       # 80% - wrapped access checks
+        rationale: "Internal access checkers are common"
+      split:
+        target: 0.70       # 70% - split access control logic
+        rationale: "Access delegation is complex to track"
+
+    aggregate_target: 0.75
+    false_positive_threshold: 0
+
+  # ---------------------------------------------------------------------------
+  # ORACLE FAMILY
+  # ---------------------------------------------------------------------------
+  oracle:
+    base_contracts:
+      - OracleVault_01.sol  # No staleness check
+      - OracleVault_03.sol  # Single oracle source
+      - OracleVault_05.sol  # Missing L2 sequencer grace
+
+    safe_baselines:
+      - OracleVault_02.sol  # Proper TWAP
+      - OracleVault_04.sol  # Multi-oracle aggregation
+
+    mutation_targets:
+      rename:
+        target: 0.85       # 85% - oracle variable naming varies
+        rationale: "Price feed patterns should detect regardless of names"
+      reorder:
+        target: 0.90       # 90% - check ordering can vary
+        rationale: "Staleness checks can be before or after price read"
+      comment:
+        target: 1.00       # 100% - comments must not affect
+        rationale: "// Checked for staleness comment adds nothing"
+      wrapper:
+        target: 0.75       # 75% - oracle wrappers are common
+        rationale: "Internal oracle adapters are standard practice"
+      split:
+        target: 0.65       # 65% - split price logic
+        rationale: "Price aggregation logic often spans functions"
+
+    aggregate_target: 0.75
+    false_positive_threshold: 0
+
+# =============================================================================
+# EXPECTED MATRIX TOTALS
+# =============================================================================
+#
+# Matrix dimensions:
+#   - 5 base vulnerable contracts per family (reentrancy focus for MVP)
+#   - 5 mutation types per contract
+#   - = 25 mutated contracts per family
+#   - + 5 safe baselines per family (negative controls)
+#   - = 30 total test cases per family
+
+matrix_totals:
+  reentrancy:
+    base_vulnerable: 5
+    safe_baselines: 5
+    mutations_per_base: 5
+    total_mutations: 25
+    total_test_cases: 30  # 25 mutations + 5 safe baselines
+
+  access_control:
+    base_vulnerable: 3
+    safe_baselines: 2
+    mutations_per_base: 5
+    total_mutations: 15
+    total_test_cases: 17  # 15 mutations + 2 safe baselines
+
+  oracle:
+    base_vulnerable: 3
+    safe_baselines: 2
+    mutations_per_base: 5
+    total_mutations: 15
+    total_test_cases: 17  # 15 mutations + 2 safe baselines
+
+  combined:
+    total_mutations: 55
+    total_safe_baselines: 9
+    total_test_cases: 64
+
+# =============================================================================
+# G4 GATE REQUIREMENTS
+# =============================================================================
+#
+# G4 (Mutation Robustness) gate passes when:
+#   1. Aggregate detection rate >= 75% across all mutations
+#   2. Zero false positives on safe baselines
+#   3. Consistent classification across mutation types
+
+g4_requirements:
+  # Minimum detection rate on mutated vulnerable contracts
+  min_detection_rate: 0.75
+
+  # Maximum false positives on safe baselines
+  max_false_positives: 0
+
+  # Per-type minimum detection rates (for identifying weak areas)
+  per_type_minimums:
+    rename: 0.70
+    reorder: 0.70
+    comment: 0.90
+    wrapper: 0.50
+    split: 0.40
+
+  # Consistency requirement: same classification across mutation types
+  consistency_threshold: 0.80
+  consistency_description: |
+    If a base contract is detected as vulnerable, at least 80% of its mutations
+    should also be detected as vulnerable (consistent classification).
+
+# =============================================================================
+# NEEDLE-IN-HAYSTACK CASES
+# =============================================================================
+#
+# Special challenge cases that bury vulnerabilities in large/complex code.
+# These test whether detection can find vulnerabilities amid noise.
+
+needle_in_haystack:
+  enabled: true
+  description: |
+    Needle-in-haystack cases add significant non-vulnerable code around
+    a small vulnerable section. Tests false negative rate in noisy contexts.
+
+  cases:
+    - id: NEEDLE-001
+      description: "Vulnerable withdraw buried in 1000-line contract"
+      base: Vault_01.sol
+      noise_lines: 1000
+      vulnerability_location: "middle"
+
+    - id: NEEDLE-002
+      description: "Cross-function reentrancy across many helpers"
+      base: Vault_05.sol
+      helper_functions: 20
+      vulnerability_split_across: 3
+
+    - id: NEEDLE-003
+      description: "Vulnerable function among 50 safe functions"
+      base: Vault_03.sol
+      safe_decoy_functions: 50
+      vulnerable_function_position: "random"
+
+  pass_criteria:
+    detection_rate: 0.60  # Lower threshold for needle cases
+    description: |
+      Needle-in-haystack cases are intentionally harder.
+      60% detection rate is acceptable as these represent extreme edge cases.
+
+# =============================================================================
+# LINEAGE TRACKING
+# =============================================================================
+#
+# Every mutation must track its lineage for reproducibility and debugging.
+
+lineage_requirements:
+  required_fields:
+    - base_contract        # Original contract path
+    - base_hash            # SHA256 of original content
+    - mutation_type        # Type of mutation applied
+    - mutation_id          # Unique identifier
+    - mutation_params      # Parameters used
+    - generated_at         # ISO timestamp
+    - preserves_vulnerability  # Whether vuln intent preserved
+
+  storage_format: json
+  location: "{output_dir}/{contract}_{mutation_type}.sol.lineage.json"
+
+# =============================================================================
+# EXECUTION NOTES
+# =============================================================================
+
+notes:
+  - "Mutation matrix directly enforces G4 (Mutation Robustness) gate"
+  - "Safe baselines serve as negative controls - zero FP required"
+  - "Needle-in-haystack cases test detection in noisy contexts"
+  - "Lineage tracking enables root cause analysis of detection failures"
+  - "Per-type targets identify pattern weaknesses for improvement"
+  - "Aggregate 75% threshold allows some failure on hardest mutations"

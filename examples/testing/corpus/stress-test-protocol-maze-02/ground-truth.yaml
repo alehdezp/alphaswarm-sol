@@ -1,0 +1,187 @@
+project:
+  name: stress-test-protocol-maze-02
+  theme: governance
+  tier: 3
+  adversarial_categories:
+  - A
+  - B
+  - C
+  description: Maximum difficulty protocol maze. Multi-module controller with encoded
+    operations, cross-contract data sync, and state machine patterns.
+findings:
+- pattern_id: invariant-balance-unvalidated
+  contract: NexusController
+  function: issueCredit
+  line_range: 60-66
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify issueCredit sends ETH without checking stake collateral
+  - No ratio check between _stakes and _credits
+  - Borrower can take unlimited credit against insufficient stake
+  - 'Conclude: missing collateral validation enables unbacked credit'
+- pattern_id: balance-update-after-transfer
+  contract: NexusController
+  function: releaseStake
+  line_range: 69-81
+  severity: high
+  adversarial_techniques:
+  - A6-encoding-indirection
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount}(payload)'
+  - Payload is attacker-controlled via callbackData parameter
+  - State update _stakes[msg.sender] -= amount occurs AFTER call
+  - 'Conclude: reentrancy via attacker-controlled encoded callback'
+- pattern_id: arbitrary-calldata
+  contract: NexusController
+  function: dispatchOperation
+  line_range: 84-93
+  severity: high
+  adversarial_techniques:
+  - A6-encoding-indirection
+  expected_reasoning_chain:
+  - Identify arbitrary call to m.endpoint with attacker-provided opData
+  - No validation of call data contents
+  - Attacker can execute any function on module endpoint
+  - 'Conclude: arbitrary calldata injection to module endpoints'
+- pattern_id: oracle-stale-price
+  contract: NexusController
+  function: syncModuleData
+  line_range: 96-103
+  severity: high
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify registry.fetchLatest returns data without timestamp
+  - No freshness check on registry data
+  - Stale or manipulated registry data used for module throughput
+  - 'Conclude: cross-contract stale data from registry'
+- pattern_id: state-machine-violation
+  contract: NexusController
+  function: freezeModule
+  line_range: 106-111
+  severity: medium
+  adversarial_techniques:
+  - B3-state-machine
+  expected_reasoning_chain:
+  - Identify freezeModule sets state to Frozen
+  - No check that current state is not Decommissioned
+  - Decommissioned modules can be frozen (state regression)
+  - 'Conclude: state machine violation allows backward transitions'
+- pattern_id: auth-001
+  contract: NexusController
+  function: replaceRegistry
+  line_range: 120-122
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify replaceRegistry changes the data source for all modules
+  - No access control
+  - Attacker deploys malicious registry returning false data
+  - 'Conclude: registry replacement enables protocol manipulation'
+- pattern_id: auth-002
+  contract: NexusController
+  function: transferNexus
+  line_range: 125-127
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify transferNexus changes nexusOwner
+  - No access control
+  - 'Conclude: anyone can seize ownership'
+- pattern_id: auth-003
+  contract: NexusController
+  function: setThreshold
+  line_range: 130-132
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify setThreshold changes staking minimum
+  - No access control
+  - Attacker can set threshold to 0, allowing zero-stake credit
+  - 'Conclude: missing access control on staking threshold'
+- pattern_id: auth-004
+  contract: DataRegistry
+  function: invalidateRecord
+  line_range: 30-32
+  severity: high
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify invalidateRecord marks registry data as invalid
+  - No access control
+  - Attacker can invalidate critical module data
+  - 'Conclude: missing access control on data invalidation'
+- pattern_id: ac-002
+  contract: DataRegistry
+  function: setRegistrar
+  line_range: 35-37
+  severity: critical
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify setRegistrar changes registrar role
+  - No access control
+  - Attacker becomes registrar, controls all registry data
+  - 'Conclude: missing access control on registrar role'
+- pattern_id: arbitrary-call-target
+  contract: NexusController
+  function: dispatchOperation
+  line_range: 84-93
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify dispatchOperation takes arbitrary moduleId and opData from caller
+  - Notice m.endpoint.call(opData) forwards raw calldata to the module endpoint with no validation
+  - Recognize any caller can target any Active module and invoke arbitrary functions on it
+  - No allowlist of permitted selectors or caller authorization beyond module state check
+  - 'Conclude: attacker can call any function on any active module endpoint via unchecked opData'
+- pattern_id: oracle-003
+  contract: NexusController
+  function: syncModuleData
+  line_range: 96-103
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify syncModuleData calls registry.fetchLatest(moduleId) which returns (data, valid)
+  - Notice fetchLatest only returns records[moduleId] and validity[moduleId] — no timestamp
+  - The timestamps mapping exists in DataRegistry but is never checked by the consumer
+  - Module throughput is set directly from unvalidated registry data (m.throughput = data)
+  - 'Conclude: stale or manipulated registry data accepted without freshness check, corrupting module throughput'
+- pattern_id: attacker-controlled-write-heuristic
+  contract: DataRegistry
+  function: recordData
+  line_range: 15-19
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify recordData writes to records[moduleId], timestamps[moduleId], and validity[moduleId]
+  - No access control — registrar variable exists but is never checked in recordData
+  - Any external caller can overwrite module data for any moduleId with arbitrary values
+  - This data is consumed by NexusController.syncModuleData to set module throughput
+  - 'Conclude: attacker can inject false data into registry, poisoning downstream module state'
+safe_patterns:
+- technique: C1-safe-dangerous-names
+  contract: NexusController
+  function: commitStake
+  expected_verdict: safe
+  reasoning: Simple payable deposit with threshold check. No external calls. State
+    update is correct.
+- technique: C5-misleading-comments
+  contract: NexusController
+  function: enrollModule
+  expected_verdict: safe
+  reasoning: Properly access controlled (nexusOwner only). Despite complex naming,
+    function is straightforward.
+summary:
+  total_findings: 13
+  total_safe_patterns: 2
+  difficulty: extreme
+  notes: Protocol maze with 3-contract interaction (NexusController + DataRegistry
+    + modules). All obfuscation categories. Encoded operations (A6), cross-contract
+    data (B1), state machine (B3), honeypots (C1/C5).

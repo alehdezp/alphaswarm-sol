@@ -1,0 +1,301 @@
+# =============================================================================
+# PATTERN: logic-001-parameter-confusion
+# Nested Mapping Parameter Swap (Semantic, Name-Agnostic)
+# =============================================================================
+
+id: logic-001-parameter-confusion
+vulndoc: logic/business-logic
+name: "Nested Mapping Parameter Confusion"
+
+description: |
+  ## What This Detects
+
+  Functions that access nested mappings (mapping[X][Y]) where the parameter order
+  may be swapped from the intended business logic. This is particularly dangerous
+  in allowance/approval patterns, role-based access control, and delegation systems.
+
+  **Semantic Detection**: This pattern detects what the function DOES:
+  - Accesses nested mapping structures (has_nested_mapping_access = true)
+  - Uses function parameters as mapping keys
+  - Lacks formal specification or assertion validating parameter order
+
+  This catches ANY nested mapping access pattern regardless of naming convention
+  (allowances, approvals, roles, permissions, delegations, etc.).
+
+  ## Why It's Dangerous
+
+  The DeusDao vulnerability ($6.5M, May 2023) demonstrates that parameter confusion
+  in nested mappings can completely bypass access control:
+
+  ### Root Cause
+  In the burnFrom function, `_allowances[_msgSender()][account]` was used instead
+  of `_allowances[account][_msgSender()]`. This swapped "who approved whom" with
+  "who gets to spend".
+
+  ### Attack Mechanics
+  1. Attacker calls `approve(victim, N)` - granting victim N allowance on attacker's tokens
+  2. Attacker calls `burnFrom(victim, 0)` - due to parameter swap, this:
+     - Reads: `_allowances[attacker][victim]` = N (attacker's grant)
+     - Writes: `_allowances[attacker][victim] = N` (preserved)
+     - But the burning logic incorrectly affects: victim's approval to attacker
+  3. Result: Attacker gains approval for victim's tokens without victim's consent
+
+  ### Real-World Impact
+  - **DeusDao**: $6.5M (May 2023)
+  - **Applicability**: ERC20, access control, multi-sig, any nested mapping pattern
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function has nested mapping access (has_nested_mapping_access = true)
+  2. Function is public/external (accessible to attackers)
+  3. Function modifies state based on mapping read
+  4. NOT a view/pure function
+  5. Lacks formal specification validating parameter semantics
+
+scope: Function
+
+lens:
+  - Logic
+  - Authority
+
+severity: high
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Core vulnerability: Nested mapping access
+      - property: has_nested_mapping_access
+        op: eq
+        value: true
+
+      # Must be accessible to external callers
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Must modify state (not just read)
+      - property: writes_state
+        op: eq
+        value: true
+
+    # At least ONE must match (OR logic) - strengthens signal
+    any:
+      # Uses approval/allowance pattern
+      - property: uses_approval_pattern
+        op: eq
+        value: true
+
+      # Uses role-based access control
+      - property: uses_role_based_access
+        op: eq
+        value: true
+
+      # Modifies critical permissions
+      - property: modifies_permissions
+        op: eq
+        value: true
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # View/pure functions can't be exploited this way
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Formal specification validates parameter semantics
+      - property: has_formal_specification
+        op: eq
+        value: true
+
+      # Explicit parameter validation
+      - property: has_parameter_validation
+        op: eq
+        value: true
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_only  # Only Tier A (deterministic) matching
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: [deusdao, synthetic-erc20]
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: |
+    Pattern requires VKG property detection support for:
+    - has_nested_mapping_access (detects mapping[X][Y] accesses)
+    - uses_approval_pattern (detects allowance/approval mappings)
+    - uses_role_based_access (detects role/permission mappings)
+    - modifies_permissions (detects permission state changes)
+    - has_formal_specification (detects Scribble/other specs)
+    - has_parameter_validation (detects require/assert on params)
+
+status: draft
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "ERC20 Allowance Parameter Swap Attack"
+    description: |
+      Attacker exploits parameter confusion in burnFrom to gain unauthorized
+      token allowance over victim's tokens.
+    preconditions:
+      - "Function reads _allowances[msgSender][account] instead of _allowances[account][msgSender]"
+      - "Attacker can call approve() and burnFrom() on the contract"
+      - "No formal specification validates parameter semantics"
+    steps:
+      - "Attacker: approve(victim, 1000000) - grants victim allowance on attacker's tokens"
+      - "Attacker: burnFrom(victim, 0) - triggers swapped mapping access"
+      - "Contract reads: _allowances[attacker][victim] = 1000000 (attacker's grant)"
+      - "Contract logic interprets: 'attacker is allowed to spend victim's tokens'"
+      - "Attacker gains ability to transfer victim's tokens"
+    impact: |
+      Complete token theft. Attacker can drain any victim's token balance by
+      exploiting the parameter confusion to gain unauthorized allowance.
+
+  - name: "Role-Based Access Control Parameter Swap"
+    description: |
+      Attacker exploits swapped parameters in hasRole(role, user) to gain
+      unauthorized administrative privileges.
+    preconditions:
+      - "Function checks hasRole[user][role] instead of hasRole[role][user]"
+      - "Attacker can manipulate user parameter position"
+      - "Contract relies on role-based access control"
+    steps:
+      - "Attacker identifies swapped hasRole check"
+      - "Attacker crafts transaction that satisfies incorrect parameter order"
+      - "Access control check passes despite lacking actual role"
+      - "Attacker gains administrative privileges"
+    impact: |
+      Access control bypass. Attacker gains privileges they shouldn't have,
+      potentially enabling fund theft, protocol manipulation, or destruction.
+
+verification_steps:
+  - "Identify all nested mapping accesses in function"
+  - "For each mapping[X][Y], verify X and Y correspond to correct business semantics"
+  - "Compare parameter order with ERC20/ERC721 standard implementations"
+  - "Check for formal specifications that validate parameter relationships"
+  - "Verify _allowances[owner][spender] pattern is used correctly"
+  - "Test with formal verification (Scribble, Certora) to catch semantic mismatches"
+
+fix_recommendations:
+  - name: "Correct Parameter Order"
+    description: |
+      Ensure nested mapping access follows standard patterns and business logic.
+      For ERC20 allowances, always use _allowances[owner][spender].
+    example: |
+      // VULNERABLE - Parameters swapped
+      function burnFrom(address account, uint256 amount) public {
+          uint256 currentAllowance = _allowances[_msgSender()][account];  // WRONG ORDER
+          require(currentAllowance >= amount, "ERC20: insufficient allowance");
+          _burn(account, amount);
+          _approve(account, _msgSender(), currentAllowance - amount);
+      }
+
+      // FIXED - Correct parameter order
+      function burnFrom(address account, uint256 amount) public {
+          uint256 currentAllowance = _allowances[account][_msgSender()];  // CORRECT: owner[spender]
+          require(currentAllowance >= amount, "ERC20: insufficient allowance");
+          _burn(account, amount);
+          _approve(account, _msgSender(), currentAllowance - amount);
+      }
+
+  - name: "Add Formal Specification"
+    description: |
+      Use formal verification tools to validate parameter semantics match intent.
+    example: |
+      /// @custom:scribble
+      /// #if_succeeds "Only owner may increase allowance"
+      ///   old(_allowances[owner][spender]) < _allowances[owner][spender]
+      ///   ==> msg.sender == owner
+      function approve(address spender, uint256 amount) public returns (bool) {
+          _approve(_msgSender(), spender, amount);
+          return true;
+      }
+
+  - name: "Standardize Mapping Access Functions"
+    description: |
+      Create internal helper functions with clear parameter naming to prevent confusion.
+    example: |
+      // Internal helper with explicit naming
+      function _getAllowance(address owner, address spender) internal view returns (uint256) {
+          return _allowances[owner][spender];  // Standardized order
+      }
+
+      function _setAllowance(address owner, address spender, uint256 amount) internal {
+          _allowances[owner][spender] = amount;  // Standardized order
+      }
+
+      // All external functions use helpers
+      function burnFrom(address owner, uint256 amount) public {
+          uint256 currentAllowance = _getAllowance(owner, _msgSender());  // Clear: owner's allowance to caller
+          require(currentAllowance >= amount);
+          _setAllowance(owner, _msgSender(), currentAllowance - amount);
+          _burn(owner, amount);
+      }
+
+related_patterns:
+  - auth-001-missing-access-control
+  - auth-003-unprotected-privileged-write
+  - token-006-approval-race-condition
+
+owasp_mapping:
+  - SC03  # Logic Errors
+
+cwe_mapping:
+  - CWE-682  # Incorrect Calculation
+  - CWE-285  # Improper Authorization
+
+# =============================================================================
+# VULNDOCS REFERENCE
+# =============================================================================
+
+vulndocs_reference:
+  category: "logic"
+  subcategory: "parameter-confusion"
+  specific: "nested-mapping-parameter-swap"
+  confidence: 0.95
+  severity: high
+  exploits:
+    - deusdao-may-2023 ($6.5M)
+
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "Phase 17 Pattern Generation"
+  pattern_tier: "semantic_high"
+
+references:
+  - title: "Reproducing the DeusDao Exploit with Diligence Fuzzing"
+    url: "https://diligence.security/blog/2023/08/reproducing-the-deusdao-exploit-with-diligence-fuzzing/"
+    source: "Consensys Diligence"
+    date: "2023-08"
+    type: "technical_analysis"
+
+  - title: "Decoding DEUS DAO $6.5 Million Exploit"
+    url: "https://quillaudits.medium.com/decoding-deus-dao-6-5-million-exploit-quillaudits-588bbecec61f"
+    source: "QuillAudits"
+    date: "2023-05"
+    type: "postmortem"

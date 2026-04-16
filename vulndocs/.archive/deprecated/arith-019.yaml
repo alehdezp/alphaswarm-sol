@@ -1,0 +1,15 @@
+id: arith-019
+vulndoc: arithmetic/general
+name: Ratio Calculation Issue
+description: Ratio calculations without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: ratio_calculation_risk
+    op: eq
+    value: true

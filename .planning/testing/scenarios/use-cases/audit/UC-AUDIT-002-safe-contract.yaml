@@ -1,0 +1,73 @@
+id: UC-AUDIT-002
+name: "No false positives on reentrancy-guarded contract"
+workflow: vrs-audit
+category: audit
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyWithGuard.sol"
+  command: "/vrs-audit tests/contracts/ReentrancyWithGuard.sol"
+  context: >
+    ReentrancyWithGuard.sol uses OpenZeppelin's ReentrancyGuard (nonReentrant
+    modifier) on all external-call functions. The contract is NOT vulnerable to
+    reentrancy. This scenario validates that the audit workflow does not produce
+    false positives when a proper guard is present.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build the graph, detect the external call pattern,
+    but then also detect the nonReentrant modifier as a guard. The workflow
+    should either produce zero reentrancy findings or explicitly note that
+    reentrancy is mitigated by the guard. No high-severity reentrancy findings
+    should appear.
+  must_happen:
+    - "Build BSKG from ReentrancyWithGuard.sol via alphaswarm build-kg"
+    - "Query graph for TRANSFERS_VALUE_OUT operations"
+    - "Detect the nonReentrant modifier or reentrancy guard pattern"
+    - "Either produce no reentrancy findings or mark reentrancy as mitigated"
+    - "If any informational findings are produced, they must note the guard"
+  must_not_happen:
+    - "Produce a high or critical reentrancy finding (false positive)"
+    - "Ignore the nonReentrant modifier and flag the contract as vulnerable"
+    - "Skip graph analysis entirely"
+    - "Crash or produce empty output"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 0
+    must_include_category: ""
+    severity: ""
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: false_positive_suppression
+      description: "Did the workflow correctly identify the guard and suppress false positives?"
+    - name: graph_utilization
+      description: "Did the workflow use BSKG queries to detect both the call pattern and the guard?"
+    - name: reasoning_depth
+      description: "Does the analysis explain WHY the contract is safe (guard present)?"
+  regression_signals:
+    - "Any high/critical reentrancy finding produced -> CRITICAL REGRESSION: false positive"
+    - "Score drops below 60 -> REGRESSION: guard detection degraded"
+    - "Graph queries absent -> REGRESSION: bypassing graph-first analysis"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyWithGuard.sol"
+  related_scenarios:
+    - "UC-AUDIT-001"
+    - "UC-ATK-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Companion to UC-AUDIT-001. Together they test both recall (finding real
+  vulnerabilities) and precision (not flagging safe code). Core tier because
+  false positive suppression is critical for trust.

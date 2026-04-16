@@ -1,0 +1,15 @@
+id: logic-011
+vulndoc: logic/general
+name: State Race Condition
+description: State writes with external calls and no guard.
+scope: Function
+lens:
+- LogicState
+severity: high
+cwe:
+- 362
+match:
+  all:
+  - property: state_race_condition
+    op: eq
+    value: true

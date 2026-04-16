@@ -1,0 +1,261 @@
+{
+  "description": "End-to-end validation checks for Vault contract full pipeline",
+  "fixture": "foundry-vault",
+  "version": "1.0",
+  "created": "2026-01-30",
+
+  "pipeline_stages": {
+    "description": "Expected outputs from each /vrs-audit stage",
+    "stages": [
+      {
+        "stage": 1,
+        "name": "Setup & Validation",
+        "outputs": [],
+        "description": "Validates environment, installs dependencies if needed"
+      },
+      {
+        "stage": 2,
+        "name": "Build Knowledge Graph",
+        "outputs": [".vrs/graphs/*.toon", ".vrs/graphs/*.json"],
+        "required": true,
+        "description": "BSKG knowledge graph with 200+ emitted properties per function"
+      },
+      {
+        "stage": 3,
+        "name": "Protocol Context Research",
+        "outputs": [".vrs/context/protocol-pack.yaml"],
+        "required": false,
+        "description": "Protocol context pack with roles, assumptions, invariants"
+      },
+      {
+        "stage": 4,
+        "name": "Pattern Matching",
+        "outputs": [".vrs/findings/pattern-matches.json"],
+        "required": true,
+        "description": "Pattern matching results from 556+ vulnerability patterns"
+      },
+      {
+        "stage": 5,
+        "name": "Agent Investigation",
+        "outputs": [".vrs/findings/agent-investigations.json"],
+        "required": false,
+        "description": "Specialized agent investigation results"
+      },
+      {
+        "stage": 6,
+        "name": "Multi-Agent Debate",
+        "outputs": [".vrs/findings/verdicts.json"],
+        "required": false,
+        "modes": ["swarm"],
+        "description": "Attacker-defender-verifier debate verdicts"
+      },
+      {
+        "stage": 7,
+        "name": "Report Generation",
+        "outputs": [".vrs/reports/audit-report.md"],
+        "required": true,
+        "description": "Final audit report with executive summary and findings"
+      }
+    ]
+  },
+
+  "required_outputs": [
+    {
+      "path": ".vrs/graphs/*.toon",
+      "alternative": ".vrs/graphs/*.json",
+      "stage": 2,
+      "description": "BSKG knowledge graph",
+      "validation": {
+        "min_size_bytes": 1000,
+        "contains_functions": ["deposit", "withdraw", "safeWithdraw", "setOwner"]
+      }
+    },
+    {
+      "path": ".vrs/findings/pattern-matches.json",
+      "stage": 4,
+      "description": "Pattern matching results",
+      "validation": {
+        "format": "json",
+        "has_matches": true
+      }
+    },
+    {
+      "path": ".vrs/reports/audit-report.md",
+      "stage": 7,
+      "description": "Final audit report",
+      "validation": {
+        "min_lines": 50,
+        "contains": ["Summary", "Finding"]
+      }
+    }
+  ],
+
+  "optional_outputs": [
+    {
+      "path": ".vrs/context/protocol-pack.yaml",
+      "stage": 3,
+      "description": "Protocol context pack"
+    },
+    {
+      "path": ".vrs/findings/agent-investigations.json",
+      "stage": 5,
+      "description": "Agent investigation results"
+    },
+    {
+      "path": ".vrs/findings/verdicts.json",
+      "stage": 6,
+      "description": "Multi-agent debate verdicts",
+      "required_in_mode": "swarm"
+    }
+  ],
+
+  "expected_findings": [
+    {
+      "vulnerability_id": "VAULT-001",
+      "type": "reentrancy",
+      "function": "withdraw",
+      "severity": "critical",
+      "detection_required": true,
+      "expected_pattern": "reentrancy-classic",
+      "expected_evidence": {
+        "operations": ["TRANSFERS_VALUE_OUT", "WRITES_USER_BALANCE"],
+        "sequence": "R:bal->X:out->W:bal"
+      }
+    },
+    {
+      "vulnerability_id": "VAULT-002",
+      "type": "access-control",
+      "function": "setOwner",
+      "severity": "critical",
+      "detection_required": true,
+      "expected_pattern": "weak-access-control",
+      "expected_evidence": {
+        "operations": ["MODIFIES_OWNER"],
+        "has_access_gate": false
+      }
+    }
+  ],
+
+  "expected_not_flagged": [
+    {
+      "function": "safeWithdraw",
+      "reason": "Uses nonReentrant modifier (reentrancy guard)",
+      "expected_properties": {
+        "has_reentrancy_guard": true
+      }
+    },
+    {
+      "function": "emergencyWithdraw",
+      "reason": "Has onlyOwner modifier (access control)",
+      "expected_properties": {
+        "has_access_gate": true
+      }
+    },
+    {
+      "function": "transferOwnership",
+      "reason": "Has onlyOwner modifier (access control)",
+      "expected_properties": {
+        "has_access_gate": true
+      }
+    },
+    {
+      "function": "deposit",
+      "reason": "No external calls, no privileged operations",
+      "expected_properties": {
+        "has_external_calls": false
+      }
+    },
+    {
+      "function": "getBalance",
+      "reason": "View function, no state modification",
+      "expected_properties": {
+        "state_mutability": "view"
+      }
+    }
+  ],
+
+  "metrics_thresholds": {
+    "precision_min": 0.70,
+    "recall_min": 0.60,
+    "f1_min": 0.65,
+    "description": "Minimum acceptable metrics for E2E validation"
+  },
+
+  "flexible_workflow_scenarios": {
+    "description": "Expected behavior for flexible workflow commands",
+    "scenarios": [
+      {
+        "name": "solo_mode",
+        "command": "/vrs-audit contracts/ --mode solo",
+        "expected": {
+          "has_report": true,
+          "has_verdicts": false,
+          "stages_executed": [1, 2, 3, 4, 5, 7],
+          "stages_skipped": [6]
+        }
+      },
+      {
+        "name": "skip_stages",
+        "command": "/vrs-audit contracts/ --skip-stages 3,6",
+        "expected": {
+          "has_report": true,
+          "has_context": false,
+          "has_verdicts": false,
+          "stages_skipped": [3, 6]
+        }
+      },
+      {
+        "name": "only_stages",
+        "command": "/vrs-audit contracts/ --only-stages 2,4",
+        "expected": {
+          "has_graph": true,
+          "has_patterns": true,
+          "has_agents": false,
+          "has_report": false,
+          "stages_executed": [2, 4]
+        }
+      },
+      {
+        "name": "tier_filter",
+        "command": "/vrs-audit contracts/ --only-stages 2,4 --tier A",
+        "expected": {
+          "all_patterns_tier_a": true
+        }
+      },
+      {
+        "name": "stop_after",
+        "command": "/vrs-audit contracts/ --stop-after 4",
+        "expected": {
+          "has_patterns": true,
+          "has_agents": false,
+          "has_report": false,
+          "last_stage": 4
+        }
+      },
+      {
+        "name": "category_filter",
+        "command": "/vrs-audit contracts/ --only-stages 2,4 --category reentrancy",
+        "expected": {
+          "all_patterns_category": "reentrancy"
+        }
+      }
+    ]
+  },
+
+  "timing_expectations": {
+    "description": "Expected execution times for full pipeline",
+    "stages": {
+      "1_setup": {"min_seconds": 5, "max_seconds": 60},
+      "2_graph": {"min_seconds": 10, "max_seconds": 120},
+      "3_context": {"min_seconds": 30, "max_seconds": 180},
+      "4_patterns": {"min_seconds": 10, "max_seconds": 120},
+      "5_agents": {"min_seconds": 60, "max_seconds": 600},
+      "6_debate": {"min_seconds": 120, "max_seconds": 900},
+      "7_report": {"min_seconds": 10, "max_seconds": 120}
+    },
+    "total": {
+      "swarm_mode": {"min_seconds": 300, "max_seconds": 1800},
+      "solo_mode": {"min_seconds": 120, "max_seconds": 900}
+    }
+  }
+}

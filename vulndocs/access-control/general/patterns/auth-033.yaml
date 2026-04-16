@@ -1,0 +1,19 @@
+id: auth-033
+vulndoc: access-control/general
+name: Upgrade Timelock Missing Check
+description: Upgrade function lacks explicit timelock check.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_has_timelock
+    op: eq
+    value: true
+  - property: has_timelock_check
+    op: eq
+    value: false

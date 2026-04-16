@@ -1,0 +1,13 @@
+{
+    "contract_id": "cal-03",
+    "contract_name": "OracleNoStaleness",
+    "expected_findings": [
+        {
+            "vulnerability_class": "oracle-manipulation",
+            "severity": "medium",
+            "function_name": "getPrice",
+            "description": "Oracle price consumed without staleness check — latestRoundData() return values (updatedAt, answeredInRound) are discarded, allowing stale or manipulated price data to be used",
+            "key_indicators": ["no timestamp validation on updatedAt", "latestRoundData without staleness check", "discarded return values from oracle call"]
+        }
+    ]
+}

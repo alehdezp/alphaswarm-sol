@@ -1,0 +1,22 @@
+id: live-038
+vulndoc: dos/general
+name: Broken Recovery Mechanisms
+description: Emergency functions rely on unchecked external calls.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: is_emergency_function
+    op: eq
+    value: true
+  - property: has_low_level_calls
+    op: eq
+    value: true
+  - property: checks_low_level_call_success
+    op: eq
+    value: false
+  - property: has_try_catch
+    op: eq
+    value: false

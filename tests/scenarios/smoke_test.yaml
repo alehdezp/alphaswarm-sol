@@ -1,0 +1,59 @@
+# Smoke Test Scenario
+# Validates basic infrastructure before expensive tests
+
+name: smoke_test
+description: "Basic infrastructure and workflow validation"
+version: "1.0"
+
+# Prerequisites (checked before test runs)
+prerequisites:
+  - claude_cli_available: true
+  - alphaswarm_installed: true
+  - slither_available: true
+
+# Contract to use for smoke test
+contract:
+  path: "tests/contracts/SimpleToken.sol"
+  expected_complexity: "low"
+
+# Workflow to execute
+workflow:
+  command: "/vrs-build-kg {contract_path}"
+  timeout_seconds: 120
+
+# Completion criteria
+completion:
+  markers:
+    - "Knowledge graph"
+    - "complete"
+    - "nodes"
+  error_markers:
+    - "Error:"
+    - "Failed:"
+    - "ModuleNotFoundError"
+
+# Artifact validation
+artifacts:
+  required:
+    - pattern: "*.toon"
+      description: "Knowledge graph output"
+    - pattern: ".vrs/graphs/*"
+      description: "Graph directory"
+
+# Success criteria
+success_criteria:
+  duration_max_seconds: 120
+  duration_min_seconds: 5  # Must take some time (not instant/fake)
+  artifacts_present: true
+  no_error_markers: true
+
+# Metrics to capture
+metrics:
+  - name: duration_ms
+    type: timing
+  - name: tokens_used
+    type: extracted
+    pattern: '(\d+)\s*tokens?'
+  - name: nodes_created
+    type: extracted
+    pattern: '(\d+)\s*nodes?'

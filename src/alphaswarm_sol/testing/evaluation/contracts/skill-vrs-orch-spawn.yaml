@@ -1,0 +1,30 @@
+workflow_id: skill-vrs-orch-spawn
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+reasoning_dimensions:
+- task_completion
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: session_completed
+  description: Skill session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+- id: beads_spawned
+  description: 'TODO: validate against real run - Investigation beads spawned'
+  expected_behavior: Task tool calls spawn parallel investigation beads
+  grader_type: code
+evidence_requirements: []
+hooks:
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: important

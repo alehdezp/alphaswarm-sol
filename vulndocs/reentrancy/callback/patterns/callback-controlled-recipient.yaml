@@ -1,0 +1,55 @@
+id: callback-controlled-recipient
+vulndoc: reentrancy/callback
+name: Callback with Attacker-Controlled Payment Recipient
+description: |
+  A callback function that transfers value/tokens to a recipient that is derived from
+  callback parameters, allowing an attacker to control where funds are sent.
+
+  Attack Pattern:
+  1. Attacker calls external contract that triggers callback
+  2. Callback receives parameters including recipient or proxy address
+  3. Callback transfers tokens to this attacker-controlled address
+  4. Attacker sets up the recipient to drain funds (via approvals, etc.)
+
+  Indicators:
+  - Callback function (implements interface callback)
+  - Receives bytes or address parameters
+  - Transfers value to parameter-derived address
+  - No verification that recipient is trusted
+
+  Real-world examples: DVDeFi backdoor challenge (Safe wallet setup callback).
+
+scope: Function
+lens:
+  - Authority
+  - ValueMovement
+severity: critical
+
+match:
+  all:
+    - property: callback_chain_surface
+      op: eq
+      value: true
+    - property: is_value_transfer
+      op: eq
+      value: true
+    - property: payment_recipient_controllable
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  any:
+    - property: has_bytes_parameter
+      op: eq
+      value: true
+    - property: accepts_address_parameter
+      op: eq
+      value: true
+  none:
+    - property: has_access_gate
+      op: eq
+      value: true
+
+references:
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/backdoor"

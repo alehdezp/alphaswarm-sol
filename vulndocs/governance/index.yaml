@@ -1,0 +1,32 @@
+# governance Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: governance
+name: Governance
+description: 'Vulnerability subcategories for governance domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: deprecated-contracts
+  name: Deprecated Contracts
+  path: deprecated-contracts/
+- id: flash-loan-voting
+  name: Flash Loan Voting
+  path: flash-loan-voting/
+- id: parameters
+  name: Parameters
+  path: parameters/
+- id: proposal-manipulation
+  name: Proposal Manipulation
+  path: proposal-manipulation/
+- id: quorum-bypass
+  name: Quorum Bypass
+  path: quorum-bypass/
+- id: voting
+  name: Voting
+  path: voting/
+statistics:
+  subcategory_count: 6
+  last_updated: '2026-02-18'

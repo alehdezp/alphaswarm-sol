@@ -1,0 +1,21 @@
+id: auth-061
+vulndoc: access-control/general
+name: Selfdestruct Without Access Control
+description: Public selfdestruct without access control.
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: uses_selfdestruct
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: has_access_gate
+    op: eq
+    value: false

@@ -1,0 +1,79 @@
+id: UC-INV-002
+name: "Investigate false lead and correctly dismiss"
+workflow: vrs-investigate
+category: investigate
+tier: core
+
+input:
+  contract: "tests/contracts/OracleWithStaleness.sol"
+  command: "/vrs-investigate tests/contracts/OracleWithStaleness.sol --hypothesis oracle-manipulation"
+  context: >
+    OracleWithStaleness.sol reads a Chainlink oracle price feed WITH proper
+    staleness checking. The investigator receives the same oracle-manipulation
+    hypothesis as UC-INV-001, but this time the contract is safe. The
+    investigator must correctly determine that the hypothesis is false and
+    dismiss it with evidence showing the staleness guard is present and
+    sufficient.
+
+expected_behavior:
+  summary: |
+    The investigation workflow should build a BSKG, trace the oracle read
+    path, find the staleness check, and correctly dismiss the oracle
+    manipulation hypothesis. The dismissal must be evidence-based: showing
+    the timestamp validation exists, not just "I didn't find a bug."
+  must_happen:
+    - "Build BSKG from OracleWithStaleness.sol"
+    - "Query graph for READS_EXTERNAL_VALUE or READS_ORACLE operations"
+    - "Trace data flow from oracle read to staleness validation"
+    - "Identify the staleness check as a guard against manipulation"
+    - "Dismiss the oracle manipulation hypothesis with evidence"
+    - "Dismissal cites the specific guard (timestamp check, threshold)"
+  must_not_happen:
+    - "Report a false positive on the protected oracle read"
+    - "Dismiss without evidence (just saying 'looks safe')"
+    - "Skip graph queries and conclude based on code scan alone"
+    - "Hallucinate a vulnerability where none exists"
+    - "Fail to complete the investigation"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 0
+    must_include_category: ""
+    severity: ""
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: false_negative_avoidance
+      description: "Did the investigator correctly identify that this contract is safe?"
+    - name: evidence_based_dismissal
+      description: "Was the dismissal backed by specific evidence (the staleness guard)?"
+    - name: graph_first_compliance
+      description: "Did the investigator use BSKG queries to find the guard?"
+    - name: reasoning_transparency
+      description: "Is the reasoning chain from hypothesis to dismissal clear and traceable?"
+  regression_signals:
+    - "False positive reported on safe contract -> CRITICAL REGRESSION: precision broken"
+    - "Dismissal without evidence -> REGRESSION: investigation rigor degraded"
+    - "Investigation skips graph queries -> REGRESSION: graph-first violated"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/OracleWithStaleness.sol"
+  related_scenarios:
+    - "UC-INV-001"
+    - "UC-AUDIT-002"
+    - "UC-VER-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Core tier because correct dismissal of false leads is as important as
+  finding real vulnerabilities. Paired with UC-INV-001 to test both
+  confirmation and dismissal paths.

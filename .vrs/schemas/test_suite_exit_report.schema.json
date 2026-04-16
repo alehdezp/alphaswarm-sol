@@ -1,0 +1,837 @@
+{
+  "$defs": {
+    "DetectionSummary": {
+      "description": "Summary of detection results for corpus evaluation runs.\n\nTrack A: VALIDITY_CLAIM \u2014 tp/fp/fn counts from 3.1e Plan 01 baseline.\nThis is an OUTCOME metric (P14-SYN-01) \u2014 used for corpus runs only,\nnever as a process-evaluation input for reasoning dimensions.",
+      "properties": {
+        "tp": {
+          "default": 0,
+          "description": "True positives",
+          "minimum": 0,
+          "title": "Tp",
+          "type": "integer"
+        },
+        "fp": {
+          "default": 0,
+          "description": "False positives",
+          "minimum": 0,
+          "title": "Fp",
+          "type": "integer"
+        },
+        "fn": {
+          "default": 0,
+          "description": "False negatives",
+          "minimum": 0,
+          "title": "Fn",
+          "type": "integer"
+        }
+      },
+      "title": "DetectionSummary",
+      "type": "object"
+    },
+    "DimensionScore": {
+      "description": "Per-dimension score with evidence and explanation.\n\nA ScoreCard contains multiple DimensionScores, one per evaluated\naspect (e.g., \"graph_utilization\", \"evidence_quality\", \"reasoning_depth\").\n\nThe ``scoring_method`` field tags how this score was produced:\n- ``\"heuristic\"``: keyword/activity-based scoring \u2014 STRUCTURAL_PROXY role only\n  (anti-fabrication, zero-query detection). MUST NOT contribute to evaluation\n  scores per P17-IMP-01 heuristic scoring demotion.\n- ``\"llm\"``: LLM-as-judge via ``claude -p --json-schema`` (reliable)\n\nHeuristic-scored dimensions on Core workflows MUST NOT be used for\nregression baselines \u2014 they invert quality signal (P3-IMP-12, P3-IMP-17).",
+      "properties": {
+        "dimension": {
+          "description": "Dimension name",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "score": {
+          "description": "Score for this dimension",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Score",
+          "type": "integer"
+        },
+        "weight": {
+          "default": 1.0,
+          "description": "Weight in overall aggregation",
+          "minimum": 0.0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "scoring_method": {
+          "default": "heuristic",
+          "description": "How this score was produced. Heuristic scores are quarantined for Core tier baselines.",
+          "enum": [
+            "heuristic",
+            "llm"
+          ],
+          "title": "Scoring Method",
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Evidence items supporting this score",
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "explanation": {
+          "default": "",
+          "description": "Why this score was given",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "applicable": {
+          "default": true,
+          "description": "Whether this dimension applies to this workflow. Non-applicable dimensions are excluded from effective_score().",
+          "title": "Applicable",
+          "type": "boolean"
+        },
+        "behavioral_signature": {
+          "default": "",
+          "description": "Behavioral signature for construct disambiguation. PROVISIONAL: [pending-real-transcript-validation]",
+          "title": "Behavioral Signature",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dimension",
+        "score"
+      ],
+      "title": "DimensionScore",
+      "type": "object"
+    },
+    "EvaluationProgress": {
+      "description": "Progress tracking for a suite evaluation run.\n\nTrack A: VALIDITY_CLAIM \u2014 deterministic pipeline state.",
+      "properties": {
+        "total_workflows": {
+          "default": 0,
+          "description": "Total workflows to evaluate",
+          "minimum": 0,
+          "title": "Total Workflows",
+          "type": "integer"
+        },
+        "completed": {
+          "default": 0,
+          "description": "Workflows completed",
+          "minimum": 0,
+          "title": "Completed",
+          "type": "integer"
+        },
+        "failed": {
+          "default": 0,
+          "description": "Workflows that failed",
+          "minimum": 0,
+          "title": "Failed",
+          "type": "integer"
+        },
+        "skipped": {
+          "default": 0,
+          "description": "Workflows skipped",
+          "minimum": 0,
+          "title": "Skipped",
+          "type": "integer"
+        },
+        "per_workflow_status": {
+          "description": "Status for each workflow",
+          "items": {
+            "$ref": "#/$defs/WorkflowStatus"
+          },
+          "title": "Per Workflow Status",
+          "type": "array"
+        },
+        "started_at": {
+          "description": "When the evaluation suite started",
+          "title": "Started At",
+          "type": "string"
+        }
+      },
+      "title": "EvaluationProgress",
+      "type": "object"
+    },
+    "EvaluationResult": {
+      "description": "Complete result of evaluating one scenario run.\n\nWraps a ScoreCard with execution metadata, timestamps, and\npipeline health.  Persisted to .vrs/evaluation/results/.",
+      "properties": {
+        "result_id": {
+          "description": "Unique result identifier",
+          "title": "Result Id",
+          "type": "string"
+        },
+        "scenario_name": {
+          "description": "Scenario that was executed",
+          "title": "Scenario Name",
+          "type": "string"
+        },
+        "workflow_id": {
+          "description": "Workflow that was evaluated",
+          "title": "Workflow Id",
+          "type": "string"
+        },
+        "run_mode": {
+          "$ref": "#/$defs/RunMode",
+          "description": "Execution mode used"
+        },
+        "score_card": {
+          "$ref": "#/$defs/ScoreCard",
+          "description": "Evaluation scores"
+        },
+        "pipeline_health": {
+          "$ref": "#/$defs/PipelineHealth",
+          "description": "Pipeline health metrics"
+        },
+        "started_at": {
+          "description": "ISO 8601 start timestamp",
+          "title": "Started At",
+          "type": "string"
+        },
+        "completed_at": {
+          "default": "",
+          "description": "ISO 8601 completion timestamp (empty if not completed)",
+          "title": "Completed At",
+          "type": "string"
+        },
+        "run_duration_ms": {
+          "default": 0.0,
+          "description": "Total evaluation duration in milliseconds",
+          "title": "Run Duration Ms",
+          "type": "number"
+        },
+        "trial_number": {
+          "default": 1,
+          "description": "Which trial this is (for multi-trial runs)",
+          "minimum": 1,
+          "title": "Trial Number",
+          "type": "integer"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "description": "Arbitrary metadata (model, version, etc.)",
+          "title": "Metadata",
+          "type": "object"
+        },
+        "plugins_executed": {
+          "description": "Names of evaluation plugins that were executed",
+          "items": {
+            "type": "string"
+          },
+          "title": "Plugins Executed",
+          "type": "array"
+        },
+        "improvement_hints": {
+          "description": "Actionable hints for improving weak dimensions",
+          "items": {
+            "$ref": "#/$defs/ImprovementHint"
+          },
+          "title": "Improvement Hints",
+          "type": "array"
+        },
+        "evaluator_disagreements": {
+          "description": "Disagreements between dual evaluators (if debate was active)",
+          "items": {
+            "$ref": "#/$defs/EvaluatorDisagreement"
+          },
+          "title": "Evaluator Disagreements",
+          "type": "array"
+        },
+        "detection_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DetectionSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Detection TP/FP/FN summary (corpus runs only \u2014 outcome metric)"
+        },
+        "failure_signals": {
+          "description": "Infrastructure failure signals observed during this run",
+          "items": {
+            "$ref": "#/$defs/FailureSignal"
+          },
+          "title": "Failure Signals",
+          "type": "array"
+        },
+        "infrastructure_failure_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "hook_timeout",
+                "hook_crash",
+                "parser_error",
+                "store_write_failure",
+                "store_read_failure",
+                "evaluator_timeout",
+                "evaluator_crash",
+                "plugin_crash",
+                "session_invalid",
+                "transcript_missing",
+                "transcript_truncated",
+                "sandbox_failure"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Primary infrastructure failure type, if any",
+          "title": "Infrastructure Failure Type"
+        },
+        "scoring_cost_usd": {
+          "default": 0.0,
+          "description": "Cost of LLM scoring calls in USD",
+          "minimum": 0.0,
+          "title": "Scoring Cost Usd",
+          "type": "number"
+        },
+        "baseline_update_status": {
+          "default": "none",
+          "description": "Whether this result triggered a baseline update",
+          "enum": [
+            "none",
+            "pending",
+            "updated",
+            "rejected"
+          ],
+          "title": "Baseline Update Status",
+          "type": "string"
+        },
+        "data_quality_warning": {
+          "default": "",
+          "description": "Warning about observation data quality issues",
+          "title": "Data Quality Warning",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scenario_name",
+        "workflow_id",
+        "run_mode",
+        "score_card"
+      ],
+      "title": "EvaluationResult",
+      "type": "object"
+    },
+    "EvaluatorDisagreement": {
+      "description": "Records disagreement between dual evaluators (A and B).\n\nWhen evaluators disagree by more than 15 points on any dimension,\nthe result is flagged as unreliable. 3.1c-07 uses this for\ndual-Opus evaluator protocol.",
+      "properties": {
+        "dimension": {
+          "description": "Dimension with disagreement",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "a_score": {
+          "description": "Evaluator A's score",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "A Score",
+          "type": "integer"
+        },
+        "b_score": {
+          "description": "Evaluator B's score",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "B Score",
+          "type": "integer"
+        },
+        "b_score_pre_exposure": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Evaluator B's score before seeing A's reasoning. None if debate not conducted.",
+          "title": "B Score Pre Exposure"
+        },
+        "debate_completed": {
+          "default": false,
+          "description": "Whether the evaluators conducted a reconciliation debate",
+          "title": "Debate Completed",
+          "type": "boolean"
+        },
+        "resolved_by": {
+          "default": "unresolved",
+          "description": "How the disagreement was resolved",
+          "enum": [
+            "a_wins",
+            "b_wins",
+            "average",
+            "debate",
+            "unresolved"
+          ],
+          "title": "Resolved By",
+          "type": "string"
+        },
+        "delta": {
+          "default": 0,
+          "description": "Absolute score difference |A - B|",
+          "minimum": 0,
+          "title": "Delta",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension",
+        "a_score",
+        "b_score"
+      ],
+      "title": "EvaluatorDisagreement",
+      "type": "object"
+    },
+    "FailureNarrative": {
+      "description": "Self-describing failure narrative for metaprompting.\n\nEvery low score produces a paired description enabling targeted\nprompt improvements.",
+      "properties": {
+        "what_happened": {
+          "description": "Factual description of what the agent did",
+          "title": "What Happened",
+          "type": "string"
+        },
+        "what_should_have_happened": {
+          "description": "Expected behavior that would have scored higher",
+          "title": "What Should Have Happened",
+          "type": "string"
+        },
+        "root_dimensions": {
+          "description": "Which dimensions drove this failure",
+          "items": {
+            "type": "string"
+          },
+          "title": "Root Dimensions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "what_happened",
+        "what_should_have_happened"
+      ],
+      "title": "FailureNarrative",
+      "type": "object"
+    },
+    "FailureRecommendation": {
+      "description": "Recommended action after a failure.",
+      "enum": [
+        "retry",
+        "skip",
+        "abort",
+        "investigate",
+        "escalate"
+      ],
+      "title": "FailureRecommendation",
+      "type": "string"
+    },
+    "FailureReport": {
+      "description": "Structured report of a failure during evaluation.",
+      "properties": {
+        "failure_type": {
+          "description": "Category of failure",
+          "title": "Failure Type",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "description": "Detailed failure description",
+          "title": "Detail",
+          "type": "string"
+        },
+        "workflow_id": {
+          "default": "",
+          "description": "Which workflow failed",
+          "title": "Workflow Id",
+          "type": "string"
+        },
+        "recommendation": {
+          "$ref": "#/$defs/FailureRecommendation",
+          "default": "investigate",
+          "description": "Recommended action"
+        },
+        "timestamp": {
+          "description": "When the failure occurred",
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "failure_type"
+      ],
+      "title": "FailureReport",
+      "type": "object"
+    },
+    "FailureSignal": {
+      "description": "A failure signal observed during pipeline execution.\n\nTrack A: VALIDITY_CLAIM \u2014 failure types observed in 3.1e experiments.",
+      "properties": {
+        "signal_type": {
+          "description": "Category of infrastructure failure",
+          "enum": [
+            "hook_timeout",
+            "hook_crash",
+            "parser_error",
+            "store_write_failure",
+            "store_read_failure",
+            "evaluator_timeout",
+            "evaluator_crash",
+            "plugin_crash",
+            "session_invalid",
+            "transcript_missing",
+            "transcript_truncated",
+            "sandbox_failure"
+          ],
+          "title": "Signal Type",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "description": "Human-readable detail about the failure",
+          "title": "Detail",
+          "type": "string"
+        },
+        "timestamp": {
+          "description": "When the failure was observed",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "recoverable": {
+          "default": true,
+          "description": "Whether the pipeline can continue after this failure",
+          "title": "Recoverable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "signal_type"
+      ],
+      "title": "FailureSignal",
+      "type": "object"
+    },
+    "ImprovementHint": {
+      "description": "Actionable hint for improving a specific evaluation dimension.\n\nProduced by the evaluator when a dimension scores below threshold.\nFeeds into the metaprompting improvement loop (Plan 12).",
+      "properties": {
+        "dimension": {
+          "description": "Dimension this hint targets",
+          "title": "Dimension",
+          "type": "string"
+        },
+        "calibration_status": {
+          "default": "uncalibrated",
+          "description": "Whether this hint's basis has been calibrated",
+          "enum": [
+            "calibrated",
+            "uncalibrated",
+            "provisional"
+          ],
+          "title": "Calibration Status",
+          "type": "string"
+        },
+        "hypothesis": {
+          "default": "",
+          "description": "What the evaluator thinks would improve the score",
+          "title": "Hypothesis",
+          "type": "string"
+        },
+        "kill_criterion": {
+          "default": "",
+          "description": "Condition under which this hint should be abandoned. Used by ExperimentLedgerEntry to decide when to stop iterating.",
+          "title": "Kill Criterion",
+          "type": "string"
+        },
+        "priority": {
+          "default": 0,
+          "description": "Priority ranking (0=lowest, 10=highest)",
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Priority",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "dimension"
+      ],
+      "title": "ImprovementHint",
+      "type": "object"
+    },
+    "PipelineHealth": {
+      "description": "Health metrics for a single evaluation pipeline run.\n\nRuns with health < 60% are flagged as unreliable and excluded\nfrom baseline calculations.",
+      "properties": {
+        "parsed_records": {
+          "default": 0,
+          "description": "Records successfully parsed",
+          "title": "Parsed Records",
+          "type": "integer"
+        },
+        "expected_records": {
+          "default": 0,
+          "description": "Records expected",
+          "title": "Expected Records",
+          "type": "integer"
+        },
+        "errors": {
+          "default": 0,
+          "description": "Parse/processing errors",
+          "title": "Errors",
+          "type": "integer"
+        },
+        "stages_completed": {
+          "description": "Pipeline stages that completed",
+          "items": {
+            "type": "string"
+          },
+          "title": "Stages Completed",
+          "type": "array"
+        }
+      },
+      "title": "PipelineHealth",
+      "type": "object"
+    },
+    "PluginScore": {
+      "description": "Standard score envelope returned by any EvaluationPlugin.\n\nScore is 0-100 integer. Plugins may attach arbitrary details.",
+      "properties": {
+        "plugin_name": {
+          "description": "Name of the plugin that produced this score",
+          "title": "Plugin Name",
+          "type": "string"
+        },
+        "score": {
+          "description": "Overall score (0=worst, 100=best)",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Score",
+          "type": "integer"
+        },
+        "details": {
+          "additionalProperties": true,
+          "description": "Plugin-specific scoring breakdown",
+          "title": "Details",
+          "type": "object"
+        },
+        "explanation": {
+          "default": "",
+          "description": "Human-readable explanation of the score",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "applicable": {
+          "default": true,
+          "description": "Whether this plugin was applicable to the workflow. Non-applicable plugins are excluded from effective_score().",
+          "title": "Applicable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "plugin_name",
+        "score"
+      ],
+      "title": "PluginScore",
+      "type": "object"
+    },
+    "RunMode": {
+      "description": "Execution mode for an evaluation run.\n\nPhase gates require ``headless`` or ``interactive`` \u2014 ``simulated``\nruns can never satisfy exit criteria.",
+      "enum": [
+        "simulated",
+        "headless",
+        "interactive"
+      ],
+      "title": "RunMode",
+      "type": "string"
+    },
+    "ScoreCard": {
+      "description": "Aggregated evaluation scores with pass/fail determination.\n\nProduced by the ReasoningEvaluator (3.1c-07) from capability checks,\nplugin scores, and LLM reasoning assessment.",
+      "properties": {
+        "workflow_id": {
+          "description": "Workflow being evaluated",
+          "title": "Workflow Id",
+          "type": "string"
+        },
+        "dimensions": {
+          "description": "Per-dimension scores",
+          "items": {
+            "$ref": "#/$defs/DimensionScore"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "plugin_scores": {
+          "description": "Scores from registered plugins",
+          "items": {
+            "$ref": "#/$defs/PluginScore"
+          },
+          "title": "Plugin Scores",
+          "type": "array"
+        },
+        "overall_score": {
+          "description": "Weighted aggregate score",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Overall Score",
+          "type": "integer"
+        },
+        "passed": {
+          "description": "Whether the workflow passed evaluation",
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "pass_threshold": {
+          "default": 60,
+          "description": "Score needed to pass",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Pass Threshold",
+          "type": "integer"
+        },
+        "failure_narrative": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FailureNarrative"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Narrative explaining failures (None if passed)"
+        },
+        "capability_gating_failed": {
+          "default": false,
+          "description": "True if a gating capability check failed. Regression detection skips comparison for these runs.",
+          "title": "Capability Gating Failed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "workflow_id",
+        "overall_score",
+        "passed"
+      ],
+      "title": "ScoreCard",
+      "type": "object"
+    },
+    "WorkflowStatus": {
+      "description": "Status of a single workflow within an evaluation run.",
+      "properties": {
+        "workflow_id": {
+          "description": "Workflow identifier",
+          "title": "Workflow Id",
+          "type": "string"
+        },
+        "status": {
+          "default": "pending",
+          "description": "Current status",
+          "enum": [
+            "pending",
+            "running",
+            "completed",
+            "failed",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Start timestamp",
+          "title": "Started At"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Completion timestamp",
+          "title": "Completed At"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Error message if failed",
+          "title": "Error"
+        }
+      },
+      "required": [
+        "workflow_id"
+      ],
+      "title": "WorkflowStatus",
+      "type": "object"
+    }
+  },
+  "description": "Final report from a complete evaluation suite run.\n\nConsumed by the /vrs-test-suite skill (3.1c-09) and persisted\nto .vrs/evaluations/.",
+  "properties": {
+    "suite_id": {
+      "description": "Unique suite run identifier",
+      "title": "Suite Id",
+      "type": "string"
+    },
+    "progress": {
+      "$ref": "#/$defs/EvaluationProgress",
+      "description": "Final progress state"
+    },
+    "results": {
+      "description": "Per-workflow evaluation results",
+      "items": {
+        "$ref": "#/$defs/EvaluationResult"
+      },
+      "title": "Results",
+      "type": "array"
+    },
+    "failures": {
+      "description": "Failures encountered during the run",
+      "items": {
+        "$ref": "#/$defs/FailureReport"
+      },
+      "title": "Failures",
+      "type": "array"
+    },
+    "overall_passed": {
+      "default": false,
+      "description": "Whether the suite as a whole passed",
+      "title": "Overall Passed",
+      "type": "boolean"
+    },
+    "started_at": {
+      "description": "Suite start timestamp",
+      "title": "Started At",
+      "type": "string"
+    },
+    "completed_at": {
+      "default": "",
+      "description": "Suite completion timestamp",
+      "title": "Completed At",
+      "type": "string"
+    },
+    "run_mode": {
+      "$ref": "#/$defs/RunMode",
+      "default": "simulated",
+      "description": "Execution mode for this suite run"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "description": "Suite-level metadata",
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "progress"
+  ],
+  "title": "SuiteExitReport",
+  "type": "object"
+}

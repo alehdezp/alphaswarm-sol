@@ -1,0 +1,118 @@
+name: Determinism Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/true_vkg/kg/builder.py'
+      - 'src/true_vkg/kg/schema.py'
+      - 'src/true_vkg/kg/operations.py'
+      - 'patterns/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/true_vkg/kg/builder.py'
+      - 'src/true_vkg/kg/schema.py'
+
+jobs:
+  determinism-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run fingerprint stability test
+        run: |
+          # Build same graph 3 times and verify fingerprints match
+          for i in 1 2 3; do
+            uv run alphaswarm build-kg tests/contracts/ReentrancyClassic.sol --out /tmp/graph_$i.kg.json
+          done
+
+          # Compare fingerprints
+          uv run python -c "
+          import json
+          from true_vkg.kg.fingerprint import fingerprint_graph, compare_fingerprints
+
+          graphs = []
+          for i in range(1, 4):
+              with open(f'/tmp/graph_{i}.kg.json/graph.json') as f:
+                  graphs.append(json.load(f))
+
+          fps = [fingerprint_graph(g) for g in graphs]
+
+          # All fingerprints should match
+          hashes = [fp['full_hash'] for fp in fps]
+          if len(set(hashes)) != 1:
+              print('ERROR: Fingerprints differ across runs!')
+              for i, h in enumerate(hashes):
+                  print(f'  Run {i+1}: {h}')
+              exit(1)
+
+          print('SUCCESS: All fingerprints match')
+          print(f'  Hash: {hashes[0]}')
+          "
+
+      - name: Run rename resistance tests
+        run: uv run pytest tests/test_rename_resistance.py -v
+
+      - name: Run fingerprint tests
+        run: uv run pytest tests/test_fingerprint.py -v
+
+      - name: Verify DVDeFi detection rate
+        run: |
+          # Ensure detection rate hasn't regressed
+          EXPECTED_RATE="0.846"
+          ACTUAL_RATE=$(cat benchmarks/detection_baseline.json | jq -r '.summary.dvd_detection_rate')
+
+          if (( $(echo "$ACTUAL_RATE < $EXPECTED_RATE" | bc -l) )); then
+            echo "ERROR: Detection rate regressed from $EXPECTED_RATE to $ACTUAL_RATE"
+            exit 1
+          fi
+
+          echo "SUCCESS: Detection rate $ACTUAL_RATE >= $EXPECTED_RATE"
+
+  pattern-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Validate patterns load
+        run: |
+          uv run python -c "
+          import yaml
+          from pathlib import Path
+
+          pattern_dir = Path('patterns/core')
+          errors = []
+
+          for f in pattern_dir.glob('*.yaml'):
+              try:
+                  with open(f) as fp:
+                      pattern = yaml.safe_load(fp)
+                  if not pattern.get('id'):
+                      errors.append(f'{f.name}: missing id')
+                  if not pattern.get('match'):
+                      errors.append(f'{f.name}: missing match')
+              except Exception as e:
+                  errors.append(f'{f.name}: {e}')
+
+          if errors:
+              print('Pattern validation errors:')
+              for e in errors:
+                  print(f'  - {e}')
+              exit(1)
+
+          print(f'SUCCESS: All {len(list(pattern_dir.glob(\"*.yaml\")))} patterns valid')
+          "

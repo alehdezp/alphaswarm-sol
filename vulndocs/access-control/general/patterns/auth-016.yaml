@@ -1,0 +1,19 @@
+id: auth-016
+vulndoc: access-control/general
+name: Dangerous Admin Function
+description: Privileged function can affect user funds.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_privileged_operation
+    op: eq
+    value: true
+  - property: can_affect_user_funds
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: true

@@ -1,0 +1,60 @@
+# DEPRECATED: Consolidated into hook-permission (singular)
+# Consolidation: 2026-01-20 (Plan 01-05)
+# Reason: Naming consistency (singular form)
+# Note: Reference material preserved for historical context
+
+id: access-control-hooks-permission
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: "Uniswap V4 Hooks Permission Vulnerabilities"
+severity: critical
+category: access-control
+subcategory: hooks-permission
+deprecated: true
+deprecated_reason: "Naming consistency - consolidated into hook-permission (singular)"
+canonical: "../hook-permission/"
+
+description: >
+  Uniswap V4 introduces hooks - custom code execution at specific pool lifecycle points.
+  Missing access control on hook callbacks allows attackers to manipulate pool state,
+  bypass intended logic, or lock user funds. Hooks must restrict callers to PoolManager only.
+
+evidence_threshold: 3
+
+protocol_specific: "Uniswap V4"
+introduced_version: "V4"
+
+references:
+  security_docs:
+    - title: "Uniswap V4 Security Considerations"
+      source: "https://docs.uniswap.org/contracts/v4/concepts/security"
+      date: "2025-01-01"
+
+  audits:
+    - firm: "Spearbit"
+      protocol: "Uniswap V4"
+      date: "2024-09"
+      status: "Draft"
+
+  research:
+    - title: "Uniswap V4 Hooks Security Deep Dive"
+      source: "https://www.cyfrin.io/blog/uniswap-v4-hooks-security-deep-dive"
+      date: "2025-11-14"
+    - title: "CertiK - Uniswap V4: Hooks Security Considerations"
+      source: "https://www.certik.com/resources/blog/uniswap-v4-hooks-security-considerations"
+      date: "2025-01-28"
+    - title: "Thorns in the Rose: Exploring Security Risks in Uniswap v4's Novel Hook Mechanism"
+      source: "https://blocksec.com/blog/thorns-in-the-rose-exploring-security-risks-in-uniswap-v4-s-novel-hook-mechanism"
+      date: "2025-10-30"
+
+  tools:
+    - name: "HookScan"
+      maintainer: "BlockSec"
+      purpose: "Automated static analysis for Uniswap V4 hooks"
+      source: "https://github.com/blocksecteam/hookscan"
+
+bug_bounty:
+  program: "Uniswap V4 Bug Bounty"
+  amount: "$15.5M"
+  announced: "2024-11"

@@ -1,0 +1,15 @@
+id: arith-018
+vulndoc: arithmetic/general
+name: Basis Points Precision Loss
+description: Basis points calculations without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: basis_points_precision_risk
+    op: eq
+    value: true

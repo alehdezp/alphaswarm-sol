@@ -1,0 +1,20 @@
+id: auth-082
+vulndoc: access-control/general
+name: tx.origin in Fallback/Receive
+description: tx.origin used in fallback or receive functions.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_tx_origin
+    op: eq
+    value: true
+  any:
+  - property: is_fallback
+    op: eq
+    value: true
+  - property: is_receive
+    op: eq
+    value: true

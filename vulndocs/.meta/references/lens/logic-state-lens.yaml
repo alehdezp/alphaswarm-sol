@@ -1,0 +1,424 @@
+- id: logic-001
+  name: Invalid State Transition
+  description: State machine variable modified without validation.
+  scope: Function
+  lens:
+    - LogicState
+  severity: high
+  cwe: [840]
+  match:
+    all:
+      - property: modifies_state_machine_variable
+        op: eq
+        value: true
+    any:
+      - property: allows_invalid_transition
+        op: eq
+        value: true
+      - property: validates_current_state
+        op: eq
+        value: false
+
+- id: logic-002
+  name: Balance Invariant Violation
+  description: Balance state modified without invariant checks.
+  scope: Function
+  lens:
+    - LogicState
+  severity: high
+  cwe: [682]
+  match:
+    all:
+      - property: modifies_balance_state
+        op: eq
+        value: true
+      - property: touches_invariant_unchecked
+        op: eq
+        value: true
+    none:
+      - property: maintains_balance_invariant
+        op: eq
+        value: true
+
+- id: logic-003
+  name: Missing Balance Check
+  description: Withdraw-like functions without balance checks.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [754]
+  match:
+    all:
+      - property: is_withdraw_like
+        op: eq
+        value: true
+    none:
+      - property: has_balance_check
+        op: eq
+        value: true
+
+- id: logic-004
+  name: Double Counting Error
+  description: Accounting updates double count balances or supply.
+  scope: Function
+  lens:
+    - LogicState
+  severity: high
+  cwe: [682]
+  match:
+    all:
+      - property: double_counting_risk
+        op: eq
+        value: true
+
+- id: logic-005
+  name: Variable Shadowing
+  description: Contract variables shadow inherited or state variables.
+  scope: Contract
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [710]
+  match:
+    all:
+      - property: shadows_parent_variable
+        op: eq
+        value: true
+
+- id: logic-006
+  name: Unprotected Selfdestruct
+  description: Selfdestruct callable without access control.
+  scope: Function
+  lens:
+    - LogicState
+  severity: critical
+  cwe: [749]
+  match:
+    all:
+      - property: uses_selfdestruct
+        op: eq
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+    none:
+      - property: has_access_gate
+        op: eq
+        value: true
+
+- id: logic-007
+  name: extcodesize Bypass
+  description: extcodesize checks in constructor context.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [749]
+  match:
+    all:
+      - property: uses_extcodesize
+        op: eq
+        value: true
+      - property: extcodesize_in_constructor
+        op: eq
+        value: true
+
+- id: logic-008
+  name: Uninitialized Storage
+  description: Contract has uninitialized storage variables.
+  scope: Contract
+  lens:
+    - LogicState
+  severity: high
+  cwe: [665]
+  match:
+    all:
+      - property: has_uninitialized_storage
+        op: eq
+        value: true
+
+- id: logic-009
+  name: Missing Event Emission
+  description: State changes without event emission.
+  scope: Function
+  lens:
+    - LogicState
+  severity: low
+  cwe: [778]
+  match:
+    all:
+      - property: writes_state
+        op: eq
+        value: true
+    none:
+      - property: emits_event
+        op: eq
+        value: true
+
+- id: logic-010
+  name: Incomplete State Cleanup
+  description: State machine steps without cleanup/reset.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [840]
+  match:
+    all:
+      - property: state_cleanup_missing
+        op: eq
+        value: true
+
+- id: logic-011
+  name: State Race Condition
+  description: State writes with external calls and no guard.
+  scope: Function
+  lens:
+    - LogicState
+  severity: high
+  cwe: [362]
+  match:
+    all:
+      - property: state_race_condition
+        op: eq
+        value: true
+
+- id: logic-012
+  name: Collateral Invariant Violation
+  description: Collateral state modified without invariant checks.
+  scope: Function
+  lens:
+    - LogicState
+  severity: high
+  cwe: [682]
+  match:
+    all:
+      - property: writes_collateral_state
+        op: eq
+        value: true
+    none:
+      - property: has_invariant_check
+        op: eq
+        value: true
+
+- id: logic-013
+  name: Pool Invariant Violation
+  description: Pool state modified without invariant checks.
+  scope: Function
+  lens:
+    - LogicState
+  severity: high
+  cwe: [682]
+  match:
+    all:
+      - property: writes_pool_state
+        op: eq
+        value: true
+    none:
+      - property: has_invariant_check
+        op: eq
+        value: true
+
+- id: logic-014
+  name: Missing Return Value Check
+  description: External calls or token transfers without return checks.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [252]
+  match:
+    all:
+      - property: missing_return_value_check
+        op: eq
+        value: true
+
+- id: logic-015
+  name: Missing Boundary Checks
+  description: Missing bounds checks on amount-like parameters.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [754]
+  match:
+    all:
+      - property: missing_amount_bounds
+        op: eq
+        value: true
+
+- id: logic-016
+  name: Ordering & Sequencing Flaw
+  description: External calls before state updates without guard.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [840]
+  match:
+    all:
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: logic-017
+  name: Conditional Logic Flaw
+  description: Access logic using if/return without hard revert.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [840]
+  match:
+    all:
+      - property: access_gate_has_if_return
+        op: eq
+        value: true
+
+- id: logic-018
+  name: Protocol Interaction Flaw
+  description: External protocol calls without code validation.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [840]
+  match:
+    all:
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: call_target_user_controlled
+        op: eq
+        value: true
+    none:
+      - property: validates_contract_code
+        op: eq
+        value: true
+      - property: call_target_validated
+        op: eq
+        value: true
+
+- id: logic-019
+  name: Missing Accounting Updates
+  description: Value transfers without accounting updates.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: accounting_update_missing
+        op: eq
+        value: true
+
+- id: logic-020
+  name: Rounding Accumulation
+  description: Rounding errors accumulate in loops.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: rounding_accumulation_risk
+        op: eq
+        value: true
+
+- id: logic-021
+  name: Function Override Missing Super
+  description: Overrides without calling parent implementation.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [710]
+  match:
+    all:
+      - property: override_missing_super
+        op: eq
+        value: true
+
+- id: logic-022
+  name: Diamond Inheritance Conflict
+  description: Multiple inheritance with potential conflicts.
+  scope: Contract
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [710]
+  match:
+    all:
+      - property: has_diamond_inheritance
+        op: eq
+        value: true
+
+- id: logic-023
+  name: Forced Ether via Selfdestruct
+  description: Selfdestruct target is user-controlled.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [749]
+  match:
+    all:
+      - property: selfdestruct_target_user_controlled
+        op: eq
+        value: true
+
+- id: logic-024
+  name: Contract vs EOA Assumption
+  description: Address usage without code existence checks.
+  scope: Function
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [749]
+  match:
+    any:
+      - property: address_parameter_used_for_call
+        op: eq
+        value: true
+      - property: address_parameter_used_for_transfer
+        op: eq
+        value: true
+    none:
+      - property: validates_contract_code
+        op: eq
+        value: true
+
+- id: logic-025
+  name: Boolean Default Issues
+  description: Uninitialized boolean defaults.
+  scope: Contract
+  lens:
+    - LogicState
+  severity: medium
+  cwe: [665]
+  match:
+    all:
+      - property: has_uninitialized_boolean
+        op: eq
+        value: true
+
+- id: logic-026
+  name: Incorrect Event Parameters
+  description: Event emission missing expected parameters.
+  scope: Function
+  lens:
+    - LogicState
+  severity: low
+  cwe: [778]
+  match:
+    all:
+      - property: event_param_mismatch
+        op: eq
+        value: true

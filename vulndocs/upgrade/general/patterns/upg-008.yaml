@@ -1,0 +1,22 @@
+id: upg-008
+vulndoc: upgrade/general
+name: Upgrade Missing Timelock
+description: Upgrade functions missing timelock checks.
+scope: Function
+lens:
+- Upgradeability
+severity: medium
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_has_timelock
+    op: eq
+    value: true
+  - property: has_timelock_parameter
+    op: eq
+    value: true
+  - property: has_timelock_check
+    op: eq
+    value: false

@@ -1,0 +1,36 @@
+# Cross-Chain Adapter Replay - DEPRECATED
+# Merged into: cross-chain/replay-protection
+# Consolidation: 2026-01-20 (Plan 01-05)
+
+id: adapter-replay
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Cross-Chain Adapter Replay Attack
+category: cross-chain
+deprecated: true
+deprecated_reason: "Merged into replay-protection - same semantic signature"
+canonical: "../replay-protection/"
+
+# Original metadata preserved for reference
+severity: critical
+emerging: true
+protocols: ["layerzero", "bridges"]
+
+description: |
+  DEPRECATED: See cross-chain/replay-protection for canonical pattern.
+  Message deduplication scoped per adapter allows replay via different adapters.
+
+operations:
+  - RECEIVES_CROSS_CHAIN_MESSAGE
+  - VALIDATES_MESSAGE
+  - MARKS_AS_PROCESSED
+
+behavioral_signature: "RECEIVE_MSG(adapter_A) -> MARK_SEEN(adapter_A) -> REPLAY_VIA(adapter_B)"
+
+related_cwes:
+  - CWE-294  # Authentication Bypass by Capture-replay
+  - CWE-345  # Insufficient Verification of Data Authenticity
+
+pattern_ids:
+  - cc-009

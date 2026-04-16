@@ -1,0 +1,39 @@
+id: policy-mismatch-initializer-unprotected
+vulndoc: access-control/policy
+name: Unprotected Initializer
+description: 'Function labeled as initialization but lacks proper protection.
+
+  Initializers must be protected against re-initialization attacks.
+
+
+  Risk: Attacker can reinitialize contract and take ownership.
+
+  '
+severity: critical
+scope: Function
+lens:
+- StateIntegrity
+- Initialization
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    none:
+    - property: has_initializer_modifier
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: state_mutation.initializes_state
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: access_control.initialization_protected
+required_labels:
+- state_mutation.initializes_state

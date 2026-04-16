@@ -1,0 +1,45 @@
+# DVDeFi Challenge: Truster
+# Vulnerability: Arbitrary external call allows token approval theft
+
+id: dvd-truster
+name: Truster
+version: "4"
+difficulty: 2
+category: Arbitrary Call
+
+source_path: examples/damm-vuln-defi/src/truster
+
+vulnerability:
+  type: arbitrary-external-call
+  description: |
+    The flashLoan function allows arbitrary external calls with pool as msg.sender,
+    enabling attackers to call approve() on pool's tokens.
+  cwe: CWE-94
+  severity: critical
+
+expected_detections:
+  - pattern: arbitrary-call-target
+    contract: TrusterLenderPool
+    function: flashLoan
+    property: arbitrary_call_target
+    confidence: high
+
+  - pattern: auth-arbitrary-external-call
+    contract: TrusterLenderPool
+    function: flashLoan
+    property: has_low_level_call
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - TrusterLenderPool.flashLoan
+  safe: []
+
+false_positive_exclusions: []
+
+verification:
+  exploit_summary: "Borrow 0 tokens, pass approve() calldata to steal all pool tokens"
+  fix_summary: "Remove arbitrary call functionality or restrict to known contracts"
+
+status: detected
+detection_date: "2025-12-31"

@@ -1,0 +1,128 @@
+# Vulnerability Index Template
+# Required metadata for vulnerability subcategories
+# Path: vulndocs/{category}/{subcategory}/index.yaml
+
+schema_version: "1.0"
+
+# Required fields
+id: vulnerability-id
+category: category-name
+subcategory: subcategory-name
+severity: critical  # critical, high, medium, low
+
+# Explicit vulndoc path for validation (required)
+vulndoc: category-name/subcategory-name
+
+# Brief description
+description: |
+  Clear, concise description of this specific vulnerability.
+  What is the core issue? How does it manifest?
+
+# =============================================================================
+# PATTERN CONTEXT PACK (PCP v2) - Optional
+# =============================================================================
+# Pattern Context Pack v2 provides deterministic, evidence-first context for
+# agentic pattern discovery. When specified, the PCP file is co-located with
+# patterns in: vulndocs/{category}/{subcategory}/patterns/{pattern-id}.pcp.yaml
+#
+# Key constraints:
+# - No RAG or semantic search - context is deterministic
+# - No name heuristics - behavior over names
+# - Evidence-first - every claim references explicit evidence
+# - Unknown != Safe - missing signals = unknown, never safe
+#
+# See template: vulndocs/.meta/templates/pattern_context_pack_v2.yaml
+# Reference: docs/reference/pattern-context-pack-v2.md
+
+pattern_context_pack:
+  # Whether this subcategory has associated PCP v2 files
+  enabled: false
+  # PCP version (2.x required for deterministic constraints)
+  version: "2.0"
+  # Budget tier for this vulnerability class (affects token limits)
+  # Options: minimal (cheap pass only), standard (cheap + verify), full (all passes)
+  budget_tier: "standard"
+  # Default unknowns policy for this class
+  # Options: unknown (safe default), warn (log warnings), fail (strict mode)
+  unknowns_default: "unknown"
+
+# =============================================================================
+# Phase 7 Test Generation Support
+# =============================================================================
+# These fields enable automated test generation for pattern validation
+
+# Semantic triggers - VKG operations to look for
+semantic_triggers:
+  - OPERATION_NAME_1
+  - OPERATION_NAME_2
+  - OPERATION_NAME_3
+
+# Example VQL queries for detection
+vql_queries:
+  - "FIND functions WHERE condition1 AND condition2"
+  - "FIND functions WHERE operation1 AND NOT has_protection"
+
+# Graph patterns - structural patterns in the knowledge graph
+graph_patterns:
+  - "operation1 -> operation2 -> operation3"
+  - "read_state -> external_call -> write_state"
+
+# Reasoning template for LLM-based detection
+# This is pseudocode/semantic logic that guides test generation
+reasoning_template: |
+  1. Identify [specific pattern or operation]
+  2. Check for [protective measure or condition]
+  3. Trace [value flow or control flow]
+  4. Verify [invariant or constraint]
+  5. Look for [vulnerability indicator]
+
+# VKG properties relevant for detection
+relevant_properties:
+  - property_1
+  - property_2
+  - has_protection_mechanism
+
+# Graph signals - expected property values
+graph_signals:
+  - property: property_name
+    expected: true
+    critical: true
+    description: Why this signal matters
+
+# Behavioral signatures (operation sequences)
+behavioral_signatures:
+  - "R:bal->X:out->W:bal"
+  - "R:state->X:call->W:state"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "READS_BALANCE -> TRANSFERS_VALUE -> WRITES_BALANCE"
+  safe:
+    - "READS_BALANCE -> WRITES_BALANCE -> TRANSFERS_VALUE"
+
+# False positive indicators
+false_positive_indicators:
+  - "Modifier present: nonReentrant"
+  - "Protection mechanism detected"
+  - "Trusted contract only"
+
+# Associated patterns (embedded in ./patterns/ folder)
+patterns:
+  - pattern-id-1
+  - pattern-id-2
+
+# Test coverage tracking (populated during testing)
+test_coverage:
+  - tests/test_lens_name.py:test_pattern_*
+  - tests/adversarial/test_obfuscation.py
+
+# Related exploits (one-line references only)
+related_exploits:
+  - exploit-name-1
+  - exploit-name-2
+
+# Metadata
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+token_estimate: 500

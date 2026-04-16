@@ -1,0 +1,16 @@
+id: auth-008
+vulndoc: access-control/general
+name: Missing Timelock
+description: Privileged contracts without timelock safeguards.
+scope: Contract
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: has_privileged_operations
+    op: eq
+    value: true
+  - property: has_timelock
+    op: eq
+    value: false

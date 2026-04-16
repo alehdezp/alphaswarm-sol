@@ -1,0 +1,176 @@
+# Use Case Scenario Schema
+# All scenario YAML files in this directory tree must conform to this structure.
+#
+# Validated by: scripts/validate_scenarios.py
+# Consumed by: tests/scenarios/conftest.py (pytest parametrize)
+#
+# VERSION: 1.0
+
+schema:
+  id:
+    type: string
+    required: true
+    pattern: "^UC-[A-Z]+-\\d{3}$"
+    description: "Unique scenario identifier. Format: UC-<CATEGORY>-<NNN>"
+
+  name:
+    type: string
+    required: true
+    description: "Human-readable scenario name"
+
+  workflow:
+    type: string
+    required: true
+    enum:
+      - vrs-audit
+      - vrs-investigate
+      - vrs-verify
+      - vrs-debate
+      - vrs-attacker
+      - vrs-defender
+      - vrs-health-check
+      - graph-build
+      - tool-run
+      - failure
+    description: "Which workflow this scenario exercises"
+
+  category:
+    type: string
+    required: true
+    enum:
+      - audit
+      - investigate
+      - verify
+      - debate
+      - agents
+      - tools
+      - graph
+      - failure
+      - cross-workflow
+    description: "Subdirectory category for organization"
+
+  tier:
+    type: string
+    required: true
+    enum:
+      - core
+      - important
+      - mechanical
+    description: >
+      core: Must pass for any release. Exercises critical reasoning paths.
+      important: Should pass. Exercises common workflows.
+      mechanical: Nice-to-have. Exercises edge cases or rare paths.
+
+  input:
+    type: object
+    required: true
+    fields:
+      contract:
+        type: string
+        required: true
+        description: "Path to contract file or directory (relative to project root)"
+      command:
+        type: string
+        required: true
+        description: "The skill/command to invoke (e.g., /vrs-audit path/to/contract)"
+      context:
+        type: string
+        required: true
+        description: "Human description of what this contract contains and why it matters"
+
+  expected_behavior:
+    type: object
+    required: true
+    fields:
+      summary:
+        type: string
+        required: true
+        description: "Multi-line description of expected behavior"
+      must_happen:
+        type: list
+        items: string
+        required: true
+        description: "Observable behaviors that MUST occur for the scenario to pass"
+      must_not_happen:
+        type: list
+        items: string
+        required: true
+        description: "Behaviors that must NOT occur (false positives, crashes, etc.)"
+      expected_findings:
+        type: object
+        required: false
+        fields:
+          min_count:
+            type: integer
+            description: "Minimum number of findings expected"
+          must_include_category:
+            type: string
+            description: "At least one finding must belong to this vulnerability category"
+
+  evaluation:
+    type: object
+    required: true
+    fields:
+      pass_threshold:
+        type: integer
+        required: true
+        min: 0
+        max: 100
+        description: "Minimum overall score to pass (0-100)"
+      key_dimensions:
+        type: list
+        items:
+          type: object
+          fields:
+            name:
+              type: string
+              required: true
+            description:
+              type: string
+              required: true
+        required: true
+        description: "Evaluation dimensions with descriptions"
+      regression_signals:
+        type: list
+        items: string
+        required: true
+        description: "Human-readable regression detection rules"
+
+  links:
+    type: object
+    required: false
+    fields:
+      workflow_doc:
+        type: string
+        description: "Path to workflow documentation"
+      evaluation_contract:
+        type: string
+        description: "Path to evaluation contract YAML"
+      test_contract:
+        type: string
+        description: "Path to Solidity test contract"
+      related_scenarios:
+        type: list
+        items: string
+        description: "IDs of related scenarios"
+
+  status:
+    type: string
+    required: true
+    enum:
+      - draft
+      - ready
+      - validated
+      - broken
+    description: "Lifecycle status of this scenario"
+
+  last_validated:
+    type: string
+    required: false
+    nullable: true
+    description: "ISO 8601 date of last successful validation run, or null"
+
+  notes:
+    type: string
+    required: false
+    description: "Free-form notes about this scenario"

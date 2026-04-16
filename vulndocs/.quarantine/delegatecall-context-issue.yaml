@@ -1,0 +1,13 @@
+id: delegatecall-context-issue
+vulndoc: access-control/delegatecall
+name: Delegatecall Context Confusion
+description: Delegatecall combined with msg.sender/tx.origin usage.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: delegatecall_context_sensitive
+    op: eq
+    value: true

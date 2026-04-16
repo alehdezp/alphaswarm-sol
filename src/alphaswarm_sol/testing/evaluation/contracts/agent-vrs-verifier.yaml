@@ -1,0 +1,71 @@
+workflow_id: agent-vrs-verifier
+category: agent
+grader_type: hybrid
+rule_refs:
+  - GRAPH-FIRST
+  - EVIDENCE-QUALITY
+  - EXEC-INTEGRITY
+reasoning_dimensions:
+  - graph_utilization
+  - evidence_quality
+  - arbitration_quality
+  - evidence_weighing
+  - verdict_justification
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+  - id: bskg_query_issued
+    description: Verifier issued independent BSKG queries
+    expected_behavior: Tool sequence contains Bash with alphaswarm query
+    grader_type: code
+  - id: graph_first_compliance
+    description: BSKG queries precede manual code reading
+    expected_behavior: First Bash(alphaswarm) call occurs before first Read call
+    grader_type: code
+  - id: evidence_cross_referenced
+    description: Verifier cross-referenced evidence from multiple sources
+    expected_behavior: Response references claims from both attacker and defender transcripts
+    grader_type: model
+  - id: session_completed
+    description: Verification session completed with structured output
+    expected_behavior: session_completed is true and response contains verdict with justification
+    grader_type: code
+evidence_requirements:
+  - type: graph_nodes
+    description: Independent graph evidence for verification
+  - type: transcript
+    description: References to attacker/defender evidence
+hooks:
+  - SessionStart
+  - Stop
+  - PreCompact
+  - TeammateIdle
+  - TaskCompleted
+  - SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+  model_tier: opus
+ground_truth_rubric: >-
+  Agent independently queries BSKG before reviewing attacker and defender claims.
+  Agent systematically evaluates evidence strength from both sides, weighing
+  graph-backed claims higher than unsubstantiated assertions. Agent attempts
+  independent reproduction of key claims through its own graph queries. Agent
+  explicitly handles contradictions between attacker and defender by citing
+  specific evidence for resolution. Agent produces a verdict with clear
+  justification chain from evidence to conclusion. Agent performs self-critique
+  on verdict confidence, acknowledging areas of remaining uncertainty.
+active_dimensions:
+  - graph_utilization
+  - evidence_quality
+  - arbitration_quality
+  - evidence_weighing
+  - verdict_justification
+  - conclusion_support
+  - verification_thoroughness
+  - rubric_coverage
+  - investigation_depth

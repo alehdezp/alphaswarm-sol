@@ -1,0 +1,22 @@
+# No Bidi Characters
+id: smartbugs-no-bidi-characters
+name: Bidirectional Characters Attack
+category: misc
+source: examples/semgrep-smart-contracts/solidity/security/no-bidi-characters.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: trojan-source
+  description: Bidirectional Unicode characters can hide malicious code
+  severity: high
+  cwe: CWE-506
+
+expected_detections:
+  - pattern: misc-bidi
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: misc-bidi
+  secondary: [trojan-source]
+
+status: pending

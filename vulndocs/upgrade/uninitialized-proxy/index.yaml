@@ -1,0 +1,22 @@
+# Uninitialized Proxy - Subcategory Index
+
+id: uninitialized-proxy
+name: Uninitialized Proxy
+parent_category: upgrade
+
+description: |
+  Implementation contracts directly callable without initialization,
+  allowing attackers to take control of uninitialized implementations.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - upg-002
+
+relevant_properties:
+  - has_initializer
+  - is_implementation
+
+token_estimate: 400

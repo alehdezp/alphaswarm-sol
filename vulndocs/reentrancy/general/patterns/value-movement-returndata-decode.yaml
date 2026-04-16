@@ -1,0 +1,16 @@
+id: value-movement-returndata-decode
+vulndoc: reentrancy/general
+name: Unsafe Return Data Decode
+description: Decoding return data without length checks.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: decodes_call_return
+    op: eq
+    value: true
+  - property: checks_returndata_length
+    op: eq
+    value: false

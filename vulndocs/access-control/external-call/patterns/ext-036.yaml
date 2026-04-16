@@ -1,0 +1,19 @@
+id: ext-036
+vulndoc: access-control/external-call
+name: Amount Precision Guard Missing
+description: Amount division or rounding logic without precision guards.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_amount_parameter
+    op: eq
+    value: true
+  - property: uses_amount_division
+    op: eq
+    value: true
+  - property: has_precision_guard
+    op: eq
+    value: false

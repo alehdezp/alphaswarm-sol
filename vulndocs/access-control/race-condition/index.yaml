@@ -1,0 +1,13 @@
+id: race-condition
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Temporal Access Control Race
+category: access-control
+severity: critical
+cwe: CWE-362
+description: |
+  Race conditions during state transition in access control mechanisms,
+  especially with delegatecall role modifications.
+discovered: "2026-01-09"
+source: "MUD Audit (OpenZeppelin, Critical)"

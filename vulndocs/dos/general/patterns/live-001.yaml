@@ -1,0 +1,29 @@
+id: live-001
+vulndoc: dos/general
+name: Unbounded Loop DoS
+description: Unbounded loops with gas-intensive work.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: has_unbounded_loop
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false
+  any:
+  - property: external_calls_in_loop
+    op: eq
+    value: true
+  - property: has_delete_in_loop
+    op: eq
+    value: true
+  - property: writes_state
+    op: eq
+    value: true

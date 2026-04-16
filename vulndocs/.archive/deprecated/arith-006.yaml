@@ -1,0 +1,15 @@
+id: arith-006
+vulndoc: arithmetic/general
+name: Fee Precision Loss
+description: Fee calculations without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: fee_precision_risk
+    op: eq
+    value: true

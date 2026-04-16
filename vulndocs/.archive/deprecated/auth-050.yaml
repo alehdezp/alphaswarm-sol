@@ -1,0 +1,13 @@
+id: auth-050
+vulndoc: access-control/general
+name: Multicall Batching Without Guard
+description: Multicall batching external calls without a reentrancy guard.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: multicall_batching_without_guard
+    op: eq
+    value: true

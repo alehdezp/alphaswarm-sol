@@ -1,0 +1,28 @@
+id: crypto-permit-incomplete
+vulndoc: crypto/signature
+name: Incomplete EIP-2612 Permit Implementation
+description: |
+  Detects permit functions missing critical security components required by EIP-2612.
+  A complete permit implementation must include: deadline check, nonce management, and domain separator.
+  Missing any component creates signature replay or validation vulnerabilities.
+  Reference: EIP-2612 standard for permit() in ERC-20 tokens.
+  Real-world impact: Various DeFi protocols with incomplete permit implementations.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: is_permit_like
+      op: eq
+      value: true
+  any:
+    - property: has_deadline_check
+      op: eq
+      value: false
+    - property: writes_nonce_state
+      op: eq
+      value: false
+    - property: uses_domain_separator
+      op: eq
+      value: false

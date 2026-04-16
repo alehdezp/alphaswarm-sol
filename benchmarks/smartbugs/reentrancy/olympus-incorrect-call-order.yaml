@@ -1,0 +1,25 @@
+# Olympus DAO Staking Incorrect Call Order
+id: smartbugs-olympus-incorrect-call-order
+name: Olympus DAO Staking Incorrect Call Order
+category: reentrancy
+source: examples/semgrep-smart-contracts/solidity/security/olympus-dao-staking-incorrect-call-order.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: reentrancy-classic
+  description: |
+    Olympus DAO staking contract has incorrect call ordering where
+    external calls are made before state updates, violating CEI pattern.
+  severity: high
+  cwe: CWE-841
+
+expected_detections:
+  - pattern: vm-001
+    confidence: high
+    description: Violates CEI (Checks-Effects-Interactions) pattern
+
+vkg_pattern_mapping:
+  primary: vm-001
+  secondary: [reentrancy-cei-violation]
+
+status: pending

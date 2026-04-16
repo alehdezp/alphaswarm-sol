@@ -1,0 +1,13 @@
+id: auth-081
+vulndoc: access-control/general
+name: Weak Auth Using Gasleft
+description: Authentication relies on gasleft().
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: uses_gasleft
+    op: eq
+    value: true

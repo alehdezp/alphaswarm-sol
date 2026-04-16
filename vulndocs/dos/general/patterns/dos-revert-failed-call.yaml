@@ -1,0 +1,31 @@
+id: dos-revert-failed-call
+vulndoc: dos/general
+name: DoS with Unexpected Revert
+description: |
+  Function uses push payment pattern where external call failure causes entire transaction to revert,
+  allowing malicious recipients to block execution. Maps to SWC-113 and CWE-703 (Improper Check or
+  Handling of Exceptional Conditions).
+scope: Function
+lens:
+  - DoS
+  - ExternalInfluence
+severity: high
+match:
+  all:
+    - property: has_external_calls
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  any:
+    - property: uses_call
+      op: eq
+      value: true
+  none:
+    - property: has_access_gate
+      op: eq
+      value: true
+    - property: is_constructor
+      op: eq
+      value: true

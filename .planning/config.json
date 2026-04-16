@@ -1,0 +1,24 @@
+{
+  "project": "True VKG",
+  "milestone": "6.0",
+  "model_profile": "quality",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "auto_advance": false,
+    "nyquist_validation": true
+  },
+  "git": {
+    "branching_strategy": "none"
+  },
+  "research_tools": {
+    "preferred": "exa_mcp",
+    "note": "Use mcp__exa-search__web_search_exa and mcp__exa-search__get_code_context_exa for all web research instead of WebFetch/WebSearch"
+  },
+  "created": "2026-01-20",
+  "updated": "2026-02-26",
+  "msd": {
+    "auto_chain": false
+  }
+}

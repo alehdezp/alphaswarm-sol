@@ -1,0 +1,48 @@
+id: auth-115
+vulndoc: access-control/general
+name: Unprotected Emergency/Rescue Operations
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `emergency-001-unprotected-recovery` instead.
+
+
+  Location: `patterns/semantic/emergency/emergency-001-unprotected-recovery.yaml`
+
+
+  The semantic pattern uses `performs_emergency_recovery` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Emergency or rescue operations without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: emergency-001-unprotected-recovery
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(emergency|rescue|recover|force|sweep|drain|withdrawall)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: can_affect_user_funds
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

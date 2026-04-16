@@ -1,0 +1,29 @@
+id: live-014
+vulndoc: dos/general
+name: Dynamic Gas Consumption
+description: Gas usage scales with unbounded input.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: has_unbounded_loop
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false
+  any:
+  - property: writes_state
+    op: eq
+    value: true
+  - property: external_calls_in_loop
+    op: eq
+    value: true
+  - property: event_emission_in_loop
+    op: eq
+    value: true

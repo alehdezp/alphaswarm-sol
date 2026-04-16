@@ -1,0 +1,330 @@
+# Pattern Context Pack (PCP) v2 - Oracle Missing Staleness Check
+# Path: vulndocs/oracle/freshness/patterns/oracle-003-missing-staleness-check.pcp.yaml
+
+schema_version: "2.0"
+
+# =============================================================================
+# IDENTITY (Required)
+# =============================================================================
+
+id: pcp-oracle-003-missing-staleness-check
+version: "2.0"
+pattern_id: "oracle-003"
+name: "Oracle Missing Staleness Check"
+summary: |
+  Detects oracle price reads that lack staleness/freshness validation, allowing
+  attackers to exploit outdated price data for arbitrage, over-borrowing, or
+  unfair liquidations during market volatility or L2 sequencer downtime.
+scope: Function
+
+# =============================================================================
+# DETERMINISM CONSTRAINTS (Required - do not modify defaults)
+# =============================================================================
+
+determinism:
+  no_rag: true
+  no_name_heuristics: true
+  serialization_order:
+    - pcp
+    - slice
+    - protocol
+    - evidence
+  hash_seed: "graph_hash + pcp_version + pattern_id"
+
+# =============================================================================
+# TOKEN BUDGET
+# =============================================================================
+
+budget:
+  pcp_max_tokens: 800
+  context_max_tokens: 2200
+  cheap_pass_tokens: 1200
+  verify_pass_tokens: 1800
+  deep_pass_tokens: 2400
+
+# =============================================================================
+# EVIDENCE WEIGHTS
+# =============================================================================
+
+evidence_weights:
+  required:
+    - "ev-oracle-read"
+    - "ev-no-staleness-check"
+  strong:
+    - "ev-price-used-for-critical-op"
+    - "ev-l2-deployment"
+  weak:
+    - "ev-single-oracle-source"
+  optional:
+    - "ev-chainlink-aggregator"
+
+# =============================================================================
+# WITNESS REQUIREMENTS
+# =============================================================================
+
+witness:
+  minimal_required:
+    - "reads_oracle_price"
+    - "no_timestamp_validation"
+  negative_required:
+    - "has_staleness_check"
+    - "has_sequencer_uptime_check"
+    - "has_fallback_oracle"
+
+# =============================================================================
+# EXPLOIT MODELING
+# =============================================================================
+
+preconditions:
+  - id: "pre-001"
+    description: "Contract reads price from oracle (Chainlink, Uniswap TWAP, custom)"
+    evidence_refs:
+      - "ev-oracle-read"
+  - id: "pre-002"
+    description: "Oracle data used for value-affecting operations (borrow, liquidate, swap)"
+    evidence_refs:
+      - "ev-critical-operation"
+  - id: "pre-003"
+    description: "No validation of updatedAt timestamp against staleness threshold"
+    evidence_refs:
+      - "ev-missing-timestamp-check"
+
+exploit_steps:
+  - id: "step-001"
+    description: "Attacker monitors oracle update frequency and identifies staleness windows"
+    required_ops:
+      - "READS_ORACLE"
+    evidence_refs:
+      - "ev-oracle-monitoring"
+  - id: "step-002"
+    description: "Market event causes price divergence (crash, L2 downtime, network congestion)"
+    required_ops: []
+    evidence_refs:
+      - "ev-price-divergence"
+  - id: "step-003"
+    description: "Attacker executes transaction using stale favorable oracle price"
+    required_ops:
+      - "READS_ORACLE"
+      - "TRANSFERS_VALUE_OUT"
+    evidence_refs:
+      - "ev-stale-price-usage"
+  - id: "step-004"
+    description: "Protocol accepts stale price, enabling over-borrowing or unfair liquidation"
+    required_ops:
+      - "WRITES_STATE"
+    evidence_refs:
+      - "ev-value-extraction"
+
+impact_invariants:
+  - id: "impact-001"
+    description: "Bad debt accumulation from over-borrowing against stale collateral valuations"
+    evidence_refs:
+      - "ev-bad-debt"
+  - id: "impact-002"
+    description: "Unfair liquidations using stale low prices"
+    evidence_refs:
+      - "ev-unfair-liquidation"
+  - id: "impact-003"
+    description: "Arbitrage profit from stale oracle vs real market price gap"
+    evidence_refs:
+      - "ev-arbitrage"
+
+# =============================================================================
+# OPERATION SIGNATURES (Required)
+# =============================================================================
+
+op_signatures:
+  required_ops:
+    - "READS_ORACLE"
+
+  ordering_variants:
+    - id: "seq-001"
+      description: "Oracle read directly used without validation"
+      sequence:
+        - "READS_ORACLE"
+        - "TRANSFERS_VALUE_OUT"
+    - id: "seq-002"
+      description: "Oracle read used for collateral calculation"
+      sequence:
+        - "READS_ORACLE"
+        - "READS_STATE"
+        - "WRITES_STATE"
+
+  forbidden_ops: []
+
+# =============================================================================
+# ANTI-SIGNALS
+# =============================================================================
+
+anti_signals:
+  - id: "guard.staleness-check"
+    guard_type: "oracle_check"
+    severity: "critical"
+    expected_context: "require(block.timestamp - updatedAt < STALENESS_THRESHOLD)"
+    evidence_refs:
+      - "ev-staleness-require"
+    bypass_notes:
+      - "Threshold too long for asset volatility"
+      - "Check only in some code paths, not all"
+      - "Helper function bypassed via direct call"
+
+  - id: "guard.sequencer-uptime"
+    guard_type: "oracle_check"
+    severity: "critical"
+    expected_context: "L2 sequencer uptime feed check with grace period"
+    evidence_refs:
+      - "ev-sequencer-check"
+    bypass_notes:
+      - "Grace period too short after restart"
+      - "Only on some L2 networks, not all deployments"
+
+  - id: "guard.multi-oracle"
+    guard_type: "custom"
+    severity: "high"
+    expected_context: "Multiple oracle sources with deviation circuit breaker"
+    evidence_refs:
+      - "ev-multi-source"
+    bypass_notes:
+      - "All oracles may be stale simultaneously during network issues"
+      - "Deviation threshold too high to catch staleness"
+
+  - id: "guard.round-completeness"
+    guard_type: "oracle_check"
+    severity: "medium"
+    expected_context: "require(updatedAt != 0 && answeredInRound >= roundId)"
+    evidence_refs:
+      - "ev-round-check"
+    bypass_notes:
+      - "Completeness check alone insufficient without staleness threshold"
+
+# =============================================================================
+# COUNTERFACTUALS
+# =============================================================================
+
+counterfactuals:
+  - id: "cf-001"
+    if_removed: "guard.staleness-check"
+    becomes_true: true
+    notes: "Without staleness check, any stale price is accepted"
+  - id: "cf-002"
+    if_removed: "guard.sequencer-uptime"
+    becomes_true: true
+    notes: "L2 deployments vulnerable to post-restart stale price exploitation"
+  - id: "cf-003"
+    if_removed: "guard.multi-oracle"
+    becomes_true: true
+    notes: "Single oracle failure has no fallback protection"
+
+# =============================================================================
+# GUARD TAXONOMY
+# =============================================================================
+
+guard_taxonomy:
+  - id: "g-001"
+    type: "oracle_check"
+    description: "Staleness threshold check on oracle updatedAt timestamp"
+    expected_ops:
+      - "CHECKS_ORACLE_FRESHNESS"
+    bypass_notes:
+      - "Threshold must match asset volatility (1h ETH, 24h stablecoins)"
+  - id: "g-002"
+    type: "oracle_check"
+    description: "L2 sequencer uptime feed with grace period"
+    expected_ops:
+      - "CHECKS_SEQUENCER_UPTIME"
+    bypass_notes:
+      - "Must include grace period, not just uptime status"
+  - id: "g-003"
+    type: "custom"
+    description: "Multi-source oracle aggregation with deviation check"
+    expected_ops:
+      - "READS_ORACLE"
+      - "CHECKS_CONDITION"
+    bypass_notes:
+      - "All sources may lag during widespread issues"
+
+# =============================================================================
+# ORDERING VARIANTS
+# =============================================================================
+
+ordering_variants:
+  - id: "ov-001"
+    description: "Unvalidated oracle read before critical operation"
+    sequence:
+      - "READS_ORACLE"
+      - "TRANSFERS_VALUE_OUT"
+
+# =============================================================================
+# RISK ENVELOPE
+# =============================================================================
+
+risk_envelope:
+  asset_type: "mixed"
+  trust_boundary: "external->internal"
+  value_movement: "out"
+  severity_floor: "high"
+
+# =============================================================================
+# COMPOSITION HINTS
+# =============================================================================
+
+composition_hints:
+  co_occurs_with:
+    - "oracle-004-missing-sequencer-check"
+    - "oracle-002-unprotected-feed-update"
+  combine_with:
+    - "oracle-005-twap-missing-window"
+    - "oracle-006-l2-freshness-complete"
+
+# =============================================================================
+# ECONOMIC PLACEHOLDERS (Phase 5.11)
+# =============================================================================
+
+economic_placeholders:
+  value_flows:
+    - "collateral_valuation -> borrow_amount -> fund_extraction"
+    - "stale_price -> liquidation_trigger -> collateral_seizure"
+  incentive_hooks:
+    - "Attacker profit from stale price arbitrage"
+    - "MEV extraction during oracle lag"
+  role_assumptions:
+    - "Oracle may be delayed/stale"
+    - "L2 sequencer may be down"
+    - "Market prices may diverge from oracle during volatility"
+  offchain_dependencies:
+    - "Chainlink oracle nodes"
+    - "L2 sequencer availability"
+  risk_pre_score: "high"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS
+# =============================================================================
+
+evidence_requirements:
+  node_types:
+    - "Function"
+    - "ExternalCall"
+    - "StateVariable"
+  edge_types:
+    - "READS_ORACLE"
+    - "TRANSFERS_VALUE"
+    - "WRITES_STATE"
+  path_constraints:
+    - "Function -[READS_ORACLE]-> * -[TRANSFERS_VALUE]-> *"
+
+# =============================================================================
+# UNKNOWNS POLICY
+# =============================================================================
+
+unknowns_policy:
+  missing_required: "unknown"
+  missing_optional: "unknown"
+  missing_anti_signal: "unknown"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: 2026-01-29
+updated: 2026-01-29
+author: "claude-opus-4.5"

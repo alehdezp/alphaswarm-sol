@@ -1,0 +1,23 @@
+# Context TTL Decay Log (Phase 7.2 Innovation I5)
+#
+# Tracks TTL and decay for economic context fields.
+#
+# Rules:
+# - Every economic-context field gets a 30-day TTL
+# - If expired: status decays to "unknown", NEVER to "safe"
+# - TTL enforcement applies in validation/ingestion pipeline, not detection
+#
+# IMPORTANT: Expired fields decay to "unknown", NEVER to "safe"
+# This prevents false negatives - stale context cannot declare something safe.
+
+context_ttl:
+  generated_at: "2026-01-29T13:40:46Z"
+  summary:
+    total_fields: 0
+    active_fields: 0
+    expired_fields: 0
+    decay_events: 0
+    default_ttl_days: 30
+  note: "Expired fields decay to 'unknown', NEVER to 'safe'"
+  entries: {}
+  decay_log: []

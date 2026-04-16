@@ -1,0 +1,45 @@
+project:
+  name: "safe-token-mechanics"
+  theme: "token_sale"
+  tier: 1
+  adversarial_categories: ["C"]
+  description: "False-positive control. Token with correct dangerous patterns (C6), safe approvals, supply cap, and rescue mechanism."
+
+findings: []
+
+safe_patterns:
+  - technique: "C6-correct-dangerous-patterns"
+    contract: "GuardedToken"
+    function: "rescueTokens"
+    expected_verdict: safe
+    reasoning: "External call to token.transfer is the correct rescue pattern. onlyOwner + nonReentrant + self-exclusion check."
+
+  - technique: "C6-correct-dangerous-patterns"
+    contract: "GuardedToken"
+    function: "startMigration"
+    expected_verdict: safe
+    reasoning: "Looks like upgrade mechanism but is just a state flag. onlyOwner + zero-address check + single-use migration."
+
+  - technique: "C1-safe-dangerous-names"
+    contract: "GuardedToken"
+    function: "burn"
+    expected_verdict: safe
+    reasoning: "Named 'burn' (sounds destructive) but only burns caller's own tokens with balance check."
+
+  - technique: "C2-complex-correct-acl"
+    contract: "GuardedToken"
+    function: "approve"
+    expected_verdict: safe
+    reasoning: "Approval race condition prevented by requiring reset to 0 before changing allowance."
+
+  - technique: "C1-safe-dangerous-names"
+    contract: "GuardedToken"
+    function: "mint"
+    expected_verdict: safe
+    reasoning: "Mint is onlyOwner with MAX_SUPPLY cap. Cannot inflate supply beyond limit."
+
+summary:
+  total_findings: 0
+  total_safe_patterns: 5
+  difficulty: "medium"
+  notes: "FP control: token with rescue mechanism, migration, minting that are all correctly guarded. Tests whether detector flags safe patterns."

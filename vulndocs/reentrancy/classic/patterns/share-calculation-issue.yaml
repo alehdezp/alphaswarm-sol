@@ -1,0 +1,19 @@
+id: share-calculation-issue
+vulndoc: reentrancy/classic
+name: Share Calculation Issue
+description: Deposit-like functions reading shares without bounds.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: is_deposit_like
+    op: eq
+    value: true
+  - property: reads_share_state
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false

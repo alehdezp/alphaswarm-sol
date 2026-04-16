@@ -1,0 +1,16 @@
+id: auth-002
+vulndoc: access-control/general
+name: tx.origin Authentication
+description: Access control relying on tx.origin checks.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_tx_origin
+    op: eq
+    value: true
+  - property: tx_origin_in_require
+    op: eq
+    value: true

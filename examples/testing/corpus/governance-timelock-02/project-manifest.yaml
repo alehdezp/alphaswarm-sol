@@ -1,0 +1,26 @@
+name: "governance-timelock-02"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "governance"
+tier: 2
+adversarial_categories: ["A", "B"]
+pattern_count: 8
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/TimelockController.sol"
+    - "contracts/core/ProposalRegistry.sol"
+  safe:
+    - "contracts/core/TimelockController_safe.sol"
+    - "contracts/core/ProposalRegistry_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

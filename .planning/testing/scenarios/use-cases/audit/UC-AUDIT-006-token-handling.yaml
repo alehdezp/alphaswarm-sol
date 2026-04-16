@@ -1,0 +1,76 @@
+id: UC-AUDIT-006
+name: "Detect unchecked ERC20 transfer return values"
+workflow: vrs-audit
+category: audit
+tier: important
+
+input:
+  contract: "tests/contracts/Erc20UncheckedTransfer.sol"
+  command: "/vrs-audit tests/contracts/Erc20UncheckedTransfer.sol"
+  context: >
+    Erc20UncheckedTransfer.sol contains ERC20 transfer and transferFrom calls
+    whose boolean return values are not checked. Many tokens (e.g., USDT) do
+    not revert on failure but return false. Ignoring the return value allows
+    silent transfer failures that can lead to accounting mismatches, fund loss,
+    or denial of service.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build a BSKG, detect TRANSFERS_VALUE_OUT
+    operations whose return values are unchecked, and produce at least one
+    finding about unchecked ERC20 return values. The finding should recommend
+    using SafeERC20 or explicit require checks.
+  must_happen:
+    - "Build BSKG from Erc20UncheckedTransfer.sol via alphaswarm build-kg"
+    - "Query graph for TRANSFERS_VALUE_OUT semantic operations"
+    - "Detect that ERC20 transfer/transferFrom return value is unchecked"
+    - "Produce at least one finding categorized as token handling or unchecked-return"
+    - "Finding references specific function names and line numbers"
+    - "Finding severity is medium or higher"
+    - "Finding recommends SafeERC20 or explicit return-value check"
+  must_not_happen:
+    - "Skip graph building and jump straight to code reading"
+    - "Miss the unchecked return value entirely (zero findings)"
+    - "Report false positive on contracts using SafeERC20 correctly"
+    - "Produce findings without code location references"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "token"
+    severity: "medium"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: graph_utilization
+      description: "Did the workflow use BSKG queries to identify unchecked value transfers?"
+    - name: finding_accuracy
+      description: "Is the unchecked return value correctly identified with proper severity?"
+    - name: evidence_quality
+      description: "Are findings anchored to specific transfer/transferFrom call sites?"
+    - name: remediation_quality
+      description: "Does the finding suggest a concrete fix (SafeERC20 or require)?"
+  regression_signals:
+    - "Finding count drops to 0 -> CRITICAL REGRESSION: token handling detection broken"
+    - "False positive on SafeERC20 usage -> REGRESSION: precision degraded"
+    - "Score drops below 60 on graph_utilization -> REGRESSION: agents bypassing graph-first"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/Erc20UncheckedTransfer.sol"
+  related_scenarios:
+    - "UC-AUDIT-001"
+    - "UC-AUDIT-004"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Tests token-specific detection. The contract has a safe counterpart
+  (Erc20CheckedTransfer.sol) that can be used for false-positive regression.

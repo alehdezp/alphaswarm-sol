@@ -1,0 +1,25 @@
+id: op-unprotected-ownership-transfer
+vulndoc: access-control/general
+name: Unprotected Ownership Transfer (Operation-Based)
+description: 'Ownership modifications without permission checks.
+
+  Uses MODIFIES_OWNER operation for semantic detection.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: MODIFIES_OWNER
+    none:
+    - has_operation: CHECKS_PERMISSION
+aggregation:
+  mode: tier_a_only

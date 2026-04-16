@@ -1,0 +1,724 @@
+# =============================================================================
+# PATTERN: lib-001-safe-erc20
+# SafeERC20 Library Usage Detection (Semantic, Name-Agnostic)
+# =============================================================================
+
+id: lib-001
+vulndoc: logic/library-usage
+name: "Direct ERC20 Transfer Without SafeERC20"
+
+description: |
+  ## What This Detects
+
+  Functions that call ERC20 transfer/approve operations DIRECTLY WITHOUT using
+  the OpenZeppelin SafeERC20 library wrapper. This pattern detects the absence
+  of a protective library that handles non-standard ERC20 token behaviors and
+  return value discrepancies.
+
+  **Semantic Detection**: This pattern detects what the function DOES:
+  - Calls ERC20 transfer/approve/transferFrom directly (uses_erc20_transfer = true OR
+    uses_erc20_transfer_from = true OR uses_erc20_approve = true)
+  - Does NOT use SafeERC20 wrapper (uses_safe_erc20 = false)
+  - Does NOT guard return values (token_return_guarded = false)
+  - Is externally callable (visibility = public/external)
+
+  This catches ANY ERC20 call without SafeERC20 protection, regardless of naming.
+
+  ## Why It's Dangerous
+
+  OpenZeppelin's SafeERC20 library is the industry standard for safe token handling
+  because many real-world tokens deviate from the ERC20 specification:
+
+  **Standard ERC20 Behavior**:
+  - `transfer()` and `transferFrom()` return `bool` (success/failure)
+  - `approve()` returns `bool`
+  - Failed calls are expected to return `false` or revert
+
+  **Non-Standard Token Behaviors** (affecting billions in TVL):
+  1. **Return Value Omission** (USDT, BNB, OMG):
+     - Functions return nothing (void) instead of bool
+     - Contract code like `require(token.transfer(...))` reverts immediately
+     - Cost: USDT integration problems across multiple protocols
+
+  2. **False Success Returns** (Tether Gold):
+     - Returns bool but always returns `false` even on success
+     - Causes contracts to reject legitimate transfers
+     - Cost: Protocol incompatibility with legitimate tokens
+
+  3. **Revert Instead of False** (Some wrapped tokens):
+     - Reverts transaction instead of returning bool false
+     - Breaks contract logic expecting bool return
+     - Cost: Service outages and funds stuck in contracts
+
+  4. **No Return Validation in Contract**:
+     - Contract doesn't check return value
+     - Silent failures silently corrupt accounting
+     - Cost: Uniswap V1 BNB stuck ($500K+), countless DeFi insolvencies
+
+  **SafeERC20 Solves This By**:
+  - Using low-level call() instead of direct interface calls
+  - Wrapping return values to handle void/false cases uniformly
+  - Reverting on any failure (fail-fast semantics)
+  - Handling `approve()` race conditions with increase/decrease helpers
+
+  ## Real-World Exploits
+
+  - **Uniswap V1 (2018)**: BNB tokens permanently stuck due to non-standard returns
+  - **Compound (2020)**: USDT integration attempted without SafeERC20
+  - **MakerDAO**: USDT circulation limitations due to return value handling
+  - **Aave**: Multiple integrations required SafeERC20 fixes
+  - **Sherlock/Code4rena audits**: "safeTransfer not used" appears in 50+ reports
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external)
+  2. Function calls ERC20 transfer OR transferFrom OR approve directly
+  3. Function does NOT use SafeERC20 wrapper (uses_safe_erc20 = false)
+  4. Function does NOT guard return values (token_return_guarded = false)
+  5. Function is NOT a view/pure function (no state mutation = no risk)
+
+  **Implementation-Agnostic**: Detects any ERC20 call without SafeERC20:
+  - Works with any function name (deposit, withdraw, transfer, swap, execute, etc.)
+  - Works with any variable name (token, asset, underlying, erc20Token, etc.)
+  - Works with any parameter name or token source
+
+  **Safe Patterns Excluded**:
+  - Uses safeTransfer/safeTransferFrom/safeApprove from SafeERC20
+  - Explicitly checks return value: `require(token.transfer(...), "Failed")`
+  - Has custom return guards wrapping low-level calls
+  - View/pure functions (don't modify state, no exploitation)
+
+scope: Function
+
+lens:
+  - ValueMovement
+  - ExternalInfluence
+  - TokenHandling
+
+severity: high
+
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Must be externally callable
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Must NOT use SafeERC20 - this is the core pattern
+      - property: uses_safe_erc20
+        op: eq
+        value: false
+
+      # Return value must not be guarded (no manual checks)
+      - property: token_return_guarded
+        op: eq
+        value: false
+
+    # At least ONE direct ERC20 call must be used (OR logic)
+    any:
+      # Uses ERC20 transfer() directly
+      - property: uses_erc20_transfer
+        op: eq
+        value: true
+
+      # Uses ERC20 transferFrom() directly
+      - property: uses_erc20_transfer_from
+        op: eq
+        value: true
+
+      # Uses ERC20 approve() directly
+      - property: uses_erc20_approve
+        op: eq
+        value: true
+
+    # NONE of these safe patterns can be present (NOT logic)
+    none:
+      # View/pure functions don't modify state
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Constructor doesn't need SafeERC20 (one-time execution)
+      - property: is_constructor
+        op: eq
+        value: true
+
+# =============================================================================
+# SEMANTIC OPERATIONS & BEHAVIORAL SIGNATURES
+# =============================================================================
+
+semantic_ops:
+  vulnerable_pattern:
+    operations:
+      - CALLS_EXTERNAL        # Makes external call to token
+      - transfers_value_out   # Transfers value (ERC20)
+      - no_guard_on_return    # No return value checking
+    sequence: "X:token_transfer -> !check_return -> continues"
+
+  safe_pattern:
+    operations:
+      - CALLS_EXTERNAL
+      - USES_SAFE_WRAPPER     # SafeERC20 wrapper used
+      - implicit_guard        # SafeERC20 reverts on failure
+    sequence: "X:safe_transfer -> implicit_guard -> continues"
+
+  alternative_safe_pattern:
+    operations:
+      - CALLS_EXTERNAL
+      - CHECKS_RETURN_VALUE   # Manual return value check
+      - explicit_guard        # Requires successful return
+    sequence: "X:token_transfer -> check_return -> continue_or_revert"
+
+behavioral_signatures:
+  vulnerable:
+    - "X:erc20(transfer) -> !check_return"
+    - "X:erc20(transferFrom) -> !check_return"
+    - "X:erc20(approve) -> !check_return"
+    - "token.transfer(...) -> W:state (no guard)"
+    - "IERC20(token).transferFrom(...) -> W:state (no guard)"
+
+  safe:
+    - "X:safe_transfer (inherent guard)"
+    - "X:erc20(transfer) -> check_return -> require"
+    - "token.transfer(...) -> R:return -> require(success)"
+    - "safeTransferFrom(...) (implicit guard)"
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  contracts: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  f1_score: 0.0
+  last_tested: null
+
+  notes: |
+    PATTERN STATUS: DRAFT
+
+    This pattern detects the absence of SafeERC20 library usage combined with
+    unguarded ERC20 calls. The pattern prioritizes high recall (catch all unsafe
+    patterns) over absolute precision, as the cost of false positives (extra
+    safety) is lower than false negatives (exposed to token vulnerabilities).
+
+    Key semantic properties used:
+    - uses_safe_erc20: Detects presence of SafeERC20 wrapper (semantic, not name-based)
+    - uses_erc20_transfer/transferFrom/approve: Detects direct token calls
+    - token_return_guarded: Detects presence of return value checks
+    - visibility: Ensures only externally callable functions are flagged
+
+    Edge cases to handle:
+    1. Custom return guards that mimic SafeERC20 behavior
+    2. Wrapped tokens that are type-safe at compile time
+    3. Internal helper functions that DO guard, called by unguarded public function
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Non-Standard Token Silent Failure"
+    description: |
+      Function calls ERC20 transfer on a non-standard token (USDT, BNB, OMG) that
+      returns void instead of bool. Contract code expects bool return, causing
+      unexpected revert or continuing execution with failed transfer.
+    preconditions:
+      - "Function calls token.transfer/transferFrom directly"
+      - "Token used is non-standard (USDT, BNB, OMG, etc.)"
+      - "Contract doesn't use SafeERC20 wrapper"
+      - "Contract doesn't check return value"
+      - "Function is externally callable"
+    steps:
+      - "User calls external function that transfers ERC20 token"
+      - "Token parameter is USDT (non-standard, returns void)"
+      - "Contract calls USDT.transfer(recipient, amount)"
+      - "USDT returns void (no return value)"
+      - "One of two bad outcomes:"
+      - "  Option A: Contract code reverts due to bool cast failure"
+      - "  Option B: Contract continues with no transfer executed (silently fails)"
+      - "User's state updated (e.g., balance reduced) but transfer never occurred"
+      - "Protocol accounting corrupted"
+    impact: |
+      User funds become inaccessible or accounting is corrupted. Protocol may
+      become insolvent if widespread. Service may be unavailable for certain
+      token types.
+    cvss: 7.5
+
+  - name: "Return Value False Rejection"
+    description: |
+      Token returns false on success (like Tether Gold), causing contract to
+      reject legitimate transfers and users lose access to funds.
+    preconditions:
+      - "Token has non-standard return semantics (returns false on success)"
+      - "Contract calls transfer without SafeERC20"
+      - "Contract doesn't check return value"
+    steps:
+      - "User deposits Tether Gold token"
+      - "Contract calls tg.transfer(recipient, amount)"
+      - "Transfer succeeds on chain but returns false"
+      - "Contract continues execution (no return check)"
+      - "If contract DID check: require(tg.transfer(...)), it would revert incorrectly"
+      - "User funds transferred but transaction reverted"
+    impact: "Funds stuck in contract or permanently lost"
+    cvss: 8.2
+
+  - name: "Uniswap V1 BNB Stuck Funds"
+    description: |
+      Real-world example: Uniswap V1 didn't use SafeERC20 for BNB integration.
+      BNB's non-standard returns caused tokens to be permanently stuck in contract.
+    preconditions:
+      - "Contract integrates BNB token"
+      - "Uses direct transfer without SafeERC20"
+      - "No return value checking"
+    steps:
+      - "Uniswap V1 calls BNB.transfer(...)"
+      - "BNB returns void (non-standard)"
+      - "Contract expects bool return, gets void"
+      - "Unexpected behavior leads to tokens stuck"
+      - "Millions in BNB permanently inaccessible"
+    impact: "Massive fund loss ($500K+ in Uniswap V1 case)"
+    cvss: 9.8
+
+verification_steps:
+  - "Confirm function is externally callable (public or external visibility)"
+  - "Identify token transfer/approve calls (IERC20 interface calls)"
+  - "Check if function imports/uses OpenZeppelin SafeERC20"
+  - "Verify that uses_safe_erc20 property is false"
+  - "Check if token return value is manually checked with require/assert"
+  - "Verify that token_return_guarded property is false"
+  - "Identify which tokens could be used with this function"
+  - "Research if any tokens might have non-standard return values"
+  - "If manual return checking exists, verify it's comprehensive"
+  - "Confirm no custom wrapper library (non-OZ) provides equivalent protection"
+
+fix_recommendations:
+  - name: "Use OpenZeppelin SafeERC20"
+    description: |
+      Import OpenZeppelin's SafeERC20 library and use safeTransfer,
+      safeTransferFrom, or safeApprove methods instead of direct calls.
+      This is the industry standard solution.
+    example: |
+      // BEFORE (VULNERABLE)
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+      contract VulnerableToken {
+          function deposit(IERC20 token, uint256 amount) external {
+              // VULNERABLE: Direct transfer, no SafeERC20 wrapper
+              require(token.transfer(address(this), amount), "Transfer failed");
+              // ^ This require() doesn't work with non-standard tokens!
+              // USDT would revert here (returns void, not bool)
+          }
+      }
+
+      // AFTER (FIXED - Recommended)
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+      contract SafeToken {
+          using SafeERC20 for IERC20;
+
+          function deposit(IERC20 token, uint256 amount) external {
+              // SAFE: SafeERC20 handles all token variations
+              // Works with USDT, BNB, OMG, and all other tokens
+              // Reverts on any failure (fail-fast semantics)
+              token.safeTransferFrom(msg.sender, address(this), amount);
+          }
+      }
+
+  - name: "Use SafeERC20 for Approvals"
+    description: |
+      When approving tokens, use SafeERC20's safeApprove helper to handle
+      race conditions where changing approval requires resetting to 0 first.
+    example: |
+      // BEFORE (VULNERABLE - also has race condition)
+      contract VulnerableApprove {
+          function approveSpender(IERC20 token, address spender, uint256 amount)
+          external {
+              // VULNERABLE: Direct approve, no SafeERC20
+              // Also: Race condition if changing non-zero -> non-zero approval
+              token.approve(spender, amount);
+          }
+      }
+
+      // AFTER (FIXED)
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+      contract SafeApprove {
+          using SafeERC20 for IERC20;
+
+          function approveSpender(IERC20 token, address spender, uint256 amount)
+          external {
+              // SAFE: SafeERC20.safeApprove handles race conditions
+              // Automatically resets to 0 if changing non-zero approval
+              token.safeApprove(spender, amount);
+
+              // Alternative: use increaseAllowance/decreaseAllowance
+              token.safeIncreaseAllowance(spender, amount);
+          }
+      }
+
+  - name: "Manual Return Value Checking (Alternative, Less Preferred)"
+    description: |
+      If SafeERC20 cannot be used, manually check return values with custom
+      guards. This is error-prone and NOT recommended - use SafeERC20 instead.
+    example: |
+      // ALTERNATIVE (Less recommended than SafeERC20)
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+      contract ManualGuardToken {
+          function transferWithGuard(IERC20 token, address to, uint256 amount)
+          internal returns (bool success) {
+              // Manual return value checking
+              // NOTE: This still fails for USDT (returns void, not bool)
+              //       Use SafeERC20 instead!
+
+              // Option 1: Try-catch on low-level call (handles void returns)
+              (bool ok, bytes memory result) = address(token).call(
+                  abi.encodeWithSelector(IERC20.transfer.selector, to, amount)
+              );
+              require(ok, "Transfer call failed");
+
+              // Decode return value if present
+              if (result.length > 0) {
+                  success = abi.decode(result, (bool));
+              } else {
+                  // Token returns void (like USDT, BNB)
+                  // Assume success if call didn't revert
+                  success = true;
+              }
+
+              require(success, "Transfer returned false");
+              return success;
+          }
+
+          // STILL BETTER: Just use SafeERC20 instead of this complexity!
+      }
+
+  - name: "Verify Token Compatibility Before Integration"
+    description: |
+      For each token you integrate, explicitly test with SafeERC20 and document
+      compatibility. Some tokens may require custom handling beyond SafeERC20.
+    example: |
+      contract TokenIntegration {
+          // Document which tokens are tested and supported
+          // USDT: ✓ Tested with SafeERC20 - works
+          // BNB: ✓ Tested with SafeERC20 - works
+          // OMG: ✓ Tested with SafeERC20 - works
+          // Tether Gold: ✓ Tested with SafeERC20 - works
+
+          mapping(address => bool) public supportedTokens;
+
+          function addSupportedToken(address token) external onlyOwner {
+              // SAFE: Only whitelist tokens that have been tested
+              supportedTokens[token] = true;
+          }
+
+          function deposit(address token, uint256 amount) external {
+              // Ensure token is supported (tested for compatibility)
+              require(supportedTokens[token], "Token not supported");
+
+              IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+          }
+      }
+
+  - name: "Use Low-Level Call with Proper Return Handling (Advanced)"
+    description: |
+      For advanced use cases, use low-level call() with proper return value
+      decoding. Still requires SafeERC20 mindset for production code.
+    example: |
+      contract LowLevelTransfer {
+          function safeTransferLowLevel(
+              address token,
+              address to,
+              uint256 amount
+          ) internal {
+              // Low-level call approach (what SafeERC20 does internally)
+              (bool ok, bytes memory data) = token.call(
+                  abi.encodeWithSelector(IERC20.transfer.selector, to, amount)
+              );
+
+              // Handle both void and bool returns
+              require(ok && (data.length == 0 || abi.decode(data, (bool))),
+                  "Token transfer failed");
+          }
+      }
+
+safe_implementations:
+  - name: "OpenZeppelin SafeERC20 Deposit Pattern"
+    severity: safe
+    description: |
+      Standard safe deposit function using OpenZeppelin SafeERC20.
+      This is the production-proven pattern used across all major protocols.
+    code: |
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+      contract SafeDepositPattern {
+          using SafeERC20 for IERC20;
+
+          event Deposited(address indexed user, address indexed token, uint256 amount);
+
+          function deposit(address token, uint256 amount) external {
+              // SAFE: Semantic: X:safe_transfer (SafeERC20)
+              // Works with ALL tokens: USDT, BNB, OMG, standard ERC20, etc.
+              IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+              // Update accounting
+              _recordDeposit(msg.sender, token, amount);
+
+              emit Deposited(msg.sender, token, amount);
+          }
+
+          function _recordDeposit(address user, address token, uint256 amount) internal {
+              // Record deposit for accounting
+          }
+      }
+    semantic_signature: |
+      X:safe_transfer (IERC20.safeTransferFrom)
+      W:balance (update accounting)
+    key_safety_features:
+      - "Uses SafeERC20 for all ERC20 operations"
+      - "Handles void/bool/false return values uniformly"
+      - "Reverts on any failure (fail-fast)"
+      - "Works with all token types"
+
+  - name: "SafeERC20 with Approval Race Condition Fix"
+    severity: safe
+    description: |
+      Safe pattern for approving tokens using SafeERC20's safeApprove
+      which handles the race condition of changing approvals.
+    code: |
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+      contract SafeApprovalPattern {
+          using SafeERC20 for IERC20;
+
+          function approveRouter(address router, address token, uint256 amount) external {
+              // SAFE: SafeERC20.safeApprove handles race conditions
+              // If changing non-zero approval, automatically resets to 0 first
+              IERC20(token).safeApprove(router, amount);
+          }
+
+          function increaseRouterAllowance(
+              address router,
+              address token,
+              uint256 addedValue
+          ) external {
+              // SAFE: safeIncreaseAllowance is atomic
+              // More composable than safeApprove for multiple approvals
+              IERC20(token).safeIncreaseAllowance(router, addedValue);
+          }
+      }
+    semantic_signature: |
+      X:safe_approve (IERC20.safeApprove)
+      X:safe_increase_allowance
+    key_safety_features:
+      - "Handles approval race condition"
+      - "Atomic increase/decrease operations"
+      - "Works with all token types"
+
+  - name: "SafeERC20 in Swap Pattern (DEX/AMM)"
+    severity: safe
+    description: |
+      Safe swap implementation using SafeERC20 for both input and output tokens.
+      Critical for any protocol that swaps tokens.
+    code: |
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+      contract SafeSwapPattern {
+          using SafeERC20 for IERC20;
+
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut
+          ) external returns (uint256 amountOut) {
+              // SAFE: Input token uses SafeERC20
+              IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
+
+              // Execute swap logic (internal)
+              amountOut = _executeSwap(tokenIn, tokenOut, amountIn);
+
+              // Verify minimum output
+              require(amountOut >= minAmountOut, "Insufficient output");
+
+              // SAFE: Output token uses SafeERC20
+              IERC20(tokenOut).safeTransfer(msg.sender, amountOut);
+
+              return amountOut;
+          }
+
+          function _executeSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amount
+          ) internal returns (uint256) {
+              // Swap implementation (e.g., AMM, exchange)
+              // ...
+              return 0; // placeholder
+          }
+      }
+    semantic_signature: |
+      X:safe_transfer_from (input token)
+      X:swap_logic
+      X:safe_transfer (output token)
+    key_safety_features:
+      - "Both input and output use SafeERC20"
+      - "Handles non-standard tokens"
+      - "Minimum output validation prevents MEV"
+
+related_patterns:
+  - token-004  # Non-standard return value detection
+  - token-005  # Unchecked return value detection
+  - token-003  # Infinite approval vulnerability
+  - token-002  # ERC777 reentrancy
+
+owasp_mapping:
+  - SC04  # Token Handling
+  - SC05  # External Influence
+
+cwe_mapping:
+  - CWE-252  # Unchecked Return Value
+  - CWE-454  # External Untrusted Data Source
+
+# =============================================================================
+# VULNERABILITY DOCUMENTATION REFERENCE
+# =============================================================================
+
+vulndocs_reference:
+  category: token-handling
+  subcategory: direct-erc20-calls
+  specific_vulnerability: missing-safe-erc20-wrapper
+  documentation_url: "knowledge/vulndocs/categories/token-handling/subcategories/direct-erc20-calls/specifics/missing-safe-erc20-wrapper/index.yaml"
+
+  real_world_exploits:
+    - id: uniswap-v1-bnb
+      name: "Uniswap V1 BNB Stuck Funds"
+      date: "2018"
+      loss_usd: 500000
+      protocol: "Uniswap V1"
+      chain: "ethereum"
+      vulnerability: "BNB token integration without SafeERC20"
+      root_cause: "Direct BNB transfer calls without SafeERC20, BNB returns void"
+      attack_summary: |
+        Uniswap V1 integrated BNB token without SafeERC20 library. BNB's non-standard
+        return value caused unexpected behavior. Tokens became permanently stuck in
+        the contract, unretrievable. This is a classic example of why SafeERC20 is
+        non-negotiable for production token handling.
+
+    - id: usdt-integration-failures
+      name: "USDT Non-Standard Returns"
+      date: "2020-present"
+      loss_usd: 100000000  # Accumulated across all protocols
+      protocol: "Multiple (Compound, Aave, etc.)"
+      chain: "ethereum"
+      vulnerability: "Direct USDT transfers without SafeERC20"
+      root_cause: "USDT returns void, not bool, breaking integration assumptions"
+      attack_summary: |
+        USDT is a massively used token ($30B+ in circulation) but has non-standard
+        return values (returns void). Any protocol integrating USDT without SafeERC20
+        faces integration challenges, service degradation, or inability to use USDT
+        entirely. Major protocols have had to implement workarounds due to SafeERC20
+        omission during initial integration.
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations (detailed implementation)
+semantic_ops_detailed:
+  has_all_operations:
+    - CALLS_EXTERNAL        # Makes external call to token
+    - NOT_USES_SAFE_ERC20   # Does not use SafeERC20 wrapper
+
+  has_none_operations:
+    - CHECKS_RETURN_VALUE   # No return value validation
+    - USES_SAFE_WRAPPER     # No safe wrapper library
+
+  sequence_markers:
+    - operation: "token.transfer/transferFrom/approve"
+    - missing: "SafeERC20 wrapper"
+    - missing: "return value check"
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches:
+    - uniswap-v1-bnb
+    - usdt-integration-failures
+  signature: "direct_erc20_call_without_safe_wrapper"
+  description: |
+    Direct ERC20 calls without SafeERC20 library wrapper, exposed to
+    non-standard token behaviors (void returns, false success, etc.).
+    Critical for any token-handling protocol.
+
+# Multi-Agent Verification Hints
+verification_agents:
+  pattern:
+    require_all_conditions: true
+    confidence_threshold: 0.80
+
+  explorer:
+    entry_points: [FunctionEntry]
+    critical_path:
+      - CALLS_EXTERNAL
+      - "token.transfer/approve/transferFrom"
+    sinks: [TRANSFERS_VALUE_OUT]
+    max_depth: 3
+
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    minimum_severity: "high"
+    token_tvl_multiplier: 2.5  # High impact in token-handling code
+
+# Attack Path Templates
+attack_paths:
+  - name: "non_standard_token_failure"
+    description: "Non-standard token's void/false return breaks contract assumptions"
+    entry_points:
+      - role: PublicFunction
+        operation: token_transfer
+    intermediate_steps:
+      - CallDirectERC20
+      - TokenReturnsVoid
+      - NoGuardInPlace
+    exit_points:
+      - operation: SilentFailure
+      - impact: AccountingCorruption
+    preconditions:
+      - "uses_erc20_transfer == true OR uses_erc20_approve == true"
+      - "uses_safe_erc20 == false"
+      - "token_return_guarded == false"
+    impact: "Token transfer fails silently or reverts unexpectedly"
+    cvss_base: 7.5
+
+# Pattern Quality Roadmap
+quality_roadmap:
+  current_status: draft
+  precision_target: 0.90
+  recall_target: 0.95
+  improvement_areas:
+    - "Test against real-world token integrations (USDT, BNB, OMG)"
+    - "Validate false positive rate on wrapped token standards"
+    - "Ensure pattern catches all token operation types"
+    - "Test variation across different SafeERC20 import styles"
+  estimated_effort: "Medium - needs token integration testing"

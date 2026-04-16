@@ -1,0 +1,555 @@
+# VulnDocs Knowledge Index
+# Phase 1 VulnDocs Completion - Consolidated Index
+# Last Updated: 2026-01-20 (Plan 01-05 Consolidation)
+#
+# This file is the entry point for navigating VulnDocs.
+# LLM agents use this to discover available vulnerability categories
+# and determine which knowledge to retrieve.
+#
+# Usage:
+#   1. Read this index to understand available categories
+#   2. Navigate to specific category/subcategory based on findings
+#   3. Retrieve appropriate depth level based on context needs
+
+# Schema metadata
+schema_version: "2.0"
+last_updated: "2026-01-20"
+consolidation_run: "01-05"
+
+# =============================================================================
+# NAVIGATION HINTS FOR LLM AGENTS
+# =============================================================================
+navigation:
+  description: |
+    VulnDocs provides structured vulnerability knowledge organized by category
+    and subcategory. Use these hints to navigate efficiently.
+
+  hints:
+    - "Start with the category that best matches your finding's behavioral signature"
+    - "Use 'detection' depth for graph-based analysis"
+    - "Use 'exploits' depth when you need evidence from real-world incidents"
+    - "Use 'patterns' depth for code-level pattern matching"
+    - "Use 'fixes' depth when generating remediation guidance"
+    - "Combine multiple subcategories for multi-step attack scenarios"
+
+  depth_guide:
+    index: "~200 tokens - Category/subcategory names only"
+    overview: "~500 tokens - High-level descriptions"
+    detection: "~1000 tokens - Graph signals and behavioral patterns"
+    patterns: "~1500 tokens - Vulnerable and safe code examples"
+    exploits: "~1000 tokens - Real-world exploit references"
+    fixes: "~800 tokens - Remediation recommendations"
+    full: "~5000 tokens - All available content"
+
+  retrieval_strategy:
+    single_category: "depth=detection, max_tokens=1000"
+    multiple_categories: "depth=overview, max_tokens=500 per category"
+    evidence_building: "depth=exploits, include real-world examples"
+    fix_generation: "depth=fixes, include code examples"
+
+# =============================================================================
+# CATEGORY INDEX
+# =============================================================================
+categories:
+  reentrancy:
+    name: Reentrancy Vulnerabilities
+    description: Attacks exploiting callback mechanisms during external calls
+    severity_range: ["high", "critical"]
+    primary_operations: [TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE, CALLS_EXTERNAL]
+    subcategories:
+      - classic            # State write after external call (core-pattern)
+      - cross-function     # Reentrancy affecting multiple functions (core-pattern)
+      - batch-operations   # Loop amplification (core-pattern) - NEW
+      - read-only          # View function reentrancy (core-pattern)
+      - hook-callback      # Uniswap V4 unlock callback (core-pattern) - EMERGING
+      - erc777             # Token callback reentrancy
+      - cross-contract     # Multi-contract callback chains
+    key_properties:
+      - state_write_after_external_call
+      - has_reentrancy_guard
+      - external_calls_in_loop
+    doc_count: 5  # With core-pattern.md
+    path: categories/reentrancy/
+
+  access-control:
+    name: Access Control Issues
+    description: Permission and authorization flaws allowing unauthorized actions
+    severity_range: ["medium", "high", "critical"]
+    primary_operations: [CHECKS_PERMISSION, MODIFIES_OWNER, MODIFIES_ROLES]
+    subcategories:
+      - missing-modifier   # No access gate on privileged functions
+      - weak-modifier      # Bypassable access controls
+      - race-condition     # Temporal access control race (core-pattern) - NEW
+      - hook-permission    # Uniswap V4 permission mismatch (core-pattern) - EMERGING
+      - pool-key-validation # Uniswap V4 pool key (core-pattern) - EMERGING
+      - tx-origin          # tx.origin misuse
+      - role-escalation    # Privilege escalation paths
+      - initialization     # Unprotected initializers
+      - delegatecall-control # Delegatecall target control
+    key_properties:
+      - has_access_gate
+      - writes_privileged_state
+      - uses_tx_origin
+      - modifies_roles
+    doc_count: 3  # With core-pattern.md
+    path: categories/access-control/
+
+  oracle:
+    name: Oracle Manipulation
+    description: Price feed and external data attacks
+    severity_range: ["high", "critical"]
+    primary_operations: [READS_ORACLE, READS_EXTERNAL_VALUE]
+    subcategories:
+      - price-manipulation # Spot price/flash loan attacks (core-pattern)
+      - staleness          # Missing freshness checks
+      - sequencer-uptime   # L2 sequencer downtime
+      - twap-manipulation  # TWAP window attacks
+      - multiple-oracle    # Oracle aggregation issues
+    key_properties:
+      - reads_oracle_price
+      - has_staleness_check
+      - has_sequencer_uptime_check
+    doc_count: 1  # With core-pattern.md
+    path: categories/oracle/
+
+  flash-loan:
+    name: Flash Loan Attacks
+    description: Single-transaction liquidity exploits
+    severity_range: ["critical"]
+    primary_operations: [RECEIVES_VALUE_IN, TRANSFERS_VALUE_OUT]
+    subcategories:
+      - collateral-drain   # Collateral manipulation
+      - governance-attack  # Voting power via flash loans
+      - price-oracle       # Oracle manipulation via flash loans
+      - liquidity-pool     # LP token attacks
+    key_properties:
+      - callback_pattern
+      - same_block_operations
+    doc_count: 0  # No core-pattern.md yet
+    path: categories/flash-loan/
+
+  mev:
+    name: MEV/Frontrunning
+    description: Transaction ordering exploitation
+    severity_range: ["medium", "high"]
+    primary_operations: [TRANSFERS_VALUE_OUT, USES_TIMESTAMP, READS_ORACLE]
+    subcategories:
+      - sandwich           # Sandwich attacks on swaps
+      - frontrunning       # Transaction ordering
+      - backrunning        # Post-transaction exploitation
+      - slippage           # Missing slippage protection
+      - deadline           # Missing deadline checks
+    key_properties:
+      - swap_like
+      - risk_missing_slippage_parameter
+      - risk_missing_deadline_check
+    doc_count: 0  # No core-pattern.md yet
+    path: categories/mev/
+
+  dos:
+    name: Denial of Service
+    description: Resource exhaustion and griefing attacks
+    severity_range: ["medium", "high"]
+    primary_operations: [LOOPS_OVER_ARRAY, CALLS_EXTERNAL]
+    subcategories:
+      - unbounded-loop     # Gas exhaustion via loops
+      - gas-griefing       # Return data bombing
+      - block-stuffing     # Transaction censorship
+      - return-bomb        # Large return data attacks
+      - external-call-loop # Loops with external calls
+    key_properties:
+      - has_unbounded_loop
+      - external_calls_in_loop
+      - uses_transfer
+    doc_count: 0  # No core-pattern.md yet
+    path: categories/dos/
+
+  token:
+    name: Token Issues
+    description: ERC20/721/1155 integration flaws
+    severity_range: ["medium", "high"]
+    primary_operations: [TRANSFERS_VALUE_OUT, CALLS_EXTERNAL]
+    subcategories:
+      - fee-on-transfer    # Transfer fee handling
+      - rebasing           # Rebasing token compatibility
+      - approval-race      # approve() race condition
+      - missing-return     # Non-standard return handling
+      - hooks              # Transfer hooks (ERC777, ERC1363)
+    key_properties:
+      - uses_erc20_transfer
+      - token_return_guarded
+      - uses_safe_erc20
+    doc_count: 0  # No core-pattern.md yet
+    path: categories/token/
+
+  upgrade:
+    name: Proxy/Upgradeability
+    description: Storage collision and initialization issues
+    severity_range: ["high", "critical"]
+    primary_operations: [INITIALIZES_STATE, MODIFIES_CRITICAL_STATE]
+    subcategories:
+      - unprotected-initialize  # Reinitializable proxies
+      - storage-collision       # Storage slot conflicts
+      - selfdestruct           # Implementation destruction
+      - delegatecall-context   # Context confusion
+    key_properties:
+      - is_proxy_like
+      - proxy_type
+      - upgradeable_without_storage_gap
+    doc_count: 0  # No core-pattern.md yet
+    path: categories/upgrade/
+
+  crypto:
+    name: Cryptographic Issues
+    description: Signature, randomness, and hash flaws
+    severity_range: ["high", "critical"]
+    primary_operations: [USES_BLOCK_DATA, USES_TIMESTAMP, VALIDATES_INPUT]
+    subcategories:
+      - signature-validation  # Signature duplication attacks (core-pattern) - NEW
+      - signature-replay      # Cross-chain/contract replay
+      - ecrecover-zero       # Invalid signature handling
+      - weak-randomness      # Predictable randomness
+      - hash-collision       # Collision attacks
+      - malleable-signature  # Signature malleability
+    key_properties:
+      - uses_ecrecover
+      - checks_zero_address
+      - checks_sig_s
+      - uses_chainid
+    doc_count: 1  # With core-pattern.md
+    path: categories/crypto/
+
+  governance:
+    name: Governance Attacks
+    description: Voting and proposal manipulation
+    severity_range: ["high", "critical"]
+    primary_operations: [MODIFIES_ROLES, CHECKS_PERMISSION, USES_TIMESTAMP]
+    subcategories:
+      - flash-loan-voting  # Flash loan + voting
+      - proposal-front-run # Proposal timing attacks
+      - quorum-manipulation # Quorum threshold bypass
+    key_properties:
+      - governance_related
+      - voting_power
+    doc_count: 0  # No core-pattern.md yet
+    path: categories/governance/
+
+  logic:
+    name: Business Logic
+    description: Accounting, state machine, invariant bugs
+    severity_range: ["medium", "high", "critical"]
+    primary_operations: [READS_USER_BALANCE, WRITES_USER_BALANCE, PERFORMS_DIVISION]
+    subcategories:
+      - precision-accounting   # Micro-operation rounding (core-pattern) - NEW
+      - parameter-confusion    # Nested mapping confusion (core-pattern) - NEW
+      - sequencing            # L2 transaction ordering (core-pattern) - EMERGING
+      - accounting            # Balance/fee calculation errors
+      - state-machine         # Invalid state transitions
+      - invariant             # Broken invariants
+      - configuration         # Misconfiguration vulnerabilities
+      - arithmetic            # Precision loss, rounding errors
+    key_properties:
+      - complex_arithmetic
+      - state_machine_like
+      - precision_loss_possible
+    doc_count: 3  # With core-pattern.md
+    path: categories/logic/
+
+  precision-loss:
+    name: Precision Loss
+    description: Rounding and scaling vulnerabilities
+    severity_range: ["high", "critical"]
+    primary_operations: [PERFORMS_DIVISION, PERFORMS_MULTIPLICATION]
+    subcategories:
+      - rounding-manipulation  # Inconsistent rounding direction (core-pattern) - NEW
+    key_properties:
+      - has_scaling_functions
+      - has_multiple_rounding_modes
+    doc_count: 1  # With core-pattern.md
+    path: categories/precision-loss/
+
+  arithmetic:
+    name: Arithmetic Bugs
+    description: Integer overflow and threshold errors
+    severity_range: ["critical"]
+    primary_operations: [PERFORMS_MULTIPLICATION]
+    subcategories:
+      - incorrect-overflow-check  # Wrong threshold constant (core-pattern) - NEW
+      - rounding-direction        # Rounding direction issues
+    key_properties:
+      - uses_bit_shift_operations
+      - has_overflow_check
+    doc_count: 1  # With core-pattern.md
+    path: categories/arithmetic/
+
+  # === EMERGING PROTOCOL CATEGORIES ===
+
+  account-abstraction:
+    name: Account Abstraction (ERC-4337)
+    description: ERC-4337 vulnerabilities including bundler, paymaster, and UserOp issues
+    severity_range: ["high", "critical"]
+    primary_operations: [VALIDATES_INPUT, CHECKS_PERMISSION, CALLS_EXTERNAL]
+    subcategories:
+      - bundler-manipulation  # UserOp ordering, gas price manipulation
+      - paymaster-exploits    # Gas griefing, deposit draining
+      - userop-validation     # Calldata corruption, hash collisions
+      - entrypoint-issues     # Core EntryPoint vulnerabilities
+    key_properties:
+      - is_entrypoint_like
+      - is_paymaster_like
+      - validates_userop
+    doc_count: 0
+    emerging: true
+    path: categories/account-abstraction/
+
+  restaking:
+    name: Restaking (EigenLayer/AVS)
+    description: EigenLayer restaking vulnerabilities including slashing and AVS security
+    severity_range: ["high", "critical"]
+    primary_operations: [MODIFIES_CRITICAL_STATE, CHECKS_PERMISSION, TRANSFERS_VALUE_OUT]
+    subcategories:
+      - allocation-delay      # Temporal window exploitation (core-pattern) - EMERGING
+      - slashing-exploits     # Unintended slashing, contagious slashing
+      - avs-security          # Malicious AVS, slashing condition manipulation
+      - operator-collusion    # Economic attacks by colluding operators
+      - withdrawal-delay      # Timing attacks during withdrawal period
+    key_properties:
+      - is_avs_like
+      - has_slashing_logic
+      - has_stake_allocation
+    doc_count: 1
+    emerging: true
+    path: categories/restaking/
+
+  zk-rollup:
+    name: ZK-Rollup Security
+    description: Zero-knowledge rollup vulnerabilities (zkSync, Polygon zkEVM)
+    severity_range: ["critical"]
+    primary_operations: [VALIDATES_INPUT, MODIFIES_CRITICAL_STATE]
+    subcategories:
+      - soundness-bugs        # Invalid proofs accepted
+      - circuit-constraints   # Missing or incomplete constraints
+      - prover-exploits       # Fraudulent proof generation
+      - state-verification    # L1 verifier contract issues
+    key_properties:
+      - is_zk_verifier
+      - has_proof_verification
+      - modifies_state_root
+    doc_count: 0
+    emerging: true
+    path: categories/zk-rollup/
+
+  vault:
+    name: ERC-4626 Vault Attacks
+    description: Tokenized vault vulnerabilities including share inflation and donation attacks
+    severity_range: ["high", "critical"]
+    primary_operations: [READS_USER_BALANCE, WRITES_USER_BALANCE, PERFORMS_DIVISION]
+    subcategories:
+      - share-inflation       # Donation-based share manipulation
+      - first-depositor       # Empty vault exploitation
+      - donation-attack       # Direct asset transfer manipulation
+      - exchange-rate         # Rate oracle and sandwich attacks
+    key_properties:
+      - is_erc4626_vault
+      - has_share_calculation
+      - has_virtual_offset
+    doc_count: 0
+    emerging: true
+    path: categories/vault/
+
+  cross-chain:
+    name: Cross-Chain & Bridge Vulnerabilities
+    description: Bridge exploits, message validation, nonce replay, and inter-chain trust assumptions
+    severity_range: ["high", "critical"]
+    primary_operations: [CALLS_EXTERNAL, CALLS_UNTRUSTED, VALIDATES_INPUT]
+    subcategories:
+      - replay-protection     # Per-adapter dedup bypass (core-pattern) - CANONICAL
+      - bridge-compromise     # Direct bridge exploitation
+      - message-validation    # Cross-chain message validation failures
+      - nonce-replay          # Nonce misuse and replay attacks
+      - oracle-dependency     # Cross-chain oracle trust issues
+    key_properties:
+      - calls_external
+      - reads_external_value
+      - validates_input
+      - has_access_gate
+    doc_count: 1  # With core-pattern.md (adapter-replay merged here)
+    path: categories/cross-chain/
+
+# =============================================================================
+# OPERATION INDEX (Reverse lookup)
+# =============================================================================
+operation_index:
+  TRANSFERS_VALUE_OUT: [reentrancy, mev, token, flash-loan, restaking, cross-chain]
+  RECEIVES_VALUE_IN: [flash-loan, logic]
+  READS_USER_BALANCE: [reentrancy, logic, flash-loan, vault]
+  WRITES_USER_BALANCE: [reentrancy, logic, flash-loan, vault]
+  CHECKS_PERMISSION: [access-control, governance, account-abstraction, restaking]
+  MODIFIES_OWNER: [access-control, upgrade]
+  MODIFIES_ROLES: [access-control, governance]
+  CALLS_EXTERNAL: [reentrancy, dos, oracle, token, account-abstraction, cross-chain]
+  CALLS_UNTRUSTED: [reentrancy, token, cross-chain]
+  READS_EXTERNAL_VALUE: [oracle, flash-loan, restaking, cross-chain]
+  MODIFIES_CRITICAL_STATE: [access-control, upgrade, restaking, zk-rollup]
+  INITIALIZES_STATE: [upgrade, access-control]
+  READS_ORACLE: [oracle, flash-loan, mev]
+  LOOPS_OVER_ARRAY: [dos, reentrancy, logic]
+  USES_TIMESTAMP: [mev, crypto, governance]
+  USES_BLOCK_DATA: [crypto, mev]
+  PERFORMS_DIVISION: [logic, oracle, precision-loss, vault]
+  PERFORMS_MULTIPLICATION: [logic, arithmetic, precision-loss, vault]
+  VALIDATES_INPUT: [access-control, logic, account-abstraction, zk-rollup, cross-chain]
+  EMITS_EVENT: [logic]
+
+# =============================================================================
+# BEHAVIORAL SIGNATURE MAPPING
+# =============================================================================
+signature_to_categories:
+  # Reentrancy patterns
+  "R:bal->X:out->W:bal":
+    category: reentrancy
+    subcategory: classic
+    severity: critical
+
+  "R:bal->X:call->W:bal":
+    category: reentrancy
+    subcategory: classic
+    severity: critical
+
+  "LOOP_START->R:bal->X:untrusted->W:bal->LOOP_CONTINUE":
+    category: reentrancy
+    subcategory: batch-operations
+    severity: critical
+
+  "F1:W:partial_state->F1:X:callback->[F2:R:stale_view]->F1:W:complete":
+    category: reentrancy
+    subcategory: read-only
+    severity: high
+
+  "UNLOCK->HOOK_EXECUTES->CALLBACK_REENTRY->STATE_MANIPULATION":
+    category: reentrancy
+    subcategory: hook-callback
+    severity: critical
+    emerging: true
+
+  # Access control patterns
+  "M:crit":
+    category: access-control
+    subcategory: missing-modifier
+    severity: critical
+    note: "Only vulnerable if NOT preceded by C:auth"
+
+  "MODIFIES_ROLES->(race_window)->DELEGATECALL->INCONSISTENT_STATE":
+    category: access-control
+    subcategory: race-condition
+    severity: critical
+
+  # Oracle patterns
+  "FLASH_LOAN->MANIPULATES_RESERVES->READS_ORACLE(spot)->X:out(profit)":
+    category: oracle
+    subcategory: price-manipulation
+    severity: critical
+
+  # Cross-chain patterns
+  "RECEIVE_MSG(A)->CHECK_SEEN(A)->MARK(A)->RECEIVE_MSG(B)->CHECK_SEEN(B)->DOUBLE_PROCESS":
+    category: cross-chain
+    subcategory: replay-protection
+    severity: critical
+
+  # Logic patterns
+  "R:bal->SCALE_DOWN(->0)->W:bal(no_change)->X:out(actual)":
+    category: logic
+    subcategory: precision-accounting
+    severity: high
+
+  "R:mapping[B][A]->MODIFY->W:mapping[B][A](inverted)":
+    category: logic
+    subcategory: parameter-confusion
+    severity: critical
+
+  # Precision patterns
+  "R:inv->SCALE_UP(down)->CALC->SCALE_DOWN(mixed)->W:inv_low":
+    category: precision-loss
+    subcategory: rounding-manipulation
+    severity: critical
+
+  # Crypto patterns
+  "CHECKS_SIG(loop)->(missing_DEDUPE)->COUNTS->THRESHOLD_MET":
+    category: crypto
+    subcategory: signature-validation
+    severity: critical
+
+  # Other patterns
+  "L:arr->X:call":
+    category: dos
+    subcategory: external-call-loop
+    severity: high
+
+  "U:blk->M:crit":
+    category: crypto
+    subcategory: weak-randomness
+    severity: high
+
+  "I:init->M:crit":
+    category: upgrade
+    subcategory: unprotected-initialize
+    severity: critical
+
+# =============================================================================
+# CACHE CONFIGURATION
+# =============================================================================
+cache:
+  layer_1:
+    name: system_context
+    content: "Navigation index + property reference"
+    cache_control: ephemeral
+    estimated_tokens: 3000
+    key: "vulndocs-system-v2"
+
+  layer_2:
+    name: category_context
+    content: "Category overview + subcategory index"
+    cache_control: ephemeral
+    estimated_tokens: 1500
+    key_pattern: "{category}-overview-v2"
+
+  layer_3:
+    name: subcategory_context
+    content: "Detection + patterns + exploits + fixes"
+    cache_control: none
+    estimated_tokens: 1000
+    key_pattern: "{category}-{subcategory}-{depth}-v2"
+
+# =============================================================================
+# STATISTICS
+# =============================================================================
+stats:
+  total_categories: 17
+  total_subcategories: 75
+  core_patterns: 17  # With core-pattern.md files
+  deprecated_subcategories: 2  # adapter-replay, hooks-permission
+  last_updated: "2026-01-20T19:45:00Z"
+  consolidation_run: "01-05"
+
+  core_pattern_coverage:
+    reentrancy: 5
+    access-control: 3
+    oracle: 1
+    logic: 3
+    crypto: 1
+    cross-chain: 1
+    precision-loss: 1
+    arithmetic: 1
+    restaking: 1
+    # Total: 17
+
+  categories_without_core_pattern:
+    - flash-loan
+    - mev
+    - dos
+    - token
+    - upgrade
+    - governance
+    - account-abstraction
+    - zk-rollup
+    - vault

@@ -1,0 +1,34 @@
+{
+  "session_label": "vrs-demo-audit-entrypoint-20260204-120000",
+  "pane_id": "0:1.2",
+  "mode": "live",
+  "duration_ms": 62000,
+  "tokens_used": 18750,
+  "workflow_type": "audit",
+  "proof_tokens": [
+    { "stage_id": "stage.graph_build", "status": "required", "token_path": "proofs/proof-graph.json" },
+    { "stage_id": "stage.report", "status": "required", "token_path": "proofs/proof-report.json" }
+  ],
+  "orchestration_markers": {
+    "task_create": ["TaskCreate(task-001)", "TaskCreate(task-002)"],
+    "task_update": ["TaskUpdate(task-001, confirmed)", "TaskUpdate(task-002, confirmed)"],
+    "subagent_start": ["SubagentStart(vrs-attacker)", "SubagentStart(vrs-defender)", "SubagentStart(vrs-verifier)"]
+  },
+  "graph_first": {
+    "required": true,
+    "verified": true,
+    "query_markers": ["[VQL-MIN-01]", "[VQL-MIN-02]"],
+    "first_query_line": 18,
+    "first_conclusion_line": 77
+  },
+  "graph_usage": {
+    "query_count": 12,
+    "unique_nodes": 87,
+    "unique_edges": 214,
+    "query_time_ms": 1840,
+    "graph_build_ms": 9812,
+    "evidence_nodes_cited": 14,
+    "vql_min_set_present": true,
+    "cross_contract_queries": 2
+  }
+}

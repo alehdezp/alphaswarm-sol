@@ -1,0 +1,305 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alphaswarm.dev/schemas/scenario-config.json",
+  "title": "AlphaSwarm Scenario Configuration",
+  "description": "JSON Schema for validating workflow test scenario YAML files. Covers both existing fields (name, contracts, prompt_template, etc.) and 3.1b-05 extensions (evaluation, graders, steps, post_run_hooks, trials).",
+  "type": "object",
+  "required": ["name", "category", "contracts", "prompt_template"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Human-readable scenario name"
+    },
+    "category": {
+      "type": "string",
+      "description": "Vulnerability category (e.g., 'reentrancy')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of scenario",
+      "default": ""
+    },
+    "contracts": {
+      "type": "array",
+      "description": "Contracts to test in this scenario",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/ContractCase"
+      }
+    },
+    "prompt_template": {
+      "type": "string",
+      "description": "Prompt template with {contract_path} placeholder"
+    },
+    "allowed_tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Tools to pre-approve for autonomous execution"
+    },
+    "json_schema": {
+      "$ref": "#/definitions/JsonSchemaConfig",
+      "description": "Schema for structured output"
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 600,
+      "default": 120,
+      "description": "Timeout per contract in seconds"
+    },
+    "model": {
+      "type": ["string", "null"],
+      "default": null,
+      "description": "Override default model"
+    },
+    "isolation": {
+      "$ref": "#/definitions/IsolationConfig"
+    },
+    "chaos": {
+      "$ref": "#/definitions/ChaosConfig"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Tags for filtering"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["easy", "medium", "hard", "expert"],
+      "default": "medium",
+      "description": "Scenario difficulty level"
+    },
+    "modes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["single", "team"]
+      },
+      "default": ["single"],
+      "description": "Execution modes for this scenario"
+    },
+    "team_config": {
+      "$ref": "#/definitions/TeamConfig"
+    },
+    "evaluation": {
+      "oneOf": [
+        { "$ref": "#/definitions/EvaluationConfig" },
+        { "type": "null" }
+      ],
+      "default": null,
+      "description": "3.1c evaluation configuration (parsed by 3.1b, executed by 3.1c)"
+    },
+    "evaluation_guidance": {
+      "oneOf": [
+        { "$ref": "#/definitions/EvaluationGuidanceConfig" },
+        { "type": "null" }
+      ],
+      "default": null,
+      "description": "Per-scenario reasoning evaluation guidance"
+    },
+    "graders": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/GraderConfig"
+      },
+      "default": [],
+      "description": "Grader configurations for scoring run output"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ScenarioStep"
+      },
+      "default": [],
+      "description": "Multi-turn scenario steps"
+    },
+    "post_run_hooks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Post-run hook script paths (relative to workspace root)"
+    },
+    "trials": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 1,
+      "description": "Number of times to run this scenario (for pass@k)"
+    }
+  },
+  "definitions": {
+    "GroundTruth": {
+      "type": "object",
+      "required": ["pattern", "severity", "location"],
+      "properties": {
+        "pattern": { "type": "string" },
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"]
+        },
+        "location": { "type": "string" },
+        "description": { "type": ["string", "null"] },
+        "confidence_min": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.5
+        }
+      }
+    },
+    "ContractCase": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "has_vulnerability": { "type": "boolean", "default": true },
+        "expected_pattern": { "type": ["string", "null"] },
+        "expected_severity": { "type": ["string", "null"] },
+        "ground_truth": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/GroundTruth" },
+          "default": []
+        },
+        "notes": { "type": ["string", "null"] },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
+    },
+    "IsolationConfig": {
+      "type": "object",
+      "properties": {
+        "exclude_vulndocs": { "type": "boolean", "default": false },
+        "blind_prompt": { "type": "boolean", "default": false },
+        "corpus_segment": { "type": ["string", "null"] },
+        "shuffle_corpus": { "type": "boolean", "default": false },
+        "anonymize_contracts": { "type": "boolean", "default": false }
+      }
+    },
+    "ChaosConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "timeout_probability": { "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0 },
+        "malformed_probability": { "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0 },
+        "failure_probability": { "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0 }
+      }
+    },
+    "JsonSchemaConfig": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "default": "object" },
+        "properties": { "type": "object" },
+        "required": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "TeamConfig": {
+      "type": "object",
+      "properties": {
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["attacker", "defender", "verifier"]
+        },
+        "model": { "type": "string", "default": "sonnet" },
+        "team_ground_truth": { "type": "object", "default": {} }
+      }
+    },
+    "EvaluationConfig": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "type": ["string", "null"],
+          "description": "Evaluation contract ID (3.1c validates existence)"
+        },
+        "run_gvs": { "type": "boolean", "default": true },
+        "run_reasoning": { "type": "boolean", "default": true }
+      }
+    },
+    "EvaluationGuidanceConfig": {
+      "type": "object",
+      "properties": {
+        "reasoning_questions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "hooks_if_failed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
+    },
+    "GraderConfig": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["code", "model"],
+          "default": "code"
+        },
+        "method": { "type": ["string", "null"] },
+        "prompt": { "type": ["string", "null"] },
+        "schema_path": { "type": ["string", "null"] },
+        "pattern": { "type": ["string", "null"] },
+        "expected": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } },
+            { "type": "object" },
+            { "type": "null" }
+          ]
+        },
+        "target": {
+          "type": "string",
+          "default": "response"
+        },
+        "model": { "type": "string", "default": "sonnet" },
+        "score_range": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "default": [0, 100]
+        }
+      }
+    },
+    "StepExpect": {
+      "type": "object",
+      "properties": {
+        "response_contains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "tool_was_used": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "response_not_contains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        }
+      }
+    },
+    "ScenarioStep": {
+      "type": "object",
+      "required": ["prompt"],
+      "properties": {
+        "prompt": { "type": "string" },
+        "expect": {
+          "oneOf": [
+            { "$ref": "#/definitions/StepExpect" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

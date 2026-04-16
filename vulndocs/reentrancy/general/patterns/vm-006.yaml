@@ -1,0 +1,16 @@
+id: vm-006
+vulndoc: reentrancy/general
+name: Unchecked Low-Level Call
+description: Low-level call without success checks.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: uses_call
+    op: eq
+    value: true
+  - property: checks_low_level_call_success
+    op: eq
+    value: false

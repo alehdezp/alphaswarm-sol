@@ -1,0 +1,21 @@
+id: proxy-upgrade-no-timelock
+vulndoc: upgrade/proxy
+name: Upgrade Function Without Timelock
+description: Upgrade function lacks timelock delay allowing immediate malicious upgrades
+scope: Function
+lens:
+  - Upgradeability
+  - Authority
+severity: high
+match:
+  all:
+    - property: is_upgrade_function
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  none:
+    - property: has_timelock_delay
+      op: eq
+      value: true

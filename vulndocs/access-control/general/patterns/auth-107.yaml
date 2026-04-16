@@ -1,0 +1,16 @@
+id: auth-107
+vulndoc: access-control/general
+name: Context-Dependent Auth With External Calls
+description: Access control relies on msg.sender/tx.origin and makes external calls.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: has_context_dependent_auth
+    op: eq
+    value: true
+  - property: has_external_calls
+    op: eq
+    value: true

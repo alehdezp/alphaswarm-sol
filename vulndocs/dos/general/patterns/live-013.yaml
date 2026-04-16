@@ -1,0 +1,27 @@
+id: live-013
+vulndoc: dos/general
+name: Nested Loop Complexity
+description: Nested loops with unbounded sources.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_nested_loop
+    op: eq
+    value: true
+  - property: loop_bound_sources
+    op: contains_any
+    value:
+    - user_input
+    - storage_length
+    - unknown
+  - property: has_require_bounds
+    op: eq
+    value: false
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

@@ -1,0 +1,14 @@
+version: 1
+scoring:
+  correct_vulnerable: +1
+  correct_safe: +1
+  false_positive: -2
+  false_negative: -2
+
+thresholds:
+  pass_rate: 0.9
+  max_false_positives: 0
+
+notes:
+  - Binary pass/fail; partial credit does not pass.
+  - If precision and recall both reach 1.0, mark run as SUSPICIOUS and expand set.

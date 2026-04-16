@@ -1,0 +1,623 @@
+# Audit Findings Inventory
+# Normalized inventory of audit findings with repo + report mapping
+# Tracks post-2025 audits for corpus ground truth linkage
+#
+# Schema version: 1.0
+# Created: 2026-01-29 (Phase 7.2-03)
+
+schema_version: "1.0"
+updated: "2026-01-29"
+purpose: "Audit findings inventory for corpus and ground truth linkage"
+
+# Statistics (updated on each ingestion)
+statistics:
+  total_audits: 23
+  total_findings: 31
+  by_severity:
+    critical: 12
+    high: 14
+    medium: 5
+    low: 0
+  by_category:
+    reentrancy: 4
+    oracle: 5
+    logic: 10
+    access_control: 3
+    arithmetic: 5
+    cross_chain: 2
+    upgrade: 2
+
+# Audit entries with findings
+# Each audit maps to a VulnDocs category and links to ground truth
+audits:
+  # ============================================================
+  # Reentrancy Findings (2025+)
+  # ============================================================
+  - id: gmx-v1-reentrancy-jul2025
+    protocol: GMX
+    version: v1
+    date: "2025-07"
+    report_url: https://www.halborn.com/blog/post/explained-the-gmx-hack-july-2025
+    repo_url: https://github.com/gmx-io/gmx-contracts
+    commit_sha: ""  # To be pinned when corpus ingested
+    auditor: Halborn (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: gmx-v1-cross-function-reentrancy
+        title: "Cross-function reentrancy in position management"
+        severity: critical
+        vulndocs_category: reentrancy/cross-function
+        vulndocs_subcategory: specifics/gmx-v1-reentrancy
+        ground_truth_id: ""  # To be linked when ground truth created
+        description: "Classic reentrancy via external callback during position close"
+        economic_impact: "$42M drained"
+    provenance:
+      query: "GMX hack July 2025 reentrancy"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: penpie-reentrancy-sep2024
+    protocol: Penpie
+    version: v1
+    date: "2024-09"
+    report_url: https://blog.penpiexyz.io/penpie-post-mortem-report-1ac9863b663a
+    repo_url: ""  # Not public
+    commit_sha: ""
+    auditor: Penpie (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: penpie-permissionless-callback
+        title: "Permissionless callback enables reentrancy"
+        severity: critical
+        vulndocs_category: reentrancy/classic
+        vulndocs_subcategory: specifics/penpie-permissionless-callback
+        ground_truth_id: ""
+        description: "Market creation with attacker-controlled callback allowed reentrancy"
+        economic_impact: "$27M drained"
+    provenance:
+      query: "Penpie hack September 2024 reentrancy"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: curve-readonly-reentrancy-aug2023
+    protocol: Curve
+    version: v2
+    date: "2023-08"
+    report_url: https://hackmd.io/@vyperlang/HJUgNMhs2
+    repo_url: https://github.com/curvefi/curve-contract
+    commit_sha: ""
+    auditor: Community (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: curve-vyper-reentrancy
+        title: "Vyper compiler reentrancy lock bypass"
+        severity: critical
+        vulndocs_category: reentrancy/read-only
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Compiler bug in Vyper allowed reentrancy despite lock"
+        economic_impact: "$70M+ across pools"
+    provenance:
+      query: "Curve Vyper reentrancy hack 2023"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: euler-reentrancy-mar2023
+    protocol: Euler Finance
+    version: v1
+    date: "2023-03"
+    report_url: https://www.halborn.com/blog/post/explained-the-euler-finance-hack-march-2023
+    repo_url: https://github.com/euler-xyz/euler-contracts
+    commit_sha: ""
+    auditor: Halborn (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: euler-donate-collateral
+        title: "Donation + liquidation reentrancy"
+        severity: critical
+        vulndocs_category: reentrancy/cross-function
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "donateToReserves allowed manipulation before liquidation check"
+        economic_impact: "$200M drained (recovered)"
+    provenance:
+      query: "Euler Finance hack March 2023"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  # ============================================================
+  # Oracle Manipulation Findings (2025+)
+  # ============================================================
+  - id: uwu-lend-oracle-jun2024
+    protocol: UwU Lend
+    version: v1
+    date: "2024-06"
+    report_url: https://medium.com/neptune-mutual/understanding-the-uwu-lend-exploit-b32ea552f030
+    repo_url: ""
+    commit_sha: ""
+    auditor: Neptune Mutual (analysis)
+    audit_type: postmortem
+    findings:
+      - id: uwu-curve-spot-manipulation
+        title: "Curve spot price manipulation via flash loan"
+        severity: critical
+        vulndocs_category: oracle/price-manipulation
+        vulndocs_subcategory: specifics/uwu-curve-spot-manipulation
+        ground_truth_id: ""
+        description: "Direct Curve pool spot price used without TWAP"
+        economic_impact: "$23M drained"
+    provenance:
+      query: "UwU Lend hack June 2024 oracle"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: mango-oracle-oct2022
+    protocol: Mango Markets
+    version: v3
+    date: "2022-10"
+    report_url: https://rekt.news/mango-markets-rekt/
+    repo_url: https://github.com/blockworks-foundation/mango-v3
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: mango-perp-oracle-manipulation
+        title: "Perpetual oracle price manipulation"
+        severity: critical
+        vulndocs_category: oracle/price-manipulation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Low liquidity oracle allowed massive price manipulation"
+        economic_impact: "$117M drained"
+    provenance:
+      query: "Mango Markets oracle manipulation 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: chainlink-l2-sequencer-guidance
+    protocol: Chainlink
+    version: "2025"
+    date: "2025-01"
+    report_url: https://docs.chain.link/data-feeds/l2-sequencer-uptime-feeds
+    repo_url: ""
+    commit_sha: ""
+    auditor: Chainlink (official guidance)
+    audit_type: guidance
+    findings:
+      - id: l2-sequencer-grace-missing
+        title: "L2 sequencer uptime feed requires grace period"
+        severity: high
+        vulndocs_category: oracle/sequencer-uptime
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Must wait grace period after sequencer restart before trusting prices"
+        economic_impact: "Potential manipulation during sequencer downtime recovery"
+    provenance:
+      query: "Chainlink L2 sequencer uptime feed grace period"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+      notes: "Key reference for exemplar pattern oracle-l2-sequencer-grace-missing"
+
+  - id: beanstalk-oracle-apr2022
+    protocol: Beanstalk
+    version: v1
+    date: "2022-04"
+    report_url: https://rekt.news/beanstalk-rekt/
+    repo_url: https://github.com/BeanstalkFarms/Beanstalk
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: beanstalk-flash-loan-governance
+        title: "Flash loan governance + oracle manipulation"
+        severity: critical
+        vulndocs_category: oracle/price-manipulation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Flash loan used to manipulate vote and drain protocol"
+        economic_impact: "$182M drained"
+    provenance:
+      query: "Beanstalk flash loan governance attack 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: inverse-oracle-apr2022
+    protocol: Inverse Finance
+    version: v1
+    date: "2022-04"
+    report_url: https://rekt.news/inverse-rekt/
+    repo_url: ""
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: inverse-keep3r-oracle
+        title: "Keep3r oracle manipulation"
+        severity: critical
+        vulndocs_category: oracle/price-manipulation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "On-chain TWAP oracle manipulated via large swap"
+        economic_impact: "$15M drained"
+    provenance:
+      query: "Inverse Finance oracle manipulation 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  # ============================================================
+  # Logic Error Findings (2025+)
+  # ============================================================
+  - id: 1inch-calldata-mar2025
+    protocol: 1inch
+    version: resolver
+    date: "2025-03"
+    report_url: https://blog.1inch.io/vulnerability-discovered-in-resolver-contract/
+    repo_url: https://github.com/1inch/limit-order-protocol
+    commit_sha: ""
+    auditor: 1inch (disclosure)
+    audit_type: disclosure
+    findings:
+      - id: 1inch-yul-calldata-corruption
+        title: "Yul calldata corruption in resolver"
+        severity: critical
+        vulndocs_category: logic/configuration
+        vulndocs_subcategory: specifics/1inch-calldata-corruption
+        ground_truth_id: ""
+        description: "Yul assembly incorrectly handled calldata, allowing exploitation"
+        economic_impact: "$5M+ at risk (whitehat)"
+    provenance:
+      query: "1inch calldata vulnerability March 2025"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: clipper-invariant-dec2024
+    protocol: Clipper
+    version: v1
+    date: "2024-12"
+    report_url: https://blog.clipper.exchange/clipper-dec-24-exploit-post-mortem/
+    repo_url: ""
+    commit_sha: ""
+    auditor: Clipper (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: clipper-single-asset-bypass
+        title: "Single-asset deposit/withdraw invariant bypass"
+        severity: critical
+        vulndocs_category: logic/invariant-violation
+        vulndocs_subcategory: specifics/clipper-single-asset-bypass
+        ground_truth_id: ""
+        description: "Single-asset swap function violated pool invariants"
+        economic_impact: "$450K drained"
+    provenance:
+      query: "Clipper DEX hack December 2024"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: zklend-precision-feb2025
+    protocol: zkLend
+    version: v1
+    date: "2025-02"
+    report_url: https://zklend.io/blog/post-mortem
+    repo_url: ""
+    commit_sha: ""
+    auditor: zkLend (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: zklend-precision-loss
+        title: "Precision loss in share calculation"
+        severity: critical
+        vulndocs_category: logic/arithmetic
+        vulndocs_subcategory: specifics/zklend-precision-loss
+        ground_truth_id: ""
+        description: "First depositor inflation attack via precision manipulation"
+        economic_impact: "$9.6M drained"
+    provenance:
+      query: "zkLend hack February 2025"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: balancer-rounding-nov2025
+    protocol: Balancer
+    version: v2
+    date: "2025-11"
+    report_url: https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation
+    repo_url: https://github.com/balancer/balancer-v2-monorepo
+    commit_sha: ""
+    auditor: Balancer (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: balancer-v2-rounding
+        title: "Rounding error in stable pool math"
+        severity: critical
+        vulndocs_category: logic/arithmetic
+        vulndocs_subcategory: specifics/balancer-v2-rounding
+        ground_truth_id: ""
+        description: "Rounding direction error in stable pool allowed extraction"
+        economic_impact: "$128M drained"
+    provenance:
+      query: "Balancer v2 rounding error November 2025"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: euler-v2-ltv-2024
+    protocol: Euler
+    version: v2
+    date: "2024-10"
+    report_url: https://blog.openzeppelin.com/euler-vault-kit-evk-audit
+    repo_url: https://github.com/euler-xyz/euler-vault-kit
+    commit_sha: ""
+    auditor: OpenZeppelin
+    audit_type: audit
+    findings:
+      - id: euler-ltv-gap
+        title: "LTV gap in liquidation mechanics"
+        severity: high
+        vulndocs_category: logic/liquidation-mechanics
+        vulndocs_subcategory: specifics/euler-ltv-gap
+        ground_truth_id: ""
+        description: "Borrow LTV vs liquidation LTV gap could leave bad debt"
+        economic_impact: "Potential bad debt accumulation"
+    provenance:
+      query: "Euler v2 LTV liquidation audit"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: uniswap-v4-hooks-m1-2024
+    protocol: Uniswap
+    version: v4-hooks-library
+    date: "2024-09"
+    report_url: https://blog.openzeppelin.com/uniswap-hooks-library-milestone-1-audit
+    repo_url: https://github.com/Uniswap/v4-periphery
+    commit_sha: ""
+    auditor: OpenZeppelin
+    audit_type: audit
+    findings:
+      - id: uniswap-v4-state-isolation
+        title: "Hook state isolation concerns"
+        severity: high
+        vulndocs_category: logic/state-isolation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Hook contracts must properly isolate state across pools"
+        economic_impact: "Cross-pool state leakage risk"
+    provenance:
+      query: "Uniswap v4 hooks audit OpenZeppelin"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+      notes: "Key reference for Uniswap v4 patterns"
+
+  - id: wormhole-signature-feb2022
+    protocol: Wormhole
+    version: v1
+    date: "2022-02"
+    report_url: https://rekt.news/wormhole-rekt/
+    repo_url: https://github.com/wormhole-foundation/wormhole
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: wormhole-signature-bypass
+        title: "Guardian signature verification bypass"
+        severity: critical
+        vulndocs_category: cross_chain/signature-validation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Solana program allowed bypassing guardian signatures"
+        economic_impact: "$320M drained"
+    provenance:
+      query: "Wormhole bridge hack February 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: ronin-multisig-mar2022
+    protocol: Ronin Network
+    version: v1
+    date: "2022-03"
+    report_url: https://rekt.news/ronin-network-rekt/
+    repo_url: ""
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: ronin-validator-compromise
+        title: "Validator key compromise"
+        severity: critical
+        vulndocs_category: cross_chain/bridge-compromise
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "5/9 validator keys compromised allowing drain"
+        economic_impact: "$625M drained"
+    provenance:
+      query: "Ronin bridge hack March 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: nomad-validation-aug2022
+    protocol: Nomad
+    version: v1
+    date: "2022-08"
+    report_url: https://rekt.news/nomad-rekt/
+    repo_url: https://github.com/nomad-xyz/monorepo
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: nomad-message-validation
+        title: "Missing message validation"
+        severity: critical
+        vulndocs_category: logic/validation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Zero-initialized root accepted as valid, allowing arbitrary messages"
+        economic_impact: "$190M drained"
+    provenance:
+      query: "Nomad bridge hack August 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  # ============================================================
+  # Access Control Findings (2025+)
+  # ============================================================
+  - id: tornado-governance-may2023
+    protocol: Tornado Cash
+    version: governance
+    date: "2023-05"
+    report_url: https://rekt.news/tornado-gov-rekt/
+    repo_url: https://github.com/tornadocash/tornado-governance
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: tornado-proposal-hijack
+        title: "Governance proposal hijack"
+        severity: critical
+        vulndocs_category: governance/proposal-manipulation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Malicious proposal granted control via selfdestruct + create2"
+        economic_impact: "Full governance takeover"
+    provenance:
+      query: "Tornado Cash governance attack May 2023"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: harvest-flashloan-oct2020
+    protocol: Harvest Finance
+    version: v1
+    date: "2020-10"
+    report_url: https://rekt.news/harvest-finance-rekt/
+    repo_url: ""
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: harvest-flash-loan-arb
+        title: "Flash loan price manipulation"
+        severity: critical
+        vulndocs_category: oracle/price-manipulation
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Flash loan used to manipulate Curve pool price"
+        economic_impact: "$34M drained"
+    provenance:
+      query: "Harvest Finance flash loan attack 2020"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: fei-tribe-merge-apr2022
+    protocol: Fei/Tribe
+    version: merge
+    date: "2022-04"
+    report_url: https://medium.com/fei-protocol/fei-rari-hack-post-mortem-7fa9c7a3e3a0
+    repo_url: https://github.com/fei-protocol/fei-protocol-core
+    commit_sha: ""
+    auditor: Fei Protocol (post-mortem)
+    audit_type: postmortem
+    findings:
+      - id: fei-rari-reentrancy
+        title: "Fuse pool reentrancy"
+        severity: critical
+        vulndocs_category: reentrancy/classic
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Reentrancy in Fuse pools during borrow"
+        economic_impact: "$80M drained"
+    provenance:
+      query: "Fei Rari hack April 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  # ============================================================
+  # Upgrade/Proxy Findings
+  # ============================================================
+  - id: audius-proxy-jul2022
+    protocol: Audius
+    version: v1
+    date: "2022-07"
+    report_url: https://rekt.news/audius-rekt/
+    repo_url: https://github.com/AudiusProject/audius-protocol
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: audius-storage-collision
+        title: "Proxy storage collision"
+        severity: critical
+        vulndocs_category: upgrade/storage-collision
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Governance contract storage collided with proxy"
+        economic_impact: "$6M drained"
+    provenance:
+      query: "Audius proxy storage collision 2022"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+  - id: level-finance-referral-may2023
+    protocol: Level Finance
+    version: v1
+    date: "2023-05"
+    report_url: https://rekt.news/level-finance-rekt/
+    repo_url: ""
+    commit_sha: ""
+    auditor: Rekt (analysis)
+    audit_type: postmortem
+    findings:
+      - id: level-referral-reentrancy
+        title: "Referral system reentrancy"
+        severity: critical
+        vulndocs_category: reentrancy/classic
+        vulndocs_subcategory: ""
+        ground_truth_id: ""
+        description: "Referral claim function vulnerable to reentrancy"
+        economic_impact: "$1.1M drained"
+    provenance:
+      query: "Level Finance referral attack 2023"
+      accessed_at: "2026-01-29T13:01:00Z"
+      agent: "audit-discovery-07.2-03"
+
+# Category to VulnDocs mapping (for quick reference)
+category_mapping:
+  reentrancy:
+    vulndocs_path: reentrancy/
+    subcategories:
+      - classic
+      - cross-function
+      - cross-contract
+      - read-only
+  oracle:
+    vulndocs_path: oracle/
+    subcategories:
+      - price-manipulation
+      - stale-price
+      - sequencer-uptime
+  logic:
+    vulndocs_path: logic/
+    subcategories:
+      - arithmetic
+      - invariant-violation
+      - state-isolation
+      - liquidation-mechanics
+      - configuration
+      - validation
+  access_control:
+    vulndocs_path: access-control/
+    subcategories:
+      - missing-modifier
+      - role-escalation
+      - initialization
+  governance:
+    vulndocs_path: governance/
+    subcategories:
+      - proposal-manipulation
+      - flash-loan-voting
+  cross_chain:
+    vulndocs_path: cross-chain/
+    subcategories:
+      - bridge-compromise
+      - signature-validation
+  upgrade:
+    vulndocs_path: upgrade/
+    subcategories:
+      - storage-collision
+      - uninitialized-proxy

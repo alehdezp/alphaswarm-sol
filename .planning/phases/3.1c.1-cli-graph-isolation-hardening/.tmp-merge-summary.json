@@ -1,0 +1,18 @@
+{
+  "pass": 2,
+  "total_items": 19,
+  "items_per_area": {
+    "plan-01": 5,
+    "plan-02": 4,
+    "plan-03": 4,
+    "plan-04": 6
+  },
+  "pipeline": {
+    "prereqs_pending": 1,
+    "research_pending": 2,
+    "mergeable": 0,
+    "implemented": 0
+  },
+  "validation": [],
+  "warnings": []
+}

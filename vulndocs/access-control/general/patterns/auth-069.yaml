@@ -1,0 +1,16 @@
+id: auth-069
+vulndoc: access-control/general
+name: Multisig Threshold Zero
+description: Multisig threshold configured to zero.
+scope: Contract
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: has_multisig
+    op: eq
+    value: true
+  - property: multisig_threshold_is_zero
+    op: eq
+    value: true

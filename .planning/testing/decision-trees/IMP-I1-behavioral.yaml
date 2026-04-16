@@ -1,0 +1,189 @@
+# Decision Tree: IMP-I1 Behavioral vs Name-Based Detection
+# Purpose: Determine if behavioral detection outperforms name-based detection
+
+name: "Behavioral Detection Decision Tree"
+version: "1.0"
+created: "2026-02-04"
+existential: true
+max_iterations: 3
+
+# Metric Collection
+metrics:
+  behavioral_advantage:
+    formula: "behavioral_detections - name_based_detections"
+    description: "Additional vulnerabilities found by behavioral approach"
+
+  renamed_function_detection:
+    formula: "behavioral_catches_renamed / renamed_function_vulns"
+    description: "Recall on renamed functions (names are misleading)"
+
+  false_positive_rate:
+    formula: "fp / (fp + tp)"
+    description: "False positive rate"
+
+  precision_difference:
+    formula: "behavioral_precision - name_precision"
+    description: "Precision improvement"
+
+# Test Contracts (Specifically Designed)
+test_contracts:
+  - path: "tests/contracts/semantic-test-set/RenamedWithdraw.sol"
+    description: "withdraw() renamed to processUserRequest()"
+    expected: "Behavioral detects, name-based misses"
+
+  - path: "tests/contracts/semantic-test-set/SafeNameUnsafeCode.sol"
+    description: "safeTransfer() that's actually vulnerable"
+    expected: "Behavioral detects (behavior), name-based misses (name is safe)"
+
+  - path: "tests/contracts/semantic-test-set/ObfuscatedReentrancy.sol"
+    description: "Reentrancy via callback with innocent names"
+    expected: "Behavioral detects R:bal->X:out->W:bal pattern"
+
+# Decision Levels
+decision_tree:
+  L1_clear_advantage:
+    name: "BEHAVIORAL_ESSENTIAL"
+    conditions:
+      behavioral_advantage: ">= 2"
+      renamed_function_detection: ">= 0.67"
+      precision_difference: ">= 0"
+    all_required: true
+    verdict: "BEHAVIORAL_ESSENTIAL"
+    confidence: "high"
+    action: |
+      Behavioral detection catches vulnerabilities name-based misses.
+      Core thesis validated: "Names lie, behavior doesn't."
+      Proceed with semantic operations approach.
+    next_steps:
+      - "Document behavioral advantages"
+      - "Expand semantic operation coverage"
+      - "Proceed to Wave 6 validations"
+
+  L2_moderate_advantage:
+    name: "BEHAVIORAL_HELPFUL"
+    conditions:
+      behavioral_advantage: ">= 1"
+      renamed_function_detection: ">= 0.50"
+    all_required: true
+    verdict: "BEHAVIORAL_HELPFUL"
+    confidence: "medium"
+    action: |
+      Behavioral detection provides some advantage.
+      Advantage is measurable but not overwhelming.
+      Continue with behavioral approach, but be honest about limitations.
+    next_steps:
+      - "Document advantages with evidence"
+      - "Document limitations honestly"
+      - "Proceed with realistic expectations"
+
+  L3_marginal_advantage:
+    name: "BEHAVIORAL_MARGINAL"
+    conditions:
+      behavioral_advantage: "== 0"
+      precision_difference: "> -0.10"
+    all_required: true
+    verdict: "BEHAVIORAL_MARGINAL"
+    confidence: "low"
+    action: |
+      HALT: Behavioral detection shows no clear advantage.
+      Core thesis not proven.
+      Re-evaluate approach.
+    next_steps:
+      - "HALT current phase"
+      - "Investigate why behavioral underperforms"
+      - "Improve semantic operation labeling"
+      - "Schedule architecture review"
+
+  L4_no_advantage:
+    name: "BEHAVIORAL_NOT_VALUABLE"
+    conditions:
+      behavioral_advantage: "< 0"
+    verdict: "BEHAVIORAL_NOT_VALUABLE"
+    confidence: "high"
+    action: |
+      CRITICAL: Behavioral detection performs WORSE than name-based.
+      Core architectural assumption invalidated.
+      Fundamental rethink required.
+    next_steps:
+      - "HALT all phase work"
+      - "Document failure honestly"
+      - "Consider simpler name-based approach"
+      - "Schedule immediate architecture review"
+
+# Abort Criteria
+abort_criteria:
+  max_iterations: 3
+
+  abort_conditions:
+    - condition: "behavioral_advantage < 0 on 2+ test contracts"
+      action: "ABORT"
+      reason: "Behavioral detection worse than name-based"
+      escalation: "Architecture review"
+
+    - condition: "renamed_function_detection < 0.33"
+      action: "ABORT"
+      reason: "Missing renamed function vulnerabilities"
+      escalation: "Improve semantic operation labeling"
+
+    - condition: "L4 verdict on any iteration"
+      action: "ABORT"
+      reason: "No advantage detected"
+      escalation: "Immediate review"
+
+# Execution Protocol
+execution:
+  name_based_baseline:
+    description: "Detection using function name patterns only"
+    method: |
+      Match names: withdraw, transfer, send, call, delegatecall
+      Flag any function with dangerous names
+    session_label: "vrs-demo-name-based-{timestamp}"
+    capture:
+      - finding_count
+      - true_positives
+      - false_positives
+      - false_negatives
+
+  behavioral_test:
+    description: "Detection using semantic operation sequences"
+    method: |
+      Match patterns: R:bal -> X:out -> W:bal (reentrancy)
+      Match regardless of function names
+    session_label: "vrs-demo-behavioral-{timestamp}"
+    capture:
+      - finding_count
+      - true_positives
+      - false_positives
+      - false_negatives
+      - semantic_ops_matched
+
+# Evidence Requirements
+evidence_requirements:
+  - "Test contracts specifically designed to fool name-based detection"
+  - "Ground truth manually verified"
+  - "Both approaches run on identical contracts"
+  - "FP/FN counts verified against ground truth"
+  - "Semantic operations logged"
+
+# Test Contract Specifications
+test_contract_specs:
+  RenamedWithdraw:
+    vulnerability: "Reentrancy"
+    deception: "withdraw() renamed to processUserRequest()"
+    behavior: "R:bal -> X:out -> W:bal"
+    name_detection_expected: "MISS (name not dangerous)"
+    behavioral_detection_expected: "DETECT (behavior is vulnerable)"
+
+  SafeNameUnsafeCode:
+    vulnerability: "Unchecked return value"
+    deception: "Function named safeTransfer() but doesn't check return"
+    behavior: "CALLS_EXTERNAL without CHECKS_RETURN"
+    name_detection_expected: "MISS (name implies safety)"
+    behavioral_detection_expected: "DETECT (behavior is unsafe)"
+
+  ObfuscatedReentrancy:
+    vulnerability: "Cross-function reentrancy"
+    deception: "Uses callback handler with innocent name"
+    behavior: "R:bal in func1 -> X:out in func2 -> W:bal in callback"
+    name_detection_expected: "MISS (names are normal)"
+    behavioral_detection_expected: "DETECT (cross-function pattern)"

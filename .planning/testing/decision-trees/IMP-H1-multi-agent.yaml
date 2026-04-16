@@ -1,0 +1,178 @@
+# Decision Tree: IMP-H1 Multi-Agent Comparison
+# Purpose: Determine if multi-agent debate improves outcomes vs single-agent
+
+name: "Multi-Agent Value Decision Tree"
+version: "1.0"
+created: "2026-02-04"
+existential: true
+max_iterations: 3
+
+# Metric Collection
+metrics:
+  quality_improvement:
+    formula: "(multi_finding_quality - single_finding_quality) / max(single_finding_quality, 1)"
+    description: "Relative improvement in finding quality"
+
+  false_negative_reduction:
+    formula: "(single_fn - multi_fn) / max(single_fn, 1)"
+    description: "Reduction in false negatives"
+
+  false_positive_reduction:
+    formula: "(single_fp - multi_fp) / max(single_fp, 1)"
+    description: "Reduction in false positives"
+
+  evidence_depth_improvement:
+    formula: "multi_evidence_depth / max(single_evidence_depth, 1)"
+    description: "Ratio of evidence depth"
+
+  cost_ratio:
+    formula: "multi_tokens / max(single_tokens, 1)"
+    description: "Token cost ratio (multi vs single)"
+
+  synthesis_present:
+    formula: "verifier_synthesizes_both_sides"
+    description: "Boolean: does verifier cite both attacker and defender?"
+
+# Test Configuration
+test_contracts:
+  - path: "tests/contracts/CrossFunctionReentrancy.sol"
+    known_vulns: 1
+  - path: "tests/contracts/semantic-test-set/AuthBypass.sol"
+    known_vulns: 2
+  - path: "tests/fixtures/dvd/side-entrance/"
+    known_vulns: 3
+
+# Decision Levels
+decision_tree:
+  L1_clear_improvement:
+    name: "MULTI_AGENT_ESSENTIAL"
+    conditions:
+      false_negative_reduction: "> 0"
+      evidence_depth_improvement: ">= 1.3"
+      synthesis_present: "true"
+      cost_ratio: "<= 4.0"
+    all_required: true
+    verdict: "MULTI_AGENT_ESSENTIAL"
+    confidence: "high"
+    action: |
+      Multi-agent debate provides clear value.
+      Quality improvement justifies token cost.
+      Proceed with attacker/defender/verifier architecture.
+    next_steps:
+      - "Document multi-agent benefits"
+      - "Proceed to Wave 6 validations"
+
+  L2_moderate_value:
+    name: "MULTI_AGENT_HELPFUL"
+    conditions:
+      evidence_depth_improvement: ">= 1.1"
+      synthesis_present: "true"
+    all_required: true
+    verdict: "MULTI_AGENT_HELPFUL"
+    confidence: "medium"
+    action: |
+      Multi-agent adds some value but not compelling.
+      Document trade-offs.
+      Consider making multi-agent optional (cost-conscious mode).
+    next_steps:
+      - "Document trade-offs"
+      - "Implement optional single-agent mode"
+      - "Proceed with documentation"
+
+  L3_marginal_value:
+    name: "MULTI_AGENT_MARGINAL"
+    conditions:
+      cost_ratio: "> 4.0"
+      evidence_depth_improvement: "< 1.2"
+    all_required: true
+    verdict: "MULTI_AGENT_MARGINAL"
+    confidence: "low"
+    action: |
+      HALT: Cost not justified by improvement.
+      Multi-agent is expensive without proportional benefit.
+      Simplify architecture.
+    next_steps:
+      - "HALT current phase"
+      - "Schedule architecture review within 48h"
+      - "Evaluate single-agent alternatives"
+
+  L4_no_value:
+    name: "MULTI_AGENT_NOT_VALUABLE"
+    conditions:
+      false_negative_reduction: "<= 0"
+      evidence_depth_improvement: "< 1.0"
+    all_required: true
+    verdict: "MULTI_AGENT_NOT_VALUABLE"
+    confidence: "high"
+    action: |
+      CRITICAL: Multi-agent performs same or worse than single.
+      Architecture fundamentally flawed.
+      Redesign required.
+    next_steps:
+      - "HALT all phase work"
+      - "Document failure honestly"
+      - "Consider single-agent architecture"
+      - "Schedule immediate review"
+
+# Abort Criteria
+abort_criteria:
+  max_iterations: 3
+
+  abort_conditions:
+    - condition: "multi_fn >= single_fn on 2+ contracts"
+      action: "ABORT"
+      reason: "Multi-agent not catching more bugs"
+      escalation: "Architecture review"
+
+    - condition: "cost_ratio > 5 with improvement < 1.2"
+      action: "ABORT"
+      reason: "Cost not justified"
+      escalation: "Simplify architecture"
+
+    - condition: "synthesis_present = false for all debates"
+      action: "ABORT"
+      reason: "Debate is performative, not substantive"
+      escalation: "Improve agent prompts"
+
+    - condition: "L4 verdict on any iteration"
+      action: "ABORT"
+      reason: "No improvement detected"
+      escalation: "Immediate architecture review"
+
+# Execution Protocol
+execution:
+  single_agent_baseline:
+    description: "Run audit with single vrs-secure-reviewer"
+    agents: ["vrs-secure-reviewer"]
+    mode: "solo"
+    session_label: "vrs-demo-single-agent-{timestamp}"
+    capture:
+      - finding_count
+      - false_positives
+      - false_negatives
+      - evidence_depth
+      - reasoning_length_tokens
+      - total_tokens
+
+  multi_agent_test:
+    description: "Run audit with full debate"
+    agents: ["vrs-attacker", "vrs-defender", "vrs-verifier"]
+    mode: "debate"
+    session_label: "vrs-demo-multi-agent-{timestamp}"
+    capture:
+      - finding_count
+      - false_positives
+      - false_negatives
+      - evidence_depth
+      - cross_references
+      - synthesis_quality
+      - total_tokens
+
+# Evidence Requirements
+evidence_requirements:
+  - "SAME contract for both modes"
+  - "SAME ground truth for comparison"
+  - "Both transcripts captured"
+  - "Token counts recorded"
+  - "Cross-references counted in multi-agent transcript"
+  - "Verifier synthesis assessed"

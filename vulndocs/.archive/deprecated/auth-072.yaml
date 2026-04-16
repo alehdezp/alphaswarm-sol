@@ -1,0 +1,13 @@
+id: auth-072
+vulndoc: access-control/general
+name: Governance Quorum Without Snapshot
+description: Governance quorum/vote uses live balances without snapshot.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: governance_quorum_without_snapshot
+    op: eq
+    value: true

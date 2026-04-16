@@ -1,0 +1,128 @@
+project:
+  name: staking-rewards-05
+  theme: staking
+  tier: 2
+  adversarial_categories:
+  - A
+  description: 'Reputation-weighted staking with signature-based claims. Category
+    A: business-domain naming.'
+findings:
+- pattern_id: crypto-missing-chainid
+  contract: MeritPool
+  function: claimMeritReward
+  line_range: 42-59
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify signature verification in claimMeritReward
+  - 'Notice signed message: keccak256(msg.sender, amount, merit)'
+  - Missing chain ID in signed data - signature valid on any chain
+  - Missing nonce - same signature can be replayed
+  - 'Conclude: signature replay across chains and within same chain'
+- pattern_id: signature-replay
+  contract: MeritPool
+  function: claimMeritReward
+  line_range: 42-59
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify processedClaims mapping exists but is never checked
+  - Same valid signature can be submitted multiple times
+  - Each replay drains amount from rewardPool
+  - 'Conclude: signature replay drains reward pool'
+- pattern_id: balance-update-after-transfer
+  contract: MeritPool
+  function: disenroll
+  line_range: 63-72
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount}'
+  - Notice p.staked = 0 occurs AFTER external call
+  - No reentrancy guard
+  - 'Conclude: reentrancy in disenroll drains staked funds'
+- pattern_id: auth-001
+  contract: MeritPool
+  function: assignMerit
+  line_range: 75-78
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify assignMerit sets merit score for any user
+  - No arbiter check or access control
+  - Attacker can inflate own merit to claim more rewards
+  - 'Conclude: missing access control on merit scoring'
+- pattern_id: auth-002
+  contract: MeritPool
+  function: rotateSigner
+  line_range: 81-83
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify rotateSigner changes the trusted signer address
+  - No access control
+  - Attacker sets own address as signer, forges valid signatures
+  - 'Conclude: missing access control allows signer takeover'
+- pattern_id: crypto-signature-replay
+  contract: MeritPool
+  function: claimMeritReward
+  line_range: 42-59
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify claimMeritReward computes messageHash = keccak256(msg.sender, amount, merit) and verifies ecrecover == signer
+  - Notice processedClaims mapping exists but is never written to or checked in claimMeritReward
+  - Without marking a claim as processed, the same (msg.sender, amount, merit, signature) tuple can be submitted repeatedly
+  - Each replay subtracts amount from rewardPool and sends ETH to the caller
+  - The missing processedClaims[messageHash] = true after successful verification is the root cause
+  - 'Conclude: signature replay via unused processedClaims — valid signatures can be resubmitted indefinitely to drain the rewardPool'
+- pattern_id: crypto-missing-deadline
+  contract: MeritPool
+  function: claimMeritReward
+  line_range: 42-59
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify the signed message contains only (msg.sender, amount, merit) with no timestamp or deadline field
+  - Once the signer produces a valid signature, it remains valid indefinitely — there is no expiration mechanism
+  - An attacker who obtains a valid signature (e.g., from mempool observation or old transaction) can use it at any future time
+  - Even if the signer key is rotated via rotateSigner, signatures from the previous signer remain valid until the signer variable changes
+  - 'Conclude: missing deadline in signed payload — signatures never expire, enabling indefinite-future replay'
+- pattern_id: crypto-missing-domain-separator
+  contract: MeritPool
+  function: claimMeritReward
+  line_range: 42-59
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify the signed message is keccak256(abi.encodePacked(msg.sender, amount, merit)) with no EIP-712 domain separator
+  - No contract address is included in the hash — the same signature is valid for any MeritPool deployment
+  - No chain ID is included — the signature is valid on any EVM chain where the contract is deployed
+  - Without domain separation, a signature from one MeritPool instance can be replayed on a different instance at a different address
+  - EIP-712 domain separator (name, version, chainId, verifyingContract) would bind signatures to a specific deployment
+  - 'Conclude: missing domain separator — signatures are not bound to a specific contract instance or chain, enabling cross-contract and cross-chain replay'
+- pattern_id: crypto-missing-v-check
+  contract: MeritPool
+  function: _recover
+  line_range: 92-102
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify _recover extracts v from the signature via byte(0, calldataload(add(sig.offset, 64)))
+  - The v value is passed directly to ecrecover(hash, v, r, s) without validating v is 27 or 28
+  - ecrecover accepts v values of 0 or 1 (compact signatures) which can produce a different recovered address
+  - A malformed signature with an invalid v could cause ecrecover to return address(0), and if signer is uninitialized (also address(0)), the check passes
+  - No require(v == 27 || v == 28) guard exists before the ecrecover call
+  - 'Conclude: missing v-value validation — _recover accepts non-standard v values, risking signature malleability or address(0) bypass'
+safe_patterns: []
+summary:
+  total_findings: 9
+  total_safe_patterns: 0
+  difficulty: medium
+  notes: Signature-based patterns (crypto-missing-chainid, signature-replay) plus
+    standard reentrancy and access control

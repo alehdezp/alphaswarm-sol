@@ -1,0 +1,40 @@
+id: invariant-underflow-risk
+vulndoc: logic/invariants
+name: Potential Underflow Without Check
+description: 'Balance or counter subtraction without underflow protection.
+
+  Subtractions on unsigned integers can underflow without checks.
+
+
+  Risk: In Solidity < 0.8.0, underflow wraps to max value, enabling
+
+  massive balance gains. Even in 0.8.0+, reverts can cause DoS.
+
+  '
+severity: medium
+scope: Function
+lens:
+- Arithmetic
+- Invariants
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: has_subtraction
+      op: eq
+      value: true
+    none:
+    - property: uses_safemath
+      op: eq
+      value: true
+  tier_c:
+    any:
+    - type: has_label
+      value: value_handling.handles_balance
+    - type: has_label
+      value: state_mutation.modifies_counter
+    none:
+    - type: has_label
+      value: invariants.checks_underflow
+    - type: has_label
+      value: invariants.enforces_non_negative

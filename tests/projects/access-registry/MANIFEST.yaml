@@ -1,0 +1,102 @@
+# =============================================================================
+# ACCESS-REGISTRY TEST PROJECT
+# =============================================================================
+
+project: access-registry
+description: Access control list management test scenarios (whitelists, blacklists, validators, guardians)
+max_files: 30
+current_files: 1
+
+# Patterns tested in this project
+patterns:
+  auth-005:
+    files: [ListManagementTest.sol]
+    status: draft
+    precision: 0.76
+    recall: 0.57
+    variation_score: 0.50
+    functions:
+      # TRUE POSITIVES (16) - Correctly detected
+      detected_vulnerable:
+        - addToWhitelist               # TP1
+        - removeFromBlacklist          # TP2
+        - addValidator                 # TP3
+        - updateAllowedAddress         # TP5
+        - addMultipleAddresses         # TP9
+        - whitelistAddress             # TP10
+        - blacklistUser                # TP11
+        - registerValidator            # TP12
+        - setAllowlisted               # VAR1b
+        - unsetAllowlisted             # VAR1b
+        - addToDenylist                # Additional
+        - removeFromAllowlist          # Additional
+        - addValidatorToArray          # VAR3
+        - clearAllValidators           # EDGE5
+        - onValidatorCallback          # EDGE3
+        - updateExternalRegistry       # EDGE4
+
+      # FALSE NEGATIVES (12) - Missed vulnerabilities
+      missed_vulnerable:
+        - removeOperator               # TP4 - operators not tagged
+        - addMinter                    # TP6 - minters not tagged
+        - removeBurner                 # TP7 - burners not tagged
+        - addRelayer                   # TP8 - relayers tagged as "dependency", not privileged
+        - proposeAddition              # EDGE1 - proposedAdditions not tagged
+        - grantRole                    # VAR1a - operators not tagged
+        - revokeRole                   # VAR1a - operators not tagged
+        - addGuardian                  # VAR2a - guardians tagged as "governance" but not detected
+        - addOperator                  # VAR2b - operators not tagged
+        - addSingleMinter              # VAR4a - minters not tagged
+        - updateMerkleRoot             # EDGE7 - merkleRoot not tagged
+        - (various operator/minter/burner functions)
+
+      # FALSE POSITIVES (5) - Incorrectly flagged safe code
+      false_alarms:
+        - addValidatorProtected        # TN3 - inline if-revert not detected as access gate
+        - selfRegister                 # TN8 - self-registration not distinguished
+        - multiSigAddValidator         # EDGE6 - custom validation not detected
+        - updateStatusBasedOnBalance   # TN9 - automatic updates not distinguished
+        - setOwner                     # Pattern too broad - flags all privileged writes
+
+      # TRUE NEGATIVES (8) - Correctly ignored
+      correctly_ignored:
+        - addToWhitelistProtected      # TN1 - onlyOwner modifier detected
+        - removeFromBlacklistProtected # TN2 - onlyAdmin modifier detected
+        - _addToWhitelistInternal      # TN4 - internal visibility
+        - _removeFromBlacklistPrivate  # TN5 - private visibility
+        - isWhitelisted                # TN7 - view function
+        - addMultipleAddressesProtected # TN10 - modifier detected
+        - addValidatorWithRequire      # VAR5b - require-based detection
+        - addToWhitelistRoleBased      # VAR6b - role-based detection
+    last_updated: "2025-12-31"
+    gaps:
+      builder_heuristics:
+        - "operators mapping not tagged as privileged"
+        - "minters mapping not tagged as privileged"
+        - "burners mapping not tagged as privileged"
+        - "relayers tagged as 'dependency', not privileged"
+        - "guardians tagged as 'governance' but writes not detected"
+        - "proposedAdditions not recognized as list"
+      access_gate_detection:
+        - "Inline if-revert patterns not detected"
+        - "Custom validation (signatures, balance checks) not detected"
+      pattern_logic:
+        - "Doesn't distinguish self-registration from admin control"
+        - "Scope too broad - flags ALL privileged writes"
+
+notes: |
+  This project tests list management vulnerability detection:
+  - Whitelists/allowlists (approved addresses)
+  - Blacklists/denylists (blocked addresses)
+  - Validator lists (authorized validators)
+  - Guardian lists (emergency controllers)
+  - Operator/minter/burner/relayer lists (role-based access)
+
+  Test coverage includes:
+  - Various naming conventions (whitelist, allowlist, validator, etc.)
+  - Different operation types (add, remove, set, grant, revoke)
+  - Access control patterns (modifiers, require, if-revert)
+  - Self-registration vs admin-controlled
+  - Batch vs single operations
+  - Two-step proposals
+  - Merkle-based allowlists

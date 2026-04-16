@@ -1,0 +1,157 @@
+# Dangerous Default or Initialization Investigation Pattern
+# Task 13.11: LLM Investigation Patterns
+
+id: inv-cfg-001
+vulndoc: logic/config
+name: Dangerous Default or Initialization
+type: investigation
+category: config
+subcategories:
+  - initialization
+  - configuration
+  - admin-settings
+severity_range:
+  - MEDIUM
+  - HIGH
+description: |
+  Investigate whether initial or default configuration values could be dangerous.
+  Looks for unvalidated parameters, dangerous defaults, front-runnable
+  initialization, and missing bounds checks.
+version: "1.0.0"
+author: VKG Team
+tags:
+  - configuration
+  - initialization
+  - admin
+
+trigger:
+  description: "Contract has configurable parameters"
+  require_all: false
+  graph_signals:
+    - signal: "Function is initializer"
+      property: is_initializer_function
+    - signal: "Function writes privileged state"
+      property: writes_privileged_state
+    - signal: "Function sets critical parameters"
+      property: modifies_critical_state
+
+investigation:
+  hypothesis: "Initial or default values could be dangerous or exploitable"
+
+  steps:
+    - id: 1
+      action: explore_graph
+      description: "Find all configurable parameters"
+      graph_query: "FIND state_variables WHERE has_setter OR set_in_constructor"
+      interpretation: |
+        What can be configured?
+        - Fee rates (can they be set to 100%? to 0? negative?)
+        - Addresses (can they be set to zero? to attacker? to self?)
+        - Timeouts (can they be set to 0? to max uint256?)
+        - Limits (can they be bypassed?)
+        - Oracles (can attacker-controlled address be set?)
+      timeout_seconds: 15
+
+    - id: 2
+      action: read_code
+      description: "Examine initialization logic"
+      target: "${function_name}"
+      interpretation: |
+        Check the initialization:
+        - What are the initial values set in constructor/initializer?
+        - Are parameters validated (range checks, zero address checks)?
+        - Can initialize be called multiple times? (reinitialize attack)
+        - Is there a window where contract is uninitialized but usable?
+        - Can initialization be front-run?
+      timeout_seconds: 15
+
+    - id: 3
+      action: lsp_references
+      description: "Find all parameter setters"
+      target: "set"
+      interpretation: |
+        For each setter function:
+        - Who can call it? (onlyOwner, anyone, specific role)
+        - Are there validation checks on the new value?
+        - Is there a timelock for sensitive changes?
+        - Can the change be front-run or sandwich attacked?
+      timeout_seconds: 15
+
+    - id: 4
+      action: reason
+      description: "Analyze configuration safety"
+      prompt: |
+        Analyzing configuration safety:
+
+        Configurable parameters (step 1): {step_1_results}
+        Initialization (step 2): {step_2_results}
+        Parameter setters (step 3): {step_3_results}
+
+        For each parameter, consider:
+
+        1. What's the worst value it could be set to?
+           - Fee = 100% (users lose everything)
+           - Address = 0x0 (funds sent to burn)
+           - Address = attacker (funds stolen)
+           - Timeout = 0 (instant expiry)
+           - Timeout = max (never expires)
+           - Limit = 0 (nothing works)
+           - Limit = max (no protection)
+
+        2. Who can set it?
+           - Anyone (critical vulnerability)
+           - Owner/Admin (trust assumption, but can be compromised)
+           - No one after init (safe but inflexible)
+
+        3. Are there validation checks?
+           - Bounds checks (min/max values)
+           - Zero address checks
+           - Sanity checks (fee < 100%)
+           - Timelock for changes
+
+        4. Front-running risks:
+           - Can initialization be front-run by attacker?
+           - Can parameter changes be sandwiched?
+           - Is there a deployment window where contract is vulnerable?
+
+        5. Default value risks:
+           - Are uninitialized values dangerous?
+           - Do storage variables default to 0/false safely?
+           - Is there a "paused" default that could DOS the contract?
+
+        Identify specific dangerous configurations and attack scenarios.
+      timeout_seconds: 30
+
+  verdict_criteria:
+    vulnerable: |
+      - Dangerous configuration possible by attacker (not just admin)
+      - No validation on critical parameters
+      - Initialization can be front-run
+      - Uninitialized contract is exploitable
+    likely_vulnerable: |
+      - Configuration risky but requires compromised admin
+      - Missing validation but admin-only setter
+      - Edge case configurations cause issues
+    uncertain: |
+      - Complex configuration system needs manual review
+      - Depends on deployment process
+      - Unknown trust assumptions
+    likely_safe: |
+      - Most parameters validated
+      - Admin-only with reasonable trust assumption
+      - Timelock on critical changes
+    safe: |
+      - All configurations properly validated (bounds, zero address)
+      - Access-controlled setters with timelock
+      - Safe defaults (contract works even if uninitialized)
+      - Initialization protected (initializer modifier)
+
+output:
+  verdict: "VULNERABLE | LIKELY_VULNERABLE | UNCERTAIN | LIKELY_SAFE | SAFE"
+  attack_path: "How to exploit dangerous configuration"
+  confidence: "0-100"
+  evidence:
+    - "Specific parameters that can be set dangerously"
+    - "Missing validation checks"
+    - "Front-running opportunities"
+  recommendation: "How to make configuration safer"

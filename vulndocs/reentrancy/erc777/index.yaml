@@ -1,0 +1,49 @@
+# ERC777 Hooks Reentrancy - Subcategory Index
+
+id: erc777
+name: ERC777 Hooks Reentrancy
+parent_category: reentrancy
+
+description: |
+  Token callback hooks enabling reentrancy via transfer operations. ERC777 and
+  ERC1363 tokens have hooks (tokensReceived, tokensToSend) that execute during
+  transfers, creating reentrancy vectors in contracts designed for standard ERC20.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - vm-005
+
+relevant_properties:
+  - uses_token_transfer
+  - token_type
+  - callback_pattern
+  - has_reentrancy_guard
+
+graph_signals:
+  - property: uses_token_transfer
+    expected: true
+    critical: true
+
+  - property: callback_pattern
+    expected: true
+    critical: true
+    description: Token transfer triggers callback
+
+behavioral_signatures:
+  - "T:transfer->H:hook->R:state"
+
+operation_sequences:
+  vulnerable:
+    - "R:bal -> T:transfer -> H:tokensReceived -> W:state"
+  safe:
+    - "R:bal -> W:bal -> T:transfer"
+
+false_positive_indicators:
+  - "Only handles specific ERC20 tokens (no hooks)"
+  - "Token whitelist without ERC777"
+  - "nonReentrant on transfer functions"
+
+token_estimate: 400

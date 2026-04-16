@@ -1,0 +1,22 @@
+id: arith-013
+vulndoc: arithmetic/general
+name: Truncation in Financial Calculations
+description: Division truncation in financial contexts without guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: has_division
+    op: eq
+    value: true
+  - property: in_financial_context
+    op: eq
+    value: true
+  none:
+  - property: has_precision_guard
+    op: eq
+    value: true

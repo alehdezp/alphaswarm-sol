@@ -1,0 +1,19 @@
+id: ext-055
+vulndoc: access-control/external-call
+name: Cross-Chain Consistency Missing
+description: Cross-chain oracle usage without L1/L2 consistency checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_cross_chain_consistency_check
+    op: eq
+    value: false

@@ -1,0 +1,169 @@
+{
+  "id": "grimoire-oracle",
+  "name": "Oracle Manipulation Verification Grimoire",
+  "category": "oracle",
+  "subcategories": ["stale-price", "twap-manipulation", "sandwich", "spot-price", "single-source"],
+  "skill": "/test-oracle",
+  "aliases": ["/verify-oracle", "/check-oracle", "/test-price-feed"],
+  "description": "Expert procedure for verifying oracle manipulation vulnerabilities. Checks for stale price usage, missing sequencer checks, single oracle sources, and TWAP manipulation risks.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["critical", "defi", "foundry", "fork-testing"],
+
+  "required_context": [
+    "function_code",
+    "oracle_reads",
+    "price_dependencies"
+  ],
+  "optional_context": [
+    "chainlink_feeds",
+    "uniswap_pools",
+    "staleness_checks"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE reads_oracle_price = true AND has_staleness_check = false",
+    "FIND functions WHERE reads_oracle_price = true AND has_sequencer_uptime_check = false"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check Oracle Properties",
+        "action": "check_graph",
+        "description": "Query VKG for oracle-related indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["graph_matches", "missing_staleness_check", "missing_sequencer_check"],
+        "queries": [
+          "reads_oracle_price",
+          "has_staleness_check",
+          "has_sequencer_uptime_check",
+          "oracle_type"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Check Price Sources",
+        "action": "check_property",
+        "description": "Verify oracle sources and redundancy",
+        "inputs": ["oracle_reads", "node_properties"],
+        "outputs": ["single_source", "oracle_addresses"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 3,
+        "name": "Generate Oracle Manipulation Test",
+        "action": "generate_test",
+        "description": "Generate Foundry fork test to manipulate oracle",
+        "inputs": ["function_code", "contract_name", "function_name", "oracle_addresses"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_oracle_manipulation",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 4,
+        "name": "Execute Fork Test",
+        "action": "execute_fork",
+        "description": "Run test on mainnet fork to test with real oracle state",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed"],
+        "tools": ["foundry", "anvil"],
+        "command": "forge test --fork-url ${FORK_RPC} --match-test testOracleManipulation -vvv",
+        "timeout_seconds": 180,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 5,
+        "name": "Test Stale Price Scenario",
+        "action": "execute_test",
+        "description": "Test behavior with stale price data",
+        "inputs": ["generated_test_path"],
+        "outputs": ["stale_test_output", "accepts_stale_price"],
+        "tools": ["foundry"],
+        "command": "forge test --match-test testStalePrice -vvv",
+        "timeout_seconds": 120,
+        "optional": true
+      },
+      {
+        "step_number": 6,
+        "name": "Analyze Results",
+        "action": "analyze_results",
+        "description": "Analyze all test results for oracle vulnerabilities",
+        "inputs": ["test_output", "stale_test_output", "graph_matches"],
+        "outputs": ["exploit_successful", "accepts_stale_price", "analysis_complete"],
+        "timeout_seconds": 30
+      },
+      {
+        "step_number": 7,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["exploit_successful", "accepts_stale_price", "missing_staleness_check", "single_source"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "exploit_successful",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Oracle manipulation test confirmed vulnerability"
+      },
+      {
+        "condition": "accepts_stale_price",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Contract accepts stale oracle prices"
+      },
+      {
+        "condition": "missing_staleness_check && reads_oracle_price",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Reads oracle price without staleness check"
+      },
+      {
+        "condition": "single_source",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Single oracle source - no redundancy"
+      },
+      {
+        "condition": "missing_sequencer_check",
+        "verdict": "likely_vulnerable",
+        "confidence": "low",
+        "explanation": "Missing L2 sequencer uptime check"
+      },
+      {
+        "condition": "!missing_staleness_check && !single_source",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "Has staleness checks and multiple sources"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": false,
+    "echidna_enabled": false,
+    "medusa_duration": 60,
+    "echidna_duration": 60,
+    "fork_enabled": true,
+    "fork_rpc": "",
+    "fork_block": "latest",
+    "testnet_enabled": false,
+    "testnet_network": "sepolia"
+  },
+
+  "test_templates": {
+    "foundry_oracle_manipulation": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ninterface IChainlinkOracle {\n    function latestRoundData() external view returns (\n        uint80 roundId,\n        int256 answer,\n        uint256 startedAt,\n        uint256 updatedAt,\n        uint80 answeredInRound\n    );\n}\n\ncontract OracleManipulationTest is Test {\n    ${CONTRACT_NAME} public target;\n    address public oracle;\n\n    function setUp() public {\n        target = ${CONTRACT_NAME}(${CONTRACT_ADDRESS});\n        oracle = ${ORACLE_ADDRESS};\n    }\n\n    function testOracleManipulation() public {\n        // Get current price\n        (, int256 priceBefore,,,) = IChainlinkOracle(oracle).latestRoundData();\n\n        // Mock a manipulated price (50% drop)\n        int256 manipulatedPrice = priceBefore / 2;\n\n        vm.mockCall(\n            oracle,\n            abi.encodeWithSelector(IChainlinkOracle.latestRoundData.selector),\n            abi.encode(uint80(1), manipulatedPrice, block.timestamp, block.timestamp, uint80(1))\n        );\n\n        // Try to exploit with manipulated price\n        // Add exploit logic here based on function\n    }\n\n    function testStalePrice() public {\n        // Mock stale price (1 day old)\n        uint256 staleTimestamp = block.timestamp - 1 days;\n\n        vm.mockCall(\n            oracle,\n            abi.encodeWithSelector(IChainlinkOracle.latestRoundData.selector),\n            abi.encode(uint80(1), int256(1000e8), staleTimestamp, staleTimestamp, uint80(1))\n        );\n\n        // If this doesn't revert, contract accepts stale prices\n        target.${FUNCTION_NAME}();\n    }\n}"
+  }
+}

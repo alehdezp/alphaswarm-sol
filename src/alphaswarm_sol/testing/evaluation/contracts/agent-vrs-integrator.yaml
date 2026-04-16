@@ -1,0 +1,39 @@
+workflow_id: agent-vrs-integrator
+category: agent
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- evidence_quality
+- reasoning_depth
+- conclusion_support
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: session_completed
+  description: Agent session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+- id: findings_merged
+  description: 'TODO: validate against real run - Findings merged from multiple sources'
+  expected_behavior: Response contains merged finding set with deduplication rationale
+  grader_type: model
+evidence_requirements:
+- type: graph_nodes
+  description: Graph evidence in output
+hooks:
+- SessionStart
+- Stop
+- PreCompact
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: important
+  model_tier: sonnet

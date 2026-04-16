@@ -1,0 +1,12 @@
+base_contract_id: reentrancyclassic
+base_contract_path: tests/contracts/ReentrancyClassic.sol
+counterfactual_hash: a915420f2c2af69d
+counterfactual_id: cf-reentrancyclassic-chain_condition-004
+counterfactual_path: .vrs/corpus/contracts/adversarial/counterfactual/cf-reentrancyclassic-chain_condition-004.sol
+counterfactual_type: chain_condition
+description: 'chain_condition: skip_check_on_chain_1'
+expected_vulnerability_status: vulnerable
+metadata:
+  generated_at: '1767047334.1234565'
+original_hash: f64f30677c93eca8
+semantic_diff: skip_check_on_chain_1

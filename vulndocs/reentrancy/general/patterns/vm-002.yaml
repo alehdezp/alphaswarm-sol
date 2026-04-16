@@ -1,0 +1,20 @@
+id: vm-002
+vulndoc: reentrancy/general
+name: ETH Transfer Reentrancy
+description: ETH transfer followed by state updates without guard.
+scope: Function
+lens:
+- ValueMovement
+severity: critical
+match:
+  all:
+  - property: transfers_eth
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

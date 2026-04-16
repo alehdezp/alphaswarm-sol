@@ -1,0 +1,16 @@
+id: ext-056
+vulndoc: access-control/external-call
+name: Bridge Finality Missing
+description: Cross-chain oracle usage without finality or confirmation checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: has_bridge_finality_check
+    op: eq
+    value: false

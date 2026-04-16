@@ -1,0 +1,24 @@
+# Compound borrowFresh Reentrancy
+id: smartbugs-compound-borrowfresh-reentrancy
+name: Compound borrowFresh Reentrancy
+category: reentrancy
+source: examples/semgrep-smart-contracts/solidity/security/compound-borrowfresh-reentrancy.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: reentrancy-classic
+  description: |
+    Compound's borrowFresh function is vulnerable to reentrancy when
+    the borrowed token makes a callback before state is fully updated.
+  severity: critical
+  cwe: CWE-841
+
+expected_detections:
+  - pattern: vm-001
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: vm-001
+  secondary: [reentrancy-compound]
+
+status: pending

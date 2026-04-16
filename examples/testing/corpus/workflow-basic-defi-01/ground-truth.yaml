@@ -1,0 +1,126 @@
+project:
+  name: workflow-basic-defi-01
+  theme: vault
+  tier: 1
+  adversarial_categories: []
+  description: Basic DeFi vault + reward distributor for workflow pipeline testing
+findings:
+- pattern_id: balance-update-after-transfer
+  contract: SimpleVault
+  function: redeem
+  line_range: 55-66
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify external call via msg.sender.call{value: payout} at line 59'
+  - Notice shares[msg.sender] update at line 62 occurs AFTER external call
+  - Verify no reentrancy guard modifier on redeem function
+  - 'Conclude: classic reentrancy in redeem - state update after external call'
+- pattern_id: auth-001
+  contract: SimpleVault
+  function: setManager
+  line_range: 76-78
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setManager modifies the manager state variable
+  - 'Check for access control modifiers: none present'
+  - Note onlyManager modifier exists but is NOT applied to setManager
+  - 'Conclude: anyone can call setManager and take over vault management'
+- pattern_id: oracle-stale-price
+  contract: SimpleVault
+  function: checkPrice
+  line_range: 83-86
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify priceFeed.latestPrice() external call
+  - Notice timestamp is returned but never validated for freshness
+  - No check that price data is recent (could be hours/days old)
+  - 'Conclude: stale oracle price accepted without freshness validation'
+- pattern_id: balance-update-after-transfer
+  contract: RewardDistributor
+  function: claimReward
+  line_range: 35-42
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount} at line 39'
+  - Notice pendingRewards[msg.sender] = 0 at line 41 occurs AFTER call
+  - No reentrancy guard modifier present
+  - 'Conclude: reentrancy in claimReward allows draining all rewards'
+- pattern_id: dos-unbounded-loop
+  contract: RewardDistributor
+  function: distributeAll
+  line_range: 46-57
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify for loop iterating over rewardRecipients array
+  - No upper bound on rewardRecipients.length
+  - Each iteration performs an external call (gas-expensive)
+  - 'Conclude: if rewardRecipients grows large, distributeAll exceeds block gas limit'
+- pattern_id: auth-002
+  contract: RewardDistributor
+  function: emergencyDrain
+  line_range: 60-63
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify emergencyDrain transfers entire contract balance
+  - 'Check for access control: no modifier present'
+  - Note onlyOwner modifier exists but is NOT applied here
+  - 'Conclude: anyone can drain all funds from RewardDistributor'
+- pattern_id: precision-loss-rounding
+  contract: ShareMath
+  function: calculateShares
+  line_range: 9-14
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify integer division: (amount * totalShares) / totalAssets'
+  - No minimum share amount or rounding protection
+  - Small deposits relative to totalAssets can yield 0 shares
+  - 'Conclude: precision loss allows share inflation attack via first-depositor manipulation'
+- pattern_id: classic-reentrancy-state-before-external
+  contract: SimpleVault
+  function: redeem
+  line_range: 55-66
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify redeem sends ETH via msg.sender.call{value: payout} at line 56
+  - shares[msg.sender], totalShares, and _totalDeposited are all updated AFTER the external call (lines 59-61)
+  - Attacker contract can re-enter redeem in its receive/fallback since shares balance is still intact
+  - Each re-entrant call recalculates payout from stale totalShares and _totalDeposited
+  - 'Conclude: classic reentrancy — repeated redeem calls drain vault before state reflects withdrawals'
+- pattern_id: vault-001
+  contract: SimpleVault
+  function: deposit
+  line_range: 40-50
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify first depositor path — when totalShares == 0, sharesToMint equals raw amount
+  - Subsequent deposits use ShareMath.calculateShares which divides (amount * totalShares) / totalAssets
+  - First depositor can deposit 1 wei to get 1 share, then donate ETH directly to inflate _totalDeposited
+  - Next depositor's calculateShares returns 0 for small deposits due to integer division truncation
+  - 'Conclude: first-depositor inflation attack — attacker manipulates share price to steal subsequent deposits'
+- pattern_id: dos-revert-failed-call
+  contract: RewardDistributor
+  function: distributeAll
+  line_range: 46-57
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify distributeAll loops over rewardRecipients and sends ETH via user.call{value: amount}
+  - The call result is checked with require(ok, "Distribution failed") — reverts on failure
+  - If any single recipient is a contract that reverts on receive, the entire distributeAll reverts
+  - A malicious recipient can permanently block reward distribution for all users
+  - 'Conclude: single reverting recipient causes DoS for all reward recipients in distributeAll'
+safe_patterns: []
+summary:
+  total_findings: 10
+  total_safe_patterns: 0
+  difficulty: easy
+  notes: Vanilla project for workflow pipeline testing. No obfuscation applied.

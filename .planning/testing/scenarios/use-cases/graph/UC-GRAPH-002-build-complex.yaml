@@ -1,0 +1,69 @@
+id: UC-GRAPH-002
+name: "Build graph on multi-contract Foundry project"
+workflow: graph-build
+category: graph
+tier: important
+
+input:
+  contract: "examples/damm-vuln-defi/src/selfie/"
+  command: "alphaswarm build-kg examples/damm-vuln-defi/src/selfie/"
+  context: >
+    Build a BSKG from a multi-contract directory (the Selfie challenge from
+    Damn Vulnerable DeFi). The graph must handle cross-contract relationships:
+    SelfiePool calls SimpleGovernance, both interact with DamnValuableVotes
+    token. Cross-contract edges and inherited interfaces must be resolved.
+
+expected_behavior:
+  summary: |
+    The graph builder should parse all contracts in the directory, resolve
+    cross-contract dependencies (imports, interfaces, inheritance), create
+    cross-contract call edges, and produce a unified queryable graph that
+    captures inter-contract relationships.
+  must_happen:
+    - "Parse all Solidity files in the selfie directory"
+    - "Resolve cross-contract imports and interface implementations"
+    - "Create cross-contract call edges (SelfiePool -> SimpleGovernance)"
+    - "Emit semantic labels for operations in all contracts"
+    - "Produce unified graph queryable across all contracts"
+    - "Build completes without errors on multi-file input"
+  must_not_happen:
+    - "Build only one contract and ignore the rest"
+    - "Miss cross-contract edges between SelfiePool and SimpleGovernance"
+    - "Crash on multi-file or import resolution"
+    - "Produce separate disconnected graphs per file"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+    required:
+      - "Bash"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: multi_file_handling
+      description: "Were all contracts in the directory parsed successfully?"
+    - name: cross_contract_edges
+      description: "Were cross-contract call relationships captured in the graph?"
+    - name: import_resolution
+      description: "Were imports and interfaces resolved across files?"
+    - name: graph_completeness
+      description: "Does the graph capture the full inter-contract topology?"
+  regression_signals:
+    - "Only one contract parsed -> CRITICAL REGRESSION: multi-file handling broken"
+    - "No cross-contract edges -> REGRESSION: cross-contract resolution broken"
+    - "Build crash on imports -> REGRESSION: import resolution broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "examples/damm-vuln-defi/src/selfie/SelfiePool.sol"
+  related_scenarios:
+    - "UC-GRAPH-001"
+    - "UC-AUDIT-007"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier. Cross-contract graph building is necessary for multi-contract
+  audit scenarios like UC-AUDIT-007. Lower threshold than single-file because
+  cross-contract resolution is more complex.

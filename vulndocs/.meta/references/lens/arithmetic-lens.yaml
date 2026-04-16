@@ -1,0 +1,378 @@
+- id: arith-001
+  name: Unchecked Arithmetic
+  description: Unchecked arithmetic with user input or balance impact.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: high
+  cwe: [190, 191]
+  match:
+    all:
+      - property: has_unchecked_block
+        op: eq
+        value: true
+      - property: unchecked_contains_arithmetic
+        op: eq
+        value: true
+    any:
+      - property: unchecked_operand_from_user
+        op: eq
+        value: true
+      - property: unchecked_affects_balance
+        op: eq
+        value: true
+
+- id: arith-002
+  name: Division Before Multiplication
+  description: Division ordered before multiplication in financial contexts.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: has_division
+        op: eq
+        value: true
+      - property: has_multiplication
+        op: eq
+        value: true
+      - property: division_before_multiplication
+        op: eq
+        value: true
+      - property: in_financial_context
+        op: eq
+        value: true
+
+- id: arith-003
+  name: Unsafe Narrowing Cast
+  description: Narrowing casts without bounds validation.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [681]
+  match:
+    all:
+      - property: has_explicit_cast
+        op: eq
+        value: true
+      - property: cast_is_narrowing
+        op: eq
+        value: true
+    none:
+      - property: has_bounds_check_before_cast
+        op: eq
+        value: true
+
+- id: arith-004
+  name: Division by Zero Risk
+  description: Division without nonzero checks for divisors.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [369]
+  match:
+    all:
+      - property: division_by_zero_risk
+        op: eq
+        value: true
+
+- id: arith-005
+  name: Share Inflation Attack
+  description: Share/supply calculations without precision safeguards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: high
+  cwe: [682]
+  match:
+    all:
+      - property: share_inflation_risk
+        op: eq
+        value: true
+
+- id: arith-006
+  name: Fee Precision Loss
+  description: Fee calculations without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: fee_precision_risk
+        op: eq
+        value: true
+
+- id: arith-007
+  name: Token Decimal Mismatch
+  description: Token decimal usage without normalization.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: token_decimal_mismatch
+        op: eq
+        value: true
+
+- id: arith-008
+  name: Multiplication Overflow
+  description: Large number multiplication without safe math.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: high
+  cwe: [190]
+  match:
+    all:
+      - property: multiplication_overflow_risk
+        op: eq
+        value: true
+
+- id: arith-009
+  name: Rounding Exploitation
+  description: Rounding/truncation in calculations without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: has_rounding_ops
+        op: eq
+        value: true
+      - property: division_precision_risk
+        op: eq
+        value: true
+
+- id: arith-010
+  name: Percentage Overflow
+  description: Percentage calculations without bounds checks.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [190]
+  match:
+    all:
+      - property: percentage_overflow_risk
+        op: eq
+        value: true
+
+- id: arith-011
+  name: Pre-0.8 Overflow/Underflow
+  description: Arithmetic in pre-0.8 Solidity without SafeMath.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: high
+  cwe: [190, 191]
+  match:
+    all:
+      - property: compiler_version_lt_08
+        op: eq
+        value: true
+      - property: has_arithmetic
+        op: eq
+        value: true
+    none:
+      - property: uses_safemath
+        op: eq
+        value: true
+
+- id: arith-012
+  name: Loop Counter Overflow
+  description: Loop counters using small integer types.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [190]
+  match:
+    all:
+      - property: has_loops
+        op: eq
+        value: true
+      - property: loop_counter_small_type
+        op: eq
+        value: true
+
+- id: arith-013
+  name: Truncation in Financial Calculations
+  description: Division truncation in financial contexts without guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: has_division
+        op: eq
+        value: true
+      - property: in_financial_context
+        op: eq
+        value: true
+    none:
+      - property: has_precision_guard
+        op: eq
+        value: true
+
+- id: arith-014
+  name: Signed/Unsigned Conversion
+  description: Signed to unsigned cast without sign checks.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [681]
+  match:
+    all:
+      - property: signed_unsigned_cast_risk
+        op: eq
+        value: true
+
+- id: arith-015
+  name: Address to Uint Conversion
+  description: Address cast to integer types.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: low
+  cwe: [681]
+  match:
+    all:
+      - property: has_address_to_uint_cast
+        op: eq
+        value: true
+
+- id: arith-016
+  name: Division Precision Loss
+  description: Division without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: division_precision_risk
+        op: eq
+        value: true
+
+- id: arith-017
+  name: Price * Amount Overflow
+  description: Price multiplied by amount without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: high
+  cwe: [190]
+  match:
+    all:
+      - property: price_amount_overflow_risk
+        op: eq
+        value: true
+
+- id: arith-018
+  name: Basis Points Precision Loss
+  description: Basis points calculations without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: basis_points_precision_risk
+        op: eq
+        value: true
+
+- id: arith-019
+  name: Ratio Calculation Issue
+  description: Ratio calculations without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: ratio_calculation_risk
+        op: eq
+        value: true
+
+- id: arith-020
+  name: Fee Accumulation Overflow
+  description: Fee accumulation without bounds.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [190]
+  match:
+    all:
+      - property: fee_accumulation_overflow_risk
+        op: eq
+        value: true
+
+- id: arith-021
+  name: Timestamp Arithmetic
+  description: Timestamp arithmetic that can overflow or underflow.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: timestamp_arithmetic
+        op: eq
+        value: true
+
+- id: arith-022
+  name: Duration Calculation Issue
+  description: Duration calculations without bounds checks.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: has_duration_parameter
+        op: eq
+        value: true
+      - property: timestamp_arithmetic
+        op: eq
+        value: true
+    none:
+      - property: has_duration_bounds
+        op: eq
+        value: true
+
+- id: arith-023
+  name: Decimal Scaling Issue
+  description: Decimal scaling without precision guards.
+  scope: Function
+  lens:
+    - Arithmetic
+  severity: medium
+  cwe: [682]
+  match:
+    all:
+      - property: decimal_scaling_usage
+        op: eq
+        value: true
+    none:
+      - property: has_precision_guard
+        op: eq
+        value: true

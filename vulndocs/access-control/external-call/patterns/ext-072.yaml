@@ -1,0 +1,16 @@
+id: ext-072
+vulndoc: access-control/external-call
+name: TWAP Volatility Window Missing
+description: TWAP usage without volatility-aware windowing.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_twap
+    op: eq
+    value: true
+  - property: has_twap_volatility_window
+    op: eq
+    value: false

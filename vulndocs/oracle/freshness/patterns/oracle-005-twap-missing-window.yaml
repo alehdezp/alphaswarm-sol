@@ -1,0 +1,952 @@
+# =============================================================================
+# PATTERN: oracle-005-twap-missing-window
+# =============================================================================
+#
+# VULNERABILITY PATTERN - TWAP Oracle Without Configurable Time Window
+#
+# This pattern identifies VULNERABLE TWAP oracle usage where contracts read
+# Time-Weighted Average Price data but LACK configurable time window parameters,
+# making them susceptible to manipulation attacks and market responsiveness issues.
+#
+# =============================================================================
+
+id: oracle-005
+vulndoc: oracle/freshness
+name: "TWAP Oracle Without Time Window Parameter"
+
+description: |
+  ## What This Detects
+  Functions that read Time-Weighted Average Price (TWAP) oracle data but FAIL
+  to implement configurable time window parameters, using hardcoded or fixed
+  time periods that cannot adapt to changing market conditions or security needs.
+
+  **This is a VULNERABILITY PATTERN - missing critical oracle configuration.**
+
+  ## Why It's Dangerous
+
+  TWAP oracles calculate average prices over time periods to resist flash loan
+  manipulation. However, without configurable window parameters:
+
+  **1. Fixed Short Windows → Flash Loan Manipulation**
+  - Window too short (< 10 minutes): Vulnerable to multi-block MEV attacks
+  - Attacker can manipulate price across consecutive blocks
+  - Cost of manipulation decreases linearly with shorter windows
+  - Flash loan + selfish mining = oracle manipulation at scale
+
+  **2. Fixed Long Windows → Market Unresponsiveness**
+  - Window too long (> 1 hour): Prices lag real market by significant margin
+  - Legitimate users get unfair pricing during volatility
+  - Protocol becomes arbitrage target (stale TWAP vs real market)
+  - Unable to respond quickly to black swan events
+
+  **3. Asset-Specific Requirements Ignored**
+  - Volatile assets (ETH, BTC) need shorter windows (10-30 min)
+  - Stable assets (USDC, DAI) can use longer windows (1-24 hours)
+  - Low liquidity assets need longer windows to prevent manipulation
+  - High liquidity assets can use shorter windows for responsiveness
+
+  **4. Security vs Usability Trade-off Frozen**
+  - Hardcoded window = permanent security/usability balance choice
+  - Market conditions change; fixed parameters don't adapt
+  - No ability to increase security during high volatility periods
+  - No governance-controlled risk adjustment capability
+
+  ## Real-World Exploits
+
+  ### Indexed Finance Exploit (October 2021): $16M Stolen
+  - **Issue**: TWAP oracle with insufficient window period (30 minutes)
+  - **Attack**: Attacker executed multi-block price manipulation over 30 blocks
+  - **Method**: Borrowed flash loan → manipulated pool reserves → held manipulation
+    across multiple blocks → TWAP average shifted → minted tokens at manipulated price
+  - **Impact**: $16M drained via TWAP manipulation; 30-min window was too short
+  - **Root cause**: Fixed TWAP window couldn't be increased for low-liquidity pools
+  - **Reference**: https://ndxfi.medium.com/indexed-attack-post-mortem-b006094f0bdc
+  - **Cost analysis**: ~$20K to manipulate 30-min TWAP on low-liquidity pair
+
+  ### Rari Capital Fuse Pool Exploit (May 2022): $80M Stolen
+  - **Issue**: TWAP oracle reading from manipulatable pool without sufficient window
+  - **Attack**: Flash loan → price manipulation → exploit lending protocol using TWAP
+  - **Method**: Massive swap in low-liquidity pool → TWAP shifted → over-borrowed
+  - **Impact**: $80M exploited across multiple Fuse pools using manipulated TWAP
+  - **Root cause**: TWAP window parameter not configurable per asset risk profile
+  - **Reference**: https://blocksec.com/blog/price-manipulation-attack-rari-capital
+
+  ### Hundred Finance Exploit (April 2023): $7M Stolen
+  - **Issue**: Compound fork using TWAP oracle with fixed window on Optimism L2
+  - **Attack**: Empty pool attack + TWAP manipulation on L2 with lower manipulation cost
+  - **Method**: Created new market → manipulated initial TWAP → borrowed against
+    inflated collateral valuation
+  - **Impact**: $7M stolen via TWAP manipulation on L2 (cheaper than mainnet)
+  - **Root cause**: Fixed TWAP window; no per-chain cost adjustment (L2 vs L1)
+  - **Reference**: https://blog.hundred.finance/15-04-23-hundred-finance-hack-post-mortem
+
+  ### Warp Finance Exploit (December 2020): $8M Stolen (First Major TWAP Attack)
+  - **Issue**: Uniswap V2 TWAP with insufficient observation window
+  - **Attack**: Flash loan → manipulate LP token pricing via TWAP
+  - **Method**: Borrowed $330M flash loan → manipulated reserves → TWAP shifted →
+    minted stablecoin against inflated collateral → repaid flash loan → kept profit
+  - **Impact**: $8M profit from TWAP manipulation (first publicized TWAP exploit)
+  - **Root cause**: TWAP window too short for flash loan resistance
+  - **Reference**: https://www.mdpi.com/2227-9709/10/1/3
+
+  ### Pattern Across Incidents
+  All four attacks succeeded because:
+  1. **Fixed TWAP windows**: No configurability based on asset risk/liquidity
+  2. **Insufficient window periods**: Too short to resist multi-block attacks
+  3. **No governance adjustment**: Unable to increase security post-deployment
+  4. **Asset-agnostic parameters**: Same window for volatile and stable assets
+
+  ## Academic Research: Cost of TWAP Manipulation
+
+  **Euler Finance & Others (2021-2023)**
+  - Research: "TWAP Oracle Attacks: Easier Done than Said?" (2022)
+  - Finding: Multi-block MEV (MMEV) makes TWAP manipulation orders of magnitude cheaper
+  - Cost: Manipulating 30-min TWAP on Uniswap V3 can cost $10K-$50K (not millions)
+  - Method: Selfish mining + MEV allows 2+ consecutive blocks at low hashpower
+  - Conclusion: **TWAP windows < 30 minutes are vulnerable at practical attack costs**
+  - Reference: https://eprint.iacr.org/2022/445.pdf
+  - Impact: Demonstrated that TWAP is NOT flash-loan resistant without sufficient windows
+
+  **Chaos Labs Analysis (2023)**
+  - Assessment: Comprehensive TWAP market risk modeling
+  - Finding: 30-minute TWAP on mainnet provides moderate security
+  - **L2 Risk Factor**: Optimism/Arbitrum TWAP manipulation ~10x cheaper than mainnet
+  - Recommendation: Configurable windows based on chain, liquidity, and volatility
+  - Reference: https://chaoslabs.xyz/posts/chaos-labs-uniswap-v3-twap-market-risk
+
+  ## What Constitutes Proper TWAP Window Implementation
+
+  **Minimum requirements (Tier 1 - Basic Protection):**
+  - ✅ Window parameter passed as function argument (secondsAgo, window, period)
+  - ✅ Window value controllable by caller or protocol governance
+  - ✅ Minimum window enforcement (e.g., >= 10 minutes for volatile assets)
+
+  **Recommended requirements (Tier 2 - Enhanced Protection):**
+  - ✅ Asset-specific window configuration (mapping: asset → minimum window)
+  - ✅ Dynamic window adjustment based on liquidity (low liquidity → longer window)
+  - ✅ Multi-window queries (get TWAP for 10min, 30min, 1hr; use most conservative)
+  - ✅ Maximum window cap to prevent excessive staleness
+
+  **Best practice requirements (Tier 3 - Production-Grade):**
+  - ✅ Governance-controlled window parameters with timelock
+  - ✅ L1 vs L2 chain-specific windows (L2 needs longer due to lower manipulation cost)
+  - ✅ Liquidity-aware window sizing (query pool liquidity → adjust window dynamically)
+  - ✅ Observation cardinality checks (ensure sufficient TWAP data points)
+  - ✅ Emergency circuit breaker if price deviation exceeds threshold
+  - ✅ Event emission on TWAP query with window parameter for monitoring
+
+  ## Detection Logic
+
+  This pattern triggers when ALL of these conditions are met:
+  1. Function performs TWAP oracle read (`reads_twap: true`)
+  2. Function performs oracle read operation (`has_operation: READS_ORACLE`)
+  3. Function LACKS window parameter (`has_twap_window_parameter: false`)
+  4. Function is NOT a view function (view functions don't execute exploitable operations)
+
+  **Rationale for conditions:**
+  - `reads_twap: true` - Detects TWAP-specific oracle calls (consult, observe, etc.)
+  - `has_twap_window_parameter: false` - Missing secondsAgo/window/period parameter
+  - `has_operation: READS_ORACLE` - Semantic operation detection (implementation-agnostic)
+  - Exclude view functions - They don't execute state-changing exploitable transactions
+
+  **Why this matters:**
+  Without configurable windows, protocols cannot:
+  - Adapt to changing market conditions
+  - Increase security for low-liquidity assets
+  - Respond to manipulation attempts
+  - Balance security vs responsiveness per asset
+
+scope: Function
+
+lens:
+  - Oracle
+  - ExternalInfluence
+
+severity: high
+
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must read TWAP oracle data
+    - property: reads_twap
+      op: eq
+      value: true
+
+    # Must perform oracle read operation (semantic detection)
+    - has_operation: READS_ORACLE
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Must NOT have window parameter (this is the vulnerability)
+    - property: has_twap_window_parameter
+      op: eq
+      value: true
+
+    # Exclude view functions (they don't execute exploitable transactions)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't read oracle anyway)
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [oracle-price]
+  true_positives: 10
+  true_negatives: 11
+  edge_cases: 4
+  precision: 0.91
+  recall: 0.91
+  variation_score: 0.80
+  last_tested: "2025-12-31"
+  notes: |
+    STATUS: READY (precision 0.91 >= 0.70, recall 0.91 >= 0.50, variation 0.80 >= 0.60)
+
+    This is a VULNERABILITY PATTERN (high severity).
+    True positives = TWAP oracle reads WITHOUT configurable window parameter.
+    True negatives = TWAP reads WITH window parameter (secondsAgo, period, interval, window, etc.).
+
+    Test Results:
+    - True Positives (10): All hardcoded TWAP windows correctly detected
+    - True Negatives (11): All configurable window parameters correctly excluded
+    - Edge Cases (4): View/pure functions excluded, no TWAP reads excluded
+    - Variations (4/5 = 80%): Different naming conventions tested
+
+    Known Limitations:
+    1. Storage-based windows (1 FP): getTWAPFromStorageWindow() flagged despite being
+       governance-controlled. Pattern cannot distinguish storage variables from constants.
+       Decision: Acceptable FP - less common pattern, manual review feasible.
+
+    2. Uniswap V2 TWAP (1 FN): consultTWAP() with price0CumulativeLast() not detected.
+       Builder sets reads_twap=True but missing READS_ORACLE operation for V2 patterns.
+       Pattern requires both conditions. This is a builder limitation, not pattern issue.
+       Decision: Acceptable FN - V3 observe() patterns work correctly, V2 is legacy.
+
+    Pattern excels at:
+    - Detecting hardcoded Uniswap V3 TWAP windows (observe() calls)
+    - Multiple parameter name variants (secondsAgo, window, period, interval, duration)
+    - Different function naming conventions (getPrice, getCollateral, etc.)
+    - Excluding view/pure functions correctly
+    - Critical operations (liquidations, borrows, swaps)
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Multi-Block TWAP Manipulation (MMEV Attack)"
+    description: |
+      Attacker uses Multi-block MEV (MMEV) or selfish mining to control consecutive
+      blocks, manipulating TWAP price across multiple blocks at fraction of assumed cost.
+    preconditions:
+      - TWAP oracle with fixed window parameter (< 30 minutes typically vulnerable)
+      - Low liquidity pool (manipulation cost inversely proportional to liquidity)
+      - No configurable window to increase security for at-risk assets
+      - Attacker can mine/propose 2+ consecutive blocks (via selfish mining or MEV)
+    steps:
+      - Identify TWAP oracle with short fixed window (e.g., 10-20 minutes)
+      - Calculate manipulation cost: (target_price_shift × liquidity) / window_blocks
+      - Borrow flash loan for liquidity manipulation capital
+      - Mine/propose Block N: Execute massive swap to shift pool price
+      - Mine/propose Block N+1: Hold manipulated price (don't revert)
+      - Continue for required blocks to shift TWAP average
+      - TWAP now reflects manipulated average over window period
+      - Execute exploit: Borrow/mint against inflated TWAP valuation
+      - Unwind manipulation: Reverse swap or let arbitrageurs restore price
+      - Profit: Keep over-borrowed funds; protocol left with bad debt
+    impact: |
+      Protocol loss proportional to TWAP manipulation magnitude.
+      Indexed Finance: $16M loss with 30-min window manipulation.
+      Cost to attacker: $10K-$50K via MMEV (research-proven, not theoretical).
+    cvss: 8.5
+
+  - name: "Flash Loan + Low Liquidity Pool Manipulation"
+    description: |
+      Attacker exploits low-liquidity pools with insufficient TWAP windows to
+      manipulate price with flash loan capital at economically viable cost.
+    preconditions:
+      - TWAP oracle reading from low-liquidity pool (< $10M TVL)
+      - Fixed short TWAP window (cannot be increased for risky assets)
+      - Protocol uses TWAP for critical operations (lending, collateral valuation)
+      - No liquidity-aware minimum window enforcement
+    steps:
+      - Identify low-liquidity pool with TWAP oracle (easier to manipulate)
+      - Calculate required manipulation: window × blocks × price_impact
+      - Borrow flash loan (Aave, dYdX, Balancer) for manipulation capital
+      - Execute massive swap to skew pool reserves
+      - Hold position across multiple blocks (via selfish mining or MEV bribes)
+      - TWAP shifts due to sustained price manipulation over window period
+      - Interact with protocol using manipulated TWAP price
+      - If borrowing: Over-borrow against inflated TWAP collateral value
+      - If minting: Mint assets at favorable manipulated TWAP rate
+      - Unwind manipulation: Close position, repay flash loan
+      - Net profit: Exploited value minus manipulation cost
+    impact: |
+      Rari Capital Fuse: $80M exploited via low-liquidity pool TWAP manipulation.
+      Warp Finance: $8M via flash loan + TWAP manipulation (first major case).
+    cvss: 8.3
+
+  - name: "L2 TWAP Manipulation (Lower Cost Attack)"
+    description: |
+      On L2 rollups (Optimism, Arbitrum, Base), TWAP manipulation costs are ~10x
+      lower than mainnet due to centralized sequencing and lower block time variance.
+    preconditions:
+      - Protocol deployed on L2 (Optimism, Arbitrum, Base, Polygon PoS, etc.)
+      - TWAP oracle with fixed mainnet-calibrated window (not adjusted for L2)
+      - L2 sequencer control allows easier consecutive block manipulation
+      - No chain-specific window adjustment (same parameters as mainnet)
+    steps:
+      - Identify TWAP oracle on L2 with mainnet-equivalent window settings
+      - Note: L2 block times more predictable; sequencer centralization
+      - Calculate reduced manipulation cost on L2 (~10x cheaper than mainnet)
+      - Execute manipulation attack with lower capital requirements
+      - L2 sequencer processes consecutive transactions more predictably
+      - TWAP manipulation succeeds at fraction of mainnet cost
+      - Exploit protocol using manipulated L2 TWAP oracle
+    impact: |
+      Hundred Finance on Optimism: $7M stolen via L2 TWAP manipulation.
+      L2 manipulation cost research: 10x cheaper than mainnet (Chaos Labs).
+      Fixed windows designed for mainnet security are insufficient on L2.
+    cvss: 8.2
+
+  - name: "Asset Volatility Mismatch Exploitation"
+    description: |
+      Attacker exploits hardcoded TWAP windows that don't match asset volatility
+      characteristics, using either too-short windows (volatile assets) or
+      too-long windows (creating arbitrage opportunities).
+    preconditions:
+      - Single fixed TWAP window used for all assets (volatile and stable)
+      - Volatile asset (ETH, BTC) with window too short (< 30 min)
+      - OR stable asset (USDC) with window too long (> 1 hour)
+      - No asset-specific window configuration capability
+    steps:
+      - For volatile assets with short windows:
+        - Execute multi-block manipulation during normal volatility
+        - Manipulated TWAP appears as "normal" price movement
+        - Over-borrow against inflated volatile asset collateral
+      - For stable assets with long windows:
+        - Wait for real market price deviation from stale TWAP
+        - Execute arbitrage between stale TWAP and real market price
+        - Protocol leaks value via stale pricing arbitrage
+    impact: |
+      Volatile assets need 30-60 min windows; stable assets can use 1-24 hours.
+      Fixed windows create vulnerability on one end of the spectrum.
+      Either security vulnerability (too short) or value leakage (too long).
+    cvss: 7.8
+
+  - name: "Empty Pool Initialization Attack"
+    description: |
+      Attacker creates new low-liquidity pool, manipulates initial TWAP with
+      minimal capital, then exploits protocol using manipulated oracle data.
+    preconditions:
+      - Protocol allows adding new oracle sources (permissionless or governance)
+      - TWAP oracle reads from newly created pools
+      - Fixed short TWAP window cannot be increased for new untrusted pools
+      - No minimum liquidity threshold for oracle source validity
+    steps:
+      - Deploy new token pair with minimal initial liquidity ($1K-$10K)
+      - Execute trades to establish manipulated TWAP at favorable price
+      - Wait for TWAP window period (e.g., 30 minutes) with manipulated price
+      - TWAP now reflects attacker-controlled price with minimal cost
+      - Add manipulated pool as oracle source to protocol (if permissionless)
+      - OR wait for governance to add pool as oracle source
+      - Exploit protocol using manipulated TWAP from low-liquidity pool
+      - Borrow/mint against inflated TWAP valuation
+    impact: |
+      Hundred Finance component: Empty pool attack enabled by fixed TWAP windows.
+      Manipulation cost for new pool: $1K-$10K vs $50K+ for established pools.
+      Demonstrates need for liquidity-aware minimum window requirements.
+    cvss: 8.0
+
+verification_steps:
+  - "Identify TWAP oracle read in function (Uniswap consult, observe, price0CumulativeLast, etc.)"
+  - "Verify function is externally callable or internal state-changing (not view/pure)"
+  - "Check function parameters for window/period configuration:"
+  - "  - Look for: secondsAgo, window, period, interval, twapWindow parameters"
+  - "  - Look for: uint32[] calldata secondsAgos (Uniswap V3 multi-period)"
+  - "  - Look for: mapping-based asset-specific window configuration"
+  - "If NO window parameter found, check if hardcoded in function body:"
+  - "  - Search for: oracle.consult(token, HARDCODED_VALUE)"
+  - "  - Search for: uint32[] memory secondsAgos = new uint32[](2); secondsAgos[0] = HARDCODED"
+  - "  - If hardcoded constant found, this is a TRUE POSITIVE vulnerability"
+  - "Assess window value if hardcoded:"
+  - "  - < 10 minutes: CRITICAL - Vulnerable to flash loan + multi-block manipulation"
+  - "  - 10-30 minutes: HIGH - Vulnerable to MMEV attacks ($10K-$50K cost)"
+  - "  - 30-60 minutes: MEDIUM - Requires significant capital but still feasible"
+  - "  - > 60 minutes: May cause staleness/arbitrage issues (different vulnerability)"
+  - "Check deployment environment:"
+  - "  - L2 deployment? Needs longer windows (~2-3x mainnet) or liquidity threshold"
+  - "  - Mainnet? Standard windows apply (30+ min for security)"
+  - "Assess asset characteristics:"
+  - "  - Volatile asset (ETH, BTC, major tokens): Needs 30-60 min window minimum"
+  - "  - Stable asset (USDC, DAI, USDT): Can use 1-24 hour window"
+  - "  - Low liquidity asset: Needs longer window (inversely proportional to liquidity)"
+  - "Check pool liquidity from TWAP source:"
+  - "  - < $1M TVL: Needs 60+ min window minimum (easily manipulated)"
+  - "  - $1M-$10M TVL: Needs 30-60 min window"
+  - "  - $10M-$100M TVL: Can use 20-30 min window"
+  - "  - > $100M TVL: Can use 10-20 min window (high manipulation cost)"
+  - "Verify no governance/admin function to update window parameter"
+  - "If all checks confirm missing configurable window, this is CONFIRMED VULNERABILITY"
+
+fix_recommendations:
+  - name: "Add Window Parameter to Function (Minimum Viable Fix)"
+    description: |
+      Make TWAP window configurable by adding parameter to function signature.
+      This is the MINIMUM fix to enable proper TWAP security.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      interface IUniswapV3Pool {
+          function observe(uint32[] calldata secondsAgos)
+              external
+              view
+              returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
+      }
+
+      contract VulnerableTWAPConsumer {
+          IUniswapV3Pool public pool;
+
+          // BEFORE (VULNERABLE) - Hardcoded 30-minute window
+          // function getTWAPPrice() public view returns (uint256) {
+          //     uint32[] memory secondsAgos = new uint32[](2);
+          //     secondsAgos[0] = 1800; // 30 minutes - HARDCODED!
+          //     secondsAgos[1] = 0;
+          //     (int56[] memory tickCumulatives, ) = pool.observe(secondsAgos);
+          //     int56 tickCumulativeDelta = tickCumulatives[1] - tickCumulatives[0];
+          //     int24 avgTick = int24(tickCumulativeDelta / 1800);
+          //     return _getQuoteAtTick(avgTick);
+          // }
+
+          // AFTER (FIXED) - Configurable window parameter
+          function getTWAPPrice(uint32 twapWindow) public view returns (uint256) {
+              require(twapWindow >= 600, "TWAP: window too short"); // Min 10 minutes
+
+              uint32[] memory secondsAgos = new uint32[](2);
+              secondsAgos[0] = twapWindow; // CONFIGURABLE!
+              secondsAgos[1] = 0;
+
+              (int56[] memory tickCumulatives, ) = pool.observe(secondsAgos);
+              int56 tickCumulativeDelta = tickCumulatives[1] - tickCumulatives[0];
+              int24 avgTick = int24(tickCumulativeDelta / int56(uint56(twapWindow)));
+
+              return _getQuoteAtTick(avgTick);
+          }
+
+          function _getQuoteAtTick(int24 tick) internal pure returns (uint256) {
+              // Price calculation from tick (simplified)
+              return uint256(1.0001 ** tick);
+          }
+      }
+
+  - name: "Asset-Specific Window Configuration (Recommended)"
+    description: |
+      Implement governance-controlled per-asset minimum TWAP windows based on
+      liquidity, volatility, and risk profile. Production-grade approach.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract ProductionTWAPOracle is Ownable {
+          IUniswapV3Pool public pool;
+
+          // Asset-specific minimum windows (governance-controlled)
+          mapping(address => uint32) public assetMinimumWindows;
+
+          // Default minimum window for unconfigured assets
+          uint32 public defaultMinimumWindow = 1800; // 30 minutes
+
+          // Maximum window to prevent staleness
+          uint32 public constant MAX_WINDOW = 24 hours;
+
+          event MinimumWindowUpdated(address indexed asset, uint32 newWindow);
+          event DefaultWindowUpdated(uint32 newWindow);
+
+          constructor(address _pool) {
+              pool = IUniswapV3Pool(_pool);
+          }
+
+          /**
+           * @notice Set minimum TWAP window for specific asset
+           * @dev Governance-controlled; allows per-asset risk calibration
+           */
+          function setAssetMinimumWindow(address asset, uint32 minimumWindow) external onlyOwner {
+              require(minimumWindow >= 600, "Window < 10 min");
+              require(minimumWindow <= MAX_WINDOW, "Window too long");
+              assetMinimumWindows[asset] = minimumWindow;
+              emit MinimumWindowUpdated(asset, minimumWindow);
+          }
+
+          /**
+           * @notice Set default minimum window for unconfigured assets
+           */
+          function setDefaultMinimumWindow(uint32 minimumWindow) external onlyOwner {
+              require(minimumWindow >= 600, "Window < 10 min");
+              require(minimumWindow <= MAX_WINDOW, "Window too long");
+              defaultMinimumWindow = minimumWindow;
+              emit DefaultWindowUpdated(minimumWindow);
+          }
+
+          /**
+           * @notice Get TWAP price with asset-specific minimum window enforcement
+           * @param asset The asset to price
+           * @param requestedWindow The requested TWAP window
+           */
+          function getTWAPPrice(address asset, uint32 requestedWindow) public view returns (uint256) {
+              // Get asset-specific minimum or default
+              uint32 minimumWindow = assetMinimumWindows[asset];
+              if (minimumWindow == 0) {
+                  minimumWindow = defaultMinimumWindow;
+              }
+
+              // Enforce minimum window (security requirement)
+              require(requestedWindow >= minimumWindow, "TWAP: window below minimum");
+              require(requestedWindow <= MAX_WINDOW, "TWAP: window too long");
+
+              // Query TWAP with validated window
+              uint32[] memory secondsAgos = new uint32[](2);
+              secondsAgos[0] = requestedWindow;
+              secondsAgos[1] = 0;
+
+              (int56[] memory tickCumulatives, ) = pool.observe(secondsAgos);
+              int56 tickCumulativeDelta = tickCumulatives[1] - tickCumulatives[0];
+              int24 avgTick = int24(tickCumulativeDelta / int56(uint56(requestedWindow)));
+
+              return _getQuoteAtTick(avgTick);
+          }
+
+          function _getQuoteAtTick(int24 tick) internal pure returns (uint256) {
+              // Simplified for example
+              return uint256(uint24(tick));
+          }
+      }
+
+  - name: "Multi-Window TWAP with Deviation Check (Best Practice)"
+    description: |
+      Query multiple TWAP windows (10min, 30min, 1hr) and use circuit breaker
+      if deviation exceeds threshold. Detects manipulation attempts in real-time.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract MultiWindowTWAPOracle is Ownable {
+          IUniswapV3Pool public pool;
+
+          // Multiple window periods for cross-validation
+          uint32 public constant SHORT_WINDOW = 600;   // 10 minutes
+          uint32 public constant MEDIUM_WINDOW = 1800; // 30 minutes
+          uint32 public constant LONG_WINDOW = 3600;   // 1 hour
+
+          // Maximum allowed deviation between windows (basis points)
+          uint256 public maxDeviationBps = 500; // 5%
+
+          event PriceDeviationDetected(uint256 shortPrice, uint256 mediumPrice, uint256 longPrice);
+          event MaxDeviationUpdated(uint256 newMaxBps);
+
+          constructor(address _pool) {
+              pool = IUniswapV3Pool(_pool);
+          }
+
+          function setMaxDeviation(uint256 newMaxBps) external onlyOwner {
+              require(newMaxBps > 0 && newMaxBps <= 2000, "Invalid deviation"); // Max 20%
+              maxDeviationBps = newMaxBps;
+              emit MaxDeviationUpdated(newMaxBps);
+          }
+
+          /**
+           * @notice Get TWAP price with multi-window validation
+           * @dev Queries 3 windows; reverts if deviation exceeds threshold
+           * @return Most conservative (lowest) price among validated windows
+           */
+          function getValidatedTWAPPrice() public view returns (uint256) {
+              // Query all three windows
+              uint256 shortPrice = _getTWAPForWindow(SHORT_WINDOW);
+              uint256 mediumPrice = _getTWAPForWindow(MEDIUM_WINDOW);
+              uint256 longPrice = _getTWAPForWindow(LONG_WINDOW);
+
+              // Calculate max deviation among windows
+              uint256 maxPrice = _max3(shortPrice, mediumPrice, longPrice);
+              uint256 minPrice = _min3(shortPrice, mediumPrice, longPrice);
+              uint256 deviationBps = ((maxPrice - minPrice) * 10000) / maxPrice;
+
+              // CIRCUIT BREAKER: Revert if deviation too high (manipulation suspected)
+              if (deviationBps > maxDeviationBps) {
+                  emit PriceDeviationDetected(shortPrice, mediumPrice, longPrice);
+                  revert("TWAP: price deviation exceeded");
+              }
+
+              // Return most conservative (lowest) price
+              // Protects against manipulation in shorter windows
+              return minPrice;
+          }
+
+          function _getTWAPForWindow(uint32 window) internal view returns (uint256) {
+              uint32[] memory secondsAgos = new uint32[](2);
+              secondsAgos[0] = window;
+              secondsAgos[1] = 0;
+
+              (int56[] memory tickCumulatives, ) = pool.observe(secondsAgos);
+              int56 tickCumulativeDelta = tickCumulatives[1] - tickCumulatives[0];
+              int24 avgTick = int24(tickCumulativeDelta / int56(uint56(window)));
+
+              return _getQuoteAtTick(avgTick);
+          }
+
+          function _getQuoteAtTick(int24 tick) internal pure returns (uint256) {
+              // Simplified
+              return uint256(uint24(tick));
+          }
+
+          function _max3(uint256 a, uint256 b, uint256 c) internal pure returns (uint256) {
+              return a > b ? (a > c ? a : c) : (b > c ? b : c);
+          }
+
+          function _min3(uint256 a, uint256 b, uint256 c) internal pure returns (uint256) {
+              return a < b ? (a < c ? a : c) : (b < c ? b : c);
+          }
+      }
+
+  - name: "Liquidity-Aware Dynamic Window Sizing (Advanced)"
+    description: |
+      Dynamically adjust TWAP window based on pool liquidity. Low liquidity pools
+      require longer windows to resist manipulation. Advanced security feature.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract LiquidityAwareTWAPOracle {
+          IUniswapV3Pool public pool;
+
+          // Liquidity tiers and corresponding minimum windows
+          struct LiquidityTier {
+              uint256 minLiquidity; // Minimum liquidity for this tier
+              uint32 minimumWindow; // Required TWAP window
+          }
+
+          LiquidityTier[] public liquidityTiers;
+
+          constructor(address _pool) {
+              pool = IUniswapV3Pool(_pool);
+
+              // Configure liquidity-based window requirements
+              // Lower liquidity = longer window to resist manipulation
+              liquidityTiers.push(LiquidityTier({
+                  minLiquidity: 100_000_000e18, // $100M+
+                  minimumWindow: 600            // 10 min
+              }));
+              liquidityTiers.push(LiquidityTier({
+                  minLiquidity: 10_000_000e18,  // $10M-$100M
+                  minimumWindow: 1800           // 30 min
+              }));
+              liquidityTiers.push(LiquidityTier({
+                  minLiquidity: 1_000_000e18,   // $1M-$10M
+                  minimumWindow: 3600           // 1 hour
+              }));
+              liquidityTiers.push(LiquidityTier({
+                  minLiquidity: 0,              // < $1M
+                  minimumWindow: 7200           // 2 hours
+              }));
+          }
+
+          /**
+           * @notice Get TWAP with liquidity-aware window enforcement
+           * @dev Queries pool liquidity; enforces longer windows for low liquidity
+           */
+          function getTWAPPrice(uint32 requestedWindow) public view returns (uint256) {
+              // Get current pool liquidity
+              uint128 liquidity = pool.liquidity();
+
+              // Determine required minimum window based on liquidity
+              uint32 requiredMinimum = _getRequiredWindowForLiquidity(liquidity);
+
+              // Enforce minimum window based on liquidity risk
+              require(
+                  requestedWindow >= requiredMinimum,
+                  "TWAP: window insufficient for liquidity"
+              );
+
+              // Query TWAP with validated window
+              return _getTWAPForWindow(requestedWindow);
+          }
+
+          function _getRequiredWindowForLiquidity(uint128 liquidity) internal view returns (uint32) {
+              // Find appropriate tier based on current liquidity
+              for (uint256 i = 0; i < liquidityTiers.length; i++) {
+                  if (liquidity >= liquidityTiers[i].minLiquidity) {
+                      return liquidityTiers[i].minimumWindow;
+                  }
+              }
+              // Fallback: lowest tier (longest window)
+              return liquidityTiers[liquidityTiers.length - 1].minimumWindow;
+          }
+
+          function _getTWAPForWindow(uint32 window) internal view returns (uint256) {
+              uint32[] memory secondsAgos = new uint32[](2);
+              secondsAgos[0] = window;
+              secondsAgos[1] = 0;
+
+              (int56[] memory tickCumulatives, ) = pool.observe(secondsAgos);
+              int56 tickCumulativeDelta = tickCumulatives[1] - tickCumulatives[0];
+              int24 avgTick = int24(tickCumulativeDelta / int56(uint56(window)));
+
+              return _getQuoteAtTick(avgTick);
+          }
+
+          function _getQuoteAtTick(int24 tick) internal pure returns (uint256) {
+              return uint256(uint24(tick));
+          }
+      }
+
+  - name: "Recommended TWAP Window Guidelines"
+    description: |
+      Industry best practices for TWAP window configuration based on research,
+      exploits, and academic analysis (2020-2025).
+    example: |
+      # TWAP Window Configuration Guidelines (2025)
+      # Based on: Academic research, real exploits, Chaos Labs analysis
+
+      ## By Asset Volatility
+
+      Volatile Assets (ETH, BTC, major DeFi tokens):
+        - Minimum window: 30 minutes (mainnet) / 60 minutes (L2)
+        - Recommended: 45-60 minutes
+        - Maximum: 2 hours (avoid excessive staleness)
+        - Rationale: Resist MMEV attacks ($10K-$50K cost proven)
+
+      Stable Assets (USDC, USDT, DAI):
+        - Minimum window: 30 minutes (safety floor)
+        - Recommended: 1-4 hours
+        - Maximum: 24 hours
+        - Rationale: Less volatile; can tolerate longer windows
+
+      Exotic/Low Volume Assets:
+        - Minimum window: 1-2 hours
+        - Recommended: 2-4 hours
+        - Must consider liquidity-aware sizing
+        - Rationale: More susceptible to manipulation
+
+      ## By Pool Liquidity (TVL)
+
+      < $1M TVL:   Minimum 60-120 minutes (highly vulnerable)
+      $1M-$10M:    Minimum 30-60 minutes
+      $10M-$100M:  Minimum 20-30 minutes
+      > $100M:     Minimum 10-20 minutes (high manipulation cost)
+
+      ## By Deployment Chain
+
+      Ethereum Mainnet:
+        - Base windows apply (30+ min for security)
+        - MEV infrastructure mature; MMEV attacks proven feasible
+
+      L2 Rollups (Optimism, Arbitrum, Base):
+        - Multiply mainnet windows by 2-3x
+        - Centralized sequencing = easier consecutive block control
+        - Research: ~10x cheaper manipulation than mainnet
+        - Minimum: 60 minutes even for high-liquidity pools
+
+      Alternative L1s (Binance Smart Chain, Polygon PoS):
+        - Assess block time and validator centralization
+        - More centralized = longer windows required
+        - Minimum: 45-60 minutes
+
+      ## Implementation Checklist
+
+      ✅ Configurable window parameter (not hardcoded)
+      ✅ Per-asset minimum window mapping
+      ✅ Governance-controlled with timelock
+      ✅ Liquidity-aware dynamic sizing (optional but recommended)
+      ✅ Multi-window deviation check (10min, 30min, 1hr)
+      ✅ Circuit breaker if windows disagree > 5%
+      ✅ Observation cardinality check (Uniswap V3)
+      ✅ Chain-specific calibration (L1 vs L2)
+      ✅ Event emission for monitoring
+      ✅ Emergency pause if manipulation suspected
+
+      ## Academic References
+
+      "TWAP Oracle Attacks: Easier Done than Said?" (2022)
+      - Proves MMEV makes 30-min TWAP manipulation cost $10K-$50K
+      - Recommendation: 30+ minute windows minimum
+      - https://eprint.iacr.org/2022/445.pdf
+
+      Euler Finance TWAP Research (2021)
+      - Cost analysis for Uniswap V3 manipulation
+      - https://github.com/euler-xyz/uni-v3-twap-manipulation
+
+      Chaos Labs Market Risk Assessment (2023)
+      - L2 manipulation ~10x cheaper than mainnet
+      - https://chaoslabs.xyz/posts/chaos-labs-uniswap-v3-twap-market-risk
+
+related_patterns:
+  - oracle-003  # Missing staleness check
+  - oracle-004  # Missing sequencer check (L2)
+  - ext-oracle-manipulation  # Oracle manipulation attacks
+
+owasp_mapping:
+  - SC02  # Oracle Manipulation
+  - SC07  # Flash Loan Attacks
+
+cwe_mapping:
+  - CWE-1188  # Initialization of a Resource with an Insecure Default Value
+  - CWE-358   # Improperly Implemented Security Check for Standard
+  - CWE-656   # Reliance on Security Through Obscurity
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations
+semantic_ops:
+  has_all_operations:
+    - READS_ORACLE
+  # TWAP-specific semantic detection via reads_twap property
+
+# Behavioral Signature
+behavioral_signature:
+  pattern: "R:orc.*twap(?!.*W:p)"  # TWAP read without window parameter
+  description: "TWAP oracle read with hardcoded window (vulnerable pattern)"
+  matches_exploits:
+    - indexed-finance-2021
+    - rari-capital-2022
+    - hundred-finance-2023
+    - warp-finance-2020
+
+# Tier A/B Matching
+tier_match:
+  tier_a:
+    all:
+      - property: reads_twap
+        value: true
+      - has_operation: READS_ORACLE
+    none:
+      - property: has_twap_window_parameter
+        value: true
+      - property: is_view
+        value: true
+  tier_b:
+    any: []
+  aggregation:
+    mode: tier_a_only  # Purely deterministic pattern
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches:
+    - indexed-finance-2021
+    - rari-capital-2022
+    - hundred-finance-2023
+    - warp-finance-2020
+  description: "TWAP oracle with fixed/insufficient window enabling manipulation"
+  signature: "TWAP consult → hardcoded window → multi-block manipulation → exploit"
+  similarity_threshold: 0.85
+
+# Multi-Agent Verification Hints
+verification_agents:
+  pattern:
+    require_all_conditions: true
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [READS_ORACLE]
+    max_depth: 3
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 8.0  # High exploitability - proven attack vector
+  consensus:
+    min_agents_agree: 2
+    mode: voting
+
+# =============================================================================
+# ADDITIONAL METADATA
+# =============================================================================
+
+# Pattern Classification
+pattern_type: vulnerability
+quality_indicator: false  # Indicates missing security configuration
+inverse_pattern: null  # No direct safe counterpart (different from oracle-001)
+
+# Auditor Guidance
+auditor_notes: |
+  This pattern identifies VULNERABLE TWAP oracle usage. When this pattern matches:
+
+  🚨 VULNERABILITY DETECTED: TWAP oracle read WITHOUT configurable window parameter
+  ⚠️ EXPLOITATION RISK: Multi-block manipulation proven at $10K-$50K cost (MMEV attacks)
+  🔍 VERIFY: Check if window is truly hardcoded or passed from caller
+  📊 ASSESS IMPACT: Determine pool liquidity, asset volatility, deployment chain
+
+  IMMEDIATE FOLLOW-UP ACTIONS:
+  1. Verify window is hardcoded (not configurable via parameter or governance)
+  2. Identify TWAP source (Uniswap V2, V3, other) and pool liquidity
+  3. Assess hardcoded window value (< 30 min = CRITICAL; 30-60 min = HIGH)
+  4. Check deployment chain (L2 = higher risk; needs 2-3x longer windows)
+  5. Calculate manipulation cost based on liquidity and window
+  6. Recommend asset-specific configurable windows with governance control
+
+  COMMON FALSE POSITIVES:
+  - Internal helper that receives window from external caller
+  - View functions used only for display (excluded by pattern)
+  - Test contracts or mock oracles (check contract context)
+
+  SEVERITY ESCALATION:
+  - CRITICAL: Hardcoded window < 30 min on low-liquidity pool (< $10M TVL)
+  - HIGH: Hardcoded window < 60 min on L2 or < $100M liquidity pool
+  - MEDIUM: Hardcoded window 30-60 min on high-liquidity mainnet pool (> $100M)
+
+  L2 DEPLOYMENT ALERT:
+  - Optimism/Arbitrum/Base: Manipulation ~10x cheaper than mainnet
+  - Require 2-3x longer windows than equivalent mainnet deployment
+  - Missing window parameter on L2 = automatic severity upgrade
+
+# Real-World Exploit References
+reference_exploits:
+  - name: "Indexed Finance TWAP Manipulation (October 2021)"
+    amount: "$16M"
+    root_cause: "Fixed 30-min TWAP window on low-liquidity pool; multi-block manipulation"
+    url: "https://ndxfi.medium.com/indexed-attack-post-mortem-b006094f0bdc"
+
+  - name: "Rari Capital Fuse Pool Exploit (May 2022)"
+    amount: "$80M"
+    root_cause: "TWAP oracle without configurable window; manipulated via flash loan"
+    url: "https://blocksec.com/blog/price-manipulation-attack-rari-capital"
+
+  - name: "Hundred Finance Optimism Exploit (April 2023)"
+    amount: "$7M"
+    root_cause: "Fixed TWAP window on L2; empty pool initialization attack"
+    url: "https://blog.hundred.finance/15-04-23-hundred-finance-hack-post-mortem"
+
+  - name: "Warp Finance Flash Loan Attack (December 2020)"
+    amount: "$8M"
+    root_cause: "Uniswap V2 TWAP with insufficient fixed window; first major TWAP exploit"
+    url: "https://www.mdpi.com/2227-9709/10/1/3"
+
+# Metrics for Vulnerability Confirmation
+vulnerability_metrics:
+  missing_window_parameter: true
+  hardcoded_window_value: "Check source for constant value"
+  pool_liquidity: "Query pool TVL to assess manipulation cost"
+  deployment_chain: "L1 vs L2 affects manipulation cost (10x difference)"
+  asset_volatility: "Volatile vs stable determines appropriate window"
+  twap_used_for_critical_ops: "Check liquidations, borrowing, collateral valuation"
+
+# Fix Complexity Assessment
+fix_complexity:
+  effort: "Low - Add window parameter to function signature"
+  risk: "Low - Pure additive change; maintains backward compatibility via wrapper"
+  testing: "High - Test manipulation resistance across window values and liquidity levels"
+  deployment: "Requires contract upgrade if not upgradeable; consider migration plan"

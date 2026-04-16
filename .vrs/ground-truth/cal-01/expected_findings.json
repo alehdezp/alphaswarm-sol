@@ -1,0 +1,13 @@
+{
+    "contract_id": "cal-01",
+    "contract_name": "ReentrancyClassic",
+    "expected_findings": [
+        {
+            "vulnerability_class": "reentrancy",
+            "severity": "high",
+            "function_name": "withdraw",
+            "description": "Classic reentrancy via CEI violation — external call (msg.sender.call{value: amount}) executes before state update (balances[msg.sender] -= amount), allowing recursive re-entry to drain funds",
+            "key_indicators": ["external call before state update", "balances modification after call.value", "CEI pattern violation in withdraw"]
+        }
+    ]
+}

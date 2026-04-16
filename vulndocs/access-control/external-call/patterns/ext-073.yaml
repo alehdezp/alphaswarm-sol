@@ -1,0 +1,16 @@
+id: ext-073
+vulndoc: access-control/external-call
+name: Oracle Update Frequency Alignment Missing
+description: Aggregation without update frequency alignment.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_update_frequency_alignment
+    op: eq
+    value: false

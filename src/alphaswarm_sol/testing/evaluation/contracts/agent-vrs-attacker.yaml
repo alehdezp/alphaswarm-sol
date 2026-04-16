@@ -1,0 +1,73 @@
+workflow_id: agent-vrs-attacker
+category: agent
+grader_type: hybrid
+rule_refs:
+  - GRAPH-FIRST
+  - EVIDENCE-QUALITY
+  - EXEC-INTEGRITY
+reasoning_dimensions:
+  - graph_utilization
+  - evidence_quality
+  - reasoning_depth
+  - hypothesis_formation
+  - exploit_path_construction
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+  - id: bskg_query_issued
+    description: Attacker issued BSKG queries before code reading
+    expected_behavior: Tool sequence contains Bash with alphaswarm query before first Read
+    grader_type: code
+  - id: graph_first_compliance
+    description: BSKG queries precede manual code reading
+    expected_behavior: First Bash(alphaswarm) call occurs before first Read call
+    grader_type: code
+  - id: evidence_cited
+    description: Findings reference graph nodes or code locations
+    expected_behavior: Response contains file:line or node ID references
+    grader_type: model
+  - id: session_completed
+    description: Investigation session completed with structured output
+    expected_behavior: session_completed is true and response contains structured assessment
+    grader_type: code
+evidence_requirements:
+  - type: graph_nodes
+    description: BSKG node references supporting claims
+  - type: code_locations
+    description: Solidity file:line references for each claim
+  - type: tool_output
+    description: Raw BSKG query results
+hooks:
+  - SessionStart
+  - Stop
+  - PreCompact
+  - TeammateIdle
+  - TaskCompleted
+  - SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+  model_tier: opus
+ground_truth_rubric: >-
+  Agent queries BSKG for value-movement patterns and external call targets before
+  forming an initial hypothesis. Agent explicitly evaluates whether state-write
+  ordering is protected by guards. Agent constructs at least one step-by-step
+  exploit scenario grounded in graph evidence. Agent cites specific graph node IDs
+  and code locations when building the exploit path. Agent considers economic
+  prerequisites and feasibility of the attack vector. Agent performs self-critique
+  by checking whether identified guards might prevent the constructed exploit path.
+active_dimensions:
+  - graph_utilization
+  - evidence_quality
+  - reasoning_depth
+  - hypothesis_formation
+  - hypothesis_testing
+  - exploit_path_construction
+  - conclusion_support
+  - creative_adversarial_thinking
+  - rubric_coverage
+  - investigation_depth

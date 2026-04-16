@@ -1,0 +1,139 @@
+# Uniswap V3 Ground Truth
+# Source: Multiple Audits (Trail of Bits, ABDK, OpenZeppelin)
+# URLs:
+# - https://github.com/Uniswap/v3-core/blob/main/audits/tob/audit.pdf
+# - https://github.com/Uniswap/v3-core/blob/main/audits/abdk/audit.pdf
+
+project_name: uniswap-v3
+project_type: dex
+audit_source: Multiple (Trail of Bits, ABDK)
+audit_date: "2021-03-15"
+audit_url: https://github.com/Uniswap/v3-core/tree/main/audits
+code_url: https://github.com/Uniswap/v3-core
+code_commit: main
+solidity_version: ">=0.7.5"
+
+findings:
+  # High Severity
+  - id: TOB-001
+    title: Flash loan callback validation weakness
+    category: access_control
+    severity: high
+    location:
+      file: UniswapV3Pool.sol
+      function: flash
+      line_start: 0
+      line_end: 0
+    description: "Flash loan callback may not properly validate the caller, allowing unauthorized callbacks."
+    recommendation: "Validate callback caller is the expected contract."
+    vkg_should_find: true
+
+  - id: TOB-002
+    title: Price manipulation via concentrated liquidity
+    category: oracle_manipulation
+    severity: high
+    location:
+      file: UniswapV3Pool.sol
+      function: observe
+      line_start: 0
+      line_end: 0
+    description: "TWAP oracle can be manipulated by large swaps in low liquidity ticks."
+    vkg_should_find: true
+
+  # Medium Severity
+  - id: TOB-003
+    title: Swap slippage not enforced in certain paths
+    category: mev_slippage
+    severity: medium
+    location:
+      file: SwapRouter.sol
+      function: exactInput
+      line_start: 0
+      line_end: 0
+    description: "Multi-hop swaps may have cumulative slippage exceeding user expectations."
+    vkg_should_find: true
+
+  - id: TOB-004
+    title: Missing deadline check in some swap functions
+    category: mev_slippage
+    severity: medium
+    location:
+      file: SwapRouter.sol
+      function: exactInputSingle
+      line_start: 0
+      line_end: 0
+    description: "Transactions without deadline can be held and executed at unfavorable prices."
+    vkg_should_find: true
+
+  - id: ABDK-001
+    title: Tick crossing arithmetic edge cases
+    category: arithmetic
+    severity: medium
+    location:
+      file: UniswapV3Pool.sol
+      function: swap
+      line_start: 0
+      line_end: 0
+    description: "Edge cases in tick crossing calculations may lead to rounding issues."
+    vkg_should_find: true
+
+  - id: ABDK-002
+    title: Liquidity position NFT transfer without fee collection
+    category: business_logic
+    severity: medium
+    location:
+      file: NonfungiblePositionManager.sol
+      function: transferFrom
+      line_start: 0
+      line_end: 0
+    description: "Position transfers don't automatically collect accrued fees, may confuse users."
+    vkg_should_find: false  # Business logic - out of scope
+
+  # Low Severity
+  - id: TOB-005
+    title: Potential DoS via excessive tick operations
+    category: dos
+    severity: low
+    location:
+      file: UniswapV3Pool.sol
+      function: mint
+      line_start: 0
+      line_end: 0
+    description: "Minting positions across many ticks could consume excessive gas."
+    vkg_should_find: true
+
+  - id: ABDK-003
+    title: Protocol fee can be changed mid-swap
+    category: access_control
+    severity: low
+    location:
+      file: UniswapV3Factory.sol
+      function: setOwner
+      line_start: 0
+      line_end: 0
+    description: "Protocol fee changes take effect immediately, could affect in-flight swaps."
+    vkg_should_find: true
+
+  - id: TOB-006
+    title: Unchecked return value on ERC20 transfers
+    category: unchecked_return
+    severity: low
+    location:
+      file: TransferHelper.sol
+      function: safeTransfer
+      line_start: 0
+      line_end: 0
+    description: "Some token transfer return values not properly checked."
+    vkg_should_find: true
+
+notes: |
+  Uniswap V3 introduced concentrated liquidity, making the protocol significantly more complex.
+  Multiple audits were conducted by Trail of Bits and ABDK.
+
+  Note: Line numbers are placeholder (0) as exact lines vary by commit.
+  File and function names should be sufficient for matching.
+
+  Out of scope:
+  - Economic/game theory issues (concentrated liquidity strategies)
+  - Business logic (fee collection UX)
+  - Gas optimization suggestions

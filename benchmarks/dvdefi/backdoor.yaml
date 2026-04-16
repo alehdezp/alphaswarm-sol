@@ -1,0 +1,48 @@
+# DVDeFi Challenge: Backdoor
+# Vulnerability: Callback-controlled payment recipient
+
+id: dvd-backdoor
+name: Backdoor
+version: "4"
+difficulty: 5
+category: Access Control
+
+source_path: examples/damm-vuln-defi/src/backdoor
+
+vulnerability:
+  type: callback-controlled-recipient
+  description: |
+    The wallet registry allows arbitrary setup callback during Safe creation,
+    which can be used to approve attacker to transfer tokens from new wallet.
+  cwe: CWE-284
+  severity: critical
+
+expected_detections:
+  - pattern: callback-controlled-recipient
+    contract: WalletRegistry
+    function: proxyCreated
+    property: callback_chain_surface
+    confidence: high
+
+  - pattern: callback-arbitrary-action
+    contract: WalletRegistry
+    function: proxyCreated
+    property: payment_recipient_controllable
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - WalletRegistry.proxyCreated
+  safe:
+    - WalletRegistry.addBeneficiary
+
+false_positive_exclusions:
+  - description: "addBeneficiary is internal accounting"
+    reason: No external value flow
+
+verification:
+  exploit_summary: "Create Safe wallets with setup callback that approves attacker, then transfer"
+  fix_summary: "Restrict allowed setup callbacks or validate setup data"
+
+status: detected
+detection_date: "2026-01-07"

@@ -1,0 +1,16 @@
+id: ext-008
+vulndoc: access-control/external-call
+name: Array Length Manipulation
+description: Array inputs without length validation enabling gas or mismatch risk.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_array_parameter
+    op: eq
+    value: true
+  - property: has_array_length_check
+    op: eq
+    value: false

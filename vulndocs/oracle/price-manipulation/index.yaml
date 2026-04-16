@@ -1,0 +1,88 @@
+# Price Manipulation - Subcategory Index
+# DEX spot price manipulation through flash loans or large trades
+
+id: price-manipulation
+name: Price Manipulation
+parent_category: oracle
+
+description: |
+  DEX spot price manipulation occurs when protocols use instantaneous reserve
+  ratios or spot prices from AMMs without manipulation resistance. Attackers
+  use flash loans to temporarily skew pool reserves, execute transactions at
+  manipulated prices, then restore the pool - all within a single transaction.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - oracle-001
+  - oracle-002
+
+# VKG properties for detection
+relevant_properties:
+  - reads_oracle_price
+  - uses_spot_price
+  - has_twap_check
+  - reads_from_amm
+  - external_call_sites
+  - performs_division
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: uses_spot_price
+    expected: true
+    critical: true
+    description: Uses instantaneous spot price from DEX
+
+  - property: has_twap_check
+    expected: false
+    critical: true
+    description: No time-weighted average price protection
+
+  - property: reads_from_amm
+    expected: true
+    critical: false
+    description: Reads reserves or price from AMM pool
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+# Behavioral signatures
+behavioral_signatures:
+  - "X:amm->C:spot->W:state"
+  - "X:dex->C:reserves->C:ratio->W:bal"
+  - "R:reserves->C:div->W:price"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "READS_EXTERNAL_VALUE -> PERFORMS_DIVISION -> MODIFIES_CRITICAL_STATE"
+    - "CALLS_EXTERNAL(pool) -> READS_ORACLE -> MODIFIES_CRITICAL_STATE"
+  safe:
+    - "READS_ORACLE(twap) -> PERFORMS_DIVISION -> MODIFIES_CRITICAL_STATE"
+    - "READS_EXTERNAL_VALUE -> VALIDATES_BOUNDS -> MODIFIES_CRITICAL_STATE"
+
+# False positive indicators
+false_positive_indicators:
+  - "TWAP oracle used instead of spot price"
+  - "Multiple block price averaging implemented"
+  - "Chainlink or Band Protocol oracle used"
+  - "Price bounded by sanity checks"
+  - "Flash loan protection via same-block check"
+  - "Read-only reentrancy guard on price reads"
+
+# Related real-world exploits
+related_exploits:
+  - beanstalk-hack
+  - mango-markets
+  - cream-finance
+  - warp-finance
+
+# Token estimate for this subcategory
+token_estimate: 550

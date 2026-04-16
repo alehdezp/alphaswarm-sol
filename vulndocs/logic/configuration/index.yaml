@@ -1,0 +1,156 @@
+# Configuration Issues - Subcategory Index
+# Low-level assembly and unsafe configuration handling
+
+id: configuration
+name: Configuration and Low-Level Assembly Issues
+parent_category: logic
+
+description: |
+  Vulnerabilities in configuration handling and unsafe low-level assembly/Yul code.
+  These include pointer corruption, unsafe arithmetic in assembly, memory layout issues,
+  and unsafe calldata processing that can lead to state corruption, fund theft, or
+  privilege escalation.
+
+  This subcategory focuses on vulnerabilities that arise from:
+  - Unsafe pointer arithmetic in assembly/Yul blocks
+  - Unvalidated length/offset parameters
+  - Memory corruption through buffer overflows
+  - Unsafe calldata processing
+  - Critical state that can be overwritten through assembly exploits
+
+severity_range:
+  - high
+  - critical
+
+# Specifics (individual real-world exploits)
+specifics:
+  - id: 1inch-calldata-corruption
+    name: 1inch Yul Calldata Corruption
+    date: 2025-03-05
+    loss_usd: 5000000
+    description: |
+      Integer underflow in Yul pointer arithmetic allowed overwriting resolver address,
+      enabling arbitrary fund extraction from market makers via order manipulation.
+
+# Associated detection patterns
+patterns:
+  - logic-config-001
+  - logic-config-002
+  - logic-config-003
+
+# VKG properties for detection
+relevant_properties:
+  - uses_assembly
+  - has_external_call
+  - writes_privileged_state
+  - has_arithmetic_operations
+  - lacks_input_validation
+  - calls_untrusted
+  - reads_external_value
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: uses_assembly
+    expected: true
+    critical: true
+    description: Code contains low-level assembly/Yul blocks
+    confidence: 0.95
+
+  - property: has_arithmetic_operations
+    expected: true
+    critical: true
+    description: Arithmetic operations on user-controlled values
+    confidence: 0.90
+
+  - property: lacks_input_validation
+    expected: true
+    critical: true
+    description: No bounds checking on input parameters
+    confidence: 0.92
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    description: Modifies critical state (addresses, amounts, permissions)
+    confidence: 0.88
+
+  - property: has_external_call
+    expected: true
+    critical: true
+    description: Makes external calls based on configuration
+    confidence: 0.85
+
+# Semantic operations relevant to this subcategory
+semantic_operations:
+  - VALIDATES_INPUT              # Input validation (usually insufficient)
+  - PERFORMS_ARITHMETIC          # Unsafe arithmetic operations
+  - MODIFIES_CRITICAL_STATE      # Writes to privileged state
+  - CALLS_EXTERNAL               # External calls based on corrupted state
+  - CALLS_UNTRUSTED              # Calls to untrusted addresses
+  - TRANSFERS_VALUE_OUT          # Value transfer via corrupted routing
+  - READS_EXTERNAL_VALUE         # Reading configuration from external sources
+  - WRITES_USER_BALANCE          # Balance modifications
+
+# Behavioral signatures for pattern matching
+behavioral_signatures:
+  vulnerable:
+    - "V:in{incomplete} -> A:ptr_arithmetic -> W:crit"  # Incomplete validation, unsafe arithmetic
+    - "R:calldata -> A:add -> W:critical_addr"          # Read calldata, arithmetic, write address
+    - "X:resolver{corrupted} -> X:unk -> W:bal"         # Corrupted resolver call
+    - "U:offset{unchecked} -> A:arithmetic -> W:state"  # Unchecked offset, arithmetic, state write
+
+  safe:
+    - "V:bounds -> A:arithmetic -> V:range -> W:state"  # Bounds validation, arithmetic, range check, write
+    - "I:immutable -> X:call -> W:state"                # Immutable config, external call, write
+    - "V:signature -> V:whitelist -> X:call -> W:state" # Verify signature, whitelist check, call, write
+
+# Related real-world exploits
+related_exploits:
+  - 1inch-calldata-corruption
+  - potential-future-assembly-exploits
+
+# Related CWE identifiers
+related_cwes:
+  - CWE-190    # Integer Overflow
+  - CWE-191    # Integer Underflow
+  - CWE-119    # Improper Restriction of Operations within the Bounds of a Memory Buffer
+  - CWE-680    # Integer Overflow to Buffer Overflow
+
+# Related SWC identifiers
+related_swcs:
+  - SWC-101    # Integer Overflow and Underflow
+  - SWC-109    # Unencrypted Private Data On-Chain
+
+# Navigation hints for LLM agents
+navigation:
+  hints:
+    - "Look for assembly blocks and check all arithmetic"
+    - "Verify all pointer/offset calculations have bounds checks"
+    - "Check if resolver/handler addresses come from untrusted sources"
+    - "Ensure length parameters are validated before use"
+    - "Review memory layout and corruption possibilities"
+    - "Check for integer underflow in subtraction/addition chains"
+
+  related_categories:
+    - access-control
+    - memory-safety
+    - input-validation
+
+# Token estimates for context retrieval
+token_estimates:
+  index: 300
+  overview: 500
+  detection: 800
+  patterns: 1000
+  full: 2500
+
+# Cache configuration
+context_cache_key: "logic-config-v1"
+
+# Metadata
+metadata:
+  created: 2025-01-09
+  last_updated: 2025-01-09
+  status: "active"
+  vulnerability_count: 1
+  specifics_count: 1

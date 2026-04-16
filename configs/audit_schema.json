@@ -1,0 +1,300 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AlphaSwarm Audit Log Schema",
+  "description": "JSON Schema for structured audit log entries with evidence lineage",
+  "type": "object",
+  "required": ["timestamp", "trace_id", "pool_id", "category", "event"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when event occurred"
+    },
+    "trace_id": {
+      "type": "string",
+      "description": "Trace correlation ID for end-to-end visibility"
+    },
+    "pool_id": {
+      "type": "string",
+      "description": "Pool identifier for scoped queries"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "verdict_assignment",
+        "confidence_upgrade",
+        "evidence_usage",
+        "policy_violation",
+        "pool_lifecycle",
+        "cost_tracking",
+        "tool_execution",
+        "handoff"
+      ],
+      "description": "Audit log category for filtering"
+    },
+    "event": {
+      "type": "string",
+      "description": "Specific event type within category"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "verdict_assignment"
+          }
+        }
+      },
+      "then": {
+        "required": ["bead_id", "verdict", "confidence", "evidence_refs", "agent_type"],
+        "properties": {
+          "bead_id": {
+            "type": "string",
+            "description": "Bead identifier"
+          },
+          "verdict": {
+            "type": "string",
+            "description": "Verdict string (e.g., 'vulnerable', 'safe')"
+          },
+          "confidence": {
+            "type": "string",
+            "description": "Confidence level (e.g., 'LIKELY', 'CONFIRMED')"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of evidence IDs supporting verdict"
+          },
+          "evidence_count": {
+            "type": "integer",
+            "description": "Number of evidence references"
+          },
+          "agent_type": {
+            "type": "string",
+            "description": "Agent type that made the verdict"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "Audit severity"
+          },
+          "requires_review": {
+            "type": "boolean",
+            "description": "Whether verdict requires human review"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "confidence_upgrade"
+          }
+        }
+      },
+      "then": {
+        "required": ["bead_id", "from_confidence", "to_confidence", "evidence_refs", "agent_type"],
+        "properties": {
+          "bead_id": {
+            "type": "string"
+          },
+          "from_confidence": {
+            "type": "string"
+          },
+          "to_confidence": {
+            "type": "string"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_count": {
+            "type": "integer"
+          },
+          "agent_type": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "evidence_usage"
+          }
+        }
+      },
+      "then": {
+        "required": ["evidence_id", "source_type", "source_id", "used_by_agent", "used_in_verdict"],
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "description": "Evidence identifier"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": ["bskg", "tool", "manual", "derived"],
+            "description": "Evidence source type"
+          },
+          "source_id": {
+            "type": "string",
+            "description": "Source identifier (node ID, finding ID, etc.)"
+          },
+          "used_by_agent": {
+            "type": "string",
+            "description": "Agent type that used the evidence"
+          },
+          "used_in_verdict": {
+            "type": "string",
+            "description": "Verdict ID where evidence was used"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "policy_violation"
+          }
+        }
+      },
+      "then": {
+        "required": ["policy_id", "violation_type", "actor", "severity", "suggested_action"],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "description": "Policy identifier"
+          },
+          "violation_type": {
+            "type": "string",
+            "description": "Type of violation"
+          },
+          "actor": {
+            "type": "string",
+            "description": "Who/what caused the violation"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "Violation severity"
+          },
+          "suggested_action": {
+            "type": "string",
+            "enum": ["block", "alert", "sanitize"],
+            "description": "Recommended action"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional violation context"
+          },
+          "requires_investigation": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "pool_lifecycle"
+          }
+        }
+      },
+      "then": {
+        "required": ["event_type"],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "enum": ["created", "started", "completed", "failed"],
+            "description": "Pool lifecycle event type"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional event context"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "cost_tracking"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "cost_usd": {
+            "type": "number",
+            "description": "Cost in USD"
+          },
+          "tokens": {
+            "type": "integer",
+            "description": "Token count"
+          },
+          "agent_type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "tool_execution"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "tool_name": {
+            "type": "string"
+          },
+          "duration_ms": {
+            "type": "number"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "handoff"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "from_agent": {
+            "type": "string"
+          },
+          "to_agent": {
+            "type": "string"
+          },
+          "bead_id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

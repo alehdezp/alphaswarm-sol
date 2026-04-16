@@ -1,0 +1,13 @@
+id: auth-105
+vulndoc: access-control/general
+name: Access Gate Uses If-Return
+description: Access control uses if-return instead of revert.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_gate_has_if_return
+    op: eq
+    value: true

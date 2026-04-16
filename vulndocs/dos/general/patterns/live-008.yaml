@@ -1,0 +1,29 @@
+id: live-008
+vulndoc: dos/general
+name: Storage Growth DoS
+description: Unbounded storage growth in arrays or mappings.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: writes_state
+    op: eq
+    value: true
+  - property: has_user_input
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false
+  any:
+  - property: array_growth_unbounded
+    op: eq
+    value: true
+  - property: mapping_growth_unbounded
+    op: eq
+    value: true
+  - property: storage_growth_operation
+    op: eq
+    value: true

@@ -1,0 +1,19 @@
+id: value-movement-deposit-without-checks
+vulndoc: reentrancy/general
+name: Deposit Without Safety Checks
+description: Deposit-like functions without bounds or received-amount checks.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: is_deposit_like
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false
+  - property: checks_received_amount
+    op: eq
+    value: false

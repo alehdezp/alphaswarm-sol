@@ -1,0 +1,425 @@
+# User Journey Metrics Configuration
+# Phase: 07.3.4 - User Journey Validation
+#
+# Defines UX metrics for measuring user experience quality.
+# Each metric maps to evidence pack fields for automated collection.
+
+version: "1.0.0"
+updated: "2026-01-31"
+
+# ============================================================================
+# Core UX Metrics
+# ============================================================================
+
+metrics:
+  # --------------------------------------------------------------------------
+  # Time-Based Metrics
+  # --------------------------------------------------------------------------
+  time_to_first_report:
+    id: UX-TIME-001
+    name: "Time to First Report"
+    description: |
+      Total time from invoking alphaswarm to receiving the first audit report.
+      Measures end-to-end workflow efficiency for new users.
+    unit: seconds
+    source:
+      evidence_pack_field: duration_ms
+      calculation: "duration_ms / 1000"
+    thresholds:
+      excellent: 120    # < 2 minutes
+      acceptable: 300   # < 5 minutes
+      concerning: 600   # < 10 minutes
+      critical: null    # > 10 minutes is failure
+    gate_mapping:
+      - gate: G5
+        via: variance
+        description: "Variance in time across runs affects UX"
+    persona_targets:
+      novice: 300       # 5 minutes max for first-timers
+      intermediate: 180 # 3 minutes for experienced devs
+      power_user: 120   # 2 minutes for experts
+
+  install_duration:
+    id: UX-TIME-002
+    name: "Installation Duration"
+    description: |
+      Time from starting uv tool install to successful version check.
+      Critical for first impression.
+    unit: seconds
+    source:
+      evidence_pack_field: "stages.install.duration_ms"
+      transcript_pattern: "STATUS: install_complete duration=([0-9]+)s"
+    thresholds:
+      excellent: 30
+      acceptable: 60
+      concerning: 120
+      critical: 300
+    gate_mapping: []
+    persona_targets:
+      novice: 120
+      intermediate: 60
+      power_user: 30
+
+  failure_recovery_time:
+    id: UX-TIME-003
+    name: "Failure Recovery Time"
+    description: |
+      Time from encountering an error to successfully resuming workflow.
+      Measures error message quality and recovery UX.
+    unit: seconds
+    source:
+      transcript_pattern: "ERROR_START.*?RECOVERY_COMPLETE"
+      friction_point_field: "recovery_duration_seconds"
+    thresholds:
+      excellent: 30     # Quick recovery with good messages
+      acceptable: 60    # Reasonable recovery
+      concerning: 180   # User struggling
+      critical: null    # Gave up
+    gate_mapping:
+      - gate: G5
+        via: variance
+        description: "Recovery time stability"
+    persona_targets:
+      novice: 120
+      intermediate: 60
+      power_user: 30
+
+  # --------------------------------------------------------------------------
+  # Intervention Metrics
+  # --------------------------------------------------------------------------
+  manual_interventions:
+    id: UX-INT-001
+    name: "Manual Interventions"
+    description: |
+      Number of times user had to manually intervene during workflow.
+      Lower is better - indicates automation quality.
+    unit: count
+    source:
+      friction_point_field: "count where category in [blocker, confusion]"
+      transcript_pattern: "FRICTION_POINT"
+    thresholds:
+      excellent: 0
+      acceptable: 2
+      concerning: 5
+      critical: 10
+    gate_mapping:
+      - gate: G5
+        via: variance
+        description: "Intervention count should be stable"
+    persona_targets:
+      novice: 3
+      intermediate: 1
+      power_user: 0
+
+  documentation_lookups:
+    id: UX-INT-002
+    name: "Documentation Lookups"
+    description: |
+      Number of times user needed to consult documentation mid-workflow.
+      Indicates self-explanatory UX quality.
+    unit: count
+    source:
+      transcript_pattern: "(README|--help|docs/)"
+      user_action_field: "documentation_access_count"
+    thresholds:
+      excellent: 0
+      acceptable: 2
+      concerning: 5
+      critical: null
+    gate_mapping: []
+    persona_targets:
+      novice: 3       # Expected for new users
+      intermediate: 1 # Should know most things
+      power_user: 0   # Self-sufficient
+
+  # --------------------------------------------------------------------------
+  # Success Metrics
+  # --------------------------------------------------------------------------
+  successful_run_rate:
+    id: UX-SUCCESS-001
+    name: "Successful Run Rate"
+    description: |
+      Percentage of audit runs that complete successfully without errors.
+      Core UX quality indicator.
+    unit: percentage
+    source:
+      evidence_pack_field: "outcome"
+      calculation: "count(outcome == 'success') / count(*) * 100"
+    thresholds:
+      excellent: 95
+      acceptable: 85
+      concerning: 70
+      critical: 50
+    gate_mapping:
+      - gate: G5
+        via: variance
+        description: "Success rate should be consistent"
+      - gate: G7
+        via: trend
+        description: "Success rate trends in CI"
+    persona_targets:
+      novice: 80
+      intermediate: 90
+      power_user: 95
+
+  report_generated:
+    id: UX-SUCCESS-002
+    name: "Report Generated"
+    description: |
+      Whether the audit successfully generated a report file.
+      Binary success metric.
+    unit: boolean
+    source:
+      evidence_pack_field: "artifacts.report_path"
+      file_exists_check: ".vrs/reports/audit-report.md"
+    thresholds:
+      required: true
+    gate_mapping:
+      - gate: G1
+        via: evidence
+        description: "Report generation is evidence of execution"
+    persona_targets:
+      novice: true
+      intermediate: true
+      power_user: true
+
+  findings_actionable:
+    id: UX-SUCCESS-003
+    name: "Findings Actionable"
+    description: |
+      Whether findings include sufficient context for user to understand
+      and fix the vulnerability.
+    unit: percentage
+    source:
+      report_analysis: "findings with code_location AND explanation"
+      user_feedback_field: "actionable_rating"
+    thresholds:
+      excellent: 90
+      acceptable: 70
+      concerning: 50
+      critical: 30
+    gate_mapping: []
+    persona_targets:
+      novice: 80    # Needs more explanation
+      intermediate: 70
+      power_user: 60  # Experts need less hand-holding
+
+  # --------------------------------------------------------------------------
+  # Error Quality Metrics
+  # --------------------------------------------------------------------------
+  error_message_clarity:
+    id: UX-ERR-001
+    name: "Error Message Clarity"
+    description: |
+      Quality score for error messages - do they explain what went wrong
+      and suggest fixes?
+    unit: score
+    source:
+      friction_point_analysis: "error messages with 'Try:' suggestions"
+      transcript_pattern: "Error:.*Try:"
+    thresholds:
+      excellent: 90
+      acceptable: 70
+      concerning: 50
+      critical: 30
+    gate_mapping:
+      - gate: G5
+        via: variance
+        description: "Error quality should be consistent"
+    persona_targets:
+      novice: 90    # Needs clear guidance
+      intermediate: 70
+      power_user: 50  # Can figure things out
+
+  graceful_degradation:
+    id: UX-ERR-002
+    name: "Graceful Degradation"
+    description: |
+      When optional components fail, does the tool continue with reduced
+      functionality rather than crashing?
+    unit: percentage
+    source:
+      transcript_pattern: "SKIPPED|DEGRADED|fallback"
+      evidence_pack_field: "tool_outputs.*.skip_reason"
+    thresholds:
+      excellent: 100
+      acceptable: 80
+      concerning: 60
+      critical: 40
+    gate_mapping: []
+    persona_targets:
+      novice: 100   # Must not crash
+      intermediate: 90
+      power_user: 80
+
+# ============================================================================
+# Evidence Pack Field Mappings
+# ============================================================================
+
+evidence_pack_mappings:
+  # How to extract metrics from evidence packs
+  duration_ms:
+    path: "$.duration_ms"
+    type: integer
+
+  outcome:
+    path: "$.outcome"
+    type: string
+    enum: ["success", "failure", "partial"]
+
+  stages:
+    path: "$.stages"
+    type: object
+    children:
+      install:
+        path: "$.stages.install"
+        fields: ["duration_ms", "outcome", "error_count"]
+      audit:
+        path: "$.stages.audit"
+        fields: ["duration_ms", "outcome", "findings_count"]
+
+  friction_points:
+    path: "$.friction_points"
+    type: array
+    item_fields: ["id", "timestamp", "category", "priority", "description"]
+
+  artifacts:
+    path: "$.artifacts"
+    type: object
+    children:
+      report_path:
+        path: "$.artifacts.report_path"
+        type: string
+      graph_path:
+        path: "$.artifacts.graph_path"
+        type: string
+
+# ============================================================================
+# Aggregation Rules
+# ============================================================================
+
+aggregation:
+  # How to combine metrics across multiple runs
+  time_metrics:
+    method: percentile
+    percentiles: [50, 90, 99]
+
+  count_metrics:
+    method: average
+    include_stddev: true
+
+  rate_metrics:
+    method: weighted_average
+    weight_by: run_count
+
+  boolean_metrics:
+    method: all_true
+    partial_threshold: 0.8
+
+# ============================================================================
+# Gate Criteria (UX Quality Gates)
+# ============================================================================
+
+gates:
+  # UX-specific quality gates for GA readiness
+  ux_gate_p0:
+    name: "P0 UX Gate"
+    description: "Critical UX requirements for GA"
+    required_for: ga_release
+    criteria:
+      - metric: successful_run_rate
+        operator: ">="
+        value: 80
+        all_personas: true
+
+      - metric: report_generated
+        operator: "=="
+        value: true
+        all_personas: true
+
+      - metric: time_to_first_report
+        operator: "<="
+        value: 600
+        all_personas: true
+
+      - metric: manual_interventions
+        operator: "<="
+        value: 5
+        persona: novice
+
+  ux_gate_p1:
+    name: "P1 UX Gate"
+    description: "Important UX requirements"
+    required_for: good_ux
+    criteria:
+      - metric: successful_run_rate
+        operator: ">="
+        value: 90
+        all_personas: true
+
+      - metric: failure_recovery_time
+        operator: "<="
+        value: 120
+        all_personas: true
+
+      - metric: error_message_clarity
+        operator: ">="
+        value: 70
+        all_personas: true
+
+      - metric: findings_actionable
+        operator: ">="
+        value: 70
+        all_personas: true
+
+  ux_gate_p2:
+    name: "P2 UX Gate"
+    description: "Nice-to-have UX improvements"
+    required_for: excellent_ux
+    criteria:
+      - metric: successful_run_rate
+        operator: ">="
+        value: 95
+        all_personas: true
+
+      - metric: time_to_first_report
+        operator: "<="
+        value: 180
+        persona: power_user
+
+      - metric: manual_interventions
+        operator: "=="
+        value: 0
+        persona: power_user
+
+# ============================================================================
+# Reporting Configuration
+# ============================================================================
+
+reporting:
+  # Output format for metrics reports
+  output_formats:
+    - markdown
+    - json
+
+  include_sections:
+    - executive_summary
+    - metric_details
+    - gate_status
+    - recommendations
+    - trend_analysis
+
+  comparison:
+    baseline_source: ".vrs/baseline/user_journey_metrics.json"
+    show_delta: true
+    highlight_regressions: true
+
+# ============================================================================
+# References
+# ============================================================================
+
+references:
+  phase_design: "07.3.4-PHASE-DESIGN.md"
+  fresh_env_spec: "07.3.4-FRESH-ENV-SPEC.md"
+  persona_matrix: "configs/fresh_env_matrix.yaml"
+  gate_definitions: "07.3.2-GATES.md"

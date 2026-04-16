@@ -1,0 +1,16 @@
+id: vm-008
+vulndoc: reentrancy/general
+name: Arbitrary Delegatecall
+description: Delegatecall target controlled by user input.
+scope: Function
+lens:
+- ValueMovement
+severity: critical
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: delegatecall_target_user_controlled
+    op: eq
+    value: true

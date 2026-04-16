@@ -1,0 +1,8 @@
+{
+  "session_id": "eeb93c51-cb2c-4594-a4d9-4a5e5c11600f",
+  "cwd": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg",
+  "model": "claude-sonnet-4-20250514",
+  "source": "interactive",
+  "agent_type": "main",
+  "_schema_note": "Captured from real CC session. Fields: session_id, cwd, model are always present. source and agent_type are optional (P13-IMP-05)."
+}

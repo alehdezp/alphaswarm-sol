@@ -1,0 +1,30 @@
+id: erc4626-vault-reentrancy
+vulndoc: reentrancy/classic
+name: ERC4626 Vault Reentrancy
+description: ERC4626 ops with post-call state writes.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  any:
+  - property: uses_erc4626_deposit
+    op: eq
+    value: true
+  - property: uses_erc4626_withdraw
+    op: eq
+    value: true
+  - property: uses_erc4626_redeem
+    op: eq
+    value: true
+  - property: uses_erc4626_mint
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

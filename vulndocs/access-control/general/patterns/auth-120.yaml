@@ -1,0 +1,24 @@
+id: auth-120
+vulndoc: access-control/general
+name: Unprotected Fallback/Receive
+description: Fallback or receive entrypoints without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_access_gate
+    op: eq
+    value: false
+  none:
+  - property: contract_is_upgradeable
+    op: eq
+    value: true
+  any:
+  - property: is_fallback
+    op: eq
+    value: true
+  - property: is_receive
+    op: eq
+    value: true

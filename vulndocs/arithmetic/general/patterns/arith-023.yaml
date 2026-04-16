@@ -1,0 +1,19 @@
+id: arith-023
+vulndoc: arithmetic/general
+name: Decimal Scaling Issue
+description: Decimal scaling without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: decimal_scaling_usage
+    op: eq
+    value: true
+  none:
+  - property: has_precision_guard
+    op: eq
+    value: true

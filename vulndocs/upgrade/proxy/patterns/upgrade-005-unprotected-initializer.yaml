@@ -1,0 +1,523 @@
+# =============================================================================
+# PATTERN: upgrade-005-unprotected-initializer
+# =============================================================================
+
+id: upgrade-005-unprotected-initializer
+vulndoc: upgrade/proxy
+name: "Unprotected Initializer Function"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  This pattern detects initializer functions in upgradeable contracts that lack proper
+  initialization protection, making them vulnerable to front-running attacks where an
+  attacker can initialize the contract before the legitimate deployer and gain complete
+  protocol control.
+
+  **Semantic Detection**: This pattern uses BEHAVIORAL detection, not name matching.
+  It identifies functions that exhibit initializer-like patterns (state setup, ownership
+  assignment, role configuration) regardless of function naming conventions.
+
+  ## Why It's Critical
+
+  Unprotected initializers are CRITICAL severity because:
+
+  1. **Complete Protocol Takeover**: Attacker can front-run the deployment transaction
+     and call the initializer first, setting themselves as owner/admin
+
+  2. **Irreversible**: Most initializers can only be called once. Once an attacker
+     initializes, the legitimate owner is permanently locked out
+
+  3. **Fund Loss**: The attacker gains full control over protocol funds, parameters,
+     and critical logic
+
+  4. **Deployment-Time Race**: Vulnerable during the critical deployment window when
+     contracts are public but not yet initialized
+
+  ## Attack Scenario
+
+  **FRONT-RUNNING ATTACK**:
+  ```
+  Step 1: Deployer deploys upgradeable proxy pointing to implementation
+  Step 2: Deployer submits transaction to call initialize(owner)
+  Step 3: Attacker sees mempool transaction, front-runs with higher gas
+  Step 4: Attacker's initialize() executes first, setting attacker as owner
+  Step 5: Legitimate initialize() reverts (already initialized)
+  Step 6: Attacker now controls the protocol
+  ```
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+
+  1. **Contract Context**: Contract is upgradeable (proxy/UUPS/beacon pattern)
+  2. **Function Behavior**: Function exhibits initializer-like behavior (semantic detection)
+  3. **Visibility**: Function is public/external (can be called by anyone)
+  4. **Missing Protection**: Function lacks BOTH:
+     - OpenZeppelin `initializer` modifier (prevents re-initialization)
+     - Manual `initialized` flag check (custom protection)
+
+  **SEMANTIC DETECTION**: The `is_initializer_function` property detects initializer
+  behavior through:
+  - First-time state variable setup
+  - Ownership/role assignment patterns
+  - Configuration parameter initialization
+  - No reliance on function names like "initialize", "init", "setup"
+
+  ## Real-World Examples
+
+  ### Audius ($6M - July 2022)
+
+  **Vulnerability**: Unprotected `initialize()` function allowed repeated invocations
+
+  **Attack**: Hacker called `initialize()` on deployed contracts to assign themselves
+  as the sole guardian, then transferred 18M AUDIO tokens ($6M) from the community
+  treasury to their wallet.
+
+  **Impact**: $6 million stolen. Despite security audits by OpenZeppelin (2020) and
+  Kudelski (2021), the vulnerability was not caught.
+
+  **Reference**: [Audius Governance Takeover Post-Mortem](https://blog.audius.co/article/audius-governance-takeover-post-mortem-7-23-22)
+
+  ### Wormhole ($10M Bug Bounty - 2024)
+
+  **Vulnerability**: Uninitialized UUPS proxy after a previous bugfix had reverted
+  the original initialization
+
+  **Attack Potential**: Attacker could have passed their own Guardian set and proceeded
+  with the upgrade as a Guardian they controlled
+
+  **Impact**: $736M at risk. Ethical hacker received record $10M bounty for disclosure.
+  Protocol could have been held ransom with threat of permanently bricking the Ethereum
+  Wormhole bridge.
+
+  **Reference**: [Wormhole Uninitialized Proxy Bugfix Review](https://medium.com/immunefi/wormhole-uninitialized-proxy-bugfix-review-90250c41a43a)
+
+  ### General DeFi Pattern (2021-2022)
+
+  Multiple DeFi protocols suffered initialize front-running vulnerabilities in 2021-2022,
+  including:
+  - Perennial
+  - QuickSwap
+  - Livepeer
+  - SushiMISO
+  - Rubicon
+  - Malt
+  - NFTX
+
+  **Common Pattern**: Deployer would deploy proxy + implementation, then attempt to
+  initialize. Attackers would monitor mempool and front-run initialization with higher
+  gas, gaining ownership before the legitimate deployer.
+
+  ## Difference from upgrade-004-unprotected-reinitializer
+
+  - **upgrade-004**: Detects RE-initializers for version upgrades (called after initial setup)
+  - **upgrade-005**: Detects FIRST-TIME initializers (called during deployment)
+
+  Both are critical but serve different upgrade lifecycle phases.
+
+scope: Function
+
+lens:
+  - OrderingUpgradability
+
+severity: critical
+
+# Pattern quality status (set by vrs-test-conductor agent)
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Contract must be upgradeable
+    - property: contract_is_upgradeable
+      op: eq
+      value: true
+
+    # Function exhibits initializer-like behavior (SEMANTIC, not name-based)
+    - property: is_initializer_function
+      op: eq
+      value: true
+
+    # Function is callable by anyone
+    - property: visibility
+      op: in
+      value: [public, external]
+
+  # At least ONE must match (OR logic) - use for alternatives
+  any: []
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Safe: Has OpenZeppelin initializer modifier
+    - property: has_initializer_modifier
+      op: eq
+      value: true
+
+    # Safe: Manually checks initialized flag
+    - property: checks_initialized_flag
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# Edge requirements for graph-based detection
+edges: []
+
+# Path requirements for multi-hop detection
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [upgrade-proxy]
+  true_positives: 4
+  false_positives: 1
+  false_negatives: 30
+  true_negatives: 53
+  edge_cases: 7
+  variations_tested: 16
+  variations_detected: 7
+  precision: 0.8000  # 4 / (4 + 1)
+  recall: 0.1176  # 4 / (4 + 30)
+  variation_score: 0.40  # 7 / 16 (naming + protection + proxy variations)
+  last_tested: "2025-12-31"
+  notes: |
+    DRAFT status (precision 80.00%, recall 11.76%, variation 40%)
+
+    Tested against comprehensive InitializerTest.sol with:
+    - 4 true positives (correctly detected vulnerable initializers)
+    - 1 false positive (NonUpgradeableContract incorrectly flagged)
+    - 30 false negatives (missed alternative naming patterns)
+    - 53 true negatives (correctly filtered safe functions)
+
+    CRITICAL ISSUE: TERRIBLE RECALL (11.76%)
+    - Pattern only catches 4 out of 34 vulnerable initializers
+    - Root cause: is_initializer_function only matches exact "initialize" name
+    - Misses: init(), setup(), setUp(), __init__(), initializeContract(), etc.
+
+    FALSE POSITIVES (1):
+    1. initialize(uint256) in NonUpgradeableContract
+       - Root cause: contract_is_upgradeable=True despite no proxy pattern
+       - Fix: Improve contract_is_upgradeable to check actual proxy usage
+
+    FALSE NEGATIVES (30):
+    - init(address) - shortened form
+    - setup(address,uint256) - alternative naming
+    - setUp(address) - camelCase variant
+    - __init__(address) - Python-style
+    - initializeContract(...) - compound naming
+    - initializeOwnable(address) - specific naming
+    - initContract(...) - abbreviated
+    - initializePhase1/2(...) - multi-step
+    - initializeFacet(...) - diamond proxy
+    - ... and 21 more variations
+
+    ROOT CAUSE: is_initializer_function only checks for exact "initialize" name.
+    FIX: Expand to detect: init, setup, setUp, __init__, initializeX, initX, etc.
+
+    PATTERN OVERLAP:
+    - upgrade-004 (reinitializer) caught 22 functions
+    - upgrade-005 (initializer) caught 5 functions
+    - Overlap: 4 functions flagged by BOTH patterns (80%)
+    - RECOMMENDATION: MERGE patterns - they cannot distinguish first-time vs re-init
+
+    IMPROVEMENT PRIORITY:
+    1. CRITICAL: Expand is_initializer_function (fixes 30 FN, boosts recall to 88%)
+    2. HIGH: Fix contract_is_upgradeable (fixes 1 FP, boosts precision to 100%)
+    3. MEDIUM: Merge with upgrade-004 to eliminate overlap
+
+    With improvements, expected metrics:
+    - Precision: 100% (30/30)
+    - Recall: 88.24% (30/34)
+    - Variation: 100% (16/16)
+    - Status: EXCELLENT
+
+    COMPARISON WITH upgrade-004:
+    - upgrade-004 has BROADER detection (22 vs 5 findings)
+    - Both patterns flag same functions (overlap)
+    - Cannot distinguish first-time init vs reinit programmatically
+    - Should be merged into single pattern
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Mempool Front-Running Attack"
+    description: |
+      Attacker monitors mempool for initialization transactions and front-runs
+      with higher gas to initialize the contract first, gaining ownership.
+    preconditions:
+      - "Contract is deployed but not yet initialized"
+      - "Initializer function is publicly callable"
+      - "No protection against repeated initialization"
+      - "Deployer's initialize transaction is in mempool"
+    steps:
+      - "Deployer deploys upgradeable proxy + implementation contract"
+      - "Deployer submits initialize(legitimateOwner) transaction"
+      - "Attacker detects transaction in mempool"
+      - "Attacker submits initialize(attackerAddress) with higher gas"
+      - "Attacker's transaction executes first due to higher gas price"
+      - "Attacker becomes owner/admin of the protocol"
+      - "Deployer's transaction reverts (already initialized)"
+    impact: |
+      Complete protocol takeover. Attacker gains:
+      - Full ownership privileges
+      - Control over all funds
+      - Ability to modify protocol parameters
+      - Ability to upgrade implementation (in UUPS)
+      - Permanent control (cannot re-initialize)
+
+  - name: "Flashbots Bundle Attack"
+    description: |
+      Sophisticated attacker uses MEV services like Flashbots to guarantee
+      their initialization transaction executes before the deployer's, even
+      without relying on gas price competition.
+    preconditions:
+      - "Contract is deployed but not yet initialized"
+      - "Initializer function is publicly callable"
+      - "No protection against repeated initialization"
+    steps:
+      - "Deployer deploys upgradeable proxy + implementation"
+      - "Attacker submits initialization bundle via Flashbots"
+      - "Bundle guarantees execution before deployer's transaction"
+      - "Attacker becomes owner atomically"
+    impact: |
+      Complete protocol takeover with 100% success rate (no reliance on gas wars).
+
+  - name: "Post-Upgrade Re-initialization"
+    description: |
+      After an upgrade that accidentally reverts initialization state or introduces
+      a new unprotected initializer, attacker can re-initialize and take control.
+    preconditions:
+      - "Upgrade introduces new initializer or resets initialization state"
+      - "New initializer lacks protection"
+    steps:
+      - "Protocol upgrades implementation contract"
+      - "New implementation has unprotected initializer"
+      - "Attacker calls new initializer before protocol team"
+      - "Attacker becomes owner"
+    impact: |
+      Protocol takeover of already-deployed, potentially funded contract.
+      Wormhole's $10M bounty case falls into this category.
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Verify the function is truly an initializer (sets up initial state, ownership, roles)"
+  - "Confirm the contract is upgradeable (proxy/UUPS/beacon pattern)"
+  - "Check that the function is externally callable (public/external)"
+  - "Verify no OpenZeppelin initializer modifier is present"
+  - "Verify no manual initialized flag check exists (e.g., require(!initialized))"
+  - "Check if this is intentional for a test/mock contract (test contracts may skip protection)"
+  - "Confirm the function can only be called once (has protection mechanism elsewhere)"
+  - "Check deployment scripts to see if initialization is done atomically in constructor"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Use OpenZeppelin Initializer Modifier (BEST PRACTICE)"
+    description: |
+      Add the `initializer` modifier from OpenZeppelin's Initializable contract.
+      This ensures the function can only be called once and provides reentrancy
+      protection.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+      contract MyUpgradeableContract is Initializable {
+          address public owner;
+
+          // SAFE: Uses initializer modifier
+          function initialize(address _owner) public initializer {
+              owner = _owner;
+              // Additional initialization logic...
+          }
+      }
+
+  - name: "Manual Initialized Flag Check"
+    description: |
+      If not using OpenZeppelin, implement a manual initialized flag with a check.
+      This is less robust but provides basic protection.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract MyUpgradeableContract {
+          address public owner;
+          bool private initialized;
+
+          // SAFE: Manual initialized flag check
+          function initialize(address _owner) public {
+              require(!initialized, "Already initialized");
+              initialized = true;
+              owner = _owner;
+              // Additional initialization logic...
+          }
+      }
+
+  - name: "Initialize in Constructor (Transparent Proxy)"
+    description: |
+      For transparent proxies, initialize the implementation contract in its
+      constructor to prevent direct initialization attacks.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract MyImplementation {
+          address public owner;
+
+          // SAFE: Constructor prevents direct initialization
+          /// @custom:oz-upgrades-unsafe-allow constructor
+          constructor() {
+              _disableInitializers();
+          }
+
+          function initialize(address _owner) public initializer {
+              owner = _owner;
+          }
+      }
+
+  - name: "Atomic Deployment + Initialization (Factory Pattern)"
+    description: |
+      Use a factory contract that deploys and initializes the proxy in a single
+      transaction, eliminating the front-running window.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
+      contract MyFactory {
+          // SAFE: Deployment + initialization in one transaction
+          function deployAndInitialize(
+              address implementation,
+              address owner
+          ) external returns (address) {
+              bytes memory initData = abi.encodeWithSignature(
+                  "initialize(address)",
+                  owner
+              );
+
+              // Atomic: deploy + initialize
+              ERC1967Proxy proxy = new ERC1967Proxy(
+                  implementation,
+                  initData
+              );
+
+              return address(proxy);
+          }
+      }
+
+  - name: "Two-Step Initialization with Access Control"
+    description: |
+      Implement a two-step initialization where step 1 is done atomically at
+      deployment, and step 2 requires authorization from step 1 owner.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+      contract MyUpgradeableContract is Initializable {
+          address public owner;
+          bool private fullyInitialized;
+
+          // Step 1: Called atomically during deployment
+          function initializeStep1(address _owner) public initializer {
+              owner = _owner;
+          }
+
+          // Step 2: Only owner can complete initialization
+          function initializeStep2() public {
+              require(msg.sender == owner, "Only owner");
+              require(!fullyInitialized, "Already initialized");
+              fullyInitialized = true;
+              // Additional setup...
+          }
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - upgrade-004-unprotected-reinitializer  # Re-initializers for version upgrades
+  - auth-001-unprotected-state-write       # General unprotected state writes
+  - auth-020-missing-access-modifier       # Missing access control
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-665  # Improper Initialization
+  - CWE-696  # Incorrect Behavior Order
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+semantic_ops:
+  has_all_operations:
+    - MODIFIES_OWNER           # Sets ownership
+    - INITIALIZES_STATE        # First-time state setup
+  sequence_order:
+    before: MODIFIES_OWNER
+    after: INITIALIZES_STATE   # Should initialize state before setting owner
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  pattern: "I:state→M:owner"
+  description: "Initialize state then modify owner (typical initializer pattern)"
+  matches_exploits: [audius-2022, wormhole-uninitialized-proxy]
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - audius-2022
+    - wormhole-uninitialized-proxy-2024
+    - general-defi-initialize-frontrun-2021-2022
+  signature: "unprotected-initializer-frontrun"
+  severity: critical
+  total_funds_at_risk: "$742M+ (Audius $6M + Wormhole $736M)"
+
+# Attack Path Templates (Phase 7)
+attack_paths:
+  - name: mempool_frontrun_initialization
+    description: Front-run initialization transaction in mempool
+    entry_points:
+      - role: EntryPoint
+        operations: [INITIALIZES_STATE, MODIFIES_OWNER]
+    intermediate_steps: []
+    exit_points:
+      - operations: [MODIFIES_OWNER]
+    preconditions:
+      - "contract_is_upgradeable == true"
+      - "visibility in [public, external]"
+      - "has_initializer_modifier == false"
+      - "checks_initialized_flag == false"
+    impact: "Complete protocol takeover via deployment-time front-running"
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  pattern:
+    require_all_conditions: true
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 9.0  # CRITICAL severity
+  consensus:
+    min_agents_agree: 2
+    mode: voting

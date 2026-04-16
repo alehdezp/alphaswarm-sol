@@ -1,0 +1,20 @@
+id: op-loop-with-value-transfer
+vulndoc: reentrancy/classic
+name: Loop with Value Transfer (Operation-Based)
+description: 'Array loops containing value transfers - DoS via reverting recipient.
+
+  Uses LOOPS_OVER_ARRAY and TRANSFERS_VALUE_OUT operations.
+
+  '
+scope: Function
+lens:
+- Liveness
+- ValueMovement
+severity: high
+match:
+  tier_a:
+    all:
+    - has_operation: LOOPS_OVER_ARRAY
+    - has_operation: TRANSFERS_VALUE_OUT
+aggregation:
+  mode: tier_a_only

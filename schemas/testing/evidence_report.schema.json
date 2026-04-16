@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlphaSwarm Testing Evidence Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "session_label",
+    "pane_id",
+    "mode",
+    "duration_ms",
+    "tokens_used",
+    "workflow_type",
+    "proof_tokens"
+  ],
+  "properties": {
+    "session_label": {
+      "type": "string",
+      "pattern": "^vrs-demo-[a-z0-9][a-z0-9-]*-\\d{8}-\\d{6}$"
+    },
+    "pane_id": {
+      "type": "string",
+      "pattern": "^\\d+:\\d+\\.\\d+$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["live", "mock", "simulated"]
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tokens_used": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "workflow_type": {
+      "type": "string",
+      "enum": [
+        "install",
+        "init",
+        "audit",
+        "orchestration",
+        "tool-only",
+        "workflow",
+        "agent",
+        "skill",
+        "e2e"
+      ]
+    },
+    "proof_tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["stage_id", "status"],
+        "properties": {
+          "stage_id": {"type": "string"},
+          "status": {"type": "string", "enum": ["required", "optional", "na"]},
+          "token_path": {"type": "string"},
+          "reason": {"type": "string"}
+        }
+      }
+    },
+    "orchestration_markers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_create", "task_update", "subagent_start"],
+      "properties": {
+        "task_create": {"type": "array", "items": {"type": "string"}},
+        "task_update": {"type": "array", "items": {"type": "string"}},
+        "subagent_start": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "graph_first": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "verified", "query_markers", "first_query_line", "first_conclusion_line"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "verified": {"type": "boolean"},
+        "query_markers": {"type": "array", "items": {"type": "string"}},
+        "first_query_line": {"type": "integer", "minimum": 0},
+        "first_conclusion_line": {"type": "integer", "minimum": 0}
+      }
+    },
+    "graph_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "query_count",
+        "unique_nodes",
+        "unique_edges",
+        "query_time_ms",
+        "graph_build_ms",
+        "evidence_nodes_cited",
+        "vql_min_set_present",
+        "cross_contract_queries"
+      ],
+      "properties": {
+        "query_count": {"type": "integer", "minimum": 0},
+        "unique_nodes": {"type": "integer", "minimum": 0},
+        "unique_edges": {"type": "integer", "minimum": 0},
+        "query_time_ms": {"type": "integer", "minimum": 0},
+        "graph_build_ms": {"type": "integer", "minimum": 0},
+        "evidence_nodes_cited": {"type": "integer", "minimum": 0},
+        "vql_min_set_present": {"type": "boolean"},
+        "cross_contract_queries": {"type": "integer", "minimum": 0}
+      }
+    },
+    "performance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "throughput_runs_per_hour",
+        "mean_time_to_verdict_ms",
+        "p95_time_to_verdict_ms",
+        "queue_wait_ms",
+        "tool_latency_ms",
+        "failure_rate",
+        "retry_rate"
+      ],
+      "properties": {
+        "throughput_runs_per_hour": {"type": "number", "minimum": 0},
+        "mean_time_to_verdict_ms": {"type": "integer", "minimum": 0},
+        "p95_time_to_verdict_ms": {"type": "integer", "minimum": 0},
+        "queue_wait_ms": {"type": "integer", "minimum": 0},
+        "tool_latency_ms": {"type": "integer", "minimum": 0},
+        "failure_rate": {"type": "number", "minimum": 0},
+        "retry_rate": {"type": "number", "minimum": 0}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "workflow_type": {
+            "enum": ["audit", "orchestration", "agent", "skill", "e2e", "workflow"]
+          }
+        },
+        "required": ["workflow_type"]
+      },
+      "then": {
+        "required": ["orchestration_markers", "graph_first"]
+      }
+    }
+  ]
+}

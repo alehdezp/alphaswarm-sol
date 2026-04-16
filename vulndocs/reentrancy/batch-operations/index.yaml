@@ -1,0 +1,13 @@
+id: batch-operations
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Batch Operation Reentrancy
+category: reentrancy
+severity: critical
+cwe: CWE-841
+description: |
+  Reentrancy in loop/batch contexts where single operation is safe
+  but batch amplifies risk through repeated callbacks.
+discovered: "2026-01-09"
+source: "Penpie Hack (Code4rena, $27M)"

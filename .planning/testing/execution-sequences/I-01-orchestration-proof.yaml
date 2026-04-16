@@ -1,0 +1,184 @@
+# Execution Sequence: I-01 Orchestration Proof
+# Purpose: Validate that orchestration markers appear in correct sequence
+
+name: "Orchestration Behavior Proof Execution"
+version: "1.0"
+created: "2026-02-04"
+validation: "I-01"
+depends_on:
+  - "IMP-A1"  # Orchestration markers defined
+  - "IMP-A2"  # Thresholds defined
+
+# Session Configuration
+session:
+  label: "vrs-demo-orch-proof-{timestamp}"
+  description: "Validate orchestration marker sequence"
+
+# Test Target
+target:
+  contract: "tests/contracts/CrossFunctionReentrancy.sol"
+  expected_markers:
+    - "[PREFLIGHT_PASS"
+    - "[GRAPH_BUILD_SUCCESS"
+    - "[CONTEXT_READY"
+    - "TaskCreate("
+    - "TaskUpdate("
+    - "[DETECTION_COMPLETE"
+    - "SubagentStart("
+    - "SubagentComplete("
+    - "[DEBATE_VERDICT"
+    - "[REPORT_GENERATED"
+
+# Execution Sequence
+sequence:
+  commands:
+    - step: 1
+      description: "Launch isolated shell"
+      command: "claude-code-controller launch zsh"
+      capture: "pane_id"
+      timeout: 10
+
+    - step: 2
+      description: "Navigate to project"
+      command: "claude-code-controller send 'cd {project_dir}' --pane={pane_id}"
+      wait: "idle --idle-time=2.0"
+
+    - step: 3
+      description: "Clean previous state"
+      command: "claude-code-controller send 'rm -rf .vrs/state .vrs/reports' --pane={pane_id}"
+      wait: "idle --idle-time=2.0"
+
+    - step: 4
+      description: "Launch Claude Code"
+      command: "claude-code-controller send 'claude' --pane={pane_id}"
+      wait: "idle --idle-time=15.0 --timeout=30"
+
+    - step: 5
+      description: "Execute full audit"
+      command: "claude-code-controller send '/vrs-audit {contract}' --pane={pane_id}"
+      wait: "idle --idle-time=60.0 --timeout=600"
+
+    - step: 6
+      description: "Capture transcript"
+      command: "claude-code-controller capture --pane={pane_id}"
+      output: ".vrs/testing/runs/orch-proof-{timestamp}/transcript.txt"
+
+    - step: 7
+      description: "Save report and state"
+      commands:
+        - "claude-code-controller send 'cp .vrs/reports/latest.json .vrs/testing/runs/orch-proof-{timestamp}/report.json' --pane={pane_id}"
+        - "claude-code-controller send 'cp -r .vrs/state .vrs/testing/runs/orch-proof-{timestamp}/state/' --pane={pane_id}"
+      wait: "idle --idle-time=5.0"
+
+    - step: 8
+      description: "Exit Claude Code"
+      command: "claude-code-controller send '/exit' --pane={pane_id}"
+      wait: "idle --idle-time=5.0"
+
+    - step: 9
+      description: "Cleanup session"
+      command: "claude-code-controller kill --pane={pane_id}"
+
+# Validation Protocol
+validation:
+  script: "scripts/validate_orchestration_markers.py"
+
+  checks:
+    marker_presence:
+      description: "All required markers must appear"
+      required:
+        - "[PREFLIGHT_PASS"
+        - "[GRAPH_BUILD_SUCCESS"
+        - "TaskCreate("
+        - "SubagentStart("
+        - "[REPORT_GENERATED"
+      fail_on_missing: true
+
+    marker_sequence:
+      description: "Markers must appear in correct order"
+      order:
+        - "[PREFLIGHT_"
+        - "[GRAPH_BUILD_"
+        - "[CONTEXT_"
+        - "TaskCreate("
+        - "[DETECTION_"
+        - "SubagentStart("
+        - "[DEBATE_"
+        - "[REPORT_"
+      fail_on_misordered: true
+
+    marker_counts:
+      description: "Minimum marker counts"
+      minimums:
+        "TaskCreate(": 1
+        "TaskUpdate(": 1
+        "SubagentStart(": 3  # attacker, defender, verifier
+        "SubagentComplete(": 3
+
+    timestamp_consistency:
+      description: "Timestamps must be chronological"
+      check: "extract_timestamps_and_verify_order"
+
+# Success Criteria
+success_criteria:
+  - name: "All required markers present"
+    check: "marker_presence.all_found"
+    threshold: true
+
+  - name: "Markers in correct sequence"
+    check: "marker_sequence.in_order"
+    threshold: true
+
+  - name: "Minimum 3 subagent spawns"
+    check: "marker_counts.SubagentStart >= 3"
+    threshold: true
+
+  - name: "Task lifecycle visible"
+    check: "TaskCreate and TaskUpdate present"
+    threshold: true
+
+  - name: "Report generated"
+    check: "[REPORT_GENERATED marker found"
+    threshold: true
+
+# Evidence Requirements
+evidence:
+  required_files:
+    - "orch-proof-{timestamp}/transcript.txt"
+    - "orch-proof-{timestamp}/report.json"
+    - "orch-proof-{timestamp}/validation.json"
+
+  validation_output:
+    path: "orch-proof-{timestamp}/validation.json"
+    format: |
+      {
+        "markers_found": {
+          "[PREFLIGHT_PASS": { "count": N, "first_line": N },
+          "[GRAPH_BUILD_SUCCESS": { "count": N, "first_line": N },
+          ...
+        },
+        "sequence_valid": true|false,
+        "missing_markers": [],
+        "misordered_markers": [],
+        "subagent_count": N,
+        "task_lifecycle": {
+          "creates": N,
+          "updates": N
+        },
+        "verdict": "PASS|FAIL",
+        "failure_reasons": []
+      }
+
+# Anti-Fabrication
+anti_fabrication:
+  min_lines: 200
+  min_duration_ms: 120000
+  max_duration_ms: 600000
+  required_tool_markers:
+    - "alphaswarm"
+    - "vrs-attacker"
+    - "vrs-defender"
+    - "vrs-verifier"
+  forbidden_patterns:
+    - "100%"  # Perfect metrics
+    - "all tests passed"  # Unrealistic claim

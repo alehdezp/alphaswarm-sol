@@ -1,0 +1,24 @@
+id: state-write-after-call
+vulndoc: reentrancy/classic
+name: External Call With State Writes
+description: Functions that both call externally and write state (potential reentrancy surface).
+scope: Function
+lens:
+  - ExternalInfluence
+  - ValueMovement
+severity: medium
+match:
+  all:
+    - property: has_external_calls
+      op: eq
+      value: true
+    - property: writes_state
+      op: eq
+      value: true
+  none:
+    - property: has_reentrancy_guard
+      op: eq
+      value: true
+    - property: is_constructor
+      op: eq
+      value: true

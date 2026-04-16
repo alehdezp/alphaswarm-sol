@@ -1,0 +1,63 @@
+{
+  "plan_01": {
+    "outcome_A": "precision_delta >= 5pp AND zero regressions AND negative_control_pass",
+    "outcome_B": "0 < precision_delta < 5pp AND zero regressions",
+    "outcome_C": "YAML fix requires > ~200 LOC builder changes with no YAML-addressable subset",
+    "branch_table": {
+      "tp_regression_check": "observed_tp < (authoritative_tp - tolerance)",
+      "authoritative_tp_source": ".vrs/experiments/counting-policy.md",
+      "note": "authoritative_tp and tolerance derived from counting-policy.md, not hardcoded"
+    }
+  },
+  "plan_02": {
+    "scoring": {
+      "H1_pass": 1.0,
+      "H1_fail": 0.0,
+      "H2_pass": 1.0,
+      "H2_fail": 0.0,
+      "H3_pass": 1.0,
+      "H3_partial": 0.5,
+      "H3_fail": 0.0
+    },
+    "go_threshold": 2.0,
+    "ambiguous_range": [1.0, 1.5],
+    "no_go_threshold_below": 1.0
+  },
+  "plan_03_04": {
+    "taxonomy": {
+      "method": "undirected_discovery",
+      "scope_tags": ["corpus_specific", "candidate_generalizable"],
+      "fix_cost_categories": ["YAML-fixable", "builder-fixable", "architectural", "graph-property-error"]
+    },
+    "validity_coefficient": {
+      "high_validity_below": 0.2,
+      "near_zero_range": [0.2, 0.4],
+      "counter_productive_above": 0.4
+    },
+    "gameability": {
+      "go_threshold_formula": "ceil(N/2)",
+      "note": "N = number of adversarial archetypes enumerated"
+    }
+  },
+  "plan_05": {
+    "track_A": {
+      "condition": "Plan 01 Outcome A AND Plan 02 Go AND Plan 03/04 validity confirmed",
+      "action": "full_integration"
+    },
+    "track_B": {
+      "condition": "Plan 01 Outcome A or B AND Plan 02 Ambiguous AND partial validity",
+      "action": "partial_integration"
+    },
+    "track_C": {
+      "condition": "Plan 01 Outcome C OR Plan 02 No-go OR validity counter-productive",
+      "action": "minimal_integration"
+    },
+    "phase_entry_mode": {
+      "full": "track_A",
+      "partial": "track_B",
+      "diagnostic": "track_C"
+    }
+  },
+  "locked_at": "2026-02-25T21:45:00Z",
+  "locked_by": "executor"
+}

@@ -1,0 +1,17 @@
+id: low-level-call-no-gate
+vulndoc: access-control/unprotected-functions
+name: Low-Level Call Without Access Gate
+description: Functions using call/staticcall without access control modifiers.
+scope: Function
+lens:
+  - ExternalInfluence
+  - Authority
+severity: medium
+match:
+  all:
+    - property: uses_call
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false

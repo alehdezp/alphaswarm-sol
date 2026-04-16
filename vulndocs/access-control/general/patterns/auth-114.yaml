@@ -1,0 +1,48 @@
+id: auth-114
+vulndoc: access-control/general
+name: Unprotected Fee/Rate/Threshold Update
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `defi-001-unprotected-risk-parameter` instead.
+
+
+  Location: `patterns/semantic/defi/defi-001-unprotected-risk-parameter.yaml`
+
+
+  The semantic pattern uses `updates_defi_risk_parameter` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Fee, rate, or risk parameter updates without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: defi-001-unprotected-risk-parameter
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(fee|slippage|liquidation|collateral|interest|rate|factor|limit|cap|threshold)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

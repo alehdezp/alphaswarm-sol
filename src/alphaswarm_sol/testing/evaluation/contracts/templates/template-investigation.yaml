@@ -1,0 +1,45 @@
+_template: investigation
+category: agent
+grader_type: hybrid
+rule_refs:
+- GRAPH-FIRST
+- EVIDENCE-QUALITY
+- EXEC-INTEGRITY
+reasoning_dimensions:
+- graph_utilization
+- evidence_quality
+- reasoning_depth
+- hypothesis_formation
+- conclusion_support
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: bskg_query_issued
+  description: Agent issued at least one BSKG query
+  expected_behavior: Tool sequence contains 'Bash' with alphaswarm query
+  grader_type: code
+- id: evidence_cited
+  description: Agent cited graph evidence in conclusions
+  expected_behavior: Response references node IDs or code locations from graph
+  grader_type: model
+- id: graph_first_compliance
+  description: BSKG queries precede manual code reading
+  expected_behavior: First Bash(alphaswarm) call occurs before first Read call
+  grader_type: code
+evidence_requirements:
+- type: graph_nodes
+  description: Graph node references in findings
+- type: code_locations
+  description: File:line references for each finding
+hooks:
+- SessionStart
+- Stop
+- PreCompact
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []

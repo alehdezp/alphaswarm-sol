@@ -1,0 +1,19 @@
+id: msg-sender-authorization-no-gate
+vulndoc: access-control/unprotected-functions
+name: msg.sender Usage Without Access Gate
+description: Public/external functions that reference msg.sender without access gate modifiers.
+scope: Function
+lens:
+  - Authority
+severity: medium
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: uses_msg_sender
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false

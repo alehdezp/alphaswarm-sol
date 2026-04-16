@@ -1,0 +1,241 @@
+{
+  "generated_at": "2026-02-11T06:59:20.773333+00:00",
+  "phase_filter": "3.1",
+  "summary": {
+    "plans_total": 7,
+    "plans_by_status": {
+      "planned": 3,
+      "untracked": 4
+    },
+    "required_artifacts_found": 0,
+    "required_artifacts_total": 28,
+    "declared_created_artifacts_found": 0,
+    "declared_created_artifacts_total": 7
+  },
+  "plans": [
+    {
+      "plan_id": "3.1-01",
+      "title": "Import Graph Analysis + Delete Dead Testing Code",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-01.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-01.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-01.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-01.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 2,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1-02",
+      "title": "Delete Legacy Testing Infrastructure Files",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-02.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-02.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-02.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-02.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-03",
+      "title": "Update Testing Rules for Agent Teams + Controller",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-03.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-03.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-03.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-03.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-04",
+      "title": "Implement Rule Enforcement (Automated)",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-04.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-04.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-04.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-04.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 4,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    },
+    {
+      "plan_id": "3.1-05",
+      "title": "Make Documentation Honest",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-05.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-05.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-05.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-05.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-06",
+      "title": "Clean Up Testing Test Files",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-06.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-06.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-06.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-06.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 0,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "untracked"
+    },
+    {
+      "plan_id": "3.1-07",
+      "title": "Verify Clean State",
+      "phase_key": "3.1",
+      "context_file": ".planning/phases/3.1-testing-audit-cleanup/context.md",
+      "gate_status": null,
+      "required_artifacts": [
+        {
+          "name": "gate",
+          "path": ".vrs/debug/phase-3.1/gates/3.1-07.json",
+          "exists": false
+        },
+        {
+          "name": "hitl",
+          "path": ".vrs/debug/phase-3.1/hitl/3.1-07.md",
+          "exists": false
+        },
+        {
+          "name": "derived_checks",
+          "path": ".vrs/debug/phase-3.1/plan-phase/derived-checks/3.1-07.yaml",
+          "exists": false
+        },
+        {
+          "name": "research",
+          "path": ".vrs/debug/phase-3.1/plan-phase/research/3.1-07.md",
+          "exists": false
+        }
+      ],
+      "declared_created_artifacts_total": 1,
+      "declared_created_artifacts_found": 0,
+      "overall_status": "planned"
+    }
+  ]
+}

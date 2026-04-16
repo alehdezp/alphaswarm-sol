@@ -1,0 +1,18 @@
+version: 1
+protocol_name: "ExampleVault"
+protocol_type: "vault"
+upgradeability:
+  model: "transparent-proxy"
+  admin_role: "admin"
+asset_flows:
+  - asset: "ETH"
+    source: "users"
+    destination: "vault"
+    description: "Deposits into the vault"
+trust_boundaries:
+  - boundary: "external_call"
+    description: "User-controlled recipient on withdraw"
+    risk: "reentrancy"
+assumptions:
+  - "admin is trusted to upgrade safely"
+notes: "Incomplete context fixture: roles intentionally omitted."

@@ -1,0 +1,32 @@
+# oracle Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: oracle
+name: Oracle
+description: 'Vulnerability subcategories for oracle domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: freshness
+  name: Freshness
+  path: freshness/
+- id: manipulation
+  name: Manipulation
+  path: manipulation/
+- id: price-manipulation
+  name: Price Manipulation
+  path: price-manipulation/
+- id: sequencer-uptime
+  name: Sequencer Uptime
+  path: sequencer-uptime/
+- id: staleness
+  name: Stale Price Data
+  path: staleness/
+- id: twap-manipulation
+  name: TWAP Manipulation
+  path: twap-manipulation/
+statistics:
+  subcategory_count: 6
+  last_updated: '2026-02-18'

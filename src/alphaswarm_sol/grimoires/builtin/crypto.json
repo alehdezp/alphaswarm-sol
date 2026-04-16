@@ -1,0 +1,180 @@
+{
+  "id": "grimoire-crypto",
+  "name": "Cryptographic Security Verification Grimoire",
+  "category": "crypto",
+  "subcategories": ["signature-malleability", "ecrecover", "replay-attack", "weak-randomness", "hash-collision"],
+  "skill": "/test-crypto",
+  "aliases": ["/verify-crypto", "/check-crypto", "/test-signature"],
+  "description": "Expert procedure for verifying cryptographic vulnerabilities. Tests for signature malleability, ecrecover issues, replay attacks, weak randomness, and hash collision risks.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["high", "cryptography", "signatures", "randomness"],
+
+  "required_context": [
+    "function_code",
+    "signature_handling",
+    "hash_operations"
+  ],
+  "optional_context": [
+    "nonce_tracking",
+    "domain_separator",
+    "randomness_source"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE uses_ecrecover = true",
+    "FIND functions WHERE uses_ecrecover = true AND NOT checks_sig_s = true",
+    "FIND functions WHERE uses_ecrecover = true AND NOT checks_zero_address = true",
+    "FIND functions WHERE uses_block_hash = true OR uses_block_timestamp = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check Crypto Properties",
+        "action": "check_graph",
+        "description": "Query VKG for cryptographic vulnerability indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["uses_ecrecover", "checks_zero_addr", "checks_sig_s", "uses_chainid", "uses_nonce"],
+        "queries": [
+          "uses_ecrecover",
+          "checks_zero_address",
+          "checks_sig_s",
+          "uses_chainid",
+          "has_nonce_tracking",
+          "uses_block_hash",
+          "uses_block_timestamp"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Analyze Signature Validation",
+        "action": "check_property",
+        "description": "Check if signatures are properly validated",
+        "inputs": ["signature_handling", "function_code"],
+        "outputs": ["has_s_value_check", "has_v_value_check", "has_zero_check", "signature_safe"],
+        "timeout_seconds": 15
+      },
+      {
+        "step_number": 3,
+        "name": "Check Replay Protection",
+        "action": "check_property",
+        "description": "Verify replay attack protection mechanisms",
+        "inputs": ["nonce_tracking", "domain_separator", "function_code"],
+        "outputs": ["has_nonce", "has_domain_separator", "has_deadline", "replay_protected"],
+        "timeout_seconds": 15
+      },
+      {
+        "step_number": 4,
+        "name": "Analyze Randomness",
+        "action": "check_property",
+        "description": "Check for weak randomness sources",
+        "inputs": ["randomness_source", "function_code"],
+        "outputs": ["uses_block_values", "uses_external_oracle", "randomness_safe"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 5,
+        "name": "Check Hash Operations",
+        "action": "check_property",
+        "description": "Verify hash operations are collision-resistant",
+        "inputs": ["hash_operations", "function_code"],
+        "outputs": ["uses_abi_encode_packed", "dynamic_types_packed", "hash_collision_risk"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 6,
+        "name": "Generate Crypto Test",
+        "action": "generate_test",
+        "description": "Generate tests for cryptographic vulnerabilities",
+        "inputs": ["function_code", "contract_name", "function_name"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_crypto",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 7,
+        "name": "Execute Crypto Tests",
+        "action": "execute_test",
+        "description": "Run cryptographic vulnerability tests",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed"],
+        "tools": ["foundry"],
+        "command": "forge test --match-contract CryptoTest -vvv",
+        "timeout_seconds": 120,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 8,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["signature_safe", "replay_protected", "randomness_safe", "hash_collision_risk", "test_output"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "uses_ecrecover && !has_zero_check",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "ecrecover can return zero address on invalid signature - not checked"
+      },
+      {
+        "condition": "uses_ecrecover && !has_s_value_check",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Signature malleability - s value not checked to be in lower half"
+      },
+      {
+        "condition": "!replay_protected && !has_nonce && !has_domain_separator",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "No replay protection - signatures can be reused across chains/contracts"
+      },
+      {
+        "condition": "uses_block_values && !uses_external_oracle",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Using block values for randomness - manipulable by miners/validators"
+      },
+      {
+        "condition": "hash_collision_risk && uses_abi_encode_packed && dynamic_types_packed",
+        "verdict": "likely_vulnerable",
+        "confidence": "high",
+        "explanation": "abi.encodePacked with dynamic types - hash collision possible"
+      },
+      {
+        "condition": "signature_safe && replay_protected && randomness_safe",
+        "verdict": "likely_safe",
+        "confidence": "high",
+        "explanation": "Cryptographic operations follow secure patterns"
+      },
+      {
+        "condition": "uses_ecrecover && has_zero_check && has_s_value_check",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "ecrecover with proper validation checks"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": false,
+    "echidna_enabled": false,
+    "fork_enabled": false
+  },
+
+  "test_templates": {
+    "foundry_crypto": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ncontract CryptoTest is Test {\n    ${CONTRACT_NAME} public target;\n    uint256 internal privateKey = 0xBEEF;\n    address internal signer;\n\n    function setUp() public {\n        target = new ${CONTRACT_NAME}();\n        signer = vm.addr(privateKey);\n    }\n\n    function testSignatureMalleability() public {\n        bytes32 hash = keccak256(\"test message\");\n        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, hash);\n        \n        // Create malleable signature by flipping s\n        // s' = secp256k1n - s\n        uint256 secp256k1n = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;\n        bytes32 sMalleable = bytes32(secp256k1n - uint256(s));\n        uint8 vMalleable = v == 27 ? 28 : 27;\n        \n        // Both signatures should recover to same address if vulnerable\n        // Secure contracts reject the malleable one\n    }\n\n    function testZeroAddressRecovery() public {\n        // Invalid signature that returns address(0)\n        bytes32 hash = keccak256(\"test\");\n        address recovered = ecrecover(hash, 27, bytes32(0), bytes32(0));\n        assertEq(recovered, address(0), \"Should return zero\");\n        \n        // Contract should check for zero address\n    }\n\n    function testReplayAttack() public {\n        // Use same signature on different chain/contract\n        // Should fail if domain separator is used\n    }\n\n    function testWeakRandomness() public {\n        // Manipulate block values\n        vm.roll(12345);\n        vm.warp(1234567890);\n        \n        // If contract uses block.timestamp or block.number for randomness,\n        // attacker can predict/manipulate outcomes\n    }\n\n    function testHashCollision() public {\n        // abi.encodePacked collision with dynamic types\n        bytes memory a = abi.encodePacked(\"a\", \"bc\");\n        bytes memory b = abi.encodePacked(\"ab\", \"c\");\n        assertEq(keccak256(a), keccak256(b), \"Collision!\");\n    }\n}"
+  }
+}

@@ -1,0 +1,284 @@
+# =============================================================================
+# PATTERN: access-tierb-001-trust-assumption-violation
+# Trust Assumption Violation Detection (Tier B - LLM Reasoning Required)
+# =============================================================================
+
+id: access-tierb-001-trust-assumption-violation
+vulndoc: access-control/general
+name: "Trust Assumption Violation (LLM-Verified)"
+
+description: |
+  ## What This Detects
+
+  Functions that rely on implicit trust assumptions that aren't enforced:
+  - Trusting external systems without verification
+  - Assuming caller properties without checking
+  - Relying on trust transitivity (A trusts B, B trusts C, so A trusts C)
+  - Composability risks from integrating trusted components
+
+  **Why Tier B (LLM) is Required:**
+  - Trust models are implicit, not in code
+  - Requires understanding system architecture
+  - Must reason about trust boundaries
+  - Needs context about what "should" be trusted
+
+  ## Real-World Exploits
+
+  **BadgerDAO (Dec 2021) - $120M**
+  - Trust Assumption: "Cloudflare CDN is secure"
+  - Violation: CDN compromised, injected malicious approval TX
+  - Missing: On-chain verification of off-chain actions
+
+  **Ronin Bridge (Mar 2022) - $600M**
+  - Trust Assumption: "Validators are independent and secure"
+  - Violation: 5/9 validators controlled by same entity
+  - Missing: Distributed trust verification
+
+  **Wormhole Bridge (Feb 2022) - $320M**
+  - Trust Assumption: "Guardian signatures are valid"
+  - Violation: Signature verification bypassed via upgrade
+  - Missing: Robust multi-sig with timelock
+
+  **Harmony Bridge (Jun 2022) - $100M**
+  - Trust Assumption: "2/5 multisig is secure"
+  - Violation: Keys compromised, threshold too low
+  - Missing: Higher threshold + time delay
+
+  **Nomad Bridge (Aug 2022) - $190M**
+  - Trust Assumption: "Merkle root verification ensures message validity"
+  - Violation: Zero-initialized root treated as valid
+  - Missing: Proper initialization check
+
+  ## Trust Categories
+
+  1. **Infrastructure Trust**: CDN, DNS, cloud providers
+  2. **Validator Trust**: Bridges, oracles, sequencers
+  3. **Key Trust**: Multisig thresholds, key security
+  4. **Integration Trust**: Composability with other protocols
+  5. **Upgrade Trust**: Admin keys, timelocks
+
+scope: Function
+
+lens:
+  - Authority
+  - ExternalInfluence
+
+severity: high
+
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  tier_a:
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+    any:
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: writes_privileged_state
+        op: eq
+        value: true
+      - property: reads_external_value
+        op: eq
+        value: true
+      - property: uses_signature_verification
+        op: eq
+        value: true
+    none:
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+      - property: is_constructor
+        op: eq
+        value: true
+      - property: has_access_gate
+        op: eq
+        value: true
+      # Plan 01 fix: exclude standard deposit/mint operations (ERC4626 vault
+      # functions that are public by design and not trust-assumption violations).
+      # Note: is_withdraw_like NOT added because withdraw() is a TP on
+      # SideEntranceLenderPool and NaiveReceiverPool.
+      # Builder gap: state_mutability reports 'nonpayable' for view/pure
+      # functions (see property-diagnostic.md) -- routed to Plan 03/04.
+      - property: is_deposit_like
+        op: eq
+        value: true
+
+  tier_b:
+    any:
+      - has_risk_tag: implicit_trust_boundary
+      - has_risk_tag: unverified_caller_assumption
+      - has_risk_tag: trust_transitivity_risk
+      - has_risk_tag: composability_vulnerability
+      - has_risk_tag: external_system_dependency
+      - has_risk_tag: low_threshold_multisig
+
+aggregation:
+  mode: tier_a_required
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Tier B pattern - requires understanding trust architecture"
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "External System Compromise"
+    description: "Trusted external system is compromised"
+    preconditions:
+      - "Protocol trusts external system (oracle, bridge, CDN)"
+      - "External system security not verified on-chain"
+    steps:
+      - "Compromise external system"
+      - "Inject malicious data/transactions"
+      - "Protocol accepts malicious input as trusted"
+    impact: "Fund theft via trusted channel"
+
+  - name: "Validator/Guardian Compromise"
+    description: "Validator keys compromised below threshold"
+    preconditions:
+      - "Multi-sig with low threshold (e.g., 2/5)"
+      - "Keys not sufficiently distributed/secured"
+    steps:
+      - "Compromise threshold number of keys"
+      - "Sign malicious transactions"
+      - "Execute unauthorized operations"
+    impact: "Complete protocol takeover"
+
+  - name: "Trust Transitivity Attack"
+    description: "Chain of trust leads to unintended trust"
+    preconditions:
+      - "Protocol A trusts Protocol B"
+      - "Protocol B trusts external source C"
+      - "A doesn't verify C directly"
+    steps:
+      - "Compromise source C"
+      - "C poisons B's data"
+      - "A trusts B's poisoned data"
+    impact: "Indirect attack via trust chain"
+
+  - name: "Composability Risk"
+    description: "Integration with other protocol creates vulnerability"
+    preconditions:
+      - "Protocol integrates with external DeFi protocol"
+      - "Assumes external protocol behaves correctly"
+      - "No validation of external results"
+    steps:
+      - "Manipulate external protocol state"
+      - "Call target protocol"
+      - "Target trusts manipulated external state"
+    impact: "Exploitation via composability"
+
+# =============================================================================
+# VERIFICATION & RECOMMENDATIONS
+# =============================================================================
+
+verification_steps:
+  - "Map all external dependencies (oracles, bridges, protocols)"
+  - "Identify trust assumptions for each dependency"
+  - "Check if trust assumptions are verified on-chain"
+  - "Evaluate multisig thresholds and key distribution"
+  - "Check for timelocks on privileged operations"
+  - "Assess composability risks with integrated protocols"
+  - "Verify signature/proof verification is robust"
+  - "Check for trust transitivity chains"
+
+fix_recommendations:
+  - name: "On-Chain Verification"
+    description: |
+      Verify external data on-chain rather than trusting source
+    example: |
+      // Instead of trusting oracle directly:
+      function getPrice() external view returns (uint256) {
+          uint256 price = oracle.latestPrice();
+          require(price > 0 && price < MAX_PRICE, "Invalid price");
+          require(block.timestamp - oracle.lastUpdate() < MAX_STALENESS);
+          return price;
+      }
+
+  - name: "Higher Thresholds"
+    description: |
+      Use higher multisig thresholds (e.g., 5/7 instead of 2/5)
+
+  - name: "Time Delays"
+    description: |
+      Add timelock delays for privileged operations
+    example: |
+      function queueUpgrade(address newImpl) external onlyOwner {
+          pendingUpgrade = newImpl;
+          upgradeTimestamp = block.timestamp + 2 days;
+      }
+      
+      function executeUpgrade() external {
+          require(block.timestamp >= upgradeTimestamp);
+          _upgradeTo(pendingUpgrade);
+      }
+
+  - name: "Trust Minimization"
+    description: "Minimize trust surface by verifying more on-chain"
+
+related_patterns:
+  - ac-002-weak-trust-assumption
+  - cc-001-bridge-message-validation
+  - oracle-003-missing-staleness-check
+
+owasp_mapping:
+  - SC01
+  - SC05
+
+cwe_mapping:
+  - CWE-287
+  - CWE-862
+  - CWE-863
+
+llm_guidance: |
+  When evaluating for trust assumption violations:
+  
+  1. **Map Trust Boundaries**
+     - What external systems does this function trust?
+     - What assumptions does it make about callers?
+     - What data sources are assumed reliable?
+  
+  2. **Check Verification**
+     - Are trust assumptions verified on-chain?
+     - Are external inputs validated?
+     - Are signatures/proofs properly checked?
+  
+  3. **Evaluate Multi-Sig**
+     - What's the threshold (M of N)?
+     - Are keys properly distributed?
+     - Is there a timelock?
+  
+  4. **Assess Composability**
+     - What protocols does this integrate with?
+     - Can external protocols be manipulated?
+     - Is there validation of external state?
+  
+  5. **Tag Assignment**
+     - implicit_trust_boundary: Undocumented trust assumption
+     - unverified_caller_assumption: Assumes caller properties
+     - trust_transitivity_risk: Chain of trust creates risk
+     - composability_vulnerability: Integration creates vulnerability
+     - external_system_dependency: Trusts external system
+     - low_threshold_multisig: Low threshold for privileged ops

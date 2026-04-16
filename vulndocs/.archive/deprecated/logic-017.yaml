@@ -1,0 +1,15 @@
+id: logic-017
+vulndoc: logic/general
+name: Conditional Logic Flaw
+description: Access logic using if/return without hard revert.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 840
+match:
+  all:
+  - property: access_gate_has_if_return
+    op: eq
+    value: true

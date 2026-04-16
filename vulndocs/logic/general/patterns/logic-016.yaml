@@ -1,0 +1,19 @@
+id: logic-016
+vulndoc: logic/general
+name: Ordering & Sequencing Flaw
+description: External calls before state updates without guard.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 840
+match:
+  all:
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

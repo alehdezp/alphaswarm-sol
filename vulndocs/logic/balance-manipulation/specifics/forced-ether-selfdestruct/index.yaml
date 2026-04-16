@@ -1,0 +1,11 @@
+id: forced-ether-selfdestruct
+name: Forced Ether Reception via Selfdestruct
+category: logic
+subcategory: balance-manipulation
+severity: medium
+tags:
+  - selfdestruct
+  - suicide
+  - balance-assumption
+  - invariant-break
+description: Contracts can be forced to receive ether via selfdestruct without triggering fallback functions, breaking balance-dependent invariants

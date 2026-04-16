@@ -1,0 +1,39 @@
+version: 1
+protocol_name: "ExampleVault"
+protocol_type: "vault"
+roles:
+  - name: "admin"
+    capabilities:
+      - "upgrade"
+      - "pause"
+    trust_assumptions:
+      - "multisig-controlled"
+  - name: "user"
+    capabilities:
+      - "deposit"
+      - "withdraw"
+    trust_assumptions:
+      - "no special privileges"
+upgradeability:
+  model: "transparent-proxy"
+  admin_role: "admin"
+asset_flows:
+  - asset: "ETH"
+    source: "users"
+    destination: "vault"
+    description: "Deposits into the vault"
+  - asset: "ETH"
+    source: "vault"
+    destination: "users"
+    description: "Withdrawals from the vault"
+trust_boundaries:
+  - boundary: "external_call"
+    description: "User-controlled recipient on withdraw"
+    risk: "reentrancy"
+  - boundary: "admin_upgrade"
+    description: "Proxy admin can upgrade implementation"
+    risk: "privileged control"
+assumptions:
+  - "admin is trusted to upgrade safely"
+  - "users control their own addresses"
+notes: "Complete context fixture for Tier C gating tests."

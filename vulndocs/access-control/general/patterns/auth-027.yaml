@@ -1,0 +1,20 @@
+id: auth-027
+vulndoc: access-control/general
+name: Signature Malleability Risk
+description: Signature verification without canonical v/s checks.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_ecrecover
+    op: eq
+    value: true
+  any:
+  - property: checks_sig_v
+    op: eq
+    value: false
+  - property: checks_sig_s
+    op: eq
+    value: false

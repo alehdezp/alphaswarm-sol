@@ -1,0 +1,47 @@
+id: auth-116
+vulndoc: access-control/general
+name: Unprotected Merkle Root Update
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `merkle-001-unprotected-root-update` instead.
+
+
+  Location: `patterns/semantic/merkle/merkle-001-unprotected-root-update.yaml`
+
+
+  The semantic pattern uses `updates_merkle_root` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Merkle root updates without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: merkle-001-unprotected-root-update
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))merkle(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

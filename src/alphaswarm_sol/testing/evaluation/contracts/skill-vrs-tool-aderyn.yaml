@@ -1,0 +1,52 @@
+workflow_id: skill-vrs-tool-aderyn
+category: skill
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- TOOL-FIDELITY
+reasoning_dimensions:
+- tool_selection
+- result_interpretation
+- error_handling
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: aderyn_invoked
+  description: Aderyn was invoked on target contracts
+  expected_behavior: Bash tool call with aderyn command
+  grader_type: code
+- id: results_structured
+  description: Aderyn output was parsed into structured format
+  expected_behavior: Response organizes tool output by severity or category
+  grader_type: model
+- id: error_handled
+  description: Tool errors handled gracefully
+  expected_behavior: If aderyn fails, agent reports error and suggests fixes
+  grader_type: model
+evidence_requirements:
+- type: tool_output
+  description: Raw aderyn output
+hooks:
+- Stop
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Skill invokes aderyn with appropriate configuration for the target
+  contracts. Skill parses tool output into structured categories. Skill contextualizes
+  aderyn findings against contract semantics. Skill handles tool errors by diagnosing
+  the issue and suggesting remediation. Skill distinguishes actionable results from
+  informational messages.
+active_dimensions:
+- tool_selection
+- result_interpretation
+- error_handling
+- completeness
+- rubric_coverage
+- task_completion
+- conclusion_support
+- reasoning_depth

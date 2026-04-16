@@ -1,0 +1,25 @@
+id: live-018
+vulndoc: dos/general
+name: Unbounded Mapping Iterations
+description: Loops that iterate over mapping-backed key sets.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_loops
+    op: eq
+    value: true
+  - property: mapping_iteration_in_loop
+    op: eq
+    value: true
+  - property: has_unbounded_loop
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false
+  - property: writes_state
+    op: eq
+    value: true

@@ -1,0 +1,13 @@
+id: live-026
+vulndoc: dos/general
+name: Storage Cost Attacks
+description: Unbounded loops with storage growth.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: mapping_growth_unbounded
+    op: eq
+    value: true

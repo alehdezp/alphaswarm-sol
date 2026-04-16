@@ -1,0 +1,27 @@
+id: external-call-public-no-gate
+vulndoc: access-control/unprotected-functions
+name: External Call Without Access Gate
+description: Public/external functions that call externally without an access gate.
+scope: Function
+lens:
+  - ExternalInfluence
+  - Authority
+severity: high
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: has_external_calls
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false
+  none:
+    - property: is_constructor
+      op: eq
+      value: true
+    - property: state_mutability
+      op: in
+      value: [view, pure]

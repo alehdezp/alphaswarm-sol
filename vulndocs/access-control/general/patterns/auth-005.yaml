@@ -1,0 +1,22 @@
+id: auth-005
+vulndoc: access-control/general
+name: Centralization Single Point of Failure
+description: Privileged operations without timelock or multisig.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_privileged_operations
+    op: eq
+    value: true
+  - property: owner_is_single_address
+    op: eq
+    value: true
+  - property: has_timelock
+    op: eq
+    value: false
+  - property: has_multisig
+    op: eq
+    value: false

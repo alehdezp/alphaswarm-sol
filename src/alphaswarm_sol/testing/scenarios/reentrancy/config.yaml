@@ -1,0 +1,96 @@
+name: "Classic Reentrancy Detection"
+category: reentrancy
+description: |
+  Test detection of classic reentrancy vulnerabilities where
+  external calls occur before state updates (CEI violation).
+
+contracts:
+  # Vulnerable contracts
+  - path: corpus/reentrancy/vulnerable-classic.sol
+    has_vulnerability: true
+    expected_pattern: reentrancy-classic
+    expected_severity: critical
+    ground_truth:
+      - pattern: reentrancy-classic
+        severity: critical
+        location: "withdraw:45"
+        description: "External call before balance update"
+
+  - path: corpus/reentrancy/vulnerable-cross-function.sol
+    has_vulnerability: true
+    expected_pattern: reentrancy-cross-function
+    expected_severity: high
+    ground_truth:
+      - pattern: reentrancy-cross-function
+        severity: high
+        location: "withdrawAll:30"
+        description: "Cross-function reentrancy via updateBalance"
+
+  # Safe contracts (false positive tests)
+  - path: corpus/reentrancy/safe-with-guard.sol
+    has_vulnerability: false
+    notes: "Has ReentrancyGuard modifier on withdraw"
+    tags: ["false-positive-trap"]
+
+  - path: corpus/reentrancy/safe-cei-pattern.sol
+    has_vulnerability: false
+    notes: "Properly follows CEI pattern"
+    tags: ["false-positive-trap"]
+
+prompt_template: |
+  Analyze {contract_path} for reentrancy vulnerabilities.
+
+  Use the BSKG to:
+  1. Build knowledge graph: uv run alphaswarm build-kg {contract_path}
+  2. Query for external calls before state updates
+  3. Check for reentrancy guards
+
+  Return findings with pattern, severity, location, confidence.
+
+allowed_tools:
+  - "Bash(uv run alphaswarm build-kg*)"
+  - "Bash(uv run alphaswarm query*)"
+  - "Read"
+  - "Glob"
+  - "Grep"
+
+json_schema:
+  type: object
+  properties:
+    has_vulnerability:
+      type: boolean
+    findings:
+      type: array
+      items:
+        type: object
+        properties:
+          pattern:
+            type: string
+          severity:
+            type: string
+          location:
+            type: string
+          confidence:
+            type: number
+    reasoning:
+      type: string
+  required: [has_vulnerability, findings, reasoning]
+
+timeout_seconds: 120
+model: claude-sonnet-4
+difficulty: easy
+
+isolation:
+  exclude_vulndocs: false
+  blind_prompt: false
+
+evaluation_guidance:
+  reasoning_questions:
+    - "Did the agent identify the external call BEFORE the state update?"
+    - "Did the agent use BSKG queries to find the CEI violation?"
+    - "Did the agent check for reentrancy guards before concluding?"
+  hooks_if_failed:
+    - "tests/workflow_harness/hooks/log_session.py"
+
+chaos:
+  enabled: false

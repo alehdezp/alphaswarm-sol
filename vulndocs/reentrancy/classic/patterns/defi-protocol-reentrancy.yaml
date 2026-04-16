@@ -1,0 +1,33 @@
+id: defi-protocol-reentrancy
+vulndoc: reentrancy/classic
+name: DeFi Protocol Reentrancy
+description: Protocol ops with external calls before accounting.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: reads_dependency_state
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  any:
+  - property: is_withdraw_like
+    op: eq
+    value: true
+  - property: is_deposit_like
+    op: eq
+    value: true
+  - property: is_mint_like
+    op: eq
+    value: true
+  - property: is_burn_like
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

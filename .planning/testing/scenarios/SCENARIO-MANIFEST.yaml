@@ -1,0 +1,474 @@
+# Scenario Manifest (Testing Framework)
+# Each scenario maps to a workflow doc and evidence pack
+
+- id: "cli-install-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-cli-install.md"
+  workflow_ref: ".planning/testing/workflows/workflow-cli-install.md"
+  context_ref: null
+  command: "uv tool install -e . && uv run alphaswarm init . && uv run alphaswarm health-check --project . --json && uv run alphaswarm --help"
+  expected_markers: ["alphaswarm", "health-check", "--help"]
+  min_duration_ms: 10000
+  min_lines: 50
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "graph-build-query-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-graph.md"
+  workflow_ref: ".planning/testing/workflows/workflow-graph.md"
+  context_ref: null
+  command: "uv run alphaswarm build-kg contracts/ && uv run alphaswarm query \"functions without access control\" --output .vrs/graphs/graph-query.json && uv run alphaswarm context generate . --docs ./docs --output .vrs/context/protocol-pack.yaml --force"
+  expected_markers: ["build-kg", "query", "context generate"]
+  min_duration_ms: 15000
+  min_lines: 80
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "skills-chain-001"
+  tier: "skill"
+  doc: ".planning/testing/workflows/workflow-skills.md"
+  workflow_ref: ".planning/testing/workflows/workflow-skills.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria skill"
+  expected_markers: ["/vrs-", "skill"]
+  min_duration_ms: 15000
+  min_lines: 80
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "agents-routing-001"
+  tier: "agent"
+  doc: ".planning/testing/workflows/workflow-agents.md"
+  workflow_ref: ".planning/testing/workflows/workflow-agents.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria agent"
+  expected_markers: ["Attacker:", "Defender:", "Verifier:"]
+  min_duration_ms: 30000
+  min_lines: 120
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "orchestration-e2e-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-orchestration.md"
+  workflow_ref: ".planning/testing/workflows/workflow-orchestration.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria orchestration"
+  expected_markers: ["Attacker:", "Defender:", "Verifier:", "verdict"]
+  min_duration_ms: 60000
+  min_lines: 200
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "tools-run-001"
+  tier: "tools"
+  doc: ".planning/testing/workflows/workflow-tools.md"
+  workflow_ref: ".planning/testing/workflows/workflow-tools.md"
+  context_ref: null
+  command: "uv run alphaswarm tools status && uv run alphaswarm tools run contracts/ --tools slither,aderyn"
+  expected_markers: ["tools status", "slither", "aderyn"]
+  min_duration_ms: 20000
+  min_lines: 80
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "e2e-validation-001"
+  tier: "e2e"
+  doc: ".planning/testing/workflows/workflow-e2e.md"
+  workflow_ref: ".planning/testing/workflows/workflow-e2e.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria e2e"
+  expected_markers: ["Attacker:", "Defender:", "Verifier:"]
+  min_duration_ms: 120000
+  min_lines: 200
+  requires_ground_truth: true
+  ground_truth_ref: ".planning/testing/ground_truth/PROVENANCE-INDEX.md#pending"
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "ground_truth.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "blocked"
+  blocked_reason: "Ground truth entry pending in PROVENANCE-INDEX"
+
+- id: "failure-recovery-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-failure-recovery.md"
+  workflow_ref: ".planning/testing/workflows/workflow-failure-recovery.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria failure"
+  expected_markers: ["error", "retry", "recovery"]
+  min_duration_ms: 20000
+  min_lines: 100
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "grammar-in-situ-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-grammar.md"
+  workflow_ref: ".planning/testing/workflows/workflow-grammar.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria grammar"
+  expected_markers: ["grammar", "structured"]
+  min_duration_ms: 20000
+  min_lines: 100
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "ready"
+
+- id: "instruction-verify-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-instruction-verification.md"
+  workflow_ref: ".planning/testing/workflows/workflow-instruction-verification.md"
+  context_ref: null
+  command: "<instruction text or workflow command>"
+  expected_markers: [">>>"]
+  min_duration_ms: 15000
+  min_lines: 50
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "blocked"
+  blocked_reason: "Instruction command not provided"
+
+- id: "docs-validation-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-docs-validation.md"
+  workflow_ref: ".planning/testing/workflows/workflow-docs-validation.md"
+  context_ref: null
+  command: "<workflow command from docs>"
+  expected_markers: ["/vrs-", "claude-code-controller"]
+  min_duration_ms: 15000
+  min_lines: 50
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "blocked"
+  blocked_reason: "Requires per-doc execution"
+
+- id: "real-env-validation-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-real-env-validation.md"
+  workflow_ref: ".planning/testing/workflows/workflow-real-env-validation.md"
+  context_ref: null
+  command: "<commands from COMMAND-INVENTORY.md>"
+  expected_markers: ["alphaswarm", "build-kg"]
+  min_duration_ms: 60000
+  min_lines: 120
+  requires_ground_truth: true
+  ground_truth_ref: ".planning/testing/ground_truth/PROVENANCE-INDEX.md#pending"
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "ground_truth.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "blocked"
+  blocked_reason: "Command inventory incomplete and ground truth entry pending"
+
+- id: "audit-entrypoint-001"
+  tier: "workflow"
+  doc: ".planning/testing/workflows/workflow-audit-entrypoint.md"
+  workflow_ref: ".planning/testing/workflows/workflow-audit-entrypoint.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria audit-entrypoint"
+  expected_markers: ["health-check", "build-kg", "TaskCreate", "TaskUpdate", "next step"]
+  min_duration_ms: 60000
+  min_lines: 200
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "TaskUpdate("]
+  status: "blocked"
+  blocked_reason: "Criteria and markers not yet implemented"
+
+- id: "golden-audit-001"
+  tier: "golden"
+  doc: ".planning/testing/workflows/workflow-audit-entrypoint.md"
+  workflow_ref: ".planning/testing/workflows/workflow-audit-entrypoint.md"
+  context_ref: null
+  command: "/vrs-audit contracts/"
+  expected_markers: ["health-check", "build-kg", "tools status", "TaskCreate", "TaskUpdate", "next step"]
+  min_duration_ms: 120000
+  min_lines: 250
+  requires_ground_truth: true
+  ground_truth_ref: ".planning/testing/ground_truth/PROVENANCE-INDEX.md#pending"
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "ground_truth.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "TaskUpdate("]
+  status: "blocked"
+  blocked_reason: "Golden audit requires ground truth entry in PROVENANCE-INDEX"
+
+- id: "progress-guidance-001"
+  tier: "workflow"
+  doc: ".planning/testing/guides/guide-orchestration-progress.md"
+  workflow_ref: ".planning/testing/guides/guide-orchestration-progress.md"
+  context_ref: null
+  command: "/vrs-status --verbose"
+  expected_markers: ["Progress", "Resume", "Plan"]
+  min_duration_ms: 5000
+  min_lines: 50
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "blocked"
+  blocked_reason: "Requires active session state"
+
+- id: "tier-c-gating-001"
+  tier: "workflow"
+  doc: ".planning/testing/guides/guide-tier-c.md"
+  workflow_ref: ".planning/testing/guides/guide-tier-c.md"
+  context_ref: null
+  command: "<tier-c workflow command>"
+  expected_markers: ["tier c", "context", "labels"]
+  min_duration_ms: 15000
+  min_lines: 80
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "[CONTEXT_READY]"]
+  status: "blocked"
+  blocked_reason: "Tier C gating workflow not yet defined"
+
+- id: "settings-yaml-001"
+  tier: "workflow"
+  doc: ".planning/testing/guides/guide-settings.md"
+  workflow_ref: ".planning/testing/guides/guide-settings.md"
+  context_ref: null
+  command: "<apply .vrs/settings.yaml and run audit>"
+  expected_markers: ["settings", "disabled", "skipped"]
+  min_duration_ms: 15000
+  min_lines: 80
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "settings.yaml"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]"]
+  status: "blocked"
+  blocked_reason: "Settings file not yet enforced by workflow"
+
+- id: "graph-ablation-enabled-001"
+  tier: "graph"
+  doc: ".planning/testing/scenarios/graph/GRAPH-ABLATION.md"
+  workflow_ref: ".planning/testing/workflows/workflow-graph.md"
+  context_ref: ".planning/testing/vql/VQL-LIBRARY.md"
+  command: "<graph-enabled command>"
+  expected_markers: ["[GRAPH_BUILD_SUCCESS]", "[VQL_MIN_SET_START]", "[VQL-MIN-01]"]
+  min_duration_ms: 30000
+  min_lines: 100
+  requires_ground_truth: true
+  ground_truth_ref: ".planning/testing/ground_truth/PROVENANCE-INDEX.md#pending"
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "ground_truth.json"]
+  behavior_model_ref: null
+  vql_bundle: ".planning/testing/vql/VQL-LIBRARY.md"
+  tool_requirements: ["slither"]
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "[GRAPH_BUILD_SUCCESS]", "[VQL_MIN_SET_START]", "[VQL-MIN-01]"]
+  status: "blocked"
+  blocked_reason: "Graph ablation commands not yet wired; ground truth pending"
+
+- id: "graph-ablation-disabled-001"
+  tier: "graph"
+  doc: ".planning/testing/scenarios/graph/GRAPH-ABLATION.md"
+  workflow_ref: ".planning/testing/workflows/workflow-graph.md"
+  context_ref: null
+  command: "<graph-disabled command>"
+  expected_markers: ["[GRAPH_BUILD_FAIL]", "graph disabled"]
+  min_duration_ms: 15000
+  min_lines: 80
+  requires_ground_truth: true
+  ground_truth_ref: ".planning/testing/ground_truth/PROVENANCE-INDEX.md#pending"
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "ground_truth.json"]
+  behavior_model_ref: null
+  vql_bundle: ".planning/testing/vql/VQL-LIBRARY.md"
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "[GRAPH_BUILD_FAIL]"]
+  status: "blocked"
+  blocked_reason: "Graph disable flag not yet implemented; ground truth pending"
+
+- id: "perf-001"
+  tier: "workflow"
+  doc: ".planning/testing/perf/PERF-PLAN.md"
+  workflow_ref: ".planning/testing/workflows/workflow-orchestration.md"
+  context_ref: null
+  command: "<performance run: concurrency=1, queue_depth=1>"
+  expected_markers: ["TaskCreate", "SubagentStart"]
+  min_duration_ms: 60000
+  min_lines: 150
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: ["claude-code-controller"]
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "SubagentStart(vrs-attacker)"]
+  status: "blocked"
+  blocked_reason: "Performance harness not yet implemented"
+
+- id: "perf-002"
+  tier: "workflow"
+  doc: ".planning/testing/perf/PERF-PLAN.md"
+  workflow_ref: ".planning/testing/workflows/workflow-orchestration.md"
+  context_ref: null
+  command: "<performance run: concurrency=4, queue_depth=8>"
+  expected_markers: ["TaskCreate", "SubagentStart"]
+  min_duration_ms: 60000
+  min_lines: 150
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: ["claude-code-controller"]
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "SubagentStart(vrs-attacker)"]
+  status: "blocked"
+  blocked_reason: "Performance harness not yet implemented"
+
+- id: "perf-003"
+  tier: "workflow"
+  doc: ".planning/testing/perf/PERF-PLAN.md"
+  workflow_ref: ".planning/testing/workflows/workflow-orchestration.md"
+  context_ref: null
+  command: "<performance run: concurrency=8, queue_depth=16>"
+  expected_markers: ["TaskCreate", "SubagentStart"]
+  min_duration_ms: 60000
+  min_lines: 150
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: ["claude-code-controller"]
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "SubagentStart(vrs-attacker)"]
+  status: "blocked"
+  blocked_reason: "Performance harness not yet implemented"
+
+- id: "perf-004"
+  tier: "workflow"
+  doc: ".planning/testing/perf/PERF-PLAN.md"
+  workflow_ref: ".planning/testing/workflows/workflow-orchestration.md"
+  context_ref: null
+  command: "<performance run: concurrency=4, queue_depth=8, high tool latency>"
+  expected_markers: ["TaskCreate", "SubagentStart"]
+  min_duration_ms: 60000
+  min_lines: 150
+  requires_ground_truth: false
+  ground_truth_ref: null
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json"]
+  behavior_model_ref: null
+  vql_bundle: null
+  tool_requirements: ["claude-code-controller"]
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "SubagentStart(vrs-attacker)"]
+  status: "blocked"
+  blocked_reason: "Performance harness not yet implemented"
+
+- id: "economic-context-001"
+  tier: "workflow"
+  doc: ".planning/testing/scenarios/economic/ECONOMIC-MODEL-LIBRARY.md"
+  workflow_ref: ".planning/testing/workflows/workflow-orchestration.md"
+  context_ref: ".planning/testing/scenarios/economic/ECONOMIC-MODEL-LIBRARY.md"
+  command: "<economic context audit command>"
+  expected_markers: ["[CONTEXT_READY]", "economic context"]
+  min_duration_ms: 30000
+  min_lines: 100
+  requires_ground_truth: true
+  ground_truth_ref: ".planning/testing/ground_truth/PROVENANCE-INDEX.md#pending"
+  artifacts: ["manifest.json", "transcript.txt", "report.json", "environment.json", "ground_truth.json"]
+  behavior_model_ref: "econ-lend-001"
+  vql_bundle: ".planning/testing/vql/VQL-LIBRARY.md"
+  tool_requirements: []
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "[CONTEXT_READY]"]
+  status: "blocked"
+  blocked_reason: "Economic context workflow and ground truth pending"

@@ -1,0 +1,24 @@
+id: reentrancy-basic
+vulndoc: reentrancy/classic
+name: Reentrancy Risk (External Call + State Write)
+description: Public/external functions that call externally and write state without a nonReentrant modifier.
+scope: Function
+lens:
+  - ExternalInfluence
+  - ValueMovement
+severity: high
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: has_external_calls
+      op: eq
+      value: true
+    - property: writes_state
+      op: eq
+      value: true
+  none:
+    - property: modifiers
+      op: contains_any
+      value: [nonReentrant]

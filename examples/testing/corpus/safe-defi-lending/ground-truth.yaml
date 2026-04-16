@@ -1,0 +1,45 @@
+project:
+  name: "safe-defi-lending"
+  theme: "lending"
+  tier: 1
+  adversarial_categories: ["C"]
+  description: "False-positive control. Defense-in-depth lending with stacked protections (C3) and misleading comments (C5). ALL functions are secure."
+
+findings: []
+
+safe_patterns:
+  - technique: "C3-defense-in-depth"
+    contract: "FortifiedLender"
+    function: "withdraw"
+    expected_verdict: safe
+    reasoning: "Triple protection: nonReentrant modifier + CEI pattern + debt-free check. External call is safe."
+
+  - technique: "C3-defense-in-depth"
+    contract: "FortifiedLender"
+    function: "borrow"
+    expected_verdict: safe
+    reasoning: "nonReentrant + proper collateralization check + state update before call"
+
+  - technique: "C5-misleading-comments"
+    contract: "FortifiedLender"
+    function: "withdraw"
+    expected_verdict: safe
+    reasoning: "Comment says 'WARNING: External call present' and 'KNOWN BUG' but function is fully safe"
+
+  - technique: "C2-complex-correct-acl"
+    contract: "FortifiedLender"
+    function: "liquidate"
+    expected_verdict: safe
+    reasoning: "onlyAdmin + nonReentrant + proper health factor check. Multi-layer but correctly composed."
+
+  - technique: "C4-unreachable-paths"
+    contract: "FortifiedLender"
+    function: "repay"
+    expected_verdict: safe
+    reasoning: "Refund path has external call but only sends excess payment back. Can not be exploited."
+
+summary:
+  total_findings: 0
+  total_safe_patterns: 5
+  difficulty: "medium"
+  notes: "FP control: every function has external calls but all properly guarded. Misleading comments suggest vulnerabilities that don't exist."

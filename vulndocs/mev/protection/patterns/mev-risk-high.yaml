@@ -1,0 +1,16 @@
+id: mev-risk-high
+vulndoc: mev/protection
+name: MEV Risk High
+description: Swap-like functions missing slippage/deadline checks or parameters.
+scope: Function
+lens:
+  - Ordering
+severity: high
+match:
+  any:
+    - property: risk_missing_slippage_check
+      op: eq
+      value: true
+    - property: risk_missing_deadline_check
+      op: eq
+      value: true

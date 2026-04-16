@@ -1,0 +1,13 @@
+id: auth-084
+vulndoc: access-control/general
+name: Owner Uninitialized
+description: Owner variable declared without initialization.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: owner_uninitialized
+    op: eq
+    value: true

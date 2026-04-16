@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alphaswarm.sol/schemas/skill_tool_policy_v1.json",
+  "title": "Skill Tool Policy Schema",
+  "description": "Schema for role-based tool gating and guardrail policies",
+  "type": "object",
+  "required": ["version", "roles"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version (semver)",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?$"
+    },
+    "updated": {
+      "type": "string",
+      "description": "Last update date (YYYY-MM-DD)",
+      "format": "date"
+    },
+    "roles": {
+      "type": "object",
+      "description": "Role definitions with tool permissions",
+      "additionalProperties": {
+        "$ref": "#/definitions/role"
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "description": "Escalation and blocking rules",
+      "properties": {
+        "require_guardrail_validation": {
+          "type": "array",
+          "description": "Conditions requiring guardrail validation",
+          "items": {
+            "$ref": "#/definitions/escalation_rule"
+          }
+        },
+        "block_execution": {
+          "type": "array",
+          "description": "Conditions that block execution entirely",
+          "items": {
+            "$ref": "#/definitions/escalation_rule"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Policy metadata",
+      "properties": {
+        "schema_version": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "plan": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "role": {
+      "type": "object",
+      "required": ["description", "model_tier", "allowed_tools", "data_access", "constraints"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Role purpose and responsibilities"
+        },
+        "model_tier": {
+          "type": "string",
+          "enum": ["haiku", "sonnet", "opus"],
+          "description": "Default model tier for this role"
+        },
+        "allowed_tools": {
+          "type": "array",
+          "description": "Tools allowed for this role",
+          "items": {
+            "type": "string",
+            "oneOf": [
+              {"enum": ["Read", "Write", "Edit", "Glob", "Grep"]},
+              {"pattern": "^Bash\\(.*\\)$"},
+              {"pattern": "^mcp__.*$"}
+            ]
+          },
+          "minItems": 1
+        },
+        "data_access": {
+          "type": "object",
+          "required": ["allowed_paths", "forbidden_paths"],
+          "properties": {
+            "allowed_paths": {
+              "type": "array",
+              "description": "Glob patterns for allowed file access",
+              "items": {
+                "type": "string"
+              }
+            },
+            "forbidden_paths": {
+              "type": "array",
+              "description": "Glob patterns for forbidden file access",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "constraints": {
+          "type": "object",
+          "description": "Execution constraints for this role",
+          "properties": {
+            "max_file_reads": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of file reads per execution"
+            },
+            "max_file_writes": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum number of file writes per execution"
+            },
+            "require_graph_first": {
+              "type": "boolean",
+              "description": "Must query BSKG before conclusions"
+            },
+            "evidence_required": {
+              "type": "boolean",
+              "description": "All claims must have evidence"
+            },
+            "token_budget": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 10000,
+              "description": "Token budget for this role"
+            },
+            "max_web_searches": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Maximum web searches (for researcher role)"
+            }
+          },
+          "required": ["max_file_reads", "require_graph_first", "evidence_required", "token_budget"]
+        }
+      }
+    },
+    "escalation_rule": {
+      "type": "object",
+      "required": ["condition", "message"],
+      "properties": {
+        "condition": {
+          "type": "string",
+          "description": "Condition expression (e.g., 'token_budget > 6000')"
+        },
+        "validator": {
+          "type": "string",
+          "description": "Role that must validate (for require_guardrail_validation)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error or warning message"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+id: arith-007
+vulndoc: arithmetic/general
+name: Token Decimal Mismatch
+description: Token decimal usage without normalization.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: token_decimal_mismatch
+    op: eq
+    value: true

@@ -1,0 +1,21 @@
+id: auth-063
+vulndoc: access-control/general
+name: Public Payable Without Access Gate
+description: Public/external payable functions without access control.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: payable
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

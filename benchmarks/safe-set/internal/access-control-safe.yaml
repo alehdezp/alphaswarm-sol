@@ -1,0 +1,32 @@
+# Access Control Safe Reference Implementation
+id: safe-access-control
+name: AccessControlSafe
+category: internal_safe
+source: tests/contracts/safe/AccessControlSafe.sol
+solidity_version: "0.8.x"
+
+contract_info:
+  description: |
+    Reference implementation demonstrating proper access control:
+    - Role-based access control
+    - Proper modifier usage
+    - Admin functions protected
+  security_features:
+    - onlyOwner modifier
+    - Role-based permissions
+    - Proper authorization checks
+  safe_since: 2025-12
+  review_status: internal
+
+expected_findings: []
+
+false_positive_categories:
+  - auth-*
+  - access-control-*
+  - ownership-*
+
+notes: |
+  This contract demonstrates correct access control patterns.
+  Any access control finding is a false positive.
+
+status: validated

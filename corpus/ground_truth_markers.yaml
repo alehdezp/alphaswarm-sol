@@ -1,0 +1,165 @@
+version: 1.0.0
+description: Vulnerability markers extracted from corpus contracts by strip_vuln_markers.py
+note: These markers were removed to prevent agents from trivially finding vulnerabilities
+  during evaluation.
+markers:
+  tests/contracts/ApprovalRaceCondition.sol:
+  - line: 8
+    text: '* VULNERABILITY: Changing allowance from non-zero to non-zero value creates'
+  tests/contracts/BlacklistPausableTokens.sol:
+  - line: 8
+    text: '* VULNERABILITY: Tokens like USDC and USDT have centralized blacklist and
+      pause'
+  tests/contracts/ConstructorInLogic.sol:
+  - line: 8
+    text: '* VULNERABILITY: Constructors are executed only when the implementation
+      contract'
+  tests/contracts/DelegatecallUntrusted.sol:
+  - line: 8
+    text: '* VULNERABILITY: delegatecall executes code in the caller''s context. If
+      the target'
+  - line: 27
+    text: '// CRITICAL VULNERABILITY: User can provide any address'
+  - line: 63
+    text: '// VULNERABILITY: No access control on upgrade!'
+  tests/contracts/Erc777Reentrancy.sol:
+  - line: 8
+    text: '* VULNERABILITY: ERC777 tokens have tokensReceived hook that''s called
+      on every'
+  tests/contracts/FeeOnTransferToken.sol:
+  - line: 8
+    text: '* VULNERABILITY: Some tokens (like STA, PAXG) deduct fees during transfer.'
+  tests/contracts/InfiniteApprovalRisks.sol:
+  - line: 8
+    text: '* VULNERABILITY: Approving type(uint256).max allows spender to drain'
+  tests/contracts/MEVDeadlineTimestamp.sol:
+  - line: 8
+    text: '* VULNERABILITY: Using block.timestamp as deadline allows validators/sequencers'
+  tests/contracts/MEVFlashLoanReentrancy.sol:
+  - line: 8
+    text: '* VULNERABILITY: Flash loan callback can reenter contract to manipulate
+      state'
+  tests/contracts/MEVFrontrunLiquidation.sol:
+  - line: 8
+    text: '* VULNERABILITY: Public liquidation functions allow MEV bots to frontrun'
+  tests/contracts/MEVJITLiquidity.sol:
+  - line: 8
+    text: '* VULNERABILITY: Uniswap V3 concentrated liquidity allows JIT attacks where'
+  tests/contracts/MEVOracleManipulation.sol:
+  - line: 8
+    text: '* VULNERABILITY: Using single DEX spot price as oracle allows flash loan
+      attacks'
+  tests/contracts/MEVSandwichVulnerable.sol:
+  - line: 8
+    text: '* VULNERABILITY: Large swaps without slippage protection or with excessive'
+  tests/contracts/MEVTimestampDependence.sol:
+  - line: 8
+    text: '* VULNERABILITY: Functions that rely on block.timestamp for critical logic'
+  tests/contracts/NonStandardTokens.sol:
+  - line: 8
+    text: '* VULNERABILITY: Not all ERC-20 tokens follow the standard exactly:'
+  tests/contracts/OracleRoundIDStale.sol:
+  - line: 8
+    text: '* Vulnerability:'
+  tests/contracts/ProxyStorageCollision.sol:
+  - line: 8
+    text: '* VULNERABILITY: Storage collision occurs when proxy and implementation
+      contracts'
+  tests/contracts/RebasingToken.sol:
+  - line: 8
+    text: '* VULNERABILITY: Rebasing tokens (like AMPL, stETH) change balances automatically'
+  tests/contracts/ReinitializerMissing.sol:
+  - line: 8
+    text: '* VULNERABILITY: When upgrading a contract to add new state variables,
+      if there''s'
+  tests/contracts/SelectorClash.sol:
+  - line: 8
+    text: '* VULNERABILITY: Function selectors are 4-byte hashes that can collide.
+      In transparent'
+  tests/contracts/StorageLayoutIncompatible.sol:
+  - line: 8
+    text: '* VULNERABILITY: When upgrading, if new implementation changes the order
+      or types'
+  tests/contracts/TokenDecimalMismatch.sol:
+  - line: 8
+    text: '* VULNERABILITY: Tokens have different decimal places (USDC=6, WBTC=8,
+      DAI=18)'
+  tests/contracts/TwapShortWindow.sol:
+  - line: 8
+    text: '* Vulnerability:'
+  tests/contracts/UninitializedProxy.sol:
+  - line: 8
+    text: '* VULNERABILITY: If an implementation contract is not initialized, an attacker'
+  - line: 114
+    text: '// VULNERABILITY: Implementation not initialized here!'
+  tests/contracts/ValueMovementForcedEther.sol:
+  - line: 8
+    text: '* VULNERABILITY: Contracts that rely on address(this).balance for critical
+      logic'
+  - line: 32
+    text: '// VULNERABILITY: Relies on exact balance check'
+  - line: 99
+    text: '// VULNERABILITY: Relies on balance matching internal accounting'
+  - line: 145
+    text: '// VULNERABILITY: Anyone can destroy the contract'
+  tests/contracts/ValueMovementIntegerIssues.sol:
+  - line: 8
+    text: '* VULNERABILITY: While Solidity 0.8+ has built-in overflow protection,
+      unsafe operations'
+  - line: 34
+    text: '// VULNERABILITY: Unchecked block bypasses overflow protection'
+  - line: 43
+    text: '// VULNERABILITY: Underflow could make balances[msg.sender] huge'
+  - line: 92
+    text: '// VULNERABILITY: Division before multiplication causes precision loss'
+  - line: 132
+    text: '// VULNERABILITY: Fee calculation loses precision for small amounts'
+  - line: 172
+    text: '// VULNERABILITY: Can round down to 0 for small deposits'
+  - line: 182
+    text: '// VULNERABILITY: Can round down, user loses value'
+  - line: 229
+    text: '// VULNERABILITY: Silently truncates if largeAmount > type(uint128).max'
+  - line: 234
+    text: '// VULNERABILITY: Unsafe downcast'
+  - line: 257
+    text: '// VULNERABILITY: Multiplication could overflow in unchecked context'
+  tests/contracts/ValueMovementMEVSandwich.sol:
+  - line: 8
+    text: '* VULNERABILITY: Transactions without slippage protection or deadline checks'
+  - line: 52
+    text: '// VULNERABILITY: amountOutMin = 0 allows unlimited slippage'
+  - line: 120
+    text: '// VULNERABILITY: No deadline or uses block.timestamp'
+  - line: 188
+    text: '// VULNERABILITY: Large swap can be sandwiched'
+  - line: 248
+    text: '// VULNERABILITY: Liquidation can be frontrun'
+  - line: 312
+    text: '// VULNERABILITY: Order submission is public and can be frontrun'
+  tests/contracts/ValueMovementStuckEther.sol:
+  - line: 8
+    text: '* VULNERABILITY: Contracts that accept ether but provide no withdrawal
+      mechanism,'
+  - line: 27
+    text: '// VULNERABILITY: Accepts ether via deposit'
+  - line: 32
+    text: '// VULNERABILITY: No withdrawal function - ether is permanently locked!'
+  - line: 72
+    text: '// VULNERABILITY: If any transfer fails, entire function reverts'
+  - line: 156
+    text: '// VULNERABILITY: No emergency withdrawal if funds get stuck'
+  - line: 200
+    text: '// VULNERABILITY: transfer() and send() use fixed 2300 gas'
+  - line: 206
+    text: '// VULNERABILITY: send() also uses 2300 gas and returns bool'
+  - line: 224
+    text: '// VULNERABILITY: Anyone can withdraw all ether'
+  tests/contracts/economic/FlashLoanArb.sol:
+  - line: 18
+    text: '* THE VULNERABILITY:'
+  - line: 46
+    text: '// Vulnerability: transfer usage (minor)'
+  tests/contracts/hard-case/NovelStorageCollision.sol:
+  - line: 11
+    text: '// Vulnerability:'

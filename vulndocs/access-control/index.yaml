@@ -1,0 +1,83 @@
+# access-control Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: access-control
+name: Access Control
+description: 'Vulnerability subcategories for access-control domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: authorization
+  name: Authorization
+  path: authorization/
+- id: delegatecall
+  name: Delegatecall
+  path: delegatecall/
+- id: delegatecall-control
+  name: Delegatecall Control Vulnerability
+  path: delegatecall-control/
+- id: emergency
+  name: Emergency
+  path: emergency/
+- id: external-call
+  name: External Call
+  path: external-call/
+- id: general
+  name: General
+  path: general/
+- id: hook-permission
+  name: Hook Permission Mismatch
+  path: hook-permission/
+- id: hooks-permission
+  name: Uniswap V4 Hooks Permission Vulnerabilities
+  path: hooks-permission/
+- id: initialization
+  name: Initialization Vulnerabilities
+  path: initialization/
+- id: input-validation
+  name: Input Validation
+  path: input-validation/
+- id: low-level-call
+  name: Low Level Call
+  path: low-level-call/
+- id: missing-modifier
+  name: Missing Access Control Modifier
+  path: missing-modifier/
+- id: multisig
+  name: Multisig
+  path: multisig/
+- id: payable
+  name: Payable
+  path: payable/
+- id: policy
+  name: Policy
+  path: policy/
+- id: pool-key-validation
+  name: Insufficient Pool Key Validation
+  path: pool-key-validation/
+- id: race-condition
+  name: Temporal Access Control Race
+  path: race-condition/
+- id: role-escalation
+  name: Role/Privilege Escalation
+  path: role-escalation/
+- id: transient-storage-auth
+  name: Transient Storage Authentication Bypass
+  path: transient-storage-auth/
+- id: treasury
+  name: Treasury
+  path: treasury/
+- id: tx-origin
+  name: tx.origin Authentication
+  path: tx-origin/
+- id: unprotected-functions
+  name: Unprotected Functions
+  path: unprotected-functions/
+- id: weak-modifier
+  name: Weak or Bypassable Modifier
+  path: weak-modifier/
+statistics:
+  subcategory_count: 23
+  last_updated: '2026-02-18'

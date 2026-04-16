@@ -1,0 +1,16 @@
+id: ext-051
+vulndoc: access-control/external-call
+name: Multi-Source Oracle Without Staleness Checks
+description: Multiple oracle sources aggregated without freshness checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_staleness_check
+    op: eq
+    value: false

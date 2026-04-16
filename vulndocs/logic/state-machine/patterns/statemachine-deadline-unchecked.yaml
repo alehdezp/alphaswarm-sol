@@ -1,0 +1,44 @@
+id: statemachine-deadline-unchecked
+vulndoc: logic/state-machine
+name: Deadline Not Enforced
+description: 'Time-sensitive function without deadline validation.
+
+  Deadlines protect against stale transactions and MEV.
+
+
+  Risk: Transactions can be delayed by miners/validators and executed
+
+  at unfavorable times, enabling sandwich attacks and arbitrage.
+
+  '
+severity: medium
+scope: Function
+lens:
+- Temporal
+- MEV
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    none:
+    - property: has_deadline_check
+      op: eq
+      value: true
+    - property: uses_block_timestamp_for_deadline
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: temporal.time_sensitive
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: temporal.checks_deadline
+required_labels:
+- temporal.time_sensitive

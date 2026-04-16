@@ -1,0 +1,16 @@
+id: array-index-without-check
+vulndoc: logic/array-handling
+name: Array Index Without Bounds Check
+description: Array element access with index parameter lacking bounds checks can enable out-of-range assumptions.
+scope: Function
+lens:
+  - DoS
+severity: low
+match:
+  all:
+    - property: has_array_parameter
+      op: eq
+      value: true
+    - property: has_array_index_check
+      op: eq
+      value: false

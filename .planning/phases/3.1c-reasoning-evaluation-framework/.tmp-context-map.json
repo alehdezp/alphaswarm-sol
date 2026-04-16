@@ -1,0 +1,164 @@
+{
+  "file": "3.1c-CONTEXT.md",
+  "phase_dir": ".planning/phases/3.1c-reasoning-evaluation-framework",
+  "checksum": "fd7f11738243b35beacd0a66011856f8effe47e1b50eb1111753eb05a1b507b7",
+  "total_lines": 3340,
+  "sections": [
+    {
+      "type": "header",
+      "name": "Phase Boundary",
+      "start_line": 6,
+      "end_line": 25,
+      "line_count": 20
+    },
+    {
+      "type": "header",
+      "name": "3.1d Pre-Existing Work",
+      "start_line": 26,
+      "end_line": 37,
+      "line_count": 12
+    },
+    {
+      "type": "header",
+      "name": "Implementation Decisions (Locked)",
+      "start_line": 38,
+      "end_line": 1201,
+      "line_count": 1164
+    },
+    {
+      "type": "header",
+      "name": "Design Constraints",
+      "start_line": 1202,
+      "end_line": 1247,
+      "line_count": 46
+    },
+    {
+      "type": "header",
+      "name": "Infrastructure Available (from 3.1b)",
+      "start_line": 1248,
+      "end_line": 1318,
+      "line_count": 71
+    },
+    {
+      "type": "header",
+      "name": "Known Code Issues",
+      "start_line": 1319,
+      "end_line": 1654,
+      "line_count": 336
+    },
+    {
+      "type": "header",
+      "name": "Documented Failure Scenarios",
+      "start_line": 1655,
+      "end_line": 1736,
+      "line_count": 82
+    },
+    {
+      "type": "header",
+      "name": "Presteps (Must Complete Before/During Execution)",
+      "start_line": 1737,
+      "end_line": 1847,
+      "line_count": 111
+    },
+    {
+      "type": "header",
+      "name": "Plan Summaries",
+      "start_line": 1848,
+      "end_line": 2824,
+      "line_count": 977
+    },
+    {
+      "type": "header",
+      "name": "Cross-Plan Dependencies",
+      "start_line": 2825,
+      "end_line": 2886,
+      "line_count": 62
+    },
+    {
+      "type": "header",
+      "name": "Evaluation Intelligence Layer (v2 Scope — 3 v1 Implementations + 9 Stubs in 3.1c-12)",
+      "start_line": 2887,
+      "end_line": 2910,
+      "line_count": 24
+    },
+    {
+      "type": "header",
+      "name": "Architecture",
+      "start_line": 2911,
+      "end_line": 3026,
+      "line_count": 116
+    },
+    {
+      "type": "header",
+      "name": "Reasoning Evaluation Deep Dive",
+      "start_line": 3027,
+      "end_line": 3091,
+      "line_count": 65
+    },
+    {
+      "type": "header",
+      "name": "HITL Scenarios (Per-Plan, <= 15 minutes each)",
+      "start_line": 3092,
+      "end_line": 3111,
+      "line_count": 20
+    },
+    {
+      "type": "header",
+      "name": "3.1e Deferred Items (P17-IMP-07)",
+      "start_line": 3112,
+      "end_line": 3132,
+      "line_count": 21
+    },
+    {
+      "type": "header",
+      "name": "Execution Waves",
+      "start_line": 3133,
+      "end_line": 3168,
+      "line_count": 36
+    },
+    {
+      "type": "header",
+      "name": "Validation Artifacts (Per-Plan, Mandatory)",
+      "start_line": 3169,
+      "end_line": 3179,
+      "line_count": 11
+    },
+    {
+      "type": "header",
+      "name": "Exit Gate",
+      "start_line": 3180,
+      "end_line": 3268,
+      "line_count": 89
+    },
+    {
+      "type": "header",
+      "name": "Estimated Scope",
+      "start_line": 3269,
+      "end_line": 3275,
+      "line_count": 7
+    },
+    {
+      "type": "header",
+      "name": "Active Gaps",
+      "start_line": 3276,
+      "end_line": 3295,
+      "line_count": 20
+    },
+    {
+      "type": "header",
+      "name": "Claude's Discretion",
+      "start_line": 3296,
+      "end_line": 3302,
+      "line_count": 7
+    },
+    {
+      "type": "header",
+      "name": "Deferred Ideas",
+      "start_line": 3303,
+      "end_line": 3340,
+      "line_count": 38
+    }
+  ],
+  "status": "improved (pass 17 merge — 3.1e cross-phase alignment, pass 15 merge, pass 14 merged, pass 13 final merge, pass 12 merged, pass 11 merged, pass 10 merged)",
+  "stale": false
+}

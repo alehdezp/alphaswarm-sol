@@ -1,0 +1,19 @@
+id: live-021
+vulndoc: dos/general
+name: State Manipulation Griefing
+description: Time-based state changes without access control.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: time_based_access_control
+    op: eq
+    value: true
+  - property: writes_state
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

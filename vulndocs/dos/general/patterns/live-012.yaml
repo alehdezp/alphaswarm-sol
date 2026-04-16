@@ -1,0 +1,20 @@
+id: live-012
+vulndoc: dos/general
+name: External Call Cascade Failure
+description: Multiple external calls without failure handling.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: checks_low_level_call_success
+    op: eq
+    value: false
+  any:
+  - property: external_call_count
+    op: gte
+    value: 2
+  - property: low_level_call_count
+    op: gte
+    value: 2

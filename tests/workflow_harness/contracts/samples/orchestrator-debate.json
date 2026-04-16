@@ -1,0 +1,62 @@
+{
+  "workflow_id": "orchestrator-debate",
+  "category": "orchestrator",
+  "description": "Capability contract for the debate orchestration flow. Validates that the orchestrator spawns attacker and defender agents, collects verdicts from both sides, and uses a verifier to arbitrate disagreements.",
+  "skill_ref": "src/alphaswarm_sol/shipping/skills/debate.md",
+  "capability_checks": [
+    {
+      "id": "debate-01",
+      "name": "spawns_attacker_and_defender",
+      "description": "The debate orchestrator must spawn both an attacker and a defender agent to produce opposing viewpoints",
+      "check_type": "agent_lifecycle",
+      "assertion": "assert_agent_spawned(stream, 'attacker') and assert_agent_spawned(stream, 'defender')",
+      "required": true
+    },
+    {
+      "id": "debate-02",
+      "name": "collects_verdicts_from_both",
+      "description": "Both attacker and defender must exit cleanly, indicating they produced their verdicts",
+      "check_type": "agent_lifecycle",
+      "assertion": "assert_agent_exited_cleanly(stream, 'attacker') and assert_agent_exited_cleanly(stream, 'defender')",
+      "required": true
+    },
+    {
+      "id": "debate-03",
+      "name": "verifier_arbitrates",
+      "description": "A verifier agent must be spawned after both attacker and defender to synthesize and arbitrate their positions",
+      "check_type": "agent_lifecycle",
+      "assertion": "assert_spawn_order(stream, 'attacker', 'verifier') and assert_spawn_order(stream, 'defender', 'verifier')",
+      "required": true
+    },
+    {
+      "id": "debate-04",
+      "name": "minimum_three_agents",
+      "description": "The debate flow requires at least 3 agents (attacker, defender, verifier)",
+      "check_type": "agent_lifecycle",
+      "assertion": "assert_min_agents(stream, 3)",
+      "required": true
+    },
+    {
+      "id": "debate-05",
+      "name": "produces_final_verdict",
+      "description": "The debate flow must produce a final verdict with supporting evidence from both sides",
+      "check_type": "task_state",
+      "assertion": "assert_task_completed(stream, 'verdict') or assert_task_completed(stream, 'debate')",
+      "required": true
+    }
+  ],
+  "expected_behaviors": [
+    "Spawns attacker agent first to construct exploit hypothesis",
+    "Spawns defender agent to find guards and mitigations",
+    "Both agents complete and produce structured verdicts",
+    "Verifier agent synthesizes attacker and defender positions",
+    "Final verdict includes evidence from both sides",
+    "Disagreements are explicitly addressed in the verdict",
+    "Anti-fabrication checks pass (real API calls, non-zero duration)"
+  ],
+  "performance_bounds": {
+    "min_duration_sec": 60,
+    "max_duration_sec": 900,
+    "min_agents": 3
+  }
+}

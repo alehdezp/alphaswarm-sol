@@ -1,0 +1,17 @@
+id: delegatecall-no-gate
+vulndoc: access-control/unprotected-functions
+name: Delegatecall Without Access Gate
+description: Functions using delegatecall without access control modifiers.
+scope: Function
+lens:
+  - Upgradeability
+  - Authority
+severity: high
+match:
+  all:
+    - property: uses_delegatecall
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false

@@ -1,0 +1,18 @@
+id: arith-009
+vulndoc: arithmetic/general
+name: Rounding Exploitation
+description: Rounding/truncation in calculations without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: has_rounding_ops
+    op: eq
+    value: true
+  - property: division_precision_risk
+    op: eq
+    value: true

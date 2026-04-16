@@ -1,0 +1,23 @@
+id: vm-015
+vulndoc: reentrancy/general
+name: Inheritance Reentrancy Surface
+description: External call before state write in inherited contracts.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: contract_has_inheritance
+    op: eq
+    value: true
+  - property: has_external_calls
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

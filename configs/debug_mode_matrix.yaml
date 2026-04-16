@@ -1,0 +1,931 @@
+# Debug Mode Matrix
+# Defines required debug outputs per skill/agent
+# Referenced by: scripts/e2e/validate_debug_mode.py
+# Version: 1.0.0
+# Updated: 2026-01-30
+
+version: "1.0.0"
+
+# Common required fields for ALL skills/agents
+common_required_fields:
+  - record_id
+  - skill_or_agent
+  - timestamp_start
+  - timestamp_end
+  - duration_ms
+  - inputs.prompt
+  - inputs.prompt_tokens
+  - tool_calls
+  - bskg_queries
+  - outputs.final_response
+  - outputs.response_tokens
+
+# =============================================================================
+# SKILLS
+# =============================================================================
+skills:
+  # ---------------------------------------------------------------------------
+  # Orchestration Skills (7)
+  # ---------------------------------------------------------------------------
+  audit:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+      - parameters
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - structured_output
+    min_duration_ms: 5000  # Must take at least 5s for real execution
+
+  orch-spawn:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional  # May not query graph
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  orch-resume:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  health-check:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 500
+
+  bead-create:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  bead-list:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 500
+
+  bead-update:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  # ---------------------------------------------------------------------------
+  # Investigation Skills (3)
+  # ---------------------------------------------------------------------------
+  investigate:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+      - parameters
+    tool_calls: required
+    bskg_queries: required  # MUST query graph
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+      - evidence_ids
+    min_duration_ms: 5000
+
+  verify:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+    min_duration_ms: 3000
+
+  debate:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - debate_turns
+      - verdict
+      - confidence
+    min_duration_ms: 10000  # Debate takes time
+
+  # ---------------------------------------------------------------------------
+  # Validation Skills (7)
+  # ---------------------------------------------------------------------------
+  test-full:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  test-quick:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  test-component:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  validate-vulndocs:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  benchmark-model:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  mutate-contract:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  pattern-verify:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+    min_duration_ms: 3000
+
+  # ---------------------------------------------------------------------------
+  # Discovery Skills (6)
+  # ---------------------------------------------------------------------------
+  discover:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  research:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  ingest-url:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  add-vulnerability:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  merge-findings:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  generate-tests:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  # ---------------------------------------------------------------------------
+  # Pattern Development Skills (5)
+  # ---------------------------------------------------------------------------
+  pattern-forge:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  refine:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  test-pattern:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+    min_duration_ms: 3000
+
+  pattern-batch:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  create-bead-finding:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  # ---------------------------------------------------------------------------
+  # Tool Integration Skills (3)
+  # ---------------------------------------------------------------------------
+  tool-slither:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  tool-aderyn:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  tool-coordinator:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  # ---------------------------------------------------------------------------
+  # Context Skills (11)
+  # ---------------------------------------------------------------------------
+  context-pack:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  evidence-audit:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  graph-contract-validate:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  ordering-proof:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  slice-unify:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  taint-extend:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  taxonomy-migrate:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  track-gap:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  economic-context:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  graph-retrieve:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  vql-help:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 1000
+
+  # ---------------------------------------------------------------------------
+  # Bead Management Skills (2)
+  # ---------------------------------------------------------------------------
+  create-bead-context-merge:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  label:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  # ---------------------------------------------------------------------------
+  # Development Skills (4) - Only test-builder is shipped
+  # ---------------------------------------------------------------------------
+  test-builder:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  agent-skillcraft:
+    debug_required: false  # Dev-only, not shipped
+
+  gsd-research-context:
+    debug_required: false  # Dev-only, not shipped
+
+  today-date:
+    debug_required: false  # Dev-only, not shipped
+
+# =============================================================================
+# AGENTS
+# =============================================================================
+agents:
+  # ---------------------------------------------------------------------------
+  # Core Verification Agents (4)
+  # ---------------------------------------------------------------------------
+  vrs-attacker:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+    tool_calls: required
+    bskg_queries: required  # MUST query graph
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+      - evidence_ids
+      - exploit_chain
+      - attack_vector
+    min_duration_ms: 10000
+
+  vrs-defender:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+      - evidence_ids
+      - guards_found
+      - mitigation_paths
+    min_duration_ms: 10000
+
+  vrs-verifier:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+      - evidence_ids
+      - arbitration_notes
+      - evidence_quality_scores
+    min_duration_ms: 10000
+
+  vrs-secure-reviewer:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+      - context_files
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+      - severity_assessment
+      - code_citations
+    min_duration_ms: 8000
+
+  # ---------------------------------------------------------------------------
+  # Orchestration & Coordination Agents (2)
+  # ---------------------------------------------------------------------------
+  vrs-supervisor:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-integrator:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  # ---------------------------------------------------------------------------
+  # Pattern & Discovery Agents (4)
+  # ---------------------------------------------------------------------------
+  vrs-pattern-scout:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-pattern-verifier:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+    min_duration_ms: 5000
+
+  vrs-pattern-composer:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-context-packer:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  # ---------------------------------------------------------------------------
+  # Context & Evidence Agents (4)
+  # ---------------------------------------------------------------------------
+  vrs-finding-merger:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  vrs-finding-synthesizer:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  vrs-contradiction:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: required
+    outputs:
+      - final_response
+      - response_tokens
+      - verdict
+      - confidence
+    min_duration_ms: 5000
+
+  vrs-prevalidator:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 2000
+
+  # ---------------------------------------------------------------------------
+  # Validation Pipeline Agents (7)
+  # ---------------------------------------------------------------------------
+  vrs-test-conductor:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-corpus-curator:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+  vrs-benchmark-runner:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-mutation-tester:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-regression-hunter:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-gap-finder:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 5000
+
+  vrs-gap-finder-lite:
+    debug_required: true
+    inputs:
+      - prompt
+      - prompt_tokens
+    tool_calls: required
+    bskg_queries: optional
+    outputs:
+      - final_response
+      - response_tokens
+    min_duration_ms: 3000
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+summary:
+  total_skills: 48
+  skills_debug_required: 45  # 3 dev-only excluded
+  total_agents: 21
+  agents_debug_required: 21
+
+# Validation thresholds
+validation:
+  min_duration_ms_default: 1000  # Minimum for any execution
+  max_allowed_zero_durations: 0  # Zero tolerance
+  required_coverage_percent: 100  # All shipped must have debug

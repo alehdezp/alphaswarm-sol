@@ -1,0 +1,105 @@
+# Internal Annotated Contract: TxOriginAuth
+# Phase: 07.3.1.6 IMP-B1 / IMP-K2
+# Purpose: Ground truth for internal test contracts
+
+contract:
+  id: "tx-origin-auth"
+  name: "TxOriginAuth"
+  source_path: "tests/contracts/TxOriginAuth.sol"
+  solidity_version: "^0.8.20"
+
+metadata:
+  annotation_date: "2026-02-04"
+  annotator: "AlphaSwarm.sol team"
+  trust_level: "medium"
+  purpose: "Controlled test case for tx.origin authorization detection"
+
+contract_summary:
+  description: |
+    Vulnerable contract using tx.origin for authorization instead of
+    msg.sender. This allows phishing attacks where the owner is tricked
+    into calling a malicious contract that then calls this one.
+
+  lines_of_code: 14
+  functions:
+    - name: "constructor"
+      visibility: "public"
+      state_mutability: "nonpayable"
+      vulnerable: false
+
+    - name: "privileged"
+      visibility: "external"
+      state_mutability: "nonpayable"
+      vulnerable: true
+
+findings:
+  - id: "INT-TOA-001"
+    title: "tx.origin used for authorization enables phishing"
+    severity: "high"
+    vulnerability_class: "access_control"
+    swc_id: "SWC-115"
+    cwe_id: "CWE-477"
+    ground_truth_verdict: "confirmed"
+
+    affected_functions:
+      - "privileged"
+
+    vulnerable_code:
+      file: "tests/contracts/TxOriginAuth.sol"
+      line_start: 11
+      line_end: 13
+      snippet: |
+        function privileged() external {
+            require(tx.origin == owner, "auth");
+        }
+
+    vulnerability_pattern:
+      description: "Authorization using tx.origin instead of msg.sender"
+      operations_sequence:
+        - op: "CHECKS_PERMISSION"
+          location: "line 12"
+          issue: "Uses tx.origin"
+          should_use: "msg.sender"
+
+    exploit_scenario:
+      preconditions:
+        - "Owner has interacted with malicious dApp before"
+        - "Attacker deploys phishing contract"
+      steps:
+        - "Attacker creates malicious contract with enticing function"
+        - "Owner is tricked into calling malicious contract"
+        - "Malicious contract calls TxOriginAuth.privileged()"
+        - "Check passes because tx.origin == owner"
+      postconditions:
+        - "Attacker executed privileged action as owner"
+
+    attack_contract_example: |
+      contract Phishing {
+          TxOriginAuth target;
+
+          function bait() external {
+              // Looks like innocent function
+              // But actually...
+              target.privileged();  // tx.origin is caller
+          }
+      }
+
+    fix_recommendation: |
+      Use msg.sender instead of tx.origin:
+      ```solidity
+      require(msg.sender == owner, "auth");
+      ```
+
+    detection_expectations:
+      tier_a_detectable: true   # Simple pattern match on tx.origin
+      tier_b_detectable: true   # LLM can verify misuse
+      tier_c_detectable: true   # Economic analysis shows phishing risk
+
+statistics:
+  total_findings: 1
+  by_severity:
+    high: 1
+    medium: 0
+    low: 0
+  by_class:
+    access_control: 1

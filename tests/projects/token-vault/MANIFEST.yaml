@@ -1,0 +1,524 @@
+# =============================================================================
+# TEST PROJECT MANIFEST - Token Vault
+# =============================================================================
+
+project: token-vault
+description: |
+  Token vault and ERC-4626 test scenarios for value movement patterns.
+  Contains deposits, withdrawals, share accounting, and reentrancy scenarios.
+max_files: 30
+current_files: 10
+
+patterns:
+  ext-001-unprotected-external-call:
+    files: [ExternalCallTest.sol]
+    functions:
+      vulnerable:
+        - withdrawWithCallback(uint256,address)
+        - processWithCallbacks(address,address,bytes)
+        - executeCall(address,bytes)
+        - delegateExecute(address,bytes)
+        - processExternal(address,bytes)
+        - removeFunds(uint256,address)
+        - updateBalance(address,uint256,address)
+        - batchWithdraw(address[],uint256[],address)
+        - transferWithHooks(address,uint256,address)
+        - withdrawWithIf(uint256,address)
+        - withdrawWithTryCatch(uint256,address)
+        - validateWithStaticcall(address,bytes)
+        - callTrustedContract(bytes)
+        - withdrawMultiModifier(uint256,address)
+        - extractFunds(uint256,address)
+        - redeemShares(uint256,address)
+        - claimRewards(uint256,address)
+        - withdrawFromAccount(uint256,address)
+        - withdrawTrusted(uint256,address)
+        - claimPendingReward()
+        - updatePrice(address)
+      safe:
+        - adminCallback(address,bytes)
+        - withdrawProtected(uint256,address)
+        - checkBalance(address,address)
+        - calculate(uint256,uint256)
+        - adminWithdraw(uint256,address)
+        - notifyExternal(address)
+        - initialize(address)
+        - controllerExecute(address,bytes)
+        - adminOperation(address,bytes)
+    last_updated: "2025-12-31"
+    status: excellent
+    metrics:
+      precision: 1.00
+      recall: 1.00
+      variation_score: 1.00
+
+patterns:
+  vm-002-unprotected-transfer:
+    files: [ValueTransferTest.sol]
+    functions:
+      vulnerable:
+        - withdraw(uint256)
+        - setBalance(address,uint256)
+        - extract(uint256)
+        - removeFunds(uint256)
+        - fn_0x123abc(uint256)
+        - updateShares(address,uint256)
+        - modifyDeposit(address,uint256)
+        - sendFunds(address,uint256)
+        - sendEther(address,uint256)
+        - batchWithdraw(address[],uint256[])
+        - extractAsController(uint256)
+      safe:
+        - withdrawProtected(uint256)
+        - withdrawWithRequire(uint256)
+        - setBalanceProtected(address,uint256)
+        - withdrawGuarded(uint256)
+        - batchWithdrawProtected(address[],uint256[])
+      edge_cases:
+        - getBalance(address)
+        - calculate(uint256,uint256)
+        - _internalTransfer(address,uint256)
+        - _privateSetBalance(address,uint256)
+        - initialize(address)
+        - constructor
+      false_positives:
+        - withdrawWithIf(uint256)  # if-statement access check not recognized
+        - withdrawOwn()  # pull payment pattern not recognized
+        - init(address)  # custom initializer modifier not recognized
+        - claimReward()  # intentional public distribution (needs Tier B)
+      false_negatives:
+        - updateAccount(address,uint256)  # struct field writes not detected
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 0.73
+      recall: 0.92
+      variation_score: 0.80
+
+  token-001-unhandled-fee-on-transfer:
+    files: [FeeOnTransferTest.sol]
+    functions:
+      vulnerable:
+        - deposit(IERC20,uint256)
+        - depositCollateral(IERC20,uint256)
+        - fundAccount(IERC20,uint256)
+        - depositAsset(IERC20,uint256)
+        - depositUnderlying(IERC20,uint256)
+        - depositMultiStep(IERC20,uint256)
+        - depositWithEvent(IERC20,uint256)
+        - depositWithGuard(IERC20,uint256)
+        - depositTwoTokens(IERC20,IERC20,uint256)
+      safe:
+        - depositSafe(IERC20,uint256)
+        - stakeSafe(IERC20,uint256)
+        - depositWithCheck(IERC20,uint256)
+        - depositSafeERC20(IERC20,uint256)
+        - depositERC4626Style(IERC20,uint256)
+      edge_cases:
+        - _depositInternal(IERC20,uint256)  # internal
+        - _depositPrivate(IERC20,uint256)  # private
+        - viewDeposit(address)  # view
+        - depositNoAccounting(IERC20,uint256)  # no balance write
+        - unstake(uint256)  # withdrawal
+        - collectFee(IERC20,uint256)  # no user accounting
+      false_positives:
+        - depositSafe(IERC20,uint256)  # balance check in assignment not require()
+      false_negatives:
+        - stake(IERC20,uint256)  # writes stakes mapping (not detected)
+        - addLiquidity(IERC20,uint256)  # writes deposits mapping (not detected)
+        - contribute(IERC20,uint256)  # writes shares (should detect)
+        - depositForShares(IERC20,uint256)  # writes shares (should detect)
+        - depositToMapping(IERC20,uint256)  # writes deposits mapping (not detected)
+        - depositToStruct(IERC20,uint256)  # writes struct field (not detected)
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 0.90
+      recall: 0.75
+      variation_score: 1.00
+
+  token-002-erc777-reentrancy:
+    files: [ERC777ReentrancyTest.sol]
+    functions:
+      vulnerable:
+        - withdraw(uint256)
+        - withdrawMultiStep(uint256)
+        - withdrawWithEvent(uint256)
+        - withdrawFromVault(uint256)
+        - withdrawDirect(uint256)
+        - withdrawTwoStep(uint256)
+        - withdrawWithOperator(uint256)
+        - withdrawWithAssignment(uint256)
+        - withdrawTo(address,uint256)
+        - withdrawConditional(uint256)
+      safe:
+        - withdrawProtected(uint256)  # has reentrancy guard
+        - withdrawCEI(uint256)  # proper CEI pattern
+        - withdrawFullySafe(uint256)  # guard + CEI
+        - getBalance(address)  # view
+        - calculateAmount(uint256,uint256)  # pure
+        - _withdrawInternal(address,uint256)  # internal
+        - _withdrawPrivate(address,uint256)  # private
+        - emergencyWithdraw(address,uint256)  # owner + guard
+        - sendTokensNoAccounting(address,uint256)  # no balance write
+        - updateBalanceNoTransfer(address,uint256)  # no ERC-777
+        - requestWithdraw(uint256)  # pull payment step 1
+        - claimWithdrawal()  # pull payment step 2
+        - withdrawWithCustomLock(uint256)  # custom mutex
+      edge_cases:
+        - sendTokensNoAccounting(address,uint256)  # ERC-777 send but no accounting
+        - updateBalanceNoTransfer(address,uint256)  # state write but no transfer
+        - requestWithdraw(uint256)  # two-step withdrawal
+        - claimWithdrawal()  # separate transaction
+        - withdrawWithCustomLock(uint256)  # custom lock pattern
+      false_positives: []  # NONE - 100% precision
+      false_negatives:
+        - redeem(uint256)  # writes shares (not detected as balance_state)
+        - unstake(uint256)  # writes stakes (not detected as balance_state)
+        - claim()  # writes deposits (not detected as balance_state)
+        - withdrawViaOperator(address,uint256)  # operatorSend not detected
+        - withdrawToShares(uint256)  # writes shares mapping
+        - burnTokens(uint256)  # burn() not detected as erc777_send
+        - operatorWithdraw(address,uint256,bytes)  # operatorSend not detected
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 1.00
+      recall: 0.5882
+      variation_score: 1.00
+
+  token-003-infinite-approval:
+    files: [InfiniteApprovalTest.sol]
+    functions:
+      vulnerable:
+        - approveInfinite(IERC20,address)
+        - approveMaxHex(IERC20,address)
+        - approveMaxArithmetic(IERC20,address)
+        - stakeWithInfiniteApproval(IERC20,uint256)
+        - swapWithInfiniteApproval(IERC20,address,uint256)
+        - approveMultipleTokens(IERC20[],address)
+        - approveIfNeeded(IERC20,address,uint256)
+        - constructor(IERC20,address)
+      safe:
+        - stakeWithPermit(IERC20Permit,uint256,uint256,uint8,bytes32,bytes32)  # uses permit not approve
+        - depositDirect(IERC20,uint256)  # uses transferFrom not approve
+        - getAllowance(IERC20,address,address)  # view
+        - calculateAmount(uint256,uint256)  # pure
+        - _approveInternal(IERC20,address,uint256)  # internal
+        - _approvePrivate(IERC20,address,uint256)  # private
+      edge_cases:
+        - approveSelf(IERC20,uint256)  # self-approval
+        - approveToZero(IERC20,uint256)  # zero address
+        - approveConditional(IERC20,address,uint256,bool)  # conditional
+        - emergencyRevokeAll(IERC20[],address)  # batch revoke
+      false_positives:
+        - approveLimited(IERC20,address,uint256)  # limited approval (pattern limitation)
+        - stakeSafe(IERC20,uint256)  # limited approval
+        - approveAndReset(IERC20,address,uint256)  # resets after use
+        - topUpApproval(IERC20,address,uint256)  # incremental top-up
+        - swapSafe(IERC20,address,uint256)  # exact amount
+        - approveWithExpiry(IERC20,address,uint256,uint256)  # time-limited concept
+        - revokeApproval(IERC20,address)  # sets to zero (safety function)
+        - approveSmall(IERC20,address)  # small limited amount
+      false_negatives: []  # NONE - catches all infinite approvals
+    last_updated: "2025-12-31"
+    status: draft
+    metrics:
+      precision: 0.50
+      recall: 1.00
+      variation_score: 1.00
+    limitation: |
+      Pattern detects ALL approve() calls, not just infinite approvals.
+      Cannot distinguish between infinite (type(uint256).max) and limited approvals.
+      Requires builder.py enhancement for 'approves_infinite_amount' property.
+
+  token-004-non-standard-return:
+    files: [NonStandardReturnTest.sol]
+    functions:
+      vulnerable:
+        - deposit(IERC20,uint256)
+        - withdraw(IERC20,uint256)
+        - depositWithEvent(IERC20,uint256)
+        - batchWithdraw(IERC20,address[],uint256[])
+        - depositCollateral(IERC20,uint256)
+        - contribute(IERC20,uint256)
+        - claim(IERC20,uint256)
+        - depositAsset(IERC20,uint256)
+        - depositUnderlying(IERC20,uint256)
+      safe:
+        - depositSafe(IERC20,uint256)  # SafeERC20
+        - withdrawSafe(IERC20,uint256)  # SafeERC20
+        - depositWithCheck(IERC20,uint256)  # require(transfer())
+        - stakeSafe(IERC20,uint256)  # SafeERC20
+        - batchWithdrawSafe(IERC20,address[],uint256[])  # SafeERC20
+        - depositCollateralSafe(IERC20,uint256)  # SafeERC20
+      edge_cases:
+        - _depositInternal(IERC20,uint256)  # internal
+        - _depositPrivate(IERC20,uint256)  # private
+        - viewBalance(address)  # view
+        - calculateAmount(uint256,uint256)  # pure
+        - transferNoAccounting(IERC20,address,uint256)  # no balance write
+        - updateBalanceNoTransfer(address,uint256)  # no ERC20 call
+        - depositETH()  # ETH not ERC20
+        - depositLowLevel(IERC20,uint256)  # low-level with check
+      false_positives:
+        - withdrawWithManualCheck(IERC20,uint256)  # Has bool + require but token_return_guarded=false
+      false_negatives:
+        - addFunds(IERC20,uint256)  # writes deposits (not tagged as balance)
+        - depositForShares(IERC20,uint256)  # writes shares (tagged as shares)
+        - stake(IERC20,uint256)  # writes stakes (not tagged)
+        - depositAssets(IERC20,uint256)  # writes userShares (tagged as shares)
+        - withdrawDeposit(IERC20,uint256)  # writes deposits (not tagged)
+        - fund(IERC20,uint256)  # writes deposits (not tagged)
+        - redeem(IERC20,uint256)  # writes shares (tagged as shares)
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 0.90
+      recall: 0.56
+      variation_score: 0.67
+    limitation: |
+      Pattern only detects when writing to "balance"-tagged state variables.
+      Misses functions writing to deposits, stakes, or share mappings.
+      Needs broader property (writes_state) or expanded tagging.
+
+  token-005-unchecked-return:
+    files: [UncheckedReturnTest.sol]
+    functions:
+      vulnerable:
+        - deposit(IERC20,uint256)
+        - withdraw(IERC20,uint256)
+        - approveRouter(IERC20,address,uint256)
+        - stake(IERC20,uint256)
+        - unstake(IERC20,uint256)
+        - contribute(IERC20,uint256)
+        - claim(IERC20,uint256)
+        - fundAccount(IERC20,uint256)
+        - approveMultiple(IERC20,address[],uint256)
+        - depositWithEvent(IERC20,uint256)
+        - sendTokens(IERC20,address,uint256)
+        - depositWithApproval(IERC20,address,uint256)
+        - depositAsset(IERC20,uint256)
+        - depositUnderlying(IERC20,uint256)
+        - depositERC20(IERC20,uint256)
+        - removeFunds(IERC20,uint256)
+        - authorizeSpender(IERC20,address,uint256)
+        - addLiquidity(IERC20,uint256)
+        - redeem(IERC20,uint256)
+        - batchDeposit(IERC20,address[],uint256[])
+        - depositMultiStep(IERC20,uint256)
+        - depositConditional(IERC20,uint256,bool)
+      safe:
+        - depositSafe(IERC20,uint256)  # SafeERC20.safeTransferFrom
+        - withdrawSafe(IERC20,uint256)  # SafeERC20.safeTransfer
+        - approveRouterSafe(IERC20,address,uint256)  # SafeERC20.safeApprove
+        - depositWithCheck(IERC20,uint256)  # require(transferFrom())
+        - withdrawWithCheck(IERC20,uint256)  # require(transfer())
+        - depositBalanceCheck(IERC20,uint256)  # balance before/after check
+        - depositLowLevel(IERC20,uint256)  # low-level call with check
+        - depositRequireAmount(IERC20,uint256)  # inline require check
+      edge_cases:
+        - _depositInternal(IERC20,uint256)  # internal
+        - _withdrawPrivate(IERC20,uint256)  # private
+        - viewBalance(IERC20,address)  # view
+        - calculateAmount(uint256,uint256)  # pure
+        - transferNoStateWrite(IERC20,address,uint256)  # no state write
+        - updateBalanceNoTransfer(address,uint256)  # no token call
+        - depositLowLevel(IERC20,uint256)  # low-level with check
+      false_positives:
+        - depositBoolCheck(IERC20,uint256)  # bool + require on separate lines (not detected)
+        - withdrawBoolCheck(IERC20,uint256)  # bool + require on separate lines (not detected)
+        - depositTryCatch(IERC20,uint256)  # try-catch not detected as guard
+        - approveWithCheck(IERC20,address,uint256)  # bool + require on separate lines (not detected)
+      false_negatives: []  # NONE - 100% recall
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 0.846
+      recall: 1.00
+      variation_score: 1.00
+    limitation: |
+      Pattern has 4 false positives due to builder.py limitation in detecting:
+      - Multi-line bool variable + require() patterns
+      - try-catch blocks with return value validation
+
+      These represent <16% of findings. Pattern prioritizes recall (100%) over
+      precision for HIGH severity vulnerabilities. Acceptable for production use.
+
+  dos-002-external-call-in-loop:
+    files: [ExternalCallLoopTest.sol]
+    functions:
+      vulnerable:
+        - airdropTokens(uint256)
+        - batchTransfer(address[],uint256[])
+        - notifyAllRewards(uint256)
+        - processUntilEmpty()
+        - processInDoWhile()
+        - airdropNested(uint256)
+        - sendETHLoop(address[],uint256)
+        - distributeWithCallback(address[],uint256)
+        - removeFundsFromAll(address[])
+        - distributeConditional(uint256)
+        - distributeEmpty(uint256)
+        - distributeSingle(address,uint256)
+        - airdropReverse(address[],uint256)
+        - airdropPreIncrement(address[],uint256)
+        - airdropManualIncrement(address[],uint256)
+        - notifyRewardsWithCast(uint256)
+        - transferViaCall(uint256)
+        - distributeById(uint256)
+        - setupAndAirdrop(address[],uint256)
+        - mixedDistribution(uint256)
+      safe:
+        - setClaimable(address[],uint256[])
+        - claim()
+        - airdropWithTryCatch(uint256)
+        - getBalances(address[])
+        - calculateAmounts(uint256[],uint256)
+        - distributeBatch(uint256,uint256,uint256)
+        - _distributeInternal(address[],uint256)
+        - _distributePrivate(address[],uint256)
+        - checkAllBalances(address[])
+      edge_cases:
+        - distributeAfterLoop(uint256)
+        - distributeConditional(uint256)
+        - distributeEmpty(uint256)
+        - distributeSingle(address,uint256)
+        - checkAllBalances(address[])
+      false_positives:
+        - refundWithSuccessCheck()  # Low-level call with success check not detected
+        - distributeAfterLoop(uint256)  # External call after loop incorrectly flagged
+      false_negatives:
+        - refundAll()  # ETH transfer() not detected as external call
+        - sendETHLoop(uint256)  # ETH send() not detected as external call
+        - partialTryCatch(uint256)  # Partial try-catch coverage
+    last_updated: "2025-12-31"
+    status: excellent
+    metrics:
+      precision: 0.9091
+      recall: 0.8696
+      variation_score: 0.8750
+      f1_score: 0.8889
+    notes: |
+      EXCELLENT pattern - high precision (90.91%) and recall (86.96%).
+      All false positives and false negatives are due to builder.py limitations,
+      not pattern logic issues. Production ready.
+
+  token-006-approval-race-condition:
+    files: [ApprovalRaceTest.sol]
+    functions:
+      vulnerable:
+        - approveSpender(IERC20,address,uint256)
+        - swapWithApproval(IERC20,address,uint256)
+        - depositWithApproval(IERC20,address,uint256)
+        - grantAllowance(IERC20,address,uint256)
+        - stakeWithApproval(IERC20,address,uint256)
+        - approveMultiple(IERC20[],address,uint256)
+        - approveWithEvent(IERC20,address,uint256)
+        - approveIfNeeded(IERC20,address,uint256)
+        - initialize(IERC20,address)
+        - approveLendingPool(IERC20,address,uint256)
+        - authorizeSpender(IERC20,address,uint256)
+        - addLiquidityWithApproval(IERC20,address,uint256)
+        - approveAsOwner(IERC20,address,uint256)
+        - emergencyApprove(IERC20,address,uint256)
+        - changeApprovalSafe(IERC20,address,uint256)
+        - approveIfZero(IERC20,address,uint256)
+        - approveSelf(IERC20,uint256)
+        - approveWithCheck(IERC20,address,uint256)
+        - updateAllowance(IERC20,address,uint256)
+        - setApproval(IERC20,address,uint256)
+        - configureAllowance(IERC20,address,uint256)
+        - bridgeApprove(IERC20,address,uint256)
+      safe:
+        - increaseSpenderAllowance(IERC20,address,uint256)
+        - decreaseSpenderAllowance(IERC20,address,uint256)
+        - approveSafe(IERC20,address,uint256)
+        - increaseAllowanceSafe(IERC20,address,uint256)
+        - decreaseAllowanceSafe(IERC20,address,uint256)
+        - depositWithPermit(IERC20Permit,uint256,uint256,uint8,bytes32,bytes32)
+        - getAllowance(IERC20,address,address)
+        - calculateApprovalAmount(uint256,uint256)
+        - _approveInternal(IERC20,address,uint256)
+        - _approvePrivate(IERC20,address,uint256)
+        - increaseMultipleAllowances(IERC20,address[],uint256)
+        - increaseApprovalSafe(IERC20,address,uint256)
+        - decreaseApprovalSafe(IERC20,address,uint256)
+      edge_cases:
+        - changeApprovalSafe(IERC20,address,uint256)
+        - approveIfZero(IERC20,address,uint256)
+        - approveSelf(IERC20,uint256)
+      false_positives:
+        - changeApprovalTwoStep(IERC20,address,uint256)
+        - setInitialApproval(IERC20,address,uint256)
+        - approveTrustedContract(IERC20,address,uint256)
+        - revokeApproval(IERC20,address)
+      false_negatives: []
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 0.88
+      recall: 1.00
+      variation_score: 1.00
+
+  crypto-002-incomplete-permit-implementation:
+    files: [PermitImplementationTest.sol]
+    functions:
+      vulnerable:
+        - permit(address,address,uint256,uint256,uint8,bytes32,bytes32)  # Multiple variants with different missing checks
+        - permit(uint256,uint256,address,address,bytes32,bytes32,uint8)  # Different parameter order
+        - permit(address,address,uint256,uint256,bytes)  # Bytes signature format
+        - permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)  # DAI-style missing expiry
+      safe:
+        - viewPermitHash(address,address,uint256,uint256,uint8,bytes32,bytes32)  # View function
+        - _internalPermit(address,address,uint256,uint256,uint8,bytes32,bytes32)  # Internal
+        - _privatePermitHelper(address,address,uint256)  # Private
+      edge_cases:
+        - viewPermitHash(address,address,uint256,uint256,uint8,bytes32,bytes32)  # View
+        - _internalPermit(address,address,uint256,uint256,uint8,bytes32,bytes32)  # Internal
+        - _privatePermitHelper(address,address,uint256)  # Private
+      false_positives:
+        - permit(address,address,uint256,uint256,uint8,bytes32,bytes32)  # PermitSafeManual - uses ECDSAHelper.recover()
+        - permit(address,address,uint256,uint256,uint8,bytes32,bytes32)  # PermitSafeWithTryCatch - uses ECDSAHelper.recover()
+        - permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)  # PermitVariation4_DaiStyleSafe
+      false_negatives:
+        - grantApprovalWithSignature(address,address,uint256,uint256,uint8,bytes32,bytes32)  # Non-standard naming
+        - approveViaSignature(address,address,uint256,uint256,uint8,bytes32,bytes32)  # Non-standard naming
+    last_updated: "2025-12-31"
+    status: ready
+    metrics:
+      precision: 0.8333
+      recall: 0.8824
+      variation_score: 0.6667
+    limitation: |
+      Builder limitation: ECDSAHelper.recover() not detected as having signature_validity_checks.
+      Pattern limitation: is_permit_like requires "permit" in function name.
+
+notes: |
+  Value movement scenarios for testing:
+  - Deposits and withdrawals with reentrancy vectors
+  - Share inflation attacks (ERC-4626)
+  - Token callback reentrancy (ERC-721, ERC-1155)
+  - Unchecked ERC-20 transfers
+  - Balance vs accounting manipulation
+  - Fee-on-transfer token handling
+  - Infinite vs limited token approvals
+
+  Test contracts:
+  - ValueTransferTest.sol: vm-002 unprotected transfers
+  - FeeOnTransferTest.sol: token-001 fee-on-transfer token handling
+  - ERC777ReentrancyTest.sol: token-002 ERC-777 reentrancy
+  - InfiniteApprovalTest.sol: token-003 infinite approval detection
+  - NonStandardReturnTest.sol: token-004 non-standard return value handling
+  - UncheckedReturnTest.sol: token-005 unchecked ERC20 return values
+  - ApprovalRaceTest.sol: token-006 ERC20 approval race condition (SWC-114)
+  - ExternalCallTest.sol: ext-001 unprotected external calls
+  - ExternalCallLoopTest.sol: dos-002 external calls in loops
+  - PermitImplementationTest.sol: crypto-002 incomplete EIP-2612 permit implementation
+
+  Recommended future additions:
+  - Vault.sol: Basic vault with deposit/withdraw
+  - VaultSafe.sol: CEI pattern and reentrancy guards
+  - TokenTransfers.sol: ERC-20 transfer patterns
+  - NFTVault.sol: ERC-721/1155 callback scenarios
+  - ShareAccounting.sol: Share calculation patterns

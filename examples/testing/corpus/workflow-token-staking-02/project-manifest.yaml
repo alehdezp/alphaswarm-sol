@@ -1,0 +1,28 @@
+name: "workflow-token-staking-02"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "staking"
+tier: 1
+adversarial_categories: []
+pattern_count: 6
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/StakeEngine.sol"
+    - "contracts/periphery/StakeRouter.sol"
+    - "contracts/libraries/RewardCalc.sol"
+    - "contracts/interfaces/IStakeEngine.sol"
+  safe:
+    - "contracts/core/StakeEngine_safe.sol"
+    - "contracts/periphery/StakeRouter_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

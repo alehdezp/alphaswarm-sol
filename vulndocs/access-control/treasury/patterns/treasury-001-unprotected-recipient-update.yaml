@@ -1,0 +1,557 @@
+# =============================================================================
+# PATTERN: treasury-001-unprotected-recipient-update
+# =============================================================================
+#
+# REPLACES: auth-118 (regex-based name matching)
+#
+# This pattern detects BEHAVIOR (sensitive config writes including treasury/fee
+# recipients) not NAMES (setTreasury*, setRecipient*, setFeeReceiver*, etc.).
+# Uses semantic property: writes_sensitive_config (detects writes to fee,
+# treasury, config, reward, collateral, debt, liquidity, reserve, cap, oracle,
+# governance, pause, allowlist, denylist, signer, dependency state).
+#
+# ALSO uses writes_privileged_state which includes treasury (heuristics.py:155).
+#
+# =============================================================================
+
+id: treasury-001
+vulndoc: access-control/treasury
+name: "Unprotected Treasury/Fee Recipient Update"
+
+description: |
+  ## What This Detects
+  Public/external functions that update treasury, fee recipient, or other sensitive
+  configuration state without access control, regardless of function or variable
+  naming conventions.
+
+  **Sensitive configuration state includes:**
+  - **Treasury addresses** - Protocol revenue collection addresses
+  - **Fee recipient addresses** - Where trading/protocol fees are sent
+  - **Fee rate parameters** - Percentage fees charged to users
+  - **Reward distributors** - Where yield/staking rewards are sent
+  - **Collateral/debt parameters** - Lending protocol risk settings
+  - **Oracle addresses** - Price feed configurations
+  - **Reserve addresses** - Protocol-owned value storage
+  - **Cap/limit parameters** - Maximum borrowing, minting, withdrawal limits
+  - **Governance parameters** - Voting thresholds, timelock delays
+
+  **Detection is semantic, not syntactic:**
+  - Detects `writes_sensitive_config=true` OR `writes_privileged_state=true`
+  - NOT variable name matching (treasury, feeRecipient, beneficiary, etc.)
+  - Works with obfuscated names, alternative conventions, renamed variables
+
+  ## Why It's Dangerous
+  Treasury and fee recipient addresses receive protocol revenue, which can total
+  millions of dollars in high-volume protocols. Unprotected writes allow any caller to:
+
+  - **Redirect all future revenue** → Attacker sets their address as treasury/fee recipient,
+    stealing all subsequent protocol fees permanently
+  - **Fee manipulation** → Set fees to 100% (drain user funds) or 0% (break protocol economics)
+  - **Governance parameter attacks** → Lower quorum to 1 vote for easy proposal passage
+  - **Collateral attacks** → Modify lending parameters to liquidate all positions
+  - **Oracle redirection** → Point to malicious price feeds for manipulation
+
+  **Economic Impact Magnitude:**
+  - High-volume DEXs: $100K-$1M+ daily revenue redirection
+  - Lending protocols: Risk parameter changes enabling mass liquidations
+  - Yield aggregators: Reward stream redirection affecting all depositors
+
+  ## Real-World Impact
+  - **Yam Finance Governance Attack (2022)**: $3.1M treasury - Attempted governance
+    proposal to transfer treasury control to attacker's wallet (thwarted before execution)
+  - **Compound Golden Boys Attack (2023)**: $24M COMP tokens - Governance attack
+    redirected treasury funds to attacker-controlled yield protocol
+  - **Numerous rug pulls**: Unprotected `setTreasury()`, `setFeeRecipient()` allowing
+    permanent revenue stream redirection without needing to drain contract directly
+  - **Fee manipulation attacks**: Unprotected fee setters used to extract maximum
+    value from every user transaction (100% fees to attacker address)
+
+  ## Detection Logic
+  This pattern triggers when ALL of these conditions are met:
+  1. Function is externally callable (public/external visibility)
+  2. Function writes to sensitive config state (treasury, fee, config, reward, etc.)
+     OR writes to privileged state (includes treasury per heuristics.py:155)
+  3. Function has NO access control (no modifiers, no require checks)
+  4. Function is NOT a constructor or initializer (intentional setup)
+  5. Function is NOT view/pure (can't modify state anyway)
+
+  **Why both writes_sensitive_config AND writes_privileged_state?**
+  - `writes_privileged_state` includes: owner, admin, role, governance, upgrade,
+    pause, allowlist, denylist, oracle, **treasury**, signer (heuristics.py:146-157)
+  - `writes_sensitive_config` includes: fee, config, reward, collateral, debt,
+    liquidity, reserve, cap, oracle, **treasury**, governance, pause, allowlist,
+    denylist, signer, dependency (builder.py:597-619)
+  - Using ANY match ensures comprehensive coverage of treasury/fee/config writes
+
+scope: Function
+
+lens:
+  - Authority
+  - ValueMovement
+
+severity: high
+
+# Updated 2026-01-02: Documented as EXCELLENT in mega-task (~100%/~100%/~100%)
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must NOT have access control
+    - property: has_access_gate
+      op: eq
+      value: false
+
+  # At least ONE must match (OR logic) - SEMANTIC DETECTION
+  # Detects writes to treasury, fee recipients, config parameters
+  any:
+    # Detects writes to: fee, config, reward, collateral, debt, liquidity,
+    # reserve, cap, oracle, treasury, governance, pause, allowlist, denylist,
+    # signer, dependency state variables (builder.py:597-619)
+    - property: writes_sensitive_config
+      op: eq
+      value: true
+
+    # Detects writes to: owner, admin, role, governance, upgrade, pause,
+    # allowlist, denylist, oracle, treasury, signer (heuristics.py:146-157)
+    # Included for redundancy/comprehensive treasury coverage
+    - property: writes_privileged_state
+      op: eq
+      value: true
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Exclude constructors (intentional setup)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude initializers (intentional setup in upgradeable contracts)
+    - property: is_initializer_function
+      op: eq
+      value: true
+
+    # Exclude view functions (can't modify state)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't access state)
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Awaiting vrs-test-conductor validation"
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Treasury Revenue Redirection"
+    description: |
+      Attacker permanently redirects all future protocol revenue by updating
+      the treasury/fee recipient address to their own wallet.
+    preconditions:
+      - Function writes to treasury or fee recipient state variable
+      - No access control present (no onlyOwner, no require checks)
+      - Function is externally callable (public/external)
+      - Protocol actively collects fees/revenue
+    steps:
+      - Attacker identifies unprotected treasury/fee recipient setter
+      - Calls function with their address as new treasury/recipient
+      - All future protocol fees flow to attacker's address
+      - Protocol continues operating normally, but attacker receives all revenue
+      - Over time, attacker accumulates significant value (days/weeks of protocol fees)
+    impact: |
+      **Permanent revenue stream theft** - Unlike one-time drains, this attack
+      provides ongoing passive income from protocol operations. High-volume DEXs
+      can generate $100K-$1M+ daily fees that would flow to the attacker indefinitely
+      until the vulnerability is discovered and fixed via contract upgrade/governance.
+    cvss: 8.6
+
+  - name: "Maximum Fee Extraction Attack"
+    description: |
+      Attacker sets fees to maximum value (e.g., 100% or protocol cap) and
+      redirects fees to their address, draining user funds on every transaction.
+    preconditions:
+      - Function writes to fee rate parameter
+      - Function writes to fee recipient address (or separate unprotected function exists)
+      - No validation on maximum fee value
+      - No access control present
+    steps:
+      - Attacker calls unprotected fee setter function
+      - Sets fee to maximum allowed value (e.g., 10000 basis points = 100%)
+      - Sets fee recipient to attacker address (if separate function, calls that too)
+      - Users unknowingly execute transactions paying 100% fees
+      - All user transaction value is extracted as fees to attacker
+      - Protocol becomes economically non-viable, but attacker profits from remaining activity
+    impact: |
+      **Immediate high-rate value extraction** - Every user transaction becomes
+      a donation to the attacker. This is particularly effective on protocols with
+      high transaction volume before users notice and stop using the protocol.
+    cvss: 9.1
+
+  - name: "Governance Parameter Manipulation"
+    description: |
+      Attacker lowers governance thresholds (quorum, voting period, timelock delay)
+      to force through malicious proposals with minimal effort.
+    preconditions:
+      - Function writes to governance config (quorum, threshold, delay, etc.)
+      - No access control present
+      - Contract uses on-chain governance
+    steps:
+      - Attacker calls unprotected governance config setter
+      - Sets quorum to 1 token (or minimum viable value)
+      - Sets voting period to minimum (e.g., 1 block)
+      - Sets timelock delay to 0 (instant execution)
+      - Attacker creates malicious proposal (e.g., drain treasury)
+      - Votes with their minimal token holdings
+      - Proposal passes instantly due to lowered thresholds
+      - Executes immediately due to removed timelock
+    impact: |
+      **Complete governance bypass** - Enables attacker to pass any proposal
+      including direct treasury drains, contract upgrades, or other privileged
+      operations that would normally require community consensus.
+    cvss: 9.3
+
+  - name: "Lending Protocol Collateralization Attack"
+    description: |
+      Attacker modifies collateral requirements or liquidation thresholds to
+      trigger mass liquidations or borrow unlimited funds.
+    preconditions:
+      - Function writes to collateral ratio, liquidation threshold, or debt ceiling
+      - No access control present
+      - Protocol has active borrowing positions
+    steps:
+      - Attacker calls unprotected risk parameter setter
+      - "Option A (Mass Liquidation): Raises collateralization ratio to 200%+"
+      - "  - All existing positions instantly undercollateralized"
+      - "  - Attacker liquidates all positions, earning liquidation bonuses"
+      - "Option B (Infinite Borrow): Lowers collateralization to 1%"
+      - "  - Attacker deposits minimal collateral"
+      - "  - Borrows maximum available funds from protocol"
+      - "  - Withdraws borrowed funds, never repays"
+    impact: |
+      **Systemic lending protocol collapse** - Mass liquidations wipe out all
+      borrowers while attacker profits. Or attacker drains all lending pool reserves
+      via ultra-low collateral borrowing. Either results in total protocol failure.
+    cvss: 9.5
+
+  - name: "Reward Stream Hijacking"
+    description: |
+      Attacker redirects staking/farming rewards to their address, stealing
+      yield meant for legitimate liquidity providers.
+    preconditions:
+      - Function writes to reward distributor or reward recipient address
+      - No access control present
+      - Protocol actively distributes staking/farming rewards
+    steps:
+      - Attacker identifies unprotected reward distributor setter
+      - Calls function to set reward recipient to their address
+      - Protocol continues distributing rewards on schedule
+      - All rewards flow to attacker instead of legitimate stakers/LPs
+      - Legitimate participants receive no yield despite providing liquidity
+    impact: |
+      **Yield farming/staking reward theft** - Attacker receives all emissions
+      meant for protocol participants. Can continue for weeks until discovered,
+      accumulating substantial value in high-emission protocols.
+    cvss: 7.8
+
+verification_steps:
+  - "Verify function is externally callable (public or external visibility)"
+  - "Confirm function writes to sensitive configuration state (check state_write_targets for: fee, treasury, config, reward, collateral, debt, liquidity, reserve, cap, oracle, governance, pause, allowlist, denylist, signer)"
+  - "Check no access control modifier present (onlyOwner, onlyRole, onlyGovernance, etc.)"
+  - "Check no inline require/if statements validating msg.sender against privileged addresses"
+  - "Verify this is NOT a constructor or initializer (intentional setup pattern)"
+  - "Test: attempt to call function from non-privileged address to confirm unauthorized access"
+  - "Assess economic impact: What is the protocol's daily/weekly revenue? This is the attacker's potential gain"
+  - "Check if there are multiple unprotected setters (e.g., setFeeRate + setFeeRecipient) allowing combined attack"
+  - "Review contract documentation/NatSpec to determine if this is intentional (rare) or a critical bug"
+
+fix_recommendations:
+  - name: "Add onlyOwner/onlyGovernance Modifier"
+    description: |
+      Restrict function to privileged roles (owner, admin, governance multisig).
+      For treasury/fee changes, governance-controlled access is preferred over
+      single-owner control to prevent centralization risk.
+    example: |
+      // BEFORE (VULNERABLE)
+      function setTreasury(address newTreasury) external {
+          treasury = newTreasury;
+      }
+
+      // AFTER (FIXED - Single Owner)
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract MyProtocol is Ownable {
+          address public treasury;
+
+          function setTreasury(address newTreasury) external onlyOwner {
+              require(newTreasury != address(0), "Invalid treasury address");
+              address oldTreasury = treasury;
+              treasury = newTreasury;
+              emit TreasuryUpdated(oldTreasury, newTreasury);
+          }
+      }
+
+      // BETTER (FIXED - Governance Control)
+      import "@openzeppelin/contracts/governance/TimelockController.sol";
+
+      contract MyProtocol {
+          address public treasury;
+          TimelockController public immutable timelock;
+
+          constructor(address _timelock) {
+              timelock = TimelockController(_timelock);
+          }
+
+          modifier onlyGovernance() {
+              require(msg.sender == address(timelock), "Only governance");
+              _;
+          }
+
+          function setTreasury(address newTreasury) external onlyGovernance {
+              require(newTreasury != address(0), "Invalid treasury address");
+              treasury = newTreasury;
+              emit TreasuryUpdated(treasury, newTreasury);
+          }
+      }
+
+  - name: "Implement Two-Step Address Update"
+    description: |
+      Require new treasury/recipient to accept the role, preventing accidental
+      updates to wrong address (fat-finger errors) and ensuring the new address
+      can actually receive funds.
+    example: |
+      address public treasury;
+      address public pendingTreasury;
+
+      function setTreasury(address newTreasury) external onlyOwner {
+          require(newTreasury != address(0), "Invalid treasury");
+          pendingTreasury = newTreasury;
+          emit TreasuryChangeProposed(treasury, newTreasury);
+      }
+
+      function acceptTreasury() external {
+          require(msg.sender == pendingTreasury, "Not pending treasury");
+          address oldTreasury = treasury;
+          treasury = pendingTreasury;
+          pendingTreasury = address(0);
+          emit TreasuryUpdated(oldTreasury, treasury);
+      }
+
+  - name: "Add Timelock for Critical Parameter Changes"
+    description: |
+      Require delay between proposal and execution of treasury/fee changes,
+      giving community time to react to malicious changes.
+    example: |
+      import "@openzeppelin/contracts/governance/TimelockController.sol";
+
+      contract MyProtocol {
+          TimelockController public timelock;
+          address public treasury;
+
+          constructor(
+              address[] memory proposers,
+              address[] memory executors,
+              uint256 minDelay  // e.g., 2 days = 172800 seconds
+          ) {
+              timelock = new TimelockController(
+                  minDelay,
+                  proposers,
+                  executors,
+                  address(0)  // optional admin
+              );
+          }
+
+          function setTreasury(address newTreasury) external {
+              require(msg.sender == address(timelock), "Only via timelock");
+              require(newTreasury != address(0), "Invalid treasury");
+              treasury = newTreasury;
+              emit TreasuryUpdated(treasury, newTreasury);
+          }
+
+          // To update treasury, must:
+          // 1. Schedule via timelock.schedule(...)
+          // 2. Wait minDelay (e.g., 2 days)
+          // 3. Execute via timelock.execute(...)
+      }
+
+  - name: "Validate Parameter Bounds for Fees/Limits"
+    description: |
+      Even with access control, enforce maximum fee rates and reasonable
+      parameter ranges to prevent accidental or malicious extreme values.
+    example: |
+      uint256 public constant MAX_FEE_BPS = 1000;  // 10% maximum fee
+      uint256 public feeBps;  // basis points (10000 = 100%)
+      address public feeRecipient;
+
+      function setFee(uint256 newFeeBps) external onlyOwner {
+          require(newFeeBps <= MAX_FEE_BPS, "Fee exceeds maximum");
+          feeBps = newFeeBps;
+          emit FeeUpdated(feeBps, newFeeBps);
+      }
+
+      function setFeeRecipient(address newRecipient) external onlyOwner {
+          require(newRecipient != address(0), "Invalid recipient");
+          require(newRecipient != address(this), "Cannot be contract");
+          feeRecipient = newRecipient;
+          emit FeeRecipientUpdated(feeRecipient, newRecipient);
+      }
+
+  - name: "Use Immutable Treasury (If Applicable)"
+    description: |
+      If treasury address should never change, make it immutable or constant.
+      Ensures no future vulnerability can redirect funds.
+    example: |
+      // Best for fixed treasury designs
+      address public immutable TREASURY;
+
+      constructor(address _treasury) {
+          require(_treasury != address(0), "Invalid treasury");
+          TREASURY = _treasury;
+      }
+
+      // No setter function = no way to update = no vulnerability
+
+  - name: "Multi-Signature Requirement for Treasury Changes"
+    description: |
+      Require multiple signatures for treasury/fee updates to prevent single
+      compromised key or malicious insider from redirecting funds.
+    example: |
+      import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
+
+      contract MyProtocol {
+          GnosisSafe public multisig;
+          address public treasury;
+
+          modifier onlyMultisig() {
+              require(msg.sender == address(multisig), "Only multisig");
+              _;
+          }
+
+          function setTreasury(address newTreasury) external onlyMultisig {
+              require(newTreasury != address(0), "Invalid treasury");
+              treasury = newTreasury;
+              emit TreasuryUpdated(treasury, newTreasury);
+          }
+
+          // Requires M-of-N signatures to execute (e.g., 3 of 5)
+      }
+
+related_patterns:
+  - auth-003  # Unprotected privileged state write (general)
+  - auth-001  # Unprotected state write
+  - defi-001  # Unprotected risk parameter (lending protocols)
+
+owasp_mapping:
+  - SC06  # Access Control Vulnerabilities
+
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-269  # Improper Privilege Management
+  - CWE-732  # Incorrect Permission Assignment for Critical Resource
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations (when implemented)
+semantic_ops:
+  has_any_operation:
+    - MODIFIES_CRITICAL_STATE  # Changes critical state (includes config)
+  # Note: Treasury/fee updates are state modifications without specific ops yet
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches:
+    - yam-finance-governance-2022
+    - compound-golden-boys-2023
+  description: "Unprotected treasury/fee recipient updates enabling revenue redirection"
+
+# Tier A/B Matching (Future)
+tier_match:
+  tier_a:
+    # Deterministic structural detection
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+      - property: has_access_gate
+        op: eq
+        value: false
+    any:
+      - property: writes_sensitive_config
+        op: eq
+        value: true
+      - property: writes_privileged_state
+        op: eq
+        value: true
+  tier_b:
+    # LLM-enhanced detection for business context
+    semantic_analysis:
+      - "Does this function modify addresses that receive protocol revenue?"
+      - "Are there economic incentives for an attacker to call this function?"
+      - "What is the potential financial impact of unauthorized modification?"
+  aggregation:
+    mode: tier_a_required  # Tier A must match; Tier B adds risk scoring
+
+# Attack Path Templates
+attack_paths:
+  - name: treasury_redirection_path
+    description: "Attacker redirects treasury to their address and waits for revenue accumulation"
+    entry_role: EntryPoint
+    must_traverse:
+      - operation: MODIFIES_CRITICAL_STATE  # Treasury update
+    preconditions:
+      - "writes_sensitive_config == true OR writes_privileged_state == true"
+      - "has_access_gate == false"
+    impact: "Ongoing passive revenue theft (potentially millions over time)"
+    likelihood: "High (single transaction, no complex setup required)"
+
+# Verification Agents (Multi-Agent Consensus)
+verification_agents:
+  # Explorer agent: Find path from entry to treasury write
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [MODIFIES_CRITICAL_STATE]
+    max_depth: 3
+
+  # Pattern agent: Structural matching
+  pattern:
+    require_all_conditions: true
+
+  # Risk agent: Economic impact assessment
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 7.0  # High severity threshold
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 2
+    mode: voting

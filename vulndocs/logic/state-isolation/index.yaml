@@ -1,0 +1,60 @@
+# State Isolation Vulnerabilities
+# Insufficient isolation of state when contracts/hooks are shared across multiple instances
+
+id: "logic-state-isolation"
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+category: "logic"
+subcategory: "state-isolation"
+severity: "critical"
+confidence: "high"
+
+metadata:
+  created: "2026-01-09"
+  updated: "2026-01-09"
+  version: "1.0"
+  sources:
+    - "OpenZeppelin - Uniswap V4 Hooks Library Audit (2025)"
+    - "Security research on multi-instance contract patterns"
+
+overview: |
+  State isolation vulnerabilities occur when a contract or hook is designed to be used
+  across multiple instances (pools, vaults, etc.) but fails to properly isolate state
+  between those instances. This can lead to state collision, where operations on one
+  instance affect the state of another, enabling unauthorized state manipulation or theft.
+
+vulnerability_summary: |
+  When a base contract (especially hooks in protocols like Uniswap V4) is inherited and
+  deployed to serve multiple pools/instances without explicit multi-pool support, state
+  variables can be overwritten across instances. An attacker can exploit this by:
+
+  1. Deploying a hook that uses shared state variables
+  2. Registering the same hook for multiple pools
+  3. Using operations on Pool A to overwrite state intended for Pool B
+  4. Stealing funds or manipulating accounting via cross-pool state pollution
+
+attack_vectors:
+  - "Multi-pool hook registration without instance-specific storage"
+  - "Shared state variables in singleton hook contracts"
+  - "Missing pool ID or instance ID in state variable keys"
+  - "Implicit assumption of single-pool usage despite multi-pool capability"
+
+real_world_examples:
+  - name: "Uniswap V4 BaseCustomAccounting Hook"
+    date: "2025-02-01"
+    severity: "critical"
+    description: "Non-explicit multiple-pool support allowed overwriting hook state"
+    source: "OpenZeppelin Audit"
+    impact: "State collision enables unauthorized accounting manipulation"
+    fixed: true
+
+detection_difficulty: "medium"
+exploitation_difficulty: "medium"
+
+references:
+  - "[OpenZeppelin Uniswap Hooks Audit](https://blog.openzeppelin.com/uniswap-hooks-library-milestone-1-audit)"
+  - "CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization"
+  - "Uniswap V4 Hook Development Best Practices"
+
+pattern_id: "logic-state-isolation-001"

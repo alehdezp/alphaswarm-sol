@@ -1,0 +1,28 @@
+# =============================================================================
+# TEST PROJECT MANIFEST - Cross-Contract Interactions
+# =============================================================================
+
+project: cross-contract
+description: |
+  Cross-contract interaction test scenarios for complex attack vectors.
+  Contains callback chains, delegatecall patterns, and multi-contract reentrancy.
+max_files: 30
+current_files: 0
+
+patterns: {}
+
+notes: |
+  Cross-contract scenarios for testing:
+  - Cross-function reentrancy
+  - Cross-contract reentrancy
+  - Callback chain attacks
+  - Delegatecall to untrusted targets
+  - Protocol composition attacks
+  - Multi-hop call chains
+
+  Recommended test contract structure:
+  - Router.sol: Central routing contract
+  - ProtocolA.sol: First protocol in chain
+  - ProtocolB.sol: Second protocol in chain
+  - Attacker.sol: Attack contract for testing
+  - SafeComposition.sol: Properly guarded composition

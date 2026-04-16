@@ -1,0 +1,43 @@
+_template: orchestration
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- coordination_quality
+- evidence_flow
+- debate_coherence
+- consensus_quality
+- task_delegation
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: agents_spawned
+  description: Required agent roles were spawned
+  expected_behavior: TeamCreate and Task tool calls for expected roles
+  grader_type: code
+- id: evidence_passed
+  description: Findings flow between agents
+  expected_behavior: SendMessage calls reference prior findings
+  grader_type: model
+- id: verdict_produced
+  description: A final verdict was produced
+  expected_behavior: Response contains confirmed/rejected/inconclusive verdict
+  grader_type: model
+evidence_requirements:
+- type: transcript
+  description: Per-agent transcripts showing debate flow
+- type: graph_nodes
+  description: Graph evidence cited in final verdict
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []

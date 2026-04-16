@@ -1,0 +1,16 @@
+id: auth-060
+vulndoc: access-control/general
+name: Role Modification Without Access Control
+description: Role changes without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_role_grant
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

@@ -1,0 +1,16 @@
+id: tx-origin-public
+vulndoc: access-control/tx-origin
+name: Public tx.origin Usage
+description: Public/external functions that read tx.origin.
+scope: Function
+lens:
+  - Authority
+severity: high
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: uses_tx_origin
+      op: eq
+      value: true

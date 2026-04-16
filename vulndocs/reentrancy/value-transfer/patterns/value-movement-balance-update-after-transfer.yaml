@@ -1,0 +1,30 @@
+id: value-movement-balance-update-after-transfer
+vulndoc: reentrancy/value-transfer
+name: Balance Update After Transfer
+description: Balance or share state updated after external interaction.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  - property: state_write_targets
+    op: contains_any
+    value:
+    - balance
+    - shares
+    - stake
+    - collateral
+    - debt
+    - liquidity
+    - reserve
+    - pool
+    - vault
+    - position
+    - claimable
+    - pending
+    - reward
+    - asset

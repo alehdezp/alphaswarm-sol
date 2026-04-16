@@ -1,0 +1,22 @@
+# Rounding Errors - Subcategory Index
+
+id: rounding
+name: Rounding Errors
+parent_category: logic
+
+description: |
+  Division operations where rounding direction favors attackers over
+  the protocol, enabling value extraction through many small operations.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - logic-002
+
+relevant_properties:
+  - uses_division
+  - rounding_direction
+
+token_estimate: 400

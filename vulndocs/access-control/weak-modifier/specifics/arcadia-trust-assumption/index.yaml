@@ -1,0 +1,419 @@
+# Arcadia Finance Trust Assumption Vulnerability
+# Access Control: Weak Modifier - Trust Assumption Exploitation
+#
+# Real-world exploit: Arcadia Finance $3.5M loss (July 15, 2025)
+# Root Cause: Insufficient validation of trusted asset manager capabilities
+# Category: access-control/weak-modifier
+# Date: 2025-07-15
+
+id: arcadia-trust-assumption
+name: Trust Assumption in Asset Manager Authority
+parent_category: access-control
+subcategory: weak-modifier
+
+description: |
+  Arcadia Finance was exploited through a trust assumption vulnerability where
+  the asset manager role had excessive implicit permissions without proper input
+  validation. The vulnerability lies in the implicit trust placed in the asset
+  manager to execute arbitrary operations via flashAction() without validating
+  the parameters passed to this operation. An attacker could become the asset
+  manager (a normal user operation via setAssetManager) and then exploit the
+  unchecked flashAction() to execute unauthorized fund transfers and collateral
+  drains. The core issue is that privileged operations assume well-formed input
+  from "trusted" addresses without validating the actual operations being
+  performed.
+
+severity: high
+
+# Severity range
+severity_range:
+  - high
+  - critical
+
+# Associated VKG patterns
+patterns:
+  - auth-003  # Weak/Bypassable modifier
+  - auth-004  # Insufficient access control validation
+
+# VKG properties for detection
+relevant_properties:
+  - has_access_gate
+  - writes_privileged_state
+  - visibility
+  - modifies_critical_state
+  - external_call_sites
+  - uses_delegatecall
+  - parameter_validation
+
+# Graph signals for this vulnerability
+graph_signals:
+  - property: has_access_gate
+    expected: true
+    critical: false
+    confidence: 0.8
+    description: |
+      Asset manager check exists but doesn't validate operation parameters.
+      Access gate controls WHO can call the function, not WHAT they can do.
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    confidence: 0.95
+    description: |
+      Function transfers collateral, modifies user positions, or drains funds.
+      State modifications occur based on unvalidated encoded parameters.
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    confidence: 0.95
+    description: Asset manager functions must be externally callable.
+
+  - property: external_call_sites
+    expected: true
+    critical: true
+    confidence: 0.9
+    description: |
+      Function makes external calls to swap routers or other contracts
+      with decoded/unparsed data from parameters.
+
+  - property: parameter_validation
+    expected: false
+    critical: true
+    confidence: 0.95
+    description: |
+      Function accepts encoded operation data (swapData, params) without
+      validating structure, router address, or operation type before execution.
+
+  - property: uses_delegatecall
+    expected: false
+    critical: false
+    confidence: 0.7
+    description: |
+      If present, indicates dynamic delegation of functionality based on
+      untrusted parameter (e.g., router address from swapData).
+
+# Behavioral signatures
+behavioral_signatures:
+  - "G:role-check->MODIFIES_CRITICAL_STATE->!VALIDATES_INPUT"
+  - "CHECKS_PERMISSION->CALLS_EXTERNAL(unvalidated-data)->W:critical"
+  - "R:encoded-param->X:external(data)[:W:funds]->no-validation"
+  - "G:asset-manager->flashAction->arbitrary-operations"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "CHECKS_PERMISSION(asset_manager) -> READS_ENCODED_PARAMETER -> CALLS_EXTERNAL(decoded_data) -> MODIFIES_CRITICAL_STATE"
+    - "CHECKS_PERMISSION(asset_manager) -> MODIFIES_USER_POSITION -> CALLS_EXTERNAL(unvalidated_router) -> TRANSFERS_VALUE"
+    - "READS_PARAMETER(swapData) -> NO_VALIDATION -> DELEGATES_TO_ROUTER(from_param) -> DRAINS_COLLATERAL"
+  safe:
+    - "CHECKS_PERMISSION(asset_manager) -> VALIDATES_PARAMETER(router_whitelist) -> CALLS_EXTERNAL -> MODIFIES_STATE"
+    - "CHECKS_PERMISSION(asset_manager) -> VALIDATES_PARAMETER_STRUCTURE -> VALIDATES_OPERATION_SCOPE -> EXECUTES"
+    - "CHECKS_PERMISSION(asset_manager) -> VALIDATES_INPUT(operation_type, amount, recipient) -> EXECUTES"
+
+# False positive indicators
+false_positive_indicators:
+  - "Parameter validation happens before external call (inline checks)"
+  - "Router/target address is hardcoded or from whitelisted mapping"
+  - "Operation scope is restricted (e.g., only specific operations allowed)"
+  - "Amount/recipient validation occurs before state modification"
+  - "External call uses safe wrapper with bounds checking"
+  - "Asset manager role requires multi-sig approval"
+  - "Privileged operations are behind timelock"
+
+# Real-world exploits
+exploits:
+  - id: arcadia-2025-07-15
+    name: "Arcadia Finance Trust Assumption Exploit"
+    date: "2025-07-15"
+    loss_usd: "3500000"
+    protocol: "Arcadia Finance"
+    chain: "base"
+    severity: critical
+    description: |
+      Arcadia Finance was exploited through insufficient input validation in
+      the asset manager's flashAction capability. The attacker became the asset
+      manager and called rebalance() with malicious swapData parameters. These
+      parameters were not validated before being decoded and passed to external
+      swap routers, allowing the attacker to redirect operations to drain
+      collateral and steal NFT liquidity positions. The protocol had a health
+      check mechanism, but the attacker repaid debt on behalf of the victim
+      contract to bypass this check, enabling fund transfers.
+
+    attack_steps:
+      - "1. Flash loan 5623 WETH and 9968 cbBTC"
+      - "2. Call setAssetManager() to designate attacker as asset manager"
+      - "3. Mint LP NFT with 1773 USDC and 0.123 cbBTC"
+      - "4. Repay 14.4 cbBTC debt on behalf of victim to bypass health check"
+      - "5. Call rebalance() with malicious swapData parameter"
+      - "6. flashAction() decodes swapData without validation"
+      - "7. Swap router address from unvalidated parameter directs to victim contract"
+      - "8. Unauthorized flashAction transfers NFT positions to attacker"
+      - "9. Drain all collateral through unvalidated operation chain"
+
+    vulnerable_functions:
+      - "rebalance(swapData)"
+      - "flashAction(operations)"
+      - "setAssetManager()"
+
+    postmortem_url: "https://www.quillaudits.com/blog/hack-analysis/arcadia-finance-hack-analysis"
+    source: "Quill Audits, SolidityScan, Guardrail"
+    tags:
+      - "unvalidated-parameter"
+      - "trust-assumption"
+      - "asset-manager"
+      - "flashloan"
+      - "health-check-bypass"
+
+# Related vulnerabilities and patterns
+related_patterns:
+  - vm-003  # Checks-effects interactions pattern
+  - auth-003  # Weak modifier
+  - auth-004  # Insufficient validation
+  - vm-012  # External call safety
+
+# Remediation recommendations
+fixes:
+  recommended:
+    - id: "validate-router-address"
+      priority: critical
+      description: |
+        Whitelist allowed swap routers/target contracts. Never allow arbitrary
+        router addresses to be passed via parameters.
+      implementation: |
+        Store a whitelist of approved routers/targets and validate the router
+        address from decoded swapData against this whitelist before calling.
+
+        ```solidity
+        mapping(address => bool) public approvedRouters;
+
+        function rebalance(bytes calldata swapData) external {
+            require(msg.sender == assetManager, "Only asset manager");
+
+            // Decode swapData
+            (address router, bytes memory data) = abi.decode(swapData, (address, bytes));
+
+            // CRITICAL: Validate router before using
+            require(approvedRouters[router], "Router not approved");
+
+            // Safe to call router now
+            (bool success,) = router.call(data);
+            require(success, "Router call failed");
+        }
+        ```
+
+    - id: "restrict-operation-scope"
+      priority: critical
+      description: |
+        Define an enum of allowed operations and validate the operation type
+        before execution. Do not allow arbitrary external calls within flashAction.
+      implementation: |
+        Create an enum for allowed operations and enforce strict operation types
+        to prevent the asset manager from executing arbitrary code.
+
+        ```solidity
+        enum Operation {
+            SWAP,
+            DEPOSIT,
+            WITHDRAW,
+            REPAY
+        }
+
+        function flashAction(
+            Operation op,
+            bytes calldata params
+        ) external {
+            require(msg.sender == assetManager, "Only asset manager");
+
+            if (op == Operation.SWAP) {
+                // Execute only swap-specific logic
+            } else if (op == Operation.DEPOSIT) {
+                // Execute only deposit-specific logic
+            }
+            // No catch-all for arbitrary operations
+        }
+        ```
+
+    - id: "validate-parameter-structure"
+      priority: high
+      description: |
+        Before decoding and using parameters, validate the structure and bounds.
+        Check array lengths, parameter types, and value ranges.
+      implementation: |
+        Implement strict parameter validation with explicit checks before usage.
+
+        ```solidity
+        function rebalance(bytes calldata swapData) external {
+            require(swapData.length > 0, "Empty swapData");
+            require(swapData.length <= MAX_SWAP_DATA_SIZE, "SwapData too large");
+
+            // Decode with safety checks
+            (address router, uint256 amount, bytes memory data) =
+                abi.decode(swapData, (address, uint256, bytes));
+
+            require(router != address(0), "Invalid router");
+            require(amount <= balanceOf(msg.sender), "Insufficient balance");
+            require(data.length > 0 && data.length <= MAX_DATA_SIZE, "Invalid data");
+        }
+        ```
+
+    - id: "implement-health-check-correctly"
+      priority: critical
+      description: |
+        Ensure health checks cannot be bypassed by third-party payments or debt
+        repayment. State modifications (debt repayment) should not occur before
+        the operation that requires solvency verification.
+      implementation: |
+        Execute health check AFTER all state modifications and before allowing
+        external assets to be withdrawn. Prevent third parties from modifying
+        account state.
+
+        ```solidity
+        function flashAction(Operation[] calldata operations) external {
+            require(msg.sender == assetManager, "Only asset manager");
+
+            // Execute operations in controlled sequence
+            uint256 initialDebt = userDebt[account];
+
+            for (Operation op : operations) {
+                // Only allow THIS account's operations, not third-party modifications
+                require(op.targetAccount == msg.sender, "Cannot modify other accounts");
+                executeOperation(op);
+            }
+
+            // Health check AFTER all modifications
+            require(getHealth(account) >= MIN_HEALTH, "Account unhealthy");
+        }
+        ```
+
+    - id: "separate-validation-from-execution"
+      priority: high
+      description: |
+        Separate parameter validation from operation execution. Validate all
+        inputs in a dedicated function before entering the execution phase.
+      implementation: |
+        Create a separate validation function that checks all parameters before
+        they are used in privileged operations.
+
+        ```solidity
+        function _validateSwapData(
+            bytes calldata swapData
+        ) internal view returns (address router, bytes memory data) {
+            require(swapData.length > 0, "Empty swap data");
+            (router, data) = abi.decode(swapData, (address, bytes));
+
+            require(router != address(0), "Invalid router");
+            require(approvedRouters[router], "Router not approved");
+            require(data.length > 0, "Empty router data");
+
+            return (router, data);
+        }
+
+        function rebalance(bytes calldata swapData) external {
+            (address router, bytes memory data) = _validateSwapData(swapData);
+            // Now safely execute
+            router.call(data);
+        }
+        ```
+
+    - id: "audit-asset-manager-permissions"
+      priority: high
+      description: |
+        Review all functions accessible to the asset manager role. Minimize
+        implicit capabilities. Make permissions explicit and documented.
+      implementation: |
+        Create a clear permission matrix and enforce it in all functions.
+
+        ```solidity
+        /// @dev Asset managers can only call approved functions
+        /// with validated parameters
+        modifier onlyAssetManager(address account) {
+            require(assetManager[account] == true, "Not asset manager");
+            _;
+        }
+
+        /// @dev Asset managers CANNOT directly transfer user funds
+        /// They can only execute pre-defined operations
+        function withdraw(...) external onlyAssetManager(msg.sender) {
+            // Must validate withdrawal parameters
+            require(/* ... */);
+        }
+        ```
+
+# Detection guidance for VKG
+detection_notes:
+  graph_signals: |
+    This vulnerability manifests as: access gate exists (has_access_gate=true)
+    but writes privileged state (writes_privileged_state=true) based on
+    unvalidated parameters. Look for functions that have permission checks
+    but then make external calls with parameter-derived data.
+
+  semantic_operations: |
+    Pattern: CHECKS_PERMISSION(asset_manager) -> READS_PARAMETER(encoded_data)
+    -> NO_VALIDATION -> CALLS_EXTERNAL(decoded_router) -> MODIFIES_CRITICAL_STATE
+
+    The critical gap is: CHECKS_PERMISSION and MODIFIES_CRITICAL_STATE are
+    separated by unvalidated parameter usage in external calls.
+
+  behavioral_signature: |
+    Match pattern: "G:asset-manager->READS_PARAM->CALLS_EXTERNAL(unvalidated)->W:critical"
+    This indicates permission on entry, but state modification through
+    unvalidated external operations.
+
+  key_properties: |
+    - has_access_gate = true (asset manager check exists)
+    - writes_privileged_state = true (modifies collateral, positions, or funds)
+    - external_call_sites > 0 (makes external calls)
+    - parameter_validation = false (does NOT validate critical parameters)
+    - uses_delegatecall OR router_address_from_parameter = true (key signal)
+
+# Cross-references
+cross_references:
+  similar_vulns:
+    - "access-control/missing-modifier" (no access control vs weak trust)
+    - "access-control/role-escalation" (elevated privileges)
+    - "logic/invariant-violation" (health check bypass)
+
+  related_categories:
+    - "access-control/initialization" (trust assumptions in initialization)
+    - "oracle/price-manipulation" (parameter-driven value modification)
+    - "mev/slippage" (unvalidated external data affecting user outcomes)
+
+# Metadata
+token_estimate: 650
+version: "1.0"
+last_updated: "2026-01-09"
+status: "production"
+
+# Tags for search and categorization
+tags:
+  - "trust-assumption"
+  - "unvalidated-parameter"
+  - "asset-manager"
+  - "flashloan"
+  - "implicit-permissions"
+  - "health-check-bypass"
+  - "parameter-driven-execution"
+
+# VKG Pattern Integration
+vkg_patterns:
+  - pattern_id: auth-003
+    description: "Weak or bypassable modifier - asset manager has excessive implicit permissions"
+    coverage: "exact_match"
+  - pattern_id: auth-004
+    description: "Insufficient validation - parameters not validated before use"
+    coverage: "exact_match"
+  - pattern_id: vm-003
+    description: "Checks-effects interactions - health check can be bypassed by ordering"
+    coverage: "partial_match"
+
+# Real-world impact metrics
+impact_metrics:
+  total_loss_usd: 3500000
+  affected_protocols: 1
+  affected_chains: 1
+  attack_date: "2025-07-15"
+  time_to_exploit_minutes: 17  # 4:05 AM to 4:22 AM
+  recovery_possible: false  # Funds were drained

@@ -1,0 +1,648 @@
+version: v1.0
+
+documentation_defaults:
+  references:
+    - docs/guides/skills-basics.md
+    - docs/workflows/README.md
+    - docs/reference/testing-framework.md
+    - docs/reference/claude-code-orchestration.md
+  debugging:
+    - .planning/testing/guides/guide-agent-debugging.md
+    - .planning/testing/guides/guide-alignment-campaign.md
+
+skills:
+  # === ORCHESTRATION SKILLS ===
+
+  - id: audit
+    name: "VRS Audit"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Full audit execution loop with investigation, verification, and debate"
+    workflow_refs:
+      - docs/workflows/workflow-audit.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/audit.md
+      dev: null
+
+  - id: orch-spawn
+    name: "Orchestrate Spawn"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Spawn beads for parallel investigation workflows"
+    workflow_refs:
+      - docs/workflows/workflow-tasks.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/orch-spawn.md
+      dev: null
+
+  - id: orch-resume
+    name: "Orchestrate Resume"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Resume suspended workflows and integrate results"
+    workflow_refs:
+      - docs/workflows/workflow-tasks.md
+      - docs/workflows/workflow-progress.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/orch-resume.md
+      dev: null
+
+  - id: health-check
+    name: "Health Check"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "System health diagnostics and dependency validation"
+    workflow_refs:
+      - docs/workflows/workflow-install.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/health-check.md
+      dev: null
+
+  # === INVESTIGATION SKILLS ===
+
+  - id: investigate
+    name: "VRS Investigate"
+    version: 1.0.0
+    status: active
+    category: investigation
+    description: "Graph-first vulnerability investigation with evidence collection"
+    workflow_refs:
+      - docs/workflows/workflow-tasks.md
+      - docs/workflows/workflow-verify.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/investigate.md
+      dev: null
+
+  - id: verify
+    name: "VRS Verify"
+    version: 1.0.0
+    status: active
+    category: investigation
+    description: "Evidence cross-checking and verdict synthesis"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/verify.md
+      dev: null
+
+  - id: debate
+    name: "VRS Debate"
+    version: 1.0.0
+    status: active
+    category: investigation
+    description: "Multi-agent debate protocol for contested findings"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/debate.md
+      dev: null
+
+  # === VALIDATION SKILLS ===
+
+  - id: test-full
+    name: "Test Full"
+    version: 1.0.0
+    status: active
+    category: validation
+    description: "Full test suite execution with pattern validation and coverage radar integration"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/test-full.md
+      dev: null
+
+  - id: test-quick
+    name: "Test Quick"
+    version: 1.0.0
+    status: active
+    category: validation
+    description: "Fast smoke tests for rapid iteration"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-skills.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/test-quick.md
+      dev: null
+
+  - id: test-component
+    name: "Test Component"
+    version: 1.0.0
+    status: active
+    category: validation
+    description: "Targeted component testing for specific modules"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-skills.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/test-component.md
+      dev: null
+
+  - id: validate-vulndocs
+    name: "Validate VulnDocs"
+    version: 1.0.0
+    status: active
+    category: validation
+    description: "VulnDocs schema and content validation"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/validate-vulndocs.md
+      dev: null
+
+  - id: benchmark-model
+    name: "Benchmark Model"
+    version: 1.0.0
+    status: active
+    category: validation
+    description: "Pattern precision/recall benchmarking against corpus"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/benchmark-model.md
+      dev: null
+
+  - id: mutate-contract
+    name: "Mutate Contract"
+    version: 1.0.0
+    status: active
+    category: validation
+    description: "Generate adversarial contract mutations for robustness testing"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/mutate-contract.md
+      dev: null
+
+  - id: test-workflow
+    name: "VRS Test Workflow"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Test skill and agent workflows via Agent Teams with compositional stress testing for non-standard agent compositions"
+    location:
+      shipped: null
+      dev: skills/vrs-test-workflow/SKILL.md
+
+  - id: test-e2e
+    name: "VRS Test E2E"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "End-to-end validation pipeline with multi-wave execution"
+    location:
+      shipped: null
+      dev: skills/vrs-test-e2e/SKILL.md
+
+  - id: test-component-dev
+    name: "VRS Test Component (Dev)"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Test individual components in isolation"
+    location:
+      shipped: null
+      dev: skills/vrs-test-component/SKILL.md
+
+  - id: test-enforce
+    name: "VRS Test Enforce"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Enforce testing quality gates during development with coverage radar alerts and self-healing contract detection"
+    location:
+      shipped: null
+      dev: skills/vrs-test-enforce/SKILL.md
+
+  # === DISCOVERY SKILLS ===
+
+  - id: discover
+    name: "VRS Discover"
+    version: 1.0.0
+    status: active
+    category: discovery
+    description: "Automated Exa web search for new vulnerability knowledge"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/discover.md
+
+  - id: research
+    name: "VRS Research"
+    version: 1.0.0
+    status: active
+    category: discovery
+    description: "Guided vulnerability research with structured investigation"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/research.md
+
+  - id: ingest-url
+    name: "VRS Ingest URL"
+    version: 1.0.0
+    status: active
+    category: discovery
+    description: "Ingest vulnerability knowledge from URL into VulnDocs"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/ingest-url.md
+
+  - id: add-vulnerability
+    name: "VRS Add Vulnerability"
+    version: 1.0.0
+    status: active
+    category: discovery
+    description: "Add new vulnerability to VulnDocs with proper structure"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/add-vulnerability.md
+
+  - id: merge-findings
+    name: "VRS Merge Findings"
+    version: 1.0.0
+    status: active
+    category: discovery
+    description: "Consolidate similar VulnDocs entries"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/merge-findings.md
+
+  # === PATTERN DEVELOPMENT SKILLS ===
+
+  - id: pattern-forge
+    name: "Pattern Forge"
+    version: 1.0.0
+    status: active
+    category: pattern-development
+    description: "Iterative pattern creation until quality gates met"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/pattern-forge/SKILL.md
+
+  - id: refine
+    name: "VRS Refine"
+    version: 1.0.0
+    status: active
+    category: pattern-development
+    description: "Improve patterns based on test feedback"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/refine.md
+
+  - id: test-pattern
+    name: "VRS Test Pattern"
+    version: 1.0.0
+    status: active
+    category: pattern-development
+    description: "Validate patterns against real projects"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: null
+      dev: skills/vrs/test-pattern.md
+
+  - id: pattern-verify
+    name: "Pattern Verify"
+    version: 1.0.0
+    status: active
+    category: pattern-development
+    description: "Verify pattern definitions against schema and test coverage"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/pattern-verify.md
+      dev: null
+
+  - id: pattern-batch
+    name: "Pattern Batch"
+    version: 1.0.0
+    status: active
+    category: pattern-development
+    description: "Batch pattern validation for multiple patterns"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/pattern-batch.md
+      dev: null
+
+  # === TOOL INTEGRATION SKILLS ===
+
+  - id: tool-slither
+    name: "Tool Slither"
+    version: 1.0.0
+    status: active
+    category: tool-integration
+    description: "Run Slither static analysis tool"
+    workflow_refs:
+      - docs/workflows/workflow-tools.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/tool-slither.md
+      dev: skills/vrs-slither/SKILL.md
+
+  - id: tool-aderyn
+    name: "Tool Aderyn"
+    version: 1.0.0
+    status: active
+    category: tool-integration
+    description: "Run Aderyn static analysis tool"
+    workflow_refs:
+      - docs/workflows/workflow-tools.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/tool-aderyn.md
+      dev: skills/vrs-aderyn/SKILL.md
+
+  - id: tool-mythril
+    name: "Tool Mythril"
+    version: 1.0.0
+    status: active
+    category: tool-integration
+    description: "Run Mythril symbolic execution tool"
+    workflow_refs:
+      - docs/workflows/workflow-tools.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/tool-mythril.md
+      dev: skills/vrs-mythril/SKILL.md
+
+  - id: tool-coordinator
+    name: "Tool Coordinator"
+    version: 1.0.0
+    status: active
+    category: tool-integration
+    description: "Multi-tool coordination and deduplication"
+    workflow_refs:
+      - docs/workflows/workflow-tools.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/tool-coordinator.md
+      dev: skills/vrs-tool-coordinator/SKILL.md
+
+  # === CONTEXT SKILLS ===
+
+  - id: context-pack
+    name: "Context Pack"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Generate protocol context pack with roles and invariants"
+    workflow_refs:
+      - docs/workflows/workflow-context.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/context-pack.md
+      dev: null
+
+  - id: evidence-audit
+    name: "Evidence Audit"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Audit evidence quality and completeness"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/evidence-audit.md
+      dev: null
+
+  - id: graph-contract-validate
+    name: "Graph Contract Validate"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Validate graph structure against contract expectations"
+    workflow_refs:
+      - docs/workflows/workflow-graph.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/graph-contract-validate.md
+      dev: null
+
+  - id: ordering-proof
+    name: "Ordering Proof"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Prove operation ordering for behavioral signatures"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/ordering-proof.md
+      dev: null
+
+  - id: slice-unify
+    name: "Slice Unify"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Unify code slices across multiple analysis results"
+    workflow_refs:
+      - docs/workflows/workflow-graph.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/slice-unify.md
+      dev: null
+
+  - id: taint-extend
+    name: "Taint Extend"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Extend taint analysis with graph-based propagation"
+    workflow_refs:
+      - docs/workflows/workflow-graph.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/taint-extend.md
+      dev: null
+
+  - id: taxonomy-migrate
+    name: "Taxonomy Migrate"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Migrate vulnerability taxonomy to new classification"
+    workflow_refs:
+      - docs/workflows/workflow-context.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/taxonomy-migrate.md
+      dev: null
+
+  - id: track-gap
+    name: "Track Gap"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Track coverage gaps and recommend improvements"
+    workflow_refs:
+      - docs/workflows/workflow-progress.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/track-gap.md
+      dev: null
+
+  - id: economic-context
+    name: "Economic Context"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Extract economic context and value flow"
+    workflow_refs:
+      - docs/workflows/workflow-context.md
+    location:
+      shipped: null
+      dev: skills/vrs/economic-context.md
+
+  - id: graph-retrieve
+    name: "Graph Retrieve"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Retrieve specific graph nodes and relationships"
+    workflow_refs:
+      - docs/workflows/workflow-graph.md
+    location:
+      shipped: null
+      dev: skills/vrs/graph-retrieve.md
+
+  - id: vql-help
+    name: "VQL Help"
+    version: 1.0.0
+    status: active
+    category: context
+    description: "Interactive VQL query builder and help"
+    workflow_refs:
+      - docs/workflows/workflow-graph.md
+    location:
+      shipped: null
+      dev: skills/vrs/vql-help.md
+
+  # === BEAD MANAGEMENT SKILLS ===
+
+  - id: bead-create
+    name: "Bead Create"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Create investigation bead with context"
+    workflow_refs:
+      - docs/workflows/workflow-beads.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/bead-create.md
+      dev: null
+
+  - id: bead-list
+    name: "Bead List"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "List and filter beads in pool"
+    workflow_refs:
+      - docs/workflows/workflow-beads.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/bead-list.md
+      dev: null
+
+  - id: bead-update
+    name: "Bead Update"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Update bead status and evidence"
+    workflow_refs:
+      - docs/workflows/workflow-beads.md
+    location:
+      shipped: src/alphaswarm_sol/shipping/skills/bead-update.md
+      dev: null
+
+  - id: create-bead-finding
+    name: "Create Bead Finding"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Create bead from finding with graph context"
+    workflow_refs:
+      - docs/workflows/workflow-beads.md
+    location:
+      shipped: null
+      dev: skills/vrs/create-bead-finding.md
+
+  - id: create-bead-context-merge
+    name: "Create Bead Context Merge"
+    version: 1.0.0
+    status: active
+    category: orchestration
+    description: "Create bead merging multiple contexts"
+    workflow_refs:
+      - docs/workflows/workflow-beads.md
+    location:
+      shipped: null
+      dev: skills/vrs/create-bead-context-merge.md
+
+  # === DEVELOPMENT SKILLS ===
+
+  - id: test-builder
+    name: "Test Builder"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Auto-invoked test construction helper"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-skills.md
+    location:
+      shipped: null
+      dev: skills/test-builder/SKILL.md
+
+  - id: agent-skillcraft
+    name: "Agent Skillcraft"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Production skill and subagent design system"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-skills.md
+    location:
+      shipped: null
+      dev: skills/agent-skillcraft/SKILL.md
+
+  - id: gsd-research-context
+    name: "GSD Research Context"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Deep Exa research for roadmap phase context"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-docs-validation.md
+    location:
+      shipped: null
+      dev: skills/gsd-research-context/SKILL.md
+
+  - id: generate-tests
+    name: "VRS Generate Tests"
+    version: 1.0.0
+    status: active
+    category: development
+    description: "Generate Phase 7 test cases from patterns"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    location:
+      shipped: null
+      dev: skills/vrs/generate-tests.md
+

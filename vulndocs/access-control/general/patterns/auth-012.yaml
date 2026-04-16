@@ -1,0 +1,36 @@
+id: auth-012
+vulndoc: access-control/general
+name: Unprotected Admin Function
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `auth-003-unprotected-privileged-write` instead.
+
+
+  Location: `patterns/semantic/authority/auth-003-unprotected-privileged-write.yaml`
+
+
+  The semantic pattern uses `writes_privileged_state` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Admin-like function names without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: auth-003-unprotected-privileged-write
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)^(set|update|configure|change|modify|pause|unpause|upgrade|migrate|grant|revoke)
+  - property: has_access_gate
+    op: eq
+    value: false

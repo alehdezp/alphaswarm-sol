@@ -1,0 +1,108 @@
+# Canonical Marker Registry
+# Single source of truth for transcript markers used in testing workflows.
+# Exact strings are required unless noted as regex-friendly.
+
+version: "1.0"
+updated: "2026-02-04"
+
+categories:
+  boundary:
+    description: "Scenario boundary markers (exact strings, include scenario id + timestamp)."
+    canonical:
+      start: "[ALPHASWARM-START]"
+      end: "[ALPHASWARM-END]"
+    legacy:
+      start: "[VRS-START]"
+      end: "[VRS-END]"
+    markers:
+      - "[ALPHASWARM-START]"
+      - "[ALPHASWARM-END]"
+      - "[VRS-START]"
+      - "[VRS-END]"
+
+  preflight:
+    description: "Preflight gate markers."
+    markers:
+      - "[PREFLIGHT_PASS]"
+      - "[PREFLIGHT_FAIL]"
+
+  graph:
+    description: "Graph build markers."
+    markers:
+      - "[GRAPH_BUILD_START]"
+      - "[GRAPH_BUILD_SUCCESS]"
+      - "[GRAPH_BUILD_FAIL]"
+
+  context:
+    description: "Context pack state markers."
+    markers:
+      - "[CONTEXT_READY]"
+      - "[CONTEXT_INCOMPLETE]"
+      - "[CONTEXT_SIMULATED]"
+
+  tools:
+    description: "Static tool execution markers."
+    markers:
+      - "[TOOL_STATUS]"
+      - "[TOOLS_COMPLETE]"
+      - "[TOOLS_FAIL]"
+      - "[SLITHER_RUN]"
+      - "[ADERYN_RUN]"
+      - "[MYTHRIL_RUN]"
+
+  detection:
+    description: "Pattern detection markers."
+    markers:
+      - "[DETECTION_START]"
+      - "[DETECTION_COMPLETE]"
+
+  tasks:
+    description: "Task lifecycle markers (prefix match)."
+    markers:
+      - "TaskCreate("
+      - "TaskUpdate("
+
+  subagents:
+    description: "Subagent spawn markers."
+    markers:
+      - "SubagentStart(vrs-attacker)"
+      - "SubagentStart(vrs-defender)"
+      - "SubagentStart(vrs-verifier)"
+      - "SubagentStart(vrs-secure-reviewer)"
+
+  report:
+    description: "Report stage markers."
+    markers:
+      - "[REPORT_GENERATED]"
+
+  progress:
+    description: "Progress and state persistence markers."
+    markers:
+      - "[PROGRESS_SAVED]"
+      - "[PROGRESS_RESUME]"
+
+  vql:
+    description: "Minimum VQL query markers."
+    markers:
+      - "[VQL_MIN_SET_START]"
+      - "[VQL_MIN_SET_END]"
+      - "[VQL-MIN-01]"
+      - "[VQL-MIN-02]"
+      - "[VQL-MIN-03]"
+      - "[VQL-MIN-04]"
+      - "[VQL-MIN-05]"
+      - "[VQL-XCON-01]"
+
+  cli:
+    description: "CLI-level markers or command strings expected in transcripts."
+    markers:
+      - "alphaswarm"
+      - "build-kg"
+      - "query"
+      - "tools status"
+      - "tools run"
+      - "claude-code-controller"
+
+notes:
+  - "Workflows may add scenario-specific markers, but should reference this registry for core markers."
+  - "Markers in this registry are used by evidence pack validation and scenario manifests."

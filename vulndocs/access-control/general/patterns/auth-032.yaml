@@ -1,0 +1,19 @@
+id: auth-032
+vulndoc: access-control/general
+name: Timelock Bypass via Emergency Path
+description: Emergency functions on timelocked contracts without timelock checks.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_emergency_function
+    op: eq
+    value: true
+  - property: contract_has_timelock
+    op: eq
+    value: true
+  - property: has_timelock_check
+    op: eq
+    value: false

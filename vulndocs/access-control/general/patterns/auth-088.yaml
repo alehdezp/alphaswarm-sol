@@ -1,0 +1,18 @@
+id: auth-088
+vulndoc: access-control/general
+name: Access Gate Uses Blockhash
+description: Access control relies on blockhash/prevrandao.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_gate_sources
+    op: contains_any
+    value:
+    - blockhash
+    - block.prevrandao
+  - property: has_access_gate
+    op: eq
+    value: true

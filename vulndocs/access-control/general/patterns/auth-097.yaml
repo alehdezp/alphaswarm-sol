@@ -1,0 +1,22 @@
+id: auth-097
+vulndoc: access-control/general
+name: Multisig Signer Change Without Multisig Approval
+description: Multisig signer change guarded by single-owner gate.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: contract_has_multisig
+    op: eq
+    value: true
+  - property: is_multisig_member_change
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: true
+  - property: uses_ecrecover
+    op: eq
+    value: false

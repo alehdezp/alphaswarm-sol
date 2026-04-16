@@ -1,0 +1,142 @@
+# Privilege Escalation via External Call Investigation Pattern
+# Task 13.11: LLM Investigation Patterns
+
+id: inv-cc-001
+vulndoc: cross-chain/investigation
+name: Privilege Escalation via External Call
+type: investigation
+category: cross-contract
+subcategories:
+  - callback-abuse
+  - delegatecall
+  - reentrancy-escalation
+severity_range:
+  - HIGH
+  - CRITICAL
+description: |
+  Investigate whether external calls can be exploited to gain unauthorized
+  privileges. Looks for callback abuse, reentrancy that leads to privilege
+  escalation, and delegatecall to untrusted targets.
+version: "1.0.0"
+author: VKG Team
+tags:
+  - privilege-escalation
+  - cross-contract
+  - callback
+
+trigger:
+  description: "Contract makes external calls that could be hijacked"
+  require_all: false
+  graph_signals:
+    - signal: "Function makes external calls"
+      property: has_external_calls
+    - signal: "Function uses delegatecall"
+      property: uses_delegatecall
+    - signal: "Function calls untrusted address"
+      property: calls_untrusted
+
+investigation:
+  hypothesis: "External call could lead to unauthorized privilege escalation"
+
+  steps:
+    - id: 1
+      action: explore_graph
+      description: "Find all external call targets"
+      graph_query: "FIND external_calls WHERE source = ${function_name}"
+      interpretation: |
+        For each external call:
+        - Is the target address controlled by user input?
+        - Can the target call back into this contract?
+        - What permissions does the call have (msg.value, delegatecall)?
+        - Is the call made to a known trusted contract or arbitrary address?
+      timeout_seconds: 15
+
+    - id: 2
+      action: ppr_expand
+      description: "Find functions reachable during callback"
+      seed: "${function_name}"
+      depth: 3
+      interpretation: |
+        During a callback, which functions could be called?
+        - Do any modify privileged state (owner, admin, roles)?
+        - Do any have weaker access control than the entry point?
+        - Can state be in an inconsistent state during callback?
+      timeout_seconds: 20
+
+    - id: 3
+      action: lsp_references
+      description: "Find all modifications to owner/admin"
+      target: "owner"
+      interpretation: |
+        Can ownership be transferred during callback?
+        Look for:
+        - setOwner, transferOwnership, renounceOwnership functions
+        - Direct assignment to owner variable
+        - Role-based access control modifications
+        - Any function that changes permissions
+      timeout_seconds: 15
+
+    - id: 4
+      action: lsp_call_hierarchy
+      description: "Trace call paths to privileged functions"
+      target: "${function_name}"
+      interpretation: |
+        What call paths lead to or from this function?
+        - Can a callback reach a privileged function?
+        - Are there indirect paths through other contracts?
+        - Do any paths bypass access control?
+      timeout_seconds: 15
+
+    - id: 5
+      action: reason
+      description: "Synthesize privilege escalation analysis"
+      prompt: |
+        Analyzing privilege escalation paths:
+
+        External calls (step 1): {step_1_results}
+        Reachable functions during callback (step 2): {step_2_results}
+        Owner modifications (step 3): {step_3_results}
+        Call hierarchy (step 4): {step_4_results}
+
+        Is there a path where:
+        1. Attacker triggers external call (through normal function call)
+        2. Callback during external call reaches a privileged function
+        3. Attacker gains elevated permissions (ownership, admin role, etc.)
+
+        Consider:
+        - Can msg.sender change during callback chain?
+        - Are there state variables used for access control that are modified?
+        - Can reentrancy guards be bypassed through cross-contract calls?
+        - Are there time-of-check/time-of-use vulnerabilities?
+
+        Provide a specific attack sequence if escalation is possible.
+      timeout_seconds: 30
+
+  verdict_criteria:
+    vulnerable: |
+      - Clear privilege escalation path exists
+      - Attacker can gain owner/admin privileges
+      - Attack requires only attacker-controlled inputs
+    likely_vulnerable: |
+      - Escalation path exists but requires specific conditions
+      - Complex callback chain but achievable
+    uncertain: |
+      - Possible path but depends on external contract behavior
+      - Needs manual verification of external contracts
+    likely_safe: |
+      - No viable escalation path found
+      - Reentrancy guards protect privileged functions
+    safe: |
+      - All external calls go to trusted, immutable addresses
+      - Privileged functions are protected from callbacks
+      - CEI pattern followed with proper guards
+
+output:
+  verdict: "VULNERABLE | LIKELY_VULNERABLE | UNCERTAIN | LIKELY_SAFE | SAFE"
+  attack_path: "Step-by-step sequence to escalate privileges"
+  confidence: "0-100"
+  evidence:
+    - "External call sites that enable callbacks"
+    - "Privileged functions reachable during callback"
+    - "Code paths that bypass access control"
+  recommendation: "How to prevent privilege escalation"

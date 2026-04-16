@@ -1,0 +1,16 @@
+id: ext-011
+vulndoc: access-control/external-call
+name: Merkle Proof Leaf Collision
+description: Merkle proof leaf hashing without domain separation or leaf tagging.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: uses_merkle_proof
+    op: eq
+    value: true
+  - property: merkle_leaf_domain_separated
+    op: eq
+    value: false

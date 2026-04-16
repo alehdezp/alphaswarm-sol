@@ -1,0 +1,448 @@
+# Pattern Context Pack (PCP) v2 - L2 Sequencer Grace Period Missing
+# Path: vulndocs/oracle/sequencer-uptime/patterns/oracle-l2-sequencer-grace-missing.pcp.yaml
+#
+# EXEMPLAR PCP v2 for Phase 7.2 - Comprehensive context pack with full evidence chain
+
+schema_version: "2.0"
+
+# =============================================================================
+# IDENTITY (Required)
+# =============================================================================
+
+id: pcp-oracle-l2-sequencer-grace-missing
+version: "2.0"
+pattern_id: "oracle-l2-sequencer-grace-missing"
+name: "L2 Sequencer Grace Period Missing"
+summary: |
+  Detects L2 oracle reads that check sequencer uptime status but fail to enforce
+  a grace period after sequencer restart, allowing attackers to exploit stale
+  oracle prices in the immediate post-restart window before data stabilizes.
+scope: Function
+
+# =============================================================================
+# DETERMINISM CONSTRAINTS (Required - do not modify defaults)
+# =============================================================================
+
+determinism:
+  no_rag: true
+  no_name_heuristics: true
+  serialization_order:
+    - pcp
+    - slice
+    - protocol
+    - evidence
+  hash_seed: "graph_hash + pcp_version + pattern_id"
+
+# =============================================================================
+# TOKEN BUDGET
+# =============================================================================
+
+budget:
+  pcp_max_tokens: 900
+  context_max_tokens: 2400
+  cheap_pass_tokens: 1300
+  verify_pass_tokens: 1900
+  deep_pass_tokens: 2600
+
+# =============================================================================
+# EVIDENCE WEIGHTS
+# =============================================================================
+
+evidence_weights:
+  required:
+    - "ev-oracle-read"
+    - "ev-sequencer-check-exists"
+    - "ev-no-grace-period"
+  strong:
+    - "ev-l2-deployment"
+    - "ev-critical-state-modification"
+    - "ev-startedAt-ignored"
+  weak:
+    - "ev-single-oracle-source"
+    - "ev-no-staleness-check"
+  optional:
+    - "ev-chainlink-aggregator-interface"
+    - "ev-price-used-for-collateral"
+
+# =============================================================================
+# WITNESS REQUIREMENTS
+# =============================================================================
+
+witness:
+  minimal_required:
+    - "reads_oracle_price"
+    - "has_sequencer_uptime_check"
+    - "no_grace_period_validation"
+  negative_required:
+    - "has_grace_period_check"
+    - "has_startedAt_comparison"
+    - "blocks_during_grace_period"
+
+# =============================================================================
+# EXPLOIT MODELING
+# =============================================================================
+
+preconditions:
+  - id: "pre-001"
+    description: "Contract deployed on L2 network with sequencer dependency"
+    evidence_refs:
+      - "ev-l2-deployment"
+      - "ev-sequencer-feed-reference"
+  - id: "pre-002"
+    description: "Oracle read operation exists in function"
+    evidence_refs:
+      - "ev-oracle-read"
+  - id: "pre-003"
+    description: "Sequencer uptime check exists (answer == 0)"
+    evidence_refs:
+      - "ev-sequencer-check-exists"
+  - id: "pre-004"
+    description: "No grace period validation after sequencer restart"
+    evidence_refs:
+      - "ev-no-grace-period"
+      - "ev-startedAt-ignored"
+
+exploit_steps:
+  - id: "step-001"
+    description: "Attacker monitors L2 sequencer uptime feed for restart events"
+    required_ops:
+      - "READS_EXTERNAL"
+    evidence_refs:
+      - "ev-sequencer-monitoring"
+  - id: "step-002"
+    description: "L2 sequencer goes down; oracle prices freeze at pre-downtime values"
+    required_ops: []
+    evidence_refs:
+      - "ev-sequencer-downtime"
+  - id: "step-003"
+    description: "Market prices diverge from frozen oracle during downtime"
+    required_ops: []
+    evidence_refs:
+      - "ev-price-divergence"
+  - id: "step-004"
+    description: "Sequencer restarts; answer changes from 1 to 0"
+    required_ops: []
+    evidence_refs:
+      - "ev-sequencer-restart"
+  - id: "step-005"
+    description: "Attacker executes transaction in first blocks after restart"
+    required_ops:
+      - "READS_ORACLE"
+      - "WRITES_STATE"
+    evidence_refs:
+      - "ev-immediate-execution"
+  - id: "step-006"
+    description: "Sequencer check passes (answer == 0) but oracle still has stale data"
+    required_ops:
+      - "CHECKS_SEQUENCER_UPTIME"
+    evidence_refs:
+      - "ev-stale-price-accepted"
+  - id: "step-007"
+    description: "Transaction executes with stale favorable price, extracting value"
+    required_ops:
+      - "TRANSFERS_VALUE_OUT"
+    evidence_refs:
+      - "ev-value-extraction"
+
+impact_invariants:
+  - id: "impact-001"
+    description: "Bad debt from over-borrowing against stale collateral valuations"
+    evidence_refs:
+      - "ev-bad-debt"
+  - id: "impact-002"
+    description: "Unfair liquidations using stale oracle prices post-restart"
+    evidence_refs:
+      - "ev-unfair-liquidation"
+  - id: "impact-003"
+    description: "Arbitrage profits from stale oracle vs real market price gap"
+    evidence_refs:
+      - "ev-arbitrage-profit"
+  - id: "impact-004"
+    description: "Protocol insolvency from systematic grace period exploitation"
+    evidence_refs:
+      - "ev-insolvency-risk"
+
+# =============================================================================
+# OPERATION SIGNATURES (Required)
+# =============================================================================
+
+op_signatures:
+  required_ops:
+    - "READS_ORACLE"
+    - "CHECKS_SEQUENCER_UPTIME"
+
+  ordering_variants:
+    - id: "seq-001"
+      description: "Sequencer check then oracle read without grace period"
+      sequence:
+        - "CHECKS_SEQUENCER_UPTIME"
+        - "READS_ORACLE"
+        - "WRITES_STATE"
+    - id: "seq-002"
+      description: "Oracle read with inline sequencer check, no grace period"
+      sequence:
+        - "READS_ORACLE"
+        - "CHECKS_SEQUENCER_UPTIME"
+        - "TRANSFERS_VALUE_OUT"
+    - id: "seq-003"
+      description: "Collateral calculation with missing grace period"
+      sequence:
+        - "CHECKS_SEQUENCER_UPTIME"
+        - "READS_ORACLE"
+        - "READS_STATE"
+        - "WRITES_STATE"
+
+  forbidden_ops:
+    - "VALIDATES_GRACE_PERIOD"
+
+# =============================================================================
+# ANTI-SIGNALS
+# =============================================================================
+
+anti_signals:
+  - id: "guard.grace-period"
+    guard_type: "oracle_check"
+    severity: "critical"
+    expected_context: "require(block.timestamp - startedAt > GRACE_PERIOD)"
+    evidence_refs:
+      - "ev-grace-period-check"
+    bypass_notes:
+      - "Grace period too short for asset volatility"
+      - "Check only in some code paths"
+      - "Conditional grace period (L1/L2 split) incorrectly configured"
+      - "Helper function delegation not consistently called"
+
+  - id: "guard.circuit-breaker"
+    guard_type: "pausable"
+    severity: "high"
+    expected_context: "Automatic pause during sequencer downtime or grace period"
+    evidence_refs:
+      - "ev-circuit-breaker"
+    bypass_notes:
+      - "Manual pause may not be triggered quickly enough"
+      - "Some operations may bypass circuit breaker"
+
+  - id: "guard.staleness-as-proxy"
+    guard_type: "oracle_check"
+    severity: "medium"
+    expected_context: "Staleness check tight enough to catch post-restart stale data"
+    evidence_refs:
+      - "ev-tight-staleness"
+    bypass_notes:
+      - "Staleness threshold alone is insufficient"
+      - "Oracle may report as 'fresh' immediately after restart"
+
+  - id: "guard.multi-oracle"
+    guard_type: "custom"
+    severity: "medium"
+    expected_context: "Multiple oracle sources with cross-validation"
+    evidence_refs:
+      - "ev-multi-source-oracle"
+    bypass_notes:
+      - "All L2 oracles may be stale simultaneously after restart"
+      - "Fallback oracle may also lack grace period protection"
+
+# =============================================================================
+# COUNTERFACTUALS
+# =============================================================================
+
+counterfactuals:
+  - id: "cf-001"
+    if_removed: "guard.grace-period"
+    becomes_true: true
+    notes: "Without grace period, any transaction in first blocks after restart exploitable"
+  - id: "cf-002"
+    if_removed: "guard.circuit-breaker"
+    becomes_true: true
+    notes: "Without circuit breaker, operations continue during vulnerable window"
+  - id: "cf-003"
+    if_removed: "guard.staleness-as-proxy"
+    becomes_true: true
+    notes: "Without staleness check, no secondary protection against stale data"
+
+# =============================================================================
+# GUARD TAXONOMY
+# =============================================================================
+
+guard_taxonomy:
+  - id: "g-001"
+    type: "oracle_check"
+    description: "Grace period validation comparing block.timestamp to startedAt"
+    expected_ops:
+      - "VALIDATES_GRACE_PERIOD"
+      - "CHECKS_TIMESTAMP_DIFFERENCE"
+    bypass_notes:
+      - "Grace period constant may be too short"
+      - "startedAt may not be captured correctly"
+
+  - id: "g-002"
+    type: "oracle_check"
+    description: "Combined sequencer + grace period check"
+    expected_ops:
+      - "CHECKS_SEQUENCER_UPTIME"
+      - "VALIDATES_GRACE_PERIOD"
+    bypass_notes:
+      - "Checks may be in different functions with inconsistent calling"
+
+  - id: "g-003"
+    type: "pausable"
+    description: "Automatic circuit breaker during vulnerable window"
+    expected_ops:
+      - "CHECKS_PAUSE_STATE"
+    bypass_notes:
+      - "Emergency functions may bypass pause"
+
+# =============================================================================
+# ORDERING VARIANTS
+# =============================================================================
+
+ordering_variants:
+  - id: "ov-001"
+    description: "Sequencer check then oracle read without grace period validation"
+    sequence:
+      - "CHECKS_SEQUENCER_UPTIME"
+      - "READS_ORACLE"
+      - "WRITES_STATE"
+  - id: "ov-002"
+    description: "Value transfer after unprotected oracle read"
+    sequence:
+      - "CHECKS_SEQUENCER_UPTIME"
+      - "READS_ORACLE"
+      - "TRANSFERS_VALUE_OUT"
+
+# =============================================================================
+# RISK ENVELOPE
+# =============================================================================
+
+risk_envelope:
+  asset_type: "mixed"
+  trust_boundary: "external->internal"
+  value_movement: "out"
+  severity_floor: "high"
+
+# =============================================================================
+# COMPOSITION HINTS
+# =============================================================================
+
+composition_hints:
+  co_occurs_with:
+    - "oracle-003-missing-staleness-check"
+    - "oracle-004-missing-sequencer-check"
+  combine_with:
+    - "access-control-missing"
+    - "reentrancy-classic"
+
+# =============================================================================
+# ECONOMIC PLACEHOLDERS (Phase 5.11)
+# =============================================================================
+
+economic_placeholders:
+  value_flows:
+    - "stale_collateral_valuation -> over_borrowing -> bad_debt"
+    - "stale_price_liquidation -> unfair_seizure -> attacker_profit"
+    - "post_restart_arbitrage -> price_divergence_profit -> protocol_loss"
+  incentive_hooks:
+    - "Attacker monitors sequencer uptime feed for restart events"
+    - "Flash loan amplification of post-restart exploitation"
+    - "MEV extraction during grace period window"
+  role_assumptions:
+    - "L2 sequencer may experience downtime (maintenance, outage)"
+    - "Oracle data is stale immediately after sequencer restart"
+    - "Grace period is required for oracle stabilization"
+    - "Chainlink recommends 1 hour grace period"
+  offchain_dependencies:
+    - "Chainlink L2 Sequencer Uptime Feed"
+    - "L2 sequencer availability"
+    - "Oracle node reconnection after downtime"
+  risk_pre_score: "high"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS
+# =============================================================================
+
+evidence_requirements:
+  node_types:
+    - "Function"
+    - "ExternalCall"
+    - "StateVariable"
+    - "RequireStatement"
+  edge_types:
+    - "READS_ORACLE"
+    - "CHECKS_CONDITION"
+    - "TRANSFERS_VALUE"
+    - "WRITES_STATE"
+  path_constraints:
+    - "Function -[CHECKS_SEQUENCER_UPTIME]-> * -[READS_ORACLE]-> * -[!VALIDATES_GRACE_PERIOD]-> *"
+
+# =============================================================================
+# UNKNOWNS POLICY
+# =============================================================================
+
+unknowns_policy:
+  missing_required: "unknown"
+  missing_optional: "unknown"
+  missing_anti_signal: "unknown"
+
+# =============================================================================
+# SCENARIO PACK (Phase 5.10 Extension)
+# =============================================================================
+
+scenario_pack:
+  # Vulnerable scenarios
+  vulnerable:
+    - id: "vuln-001"
+      name: "Basic missing grace period"
+      description: "Sequencer check exists, no grace period validation"
+      graph_query: "MATCH (f:Function)-[:CHECKS]->(s:SequencerUptime) WHERE NOT (f)-[:VALIDATES]->(g:GracePeriod) RETURN f"
+
+    - id: "vuln-002"
+      name: "Partial grace period (too short)"
+      description: "Grace period exists but is too short (< 30 minutes)"
+      graph_query: "MATCH (f:Function)-[:VALIDATES]->(g:GracePeriod) WHERE g.threshold < 1800 RETURN f"
+
+    - id: "vuln-003"
+      name: "Grace period in some paths only"
+      description: "Grace period check in main path, bypassed in fallback"
+      graph_query: "MATCH (f:Function)-[:CALLS]->(h:Helper) WHERE NOT (h)-[:VALIDATES]->(g:GracePeriod) RETURN f"
+
+  # Safe scenarios
+  safe:
+    - id: "safe-001"
+      name: "Complete grace period protection"
+      description: "Full sequencer check + 1 hour grace period"
+      graph_query: "MATCH (f:Function)-[:VALIDATES]->(g:GracePeriod) WHERE g.threshold >= 3600 RETURN f"
+
+    - id: "safe-002"
+      name: "Circuit breaker during grace period"
+      description: "Operations paused until grace period elapses"
+      graph_query: "MATCH (f:Function)-[:CHECKS]->(p:Pause) WHERE p.grace_aware = true RETURN f"
+
+    - id: "safe-003"
+      name: "L1 deployment (no sequencer)"
+      description: "L1 contract without sequencer dependency"
+      graph_query: "MATCH (f:Function) WHERE NOT (f)-[:REFERENCES]->(s:SequencerFeed) RETURN f"
+
+  # Counterfactual scenarios
+  counterfactual:
+    - id: "cf-001"
+      name: "Grace period guard inverted"
+      description: "require(timeSinceUp <= GRACE_PERIOD) instead of >"
+      expected_result: "vulnerable"
+
+    - id: "cf-002"
+      name: "Grace period removed from safe contract"
+      description: "Remove grace period check from safe implementation"
+      expected_result: "vulnerable"
+
+    - id: "cf-003"
+      name: "Grace period added to vulnerable contract"
+      description: "Add proper grace period validation"
+      expected_result: "safe"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: 2026-01-29
+updated: 2026-01-29
+author: "claude-opus-4.5"

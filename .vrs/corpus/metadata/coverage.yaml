@@ -1,0 +1,1070 @@
+coverage_report:
+  generated_at: '2026-01-29T19:51:40.466367'
+  corpus_version: v1
+  summary:
+    category_coverage_pct: 0.0
+    operation_coverage_pct: 100.0
+    label_coverage_pct: 35.0
+    total_contracts: 830
+    vulnerable_contracts: 253
+    safe_contracts: 577
+  categories:
+    token:
+      subcategories:
+      - economics
+      - erc20-compliance
+      - fee-on-transfer
+      - missing-return
+      - rebasing
+      - transfer
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    crypto:
+      subcategories:
+      - ecrecover-zero
+      - hash-collision
+      - merkle
+      - replay
+      - signature
+      - signature-malleability
+      - signature-validation
+      - weak-randomness
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 1
+      corpus_contracts: 0
+      coverage_score: 5.0
+      is_complete: false
+    flash-loan:
+      subcategories:
+      - attacks
+      - collateral-drain
+      - defi
+      - economics
+      - governance-attack
+      - price-oracle
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    upgrade:
+      subcategories:
+      - function-clashing
+      - general
+      - initializer
+      - proxy
+      - selfdestruct
+      - storage-collision
+      - uninitialized-proxy
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    reentrancy:
+      subcategories:
+      - batch-operations
+      - callback
+      - classic
+      - cross-contract
+      - cross-function
+      - erc777
+      - general
+      - hook-callback
+      - read-only
+      - value-transfer
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 3
+      corpus_contracts: 0
+      coverage_score: 15.0
+      is_complete: false
+    dos:
+      subcategories:
+      - block-gas-limit
+      - circuit-breaker
+      - external-revert
+      - general
+      - strict-equality
+      - unbounded
+      - unbounded-loop
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 2
+      corpus_contracts: 0
+      coverage_score: 10.0
+      is_complete: false
+    zk-rollup:
+      subcategories:
+      - circuit-constraints
+      - prover-exploits
+      - soundness-bugs
+      - state-verification
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    cross-chain:
+      subcategories:
+      - adapter-replay
+      - bridge
+      - bridge-compromise
+      - bridge-vulnerabilities
+      - general
+      - investigation
+      - replay-protection
+      - signature-replay
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    precision-loss:
+      subcategories:
+      - rounding-manipulation
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    restaking:
+      subcategories:
+      - allocation-delay
+      - avs-security
+      - eigenlayer-risks
+      - operator-collusion
+      - slashing-exploits
+      - withdrawal-delay
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    account-abstraction:
+      subcategories:
+      - bundler-manipulation
+      - entrypoint-issues
+      - erc4337-vulnerabilities
+      - paymaster-exploits
+      - userop-validation
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    oracle:
+      subcategories:
+      - freshness
+      - manipulation
+      - price-manipulation
+      - sequencer-uptime
+      - staleness
+      - twap-manipulation
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 4
+      corpus_contracts: 0
+      coverage_score: 20.0
+      is_complete: false
+    logic:
+      subcategories:
+      - accounting
+      - arithmetic
+      - array-handling
+      - balance-manipulation
+      - business-logic
+      - calldata
+      - config
+      - configuration
+      - empty-loop-bypass
+      - general
+      - invariant-violation
+      - invariants
+      - library-usage
+      - liquidation-mechanics
+      - msg-value
+      - parameter-confusion
+      - precision-accounting
+      - rounding
+      - sequencing
+      - state-inconsistency
+      - state-isolation
+      - state-machine
+      - transient-storage
+      - unsafe-downcast
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 7
+      corpus_contracts: 0
+      coverage_score: 20.0
+      is_complete: false
+    governance:
+      subcategories:
+      - deprecated-contracts
+      - flash-loan-voting
+      - parameters
+      - proposal-manipulation
+      - quorum-bypass
+      - voting
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    arithmetic:
+      subcategories:
+      - general
+      - incorrect-overflow-check
+      - precision
+      - rounding-direction
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 1
+      corpus_contracts: 0
+      coverage_score: 5.0
+      is_complete: false
+    access-control:
+      subcategories:
+      - authorization
+      - delegatecall
+      - delegatecall-control
+      - emergency
+      - external-call
+      - general
+      - hook-permission
+      - hooks-permission
+      - initialization
+      - input-validation
+      - low-level-call
+      - missing-modifier
+      - multisig
+      - payable
+      - policy
+      - pool-key-validation
+      - race-condition
+      - role-escalation
+      - transient-storage-auth
+      - treasury
+      - tx-origin
+      - unprotected-functions
+      - weak-modifier
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 8
+      corpus_contracts: 0
+      coverage_score: 20.0
+      is_complete: false
+    mev:
+      subcategories:
+      - backrunning
+      - frontrunning
+      - protection
+      - sandwich
+      - slippage
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+    vault:
+      subcategories:
+      - donation-attack
+      - exchange-rate
+      - first-depositor
+      - share-inflation
+      - shares
+      has_vulnerable_exemplar: false
+      has_safe_exemplar: false
+      pattern_count: 0
+      corpus_contracts: 0
+      coverage_score: 0.0
+      is_complete: false
+  operations:
+    READS_ORACLE:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - index.yaml
+      - reentrancy-002-gmx-cross-function.yaml
+      - oracle-l2-sequencer-grace-missing.pcp.yaml
+      - oracle-l2-sequencer-grace-missing.yaml
+      - op-oracle-manipulation-risk.yaml
+      - oracle-005-twap-missing-window.yaml
+      - oracle-003-missing-staleness-check.pcp.yaml
+      - oracle-006-l2-freshness-complete.yaml
+      - oracle-004-missing-sequencer-check.yaml
+      - oracle-003-missing-staleness-check.yaml
+      - oracle-007-staleness-check-without-sequencer.yaml
+      - oracle-001-freshness-complete.yaml
+      - policy-mismatch-oracle-untrusted.yaml
+      - gmx-v1-reentrancy
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    USES_BLOCK_DATA:
+      used_in_patterns:
+      - knowledge-index.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    WRITES_USER_BALANCE:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-schema.yaml
+      - knowledge-index.yaml
+      - token-002-erc777-reentrancy.yaml
+      - token-001-unhandled-fee-on-transfer.yaml
+      - op-safe-cei-signature.yaml
+      - vm-002-unprotected-transfer.yaml
+      - op-reentrancy-classic.yaml
+      - vm-001-classic.yaml
+      - op-reentrancy-untrusted-call.yaml
+      - op-reentrancy-external-before-write.yaml
+      - index.yaml
+      - op-oracle-manipulation-risk.yaml
+      - lib-002-reentrancy-guard.yaml
+      - statemachine-reentrancy-guard-missing.yaml
+      - invariant-balance-unvalidated.yaml
+      - logic-002-balancer-rounding.yaml
+      - emergency-001-unprotected-recovery.yaml
+      - vault-001-share-inflation.yaml
+      - instructions
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    READS_EXTERNAL_VALUE:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-index.yaml
+      - index.yaml
+      - cc-001-bridge-message-validation.yaml
+      - op-external-read-without-validation.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    USES_TIMESTAMP:
+      used_in_patterns:
+      - knowledge-index.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    CHECKS_PERMISSION:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-index.yaml
+      - merkle-001-unprotected-root-update.yaml
+      - index.yaml
+      - upgrade-007-unprotected-upgrade.yaml
+      - op-unprotected-value-transfer.yaml
+      - cc-001-bridge-message-validation.yaml
+      - bridge-001-unprotected-configuration.yaml
+      - governance-001-unprotected-parameter-update.yaml
+      - tx-origin-auth.pcp.yaml
+      - delegatecall-public.pcp.yaml
+      - op-unprotected-role-assignment.yaml
+      - op-unprotected-ownership-transfer.yaml
+      - op-unprotected-critical-state.yaml
+      - ac-002-weak-trust-assumption.yaml
+      - gmx-v1-reentrancy
+      - transient-storage
+      - transient-storage-auth
+      - missing-modifier
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    CALLS_EXTERNAL:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-index.yaml
+      - token-002-erc777-reentrancy.yaml
+      - upgrade-008-delegatecall-untrusted.yaml
+      - cross-function-reentrancy.pcp.yaml
+      - index.yaml
+      - reentrancy-002-gmx-cross-function.yaml
+      - op-reentrancy-external-before-write.yaml
+      - dos-002-external-call-in-loop.yaml
+      - cc-001-bridge-message-validation.yaml
+      - lib-001-safe-erc20.yaml
+      - lib-002-reentrancy-guard.yaml
+      - statemachine-reentrancy-guard-missing.yaml
+      - tx-origin-auth.pcp.yaml
+      - multisig-003-execution-without-signature-validation.yaml
+      - multisig-002-nonce-not-updated.yaml
+      - multisig-001-execution-without-nonce.yaml
+      - ac-002-weak-trust-assumption.yaml
+      - external-002-unprotected-delegatecall.yaml
+      - ext-003-unprotected-low-level-call.yaml
+      - op-loop-with-external-call.yaml
+      - ext-001-unprotected-external-call.yaml
+      - gmx-v1-reentrancy
+      - external-revert
+      - transient-storage
+      - transient-storage-auth
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    LOOPS_OVER_ARRAY:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-index.yaml
+      - op-loop-with-value-transfer.yaml
+      - index.yaml
+      - dos-002-external-call-in-loop.yaml
+      - logic-002-balancer-rounding.yaml
+      - op-loop-with-external-call.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    MODIFIES_CRITICAL_STATE:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-index.yaml
+      - merkle-001-unprotected-root-update.yaml
+      - upgrade-007-unprotected-upgrade.yaml
+      - upgrade-004-unprotected-reinitializer.yaml
+      - upgrade-008-delegatecall-untrusted.yaml
+      - index.yaml
+      - reentrancy-002-gmx-cross-function.yaml
+      - dos-002-external-call-in-loop.yaml
+      - cc-001-bridge-message-validation.yaml
+      - bridge-001-unprotected-configuration.yaml
+      - oracle-002-unprotected-feed-update.yaml
+      - lib-002-reentrancy-guard.yaml
+      - invariant-supply-manipulation.yaml
+      - logic-002-balancer-rounding.yaml
+      - governance-001-unprotected-parameter-update.yaml
+      - op-unprotected-critical-state.yaml
+      - emergency-001-unprotected-recovery.yaml
+      - treasury-001-unprotected-recipient-update.yaml
+      - ac-002-weak-trust-assumption.yaml
+      - auth-005-unprotected-list-management.yaml
+      - external-002-unprotected-delegatecall.yaml
+      - policy-mismatch-mint-unrestricted.yaml
+      - gmx-v1-reentrancy
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    CALLS_UNTRUSTED:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-index.yaml
+      - upgrade-008-delegatecall-untrusted.yaml
+      - op-reentrancy-untrusted-call.yaml
+      - index.yaml
+      - lib-002-reentrancy-guard.yaml
+      - multisig-003-execution-without-signature-validation.yaml
+      - multisig-002-nonce-not-updated.yaml
+      - multisig-001-execution-without-nonce.yaml
+      - ac-002-weak-trust-assumption.yaml
+      - external-002-unprotected-delegatecall.yaml
+      - ext-003-unprotected-low-level-call.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    VALIDATES_INPUT:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - index.yaml
+      - invariant-balance-unvalidated.yaml
+      - ac-002-weak-trust-assumption.yaml
+      - op-external-read-without-validation.yaml
+      - policy-mismatch-withdrawal-unvalidated.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    EMITS_EVENT:
+      used_in_patterns:
+      - knowledge-index.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    RECEIVES_VALUE_IN:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - token-001-unhandled-fee-on-transfer.yaml
+      - policy-mismatch-fee-collection.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    PERFORMS_DIVISION:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - index.yaml
+      - logic-002-balancer-rounding.yaml
+      - vault-001-share-inflation.yaml
+      - rounding-direction
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    INITIALIZES_STATE:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - upgrade-009-constructor-in-implementation.yaml
+      - upgrade-005-unprotected-initializer.yaml
+      - index.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    TRANSFERS_VALUE_OUT:
+      used_in_patterns:
+      - swc-mapping.yaml
+      - knowledge-schema.yaml
+      - knowledge-index.yaml
+      - op-safe-cei-signature.yaml
+      - index.yaml
+      - vm-002-unprotected-transfer.yaml
+      - op-reentrancy-classic.yaml
+      - reentrancy-002-gmx-cross-function.yaml
+      - vm-001-classic.yaml
+      - op-loop-with-value-transfer.yaml
+      - op-unprotected-value-transfer.yaml
+      - bridge-001-unprotected-configuration.yaml
+      - oracle-l2-sequencer-grace-missing.pcp.yaml
+      - op-oracle-manipulation-risk.yaml
+      - oracle-003-missing-staleness-check.pcp.yaml
+      - lib-001-safe-erc20.yaml
+      - lib-002-reentrancy-guard.yaml
+      - tx-origin-auth.pcp.yaml
+      - delegatecall-public.pcp.yaml
+      - emergency-001-unprotected-recovery.yaml
+      - ac-002-weak-trust-assumption.yaml
+      - auth-005-unprotected-list-management.yaml
+      - ext-003-unprotected-low-level-call.yaml
+      - policy-mismatch-withdrawal-unvalidated.yaml
+      - mev-002-missing-deadline-protection.yaml
+      - mev-001-missing-slippage-protection.yaml
+      - instructions
+      - gmx-v1-reentrancy
+      - external-revert
+      - unbounded-loop
+      - rounding-direction
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    PERFORMS_MULTIPLICATION:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - index.yaml
+      - logic-003-cetus-overflow.yaml
+      - logic-002-balancer-rounding.yaml
+      - rounding-direction
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    READS_USER_BALANCE:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - op-safe-cei-signature.yaml
+      - index.yaml
+      - logic-002-balancer-rounding.yaml
+      - vault-001-share-inflation.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    MODIFIES_ROLES:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - upgrade-004-unprotected-reinitializer.yaml
+      - index.yaml
+      - op-unprotected-role-assignment.yaml
+      - auth-003-unprotected-privileged-write.yaml
+      - policy-mismatch-admin-action-unprotected.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+    MODIFIES_OWNER:
+      used_in_patterns:
+      - knowledge-index.yaml
+      - upgrade-004-unprotected-reinitializer.yaml
+      - upgrade-005-unprotected-initializer.yaml
+      - index.yaml
+      - op-unprotected-ownership-transfer.yaml
+      - auth-003-unprotected-privileged-write.yaml
+      - policy-mismatch-admin-action-unprotected.yaml
+      used_in_tests: []
+      explicitly_unused: false
+      coverage_status: covered
+  labels:
+    access_control.owner_only:
+      category: access_control
+      used_in_tier_c:
+      - test_label_evaluation
+      - test_labels_integration
+      - test_tier_c_harness
+      - test_gaps
+      has_ablation_test: true
+      has_counterfactual: false
+      coverage_status: covered
+    access_control.role_based:
+      category: access_control
+      used_in_tier_c:
+      - test_label_evaluation
+      - test_tier_c_harness
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: partial
+    access_control.permissioned:
+      category: access_control
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    access_control.no_restriction:
+      category: access_control
+      used_in_tier_c:
+      - test_labels_integration
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: partial
+    state_mutation.writes_critical:
+      category: state_mutation
+      used_in_tier_c:
+      - test_label_evaluation
+      - test_labels_integration
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: partial
+    state_mutation.initializes_state:
+      category: state_mutation
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    state_mutation.no_state_change:
+      category: state_mutation
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    external_interaction.calls_trusted:
+      category: external_interaction
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    external_interaction.calls_untrusted:
+      category: external_interaction
+      used_in_tier_c:
+      - test_labels_integration
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: partial
+    external_interaction.reads_oracle:
+      category: external_interaction
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    external_interaction.no_external_calls:
+      category: external_interaction
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    value_handling.transfers_value_out:
+      category: value_handling
+      used_in_tier_c:
+      - test_label_evaluation
+      - test_labels_integration
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: partial
+    value_handling.collects_fees:
+      category: value_handling
+      used_in_tier_c:
+      - test_labels_integration
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: partial
+    value_handling.handles_balance:
+      category: value_handling
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    invariants.enforces_balance_check:
+      category: invariants
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    invariants.enforces_supply_invariant:
+      category: invariants
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    invariants.no_invariant_check:
+      category: invariants
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    temporal.enforces_timelock:
+      category: temporal
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    temporal.checks_deadline:
+      category: temporal
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+    temporal.no_temporal_constraint:
+      category: temporal
+      used_in_tier_c: []
+      has_ablation_test: false
+      has_counterfactual: false
+      coverage_status: missing
+  gaps:
+  - type: taxonomy
+    id: category-vuln-token
+    category: token
+    severity: high
+    description: Category 'token' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for token
+  - type: taxonomy
+    id: category-safe-token
+    category: token
+    severity: medium
+    description: Category 'token' missing safe exemplar
+    recommended_target: Add safe contract for token
+  - type: taxonomy
+    id: category-vuln-crypto
+    category: crypto
+    severity: high
+    description: Category 'crypto' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for crypto
+  - type: taxonomy
+    id: category-safe-crypto
+    category: crypto
+    severity: medium
+    description: Category 'crypto' missing safe exemplar
+    recommended_target: Add safe contract for crypto
+  - type: taxonomy
+    id: category-vuln-flash-loan
+    category: flash-loan
+    severity: high
+    description: Category 'flash-loan' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for flash-loan
+  - type: taxonomy
+    id: category-safe-flash-loan
+    category: flash-loan
+    severity: medium
+    description: Category 'flash-loan' missing safe exemplar
+    recommended_target: Add safe contract for flash-loan
+  - type: taxonomy
+    id: category-vuln-upgrade
+    category: upgrade
+    severity: high
+    description: Category 'upgrade' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for upgrade
+  - type: taxonomy
+    id: category-safe-upgrade
+    category: upgrade
+    severity: medium
+    description: Category 'upgrade' missing safe exemplar
+    recommended_target: Add safe contract for upgrade
+  - type: taxonomy
+    id: category-vuln-reentrancy
+    category: reentrancy
+    severity: high
+    description: Category 'reentrancy' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for reentrancy
+  - type: taxonomy
+    id: category-safe-reentrancy
+    category: reentrancy
+    severity: medium
+    description: Category 'reentrancy' missing safe exemplar
+    recommended_target: Add safe contract for reentrancy
+  - type: taxonomy
+    id: category-vuln-dos
+    category: dos
+    severity: high
+    description: Category 'dos' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for dos
+  - type: taxonomy
+    id: category-safe-dos
+    category: dos
+    severity: medium
+    description: Category 'dos' missing safe exemplar
+    recommended_target: Add safe contract for dos
+  - type: taxonomy
+    id: category-vuln-zk-rollup
+    category: zk-rollup
+    severity: high
+    description: Category 'zk-rollup' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for zk-rollup
+  - type: taxonomy
+    id: category-safe-zk-rollup
+    category: zk-rollup
+    severity: medium
+    description: Category 'zk-rollup' missing safe exemplar
+    recommended_target: Add safe contract for zk-rollup
+  - type: taxonomy
+    id: category-vuln-cross-chain
+    category: cross-chain
+    severity: high
+    description: Category 'cross-chain' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for cross-chain
+  - type: taxonomy
+    id: category-safe-cross-chain
+    category: cross-chain
+    severity: medium
+    description: Category 'cross-chain' missing safe exemplar
+    recommended_target: Add safe contract for cross-chain
+  - type: taxonomy
+    id: category-vuln-precision-loss
+    category: precision-loss
+    severity: high
+    description: Category 'precision-loss' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for precision-loss
+  - type: taxonomy
+    id: category-safe-precision-loss
+    category: precision-loss
+    severity: medium
+    description: Category 'precision-loss' missing safe exemplar
+    recommended_target: Add safe contract for precision-loss
+  - type: taxonomy
+    id: category-vuln-restaking
+    category: restaking
+    severity: high
+    description: Category 'restaking' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for restaking
+  - type: taxonomy
+    id: category-safe-restaking
+    category: restaking
+    severity: medium
+    description: Category 'restaking' missing safe exemplar
+    recommended_target: Add safe contract for restaking
+  - type: taxonomy
+    id: category-vuln-account-abstraction
+    category: account-abstraction
+    severity: high
+    description: Category 'account-abstraction' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for account-abstraction
+  - type: taxonomy
+    id: category-safe-account-abstraction
+    category: account-abstraction
+    severity: medium
+    description: Category 'account-abstraction' missing safe exemplar
+    recommended_target: Add safe contract for account-abstraction
+  - type: taxonomy
+    id: category-vuln-oracle
+    category: oracle
+    severity: high
+    description: Category 'oracle' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for oracle
+  - type: taxonomy
+    id: category-safe-oracle
+    category: oracle
+    severity: medium
+    description: Category 'oracle' missing safe exemplar
+    recommended_target: Add safe contract for oracle
+  - type: taxonomy
+    id: category-vuln-logic
+    category: logic
+    severity: high
+    description: Category 'logic' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for logic
+  - type: taxonomy
+    id: category-safe-logic
+    category: logic
+    severity: medium
+    description: Category 'logic' missing safe exemplar
+    recommended_target: Add safe contract for logic
+  - type: taxonomy
+    id: category-vuln-governance
+    category: governance
+    severity: high
+    description: Category 'governance' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for governance
+  - type: taxonomy
+    id: category-safe-governance
+    category: governance
+    severity: medium
+    description: Category 'governance' missing safe exemplar
+    recommended_target: Add safe contract for governance
+  - type: taxonomy
+    id: category-vuln-arithmetic
+    category: arithmetic
+    severity: high
+    description: Category 'arithmetic' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for arithmetic
+  - type: taxonomy
+    id: category-safe-arithmetic
+    category: arithmetic
+    severity: medium
+    description: Category 'arithmetic' missing safe exemplar
+    recommended_target: Add safe contract for arithmetic
+  - type: taxonomy
+    id: category-vuln-access-control
+    category: access-control
+    severity: high
+    description: Category 'access-control' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for access-control
+  - type: taxonomy
+    id: category-safe-access-control
+    category: access-control
+    severity: medium
+    description: Category 'access-control' missing safe exemplar
+    recommended_target: Add safe contract for access-control
+  - type: taxonomy
+    id: category-vuln-mev
+    category: mev
+    severity: high
+    description: Category 'mev' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for mev
+  - type: taxonomy
+    id: category-safe-mev
+    category: mev
+    severity: medium
+    description: Category 'mev' missing safe exemplar
+    recommended_target: Add safe contract for mev
+  - type: taxonomy
+    id: category-vuln-vault
+    category: vault
+    severity: high
+    description: Category 'vault' missing vulnerable exemplar
+    recommended_target: Add vulnerable contract for vault
+  - type: taxonomy
+    id: category-safe-vault
+    category: vault
+    severity: medium
+    description: Category 'vault' missing safe exemplar
+    recommended_target: Add safe contract for vault
+  - type: label
+    id: label-ablation-access_control.role_based
+    label: access_control.role_based
+    severity: low
+    description: Label 'access_control.role_based' missing ablation test
+    recommended_target: Add ablation test for access_control.role_based
+  - type: label
+    id: label-access_control.permissioned
+    label: access_control.permissioned
+    severity: high
+    description: Label 'access_control.permissioned' not used in any Tier C test
+    recommended_target: Add Tier C test using access_control.permissioned
+  - type: label
+    id: label-ablation-access_control.no_restriction
+    label: access_control.no_restriction
+    severity: low
+    description: Label 'access_control.no_restriction' missing ablation test
+    recommended_target: Add ablation test for access_control.no_restriction
+  - type: label
+    id: label-ablation-state_mutation.writes_critical
+    label: state_mutation.writes_critical
+    severity: low
+    description: Label 'state_mutation.writes_critical' missing ablation test
+    recommended_target: Add ablation test for state_mutation.writes_critical
+  - type: label
+    id: label-state_mutation.initializes_state
+    label: state_mutation.initializes_state
+    severity: high
+    description: Label 'state_mutation.initializes_state' not used in any Tier C test
+    recommended_target: Add Tier C test using state_mutation.initializes_state
+  - type: label
+    id: label-state_mutation.no_state_change
+    label: state_mutation.no_state_change
+    severity: high
+    description: Label 'state_mutation.no_state_change' not used in any Tier C test
+    recommended_target: Add Tier C test using state_mutation.no_state_change
+  - type: label
+    id: label-external_interaction.calls_trusted
+    label: external_interaction.calls_trusted
+    severity: high
+    description: Label 'external_interaction.calls_trusted' not used in any Tier C
+      test
+    recommended_target: Add Tier C test using external_interaction.calls_trusted
+  - type: label
+    id: label-ablation-external_interaction.calls_untrusted
+    label: external_interaction.calls_untrusted
+    severity: low
+    description: Label 'external_interaction.calls_untrusted' missing ablation test
+    recommended_target: Add ablation test for external_interaction.calls_untrusted
+  - type: label
+    id: label-external_interaction.reads_oracle
+    label: external_interaction.reads_oracle
+    severity: high
+    description: Label 'external_interaction.reads_oracle' not used in any Tier C
+      test
+    recommended_target: Add Tier C test using external_interaction.reads_oracle
+  - type: label
+    id: label-external_interaction.no_external_calls
+    label: external_interaction.no_external_calls
+    severity: high
+    description: Label 'external_interaction.no_external_calls' not used in any Tier
+      C test
+    recommended_target: Add Tier C test using external_interaction.no_external_calls
+  - type: label
+    id: label-ablation-value_handling.transfers_value_out
+    label: value_handling.transfers_value_out
+    severity: low
+    description: Label 'value_handling.transfers_value_out' missing ablation test
+    recommended_target: Add ablation test for value_handling.transfers_value_out
+  - type: label
+    id: label-ablation-value_handling.collects_fees
+    label: value_handling.collects_fees
+    severity: low
+    description: Label 'value_handling.collects_fees' missing ablation test
+    recommended_target: Add ablation test for value_handling.collects_fees
+  - type: label
+    id: label-value_handling.handles_balance
+    label: value_handling.handles_balance
+    severity: high
+    description: Label 'value_handling.handles_balance' not used in any Tier C test
+    recommended_target: Add Tier C test using value_handling.handles_balance
+  - type: label
+    id: label-invariants.enforces_balance_check
+    label: invariants.enforces_balance_check
+    severity: high
+    description: Label 'invariants.enforces_balance_check' not used in any Tier C
+      test
+    recommended_target: Add Tier C test using invariants.enforces_balance_check
+  - type: label
+    id: label-invariants.enforces_supply_invariant
+    label: invariants.enforces_supply_invariant
+    severity: high
+    description: Label 'invariants.enforces_supply_invariant' not used in any Tier
+      C test
+    recommended_target: Add Tier C test using invariants.enforces_supply_invariant
+  - type: label
+    id: label-invariants.no_invariant_check
+    label: invariants.no_invariant_check
+    severity: high
+    description: Label 'invariants.no_invariant_check' not used in any Tier C test
+    recommended_target: Add Tier C test using invariants.no_invariant_check
+  - type: label
+    id: label-temporal.enforces_timelock
+    label: temporal.enforces_timelock
+    severity: high
+    description: Label 'temporal.enforces_timelock' not used in any Tier C test
+    recommended_target: Add Tier C test using temporal.enforces_timelock
+  - type: label
+    id: label-temporal.checks_deadline
+    label: temporal.checks_deadline
+    severity: high
+    description: Label 'temporal.checks_deadline' not used in any Tier C test
+    recommended_target: Add Tier C test using temporal.checks_deadline
+  - type: label
+    id: label-temporal.no_temporal_constraint
+    label: temporal.no_temporal_constraint
+    severity: high
+    description: Label 'temporal.no_temporal_constraint' not used in any Tier C test
+    recommended_target: Add Tier C test using temporal.no_temporal_constraint

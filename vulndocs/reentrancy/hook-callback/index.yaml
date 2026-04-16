@@ -1,0 +1,30 @@
+# Hook Callback Reentrancy - Subcategory Index
+# Tier 8/10 Finding: Uniswap V4 Hook Security
+
+id: hook-callback
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Hook Callback Reentrancy
+category: reentrancy
+severity: critical
+emerging: true
+protocols: ["uniswap-v4"]
+
+description: |
+  Malicious hooks can bypass reentrancy guards via unlockCallback mechanism.
+  Hook executes during pool operation, then reenters via callback.
+
+operations:
+  - CALLS_EXTERNAL
+  - LOCKS_UNLOCK
+  - REENTERS_VIA_CALLBACK
+
+behavioral_signature: "UNLOCK -> HOOK_CALLBACK -> REENTER(unlockCallback)"
+
+related_cwes:
+  - CWE-841  # Improper Enforcement of Behavioral Workflow
+  - CWE-667  # Improper Locking
+
+pattern_ids:
+  - hook-004

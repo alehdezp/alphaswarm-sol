@@ -1,0 +1,20 @@
+id: crypto-missing-chainid
+vulndoc: crypto/signature
+name: Cross-Chain Signature Replay - Missing Chain ID
+description: |
+  Detects signature verification without chain ID validation, allowing cross-chain replay attacks.
+  Signatures valid on one chain (e.g., mainnet) can be replayed on another (e.g., Polygon, Arbitrum).
+  Real-world example: Wintermute hack ($160M) - signatures replayed across chains.
+  Reference: EIP-712 domain separator should include chainId for cross-chain protection.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: uses_ecrecover
+      op: eq
+      value: true
+    - property: uses_chainid
+      op: eq
+      value: false

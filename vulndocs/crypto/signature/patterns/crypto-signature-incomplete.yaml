@@ -1,0 +1,21 @@
+id: crypto-signature-incomplete
+vulndoc: crypto/signature
+name: Incomplete Signature Validation
+description: |
+  Detects signature verification missing combined validity checks.
+  A secure signature verification should include: ecrecover, zero address check, and deadline validation.
+  The has_signature_validity_checks property tracks this combined requirement.
+  Missing any component weakens signature security and enables various attack vectors.
+  Reference: OpenZeppelin ECDSA library best practices.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: uses_ecrecover
+      op: eq
+      value: true
+    - property: has_signature_validity_checks
+      op: eq
+      value: false

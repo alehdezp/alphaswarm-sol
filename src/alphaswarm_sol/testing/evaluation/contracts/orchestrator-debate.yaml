@@ -1,0 +1,58 @@
+workflow_id: orchestrator-debate
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- coordination_quality
+- debate_coherence
+- evidence_flow
+- consensus_quality
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: agents_spawned
+  description: Debate agents spawned with adversarial roles
+  expected_behavior: TeamCreate and Task calls for attacker/defender roles
+  grader_type: code
+- id: evidence_routed
+  description: Evidence passed between debate agents
+  expected_behavior: SendMessage calls reference prior findings between agents
+  grader_type: code
+- id: session_completed
+  description: Debate completed with resolution
+  expected_behavior: session_completed is true and response contains debate outcome
+  grader_type: code
+evidence_requirements:
+- type: transcript
+  description: Full debate transcript with turn-by-turn evidence
+- type: graph_nodes
+  description: Graph evidence cited in debate turns
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Orchestrator assigns clear adversarial roles with specific investigation
+  mandates. Orchestrator ensures each debate turn references concrete evidence from
+  BSKG. Orchestrator monitors for argument convergence or circular repetition. Orchestrator
+  routes evidence and counter-evidence between turns effectively. Orchestrator synthesizes
+  debate outcome with explicit evidence for the resolution.
+active_dimensions:
+- coordination_quality
+- debate_coherence
+- evidence_flow
+- consensus_quality
+- task_delegation
+- rubric_coverage
+- evidence_quality
+- conclusion_support

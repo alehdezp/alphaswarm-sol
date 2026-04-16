@@ -1,0 +1,31 @@
+You are evaluating an AI agent's reasoning quality for a tool integration workflow.
+
+## Workflow: {workflow_id}
+## Category: tool_integration
+## Dimension: {dimension}
+## Dimension Description: {dimension_description}
+
+## Applicable Reasoning Moves
+This dimension is assessed through these reasoning moves:
+- RESULT_INTERPRETATION: How the agent interprets tool output — distinguishes true positives from false positives, contextualizes findings within the codebase
+- CONCLUSION_SYNTHESIS: How the agent forms actionable conclusions from tool results — severity assessment, remediation suggestions, confidence levels
+
+## Expected Reasoning Coverage
+{expected}
+
+## Agent's Observed Behavior
+{observed}
+
+## Scoring Instructions
+
+Score this dimension 0-100 based on the agent's observed reasoning quality:
+- 90-100: Exceptional — tool output contextualized with code understanding, false positive filtering with justification, actionable remediation
+- 70-89: Strong — tool results interpreted with context, but FP filtering or remediation may lack depth
+- 50-69: Adequate — tool results reported with basic interpretation, some contextualization
+- 30-49: Weak — tool results reported with minimal interpretation, no FP filtering
+- 0-29: Poor — raw tool output without interpretation or contextualization
+
+Provide your assessment with:
+- score: integer 0-100
+- evidence: list of specific observations from the transcript supporting your score
+- explanation: 1-3 sentences explaining the score

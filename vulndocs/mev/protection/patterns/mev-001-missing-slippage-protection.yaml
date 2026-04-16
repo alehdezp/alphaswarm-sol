@@ -1,0 +1,692 @@
+# =============================================================================
+# PATTERN: mev-001-missing-slippage-protection
+# =============================================================================
+#
+# COMPREHENSIVE MEV PROTECTION - Missing Slippage Protection
+#
+# This pattern detects swap/trade functions vulnerable to MEV sandwich attacks
+# due to either:
+#   1. Missing slippage parameter entirely (no minimum output amount)
+#   2. Slippage parameter exists but is NOT enforced (no require check)
+#
+# Consolidates mev-missing-slippage-parameter + mev-missing-slippage-check
+# into a single comprehensive pattern.
+#
+# =============================================================================
+
+id: mev-001
+vulndoc: mev/protection
+name: "Missing Slippage Protection"
+
+description: |
+  ## What This Detects
+
+  Swap and trade functions without slippage protection that allow MEV bots to
+  sandwich attack users, extracting value through front-running and back-running.
+
+  This pattern detects BOTH vulnerability types:
+  1. **No slippage parameter** - Function lacks minimum output amount parameter
+  2. **Unenforced slippage parameter** - Parameter exists but isn't validated
+
+  ## Why It's Dangerous
+
+  Without slippage protection, users are vulnerable to sandwich attacks:
+
+  ### Sandwich Attack Mechanism:
+  1. **Detection**: MEV bot monitors mempool, sees user's swap transaction
+  2. **Front-run**: Bot submits higher-gas transaction to buy tokens BEFORE user
+  3. **Price impact**: Bot's purchase increases token price
+  4. **User execution**: User's swap executes at worse price (more slippage)
+  5. **Back-run**: Bot sells tokens AFTER user at inflated price
+  6. **Profit**: Bot captures price difference; user loses 2-5% to MEV
+
+  ### Real-World Impact:
+  - **Billions in MEV extracted** from Uniswap, SushiSwap, and other AMMs
+  - Every unprotected swap is vulnerable to sandwich attacks
+  - Common **medium/high severity** finding in DeFi audits
+  - Flashbots research shows ~5% average extraction per vulnerable swap
+
+  ### Vulnerability Variants:
+
+  **Variant 1 - No Slippage Parameter:**
+  ```solidity
+  // ❌ VULNERABLE: No minimum output parameter
+  function swap(address tokenIn, address tokenOut, uint256 amountIn) external {
+      uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+      // User accepts ANY output amount, no matter how unfavorable
+  }
+  ```
+
+  **Variant 2 - Unenforced Slippage Parameter:**
+  ```solidity
+  // ❌ VULNERABLE: Parameter exists but NOT checked
+  function swap(
+      address tokenIn,
+      address tokenOut,
+      uint256 amountIn,
+      uint256 minAmountOut  // ✓ Parameter exists
+  ) external {
+      uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+      // ❌ NO VALIDATION! minAmountOut is ignored
+      // Should have: require(amountOut >= minAmountOut, "Slippage too high");
+  }
+  ```
+
+  **Safe Implementation:**
+  ```solidity
+  // ✅ SAFE: Slippage parameter AND enforcement
+  function swap(
+      address tokenIn,
+      address tokenOut,
+      uint256 amountIn,
+      uint256 minAmountOut
+  ) external {
+      uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+      require(amountOut >= minAmountOut, "Slippage too high"); // ✓ Enforced
+  }
+  ```
+
+  ## Detection Logic
+
+  This pattern triggers when ALL of these conditions are met:
+  1. Function is swap-like (`swap_like: true` - detects swaps semantically)
+  2. Function is externally callable (`visibility: [public, external]`)
+  3. Function is NOT read-only (`is_view: false`, `is_pure: false`)
+  4. **EITHER**:
+     - `risk_missing_slippage_parameter: true` (no parameter at all)
+     - `risk_missing_slippage_check: true` (parameter exists but not validated)
+
+  ## Builder Properties Used
+
+  - `swap_like`: Semantic swap detection (name + token calls + parameters)
+  - `risk_missing_slippage_parameter`: swap_like AND NOT has_slippage_parameter
+  - `risk_missing_slippage_check`: has_slippage_parameter AND NOT checks_slippage
+  - `has_slippage_parameter`: Detects minOut, amountOutMin, slippage params
+  - `checks_slippage`: Validates slippage parameter in require statements
+  - `visibility`: Function accessibility
+  - `is_view`, `is_pure`: State mutability
+
+  ## Real-World Examples
+
+  ### Historical MEV Extraction:
+  - **Flashbots MEV-Explore**: $1.38B+ MEV extracted (2020-2024)
+  - **Uniswap V2**: Sandwich attacks on unprotected swaps
+  - **SushiSwap**: Similar MEV extraction patterns
+  - **1inch**: Router aggregator implements mandatory slippage protection
+
+  ### Academic Research:
+  - "Flash Boys 2.0: Frontrunning in Decentralized Exchanges" (arXiv:1904.05234)
+  - Flashbots research: ~5% average extraction per vulnerable transaction
+  - Chainlink VRF research: MEV extraction mechanisms
+
+  ### Audit Findings:
+  - Trail of Bits: "Missing slippage protection allows sandwich attacks"
+  - OpenZeppelin: "Swap functions should enforce minimum output"
+  - ConsenSys Diligence: "Unprotected AMM interactions"
+
+scope: Function
+
+lens:
+  - Ordering
+  - ExternalInfluence
+
+severity: medium
+
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be swap-like function (semantic detection)
+    - property: swap_like
+      op: eq
+      value: true
+
+    # Must be externally callable (entry points for MEV)
+    - property: visibility
+      op: in
+      value: [public, external]
+
+  # At least ONE must match (OR logic) - Either vulnerability variant
+  any:
+    # Variant 1: No slippage parameter at all
+    - property: risk_missing_slippage_parameter
+      op: eq
+      value: true
+
+    # Variant 2: Slippage parameter exists but NOT enforced
+    - property: risk_missing_slippage_check
+      op: eq
+      value: true
+
+  # NONE can match (NOT logic) - Exclude safe patterns
+  none:
+    # Exclude view/pure functions (read-only, no MEV risk)
+    - property: is_view
+      op: eq
+      value: true
+
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [mev-swap]
+  true_positives: 19
+  true_negatives: 4
+  false_positives: 8
+  false_negatives: 1
+  edge_cases: 6
+  precision: 0.7037
+  recall: 0.9500
+  variation_score: 1.0000
+  last_tested: "2025-12-31"
+  notes: |
+    Pattern achieves READY status with solid performance across MEV sandwich attack vectors.
+
+    STRENGTHS:
+    - Excellent recall (95%): Catches nearly all vulnerable swap functions
+    - Perfect variation detection (100%): All parameter naming conventions detected
+    - Detects BOTH vulnerability variants:
+      * Missing slippage parameter entirely
+      * Unenforced slippage parameter (parameter exists but no require check)
+    - Correctly identifies vulnerable real-world patterns (Uniswap V2, SushiSwap)
+
+    LIMITATIONS (affecting precision):
+    1. Pure functions flagged: computeSwapRatio (builder issue: swap_like on pure functions)
+    2. False positives on safe implementations: has_slippage_check builder limitation
+       - Does not detect all if-revert patterns
+       - Does not detect custom error patterns in some cases
+       - Misses some comparison operators in slippage checks
+    3. One false negative: trade() function (builder swap_like heuristic limitation)
+
+    TESTED VARIATIONS:
+    - Parameter naming: minAmountOut, amountOutMin, minOut, minimumReceived, minReturnAmount, slippageBps
+    - Function naming: swap, exactInput, sell, buy, trade, swapExactTokensForTokens
+    - Multi-hop swaps with and without slippage protection
+    - Real-world patterns: Uniswap V2, SushiSwap, 1inch
+    - Edge cases: Internal functions, view/pure, oracle validation, router delegation
+
+    PRODUCTION READINESS:
+    - Status: READY for production audits with manual review
+    - Recommended for identifying MEV sandwich attack vectors
+    - Manual review needed for false positives (safe implementations incorrectly flagged)
+    - Very low false negative rate (only 1 missed vulnerability)
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Classic Sandwich Attack"
+    description: |
+      MEV bot sandwiches user's swap transaction to extract value through
+      price manipulation.
+    preconditions:
+      - User submits swap transaction without slippage protection
+      - MEV bot monitors mempool and detects profitable swap
+      - AMM has sufficient liquidity for price impact
+      - Gas prices allow profitable sandwich (profit > gas costs)
+    steps:
+      - User broadcasts swap transaction: 100 USDC → WETH (no minAmountOut)
+      - MEV bot detects transaction in mempool
+      - Bot calculates optimal sandwich size for maximum profit
+      - Bot submits front-run transaction with higher gas: buy WETH
+      - Bot's purchase increases WETH price by 2-5%
+      - User's transaction executes at inflated price (receives less WETH)
+      - Bot submits back-run transaction: sell WETH at profit
+      - Bot captures price difference; user loses to slippage
+    impact: |
+      User receives 2-5% less tokens than expected. On large swaps, this can
+      mean thousands of dollars lost to MEV. Bot profits without providing
+      any value.
+
+  - name: "Unenforced Parameter Attack"
+    description: |
+      Function has slippage parameter but doesn't enforce it, giving false
+      sense of security to users and frontends.
+    preconditions:
+      - Function signature includes minAmountOut parameter
+      - Frontend/SDK passes reasonable minAmountOut value
+      - Contract does NOT validate minAmountOut in code
+      - Users assume protection exists based on parameter name
+    steps:
+      - User calls swap(tokenIn, tokenOut, amountIn, minAmountOut=95)
+      - User expects minimum 95 tokens output
+      - Contract IGNORES minAmountOut parameter
+      - MEV bot sandwiches transaction
+      - User receives only 80 tokens (below minAmountOut)
+      - Transaction succeeds despite violating slippage expectation
+      - User discovers loss post-transaction
+    impact: |
+      False sense of security leads to unexpected losses. Users and frontends
+      trust the parameter naming convention, but contract doesn't enforce it.
+      More insidious than missing parameter because it's harder to detect.
+
+  - name: "Multi-Hop Swap MEV"
+    description: |
+      Complex multi-hop swaps (A→B→C) amplify MEV extraction without slippage
+      protection on each hop.
+    preconditions:
+      - Swap path involves multiple token pairs (e.g., USDC→WETH→DAI)
+      - No slippage protection on intermediate or final outputs
+      - Each hop has independent liquidity pools
+    steps:
+      - User initiates multi-hop swap without slippage protection
+      - MEV bot identifies all hops in the path
+      - Bot sandwiches EACH hop in the path for maximum extraction
+      - Price impact compounds across multiple hops
+      - User loses 5-15% across the entire path
+    impact: |
+      Multi-hop swaps without slippage protection experience compounded MEV
+      extraction. Each hop can be sandwiched independently, multiplying losses.
+
+verification_steps:
+  - "Identify swap-like operation (function name, token transfers, AMM calls)"
+  - "Check function visibility (must be public/external for MEV exposure)"
+  - "Locate slippage parameter in function signature:"
+  - "  - Common names: minAmountOut, amountOutMin, minOut, slippageBps"
+  - "  - Type: Usually uint256 representing minimum acceptable output"
+  - "If parameter EXISTS, verify enforcement:"
+  - "  - Search for require(amountOut >= minAmountOut) or equivalent"
+  - "  - Check if parameter is used in conditional logic"
+  - "  - Confirm revert on slippage violation (not silent failure)"
+  - "If parameter MISSING, confirm vulnerability (no protection at all)"
+  - "Check for alternative protections:"
+  - "  - Deadline parameter (prevents stale transactions, not direct slippage)"
+  - "  - Oracle price checks (rare, usually not sufficient alone)"
+  - "  - Router contract with built-in slippage (e.g., Uniswap Router)"
+  - "Assess MEV exposure based on liquidity and transaction volume"
+  - "Review frontend/SDK integration (does UI calculate slippage?)"
+
+fix_recommendations:
+  - name: "Add Slippage Parameter and Enforcement (Recommended)"
+    description: |
+      Add minAmountOut parameter and enforce it with require statement.
+      This is the industry-standard approach used by Uniswap, SushiSwap, etc.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      // ✅ SAFE: Slippage parameter AND enforcement
+      contract SafeSwap {
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut  // ← Add slippage parameter
+          ) external returns (uint256) {
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              // ✅ CRITICAL: Enforce slippage protection
+              require(
+                  amountOut >= minAmountOut,
+                  "Insufficient output amount"
+              );
+
+              return amountOut;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // AMM swap logic here
+              // ...
+          }
+      }
+
+  - name: "Use Established Router Contracts"
+    description: |
+      Delegate swap execution to battle-tested routers like Uniswap V2/V3 Router
+      which have built-in slippage protection.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+
+      contract RouterBasedSwap {
+          IUniswapV2Router02 public immutable router;
+
+          constructor(address _router) {
+              router = IUniswapV2Router02(_router);
+          }
+
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline
+          ) external {
+              address[] memory path = new address[](2);
+              path[0] = tokenIn;
+              path[1] = tokenOut;
+
+              // ✅ Uniswap Router enforces slippage protection
+              router.swapExactTokensForTokens(
+                  amountIn,
+                  minAmountOut,  // Enforced by router
+                  path,
+                  msg.sender,
+                  deadline
+              );
+          }
+      }
+
+  - name: "Percentage-Based Slippage Protection"
+    description: |
+      Alternative approach using slippage percentage (e.g., 1% = 100 bps).
+      Useful for UI/UX where users specify acceptable slippage %.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract PercentageSlippageSwap {
+          uint256 public constant MAX_SLIPPAGE_BPS = 500; // 5% max
+
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 expectedAmountOut,
+              uint256 slippageBps  // Basis points (100 = 1%)
+          ) external returns (uint256) {
+              require(slippageBps <= MAX_SLIPPAGE_BPS, "Slippage too high");
+
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              // Calculate minimum acceptable output
+              uint256 minAmountOut = expectedAmountOut * (10000 - slippageBps) / 10000;
+
+              // ✅ Enforce slippage protection
+              require(
+                  amountOut >= minAmountOut,
+                  "Slippage exceeds tolerance"
+              );
+
+              return amountOut;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // AMM swap logic
+              // ...
+          }
+      }
+
+  - name: "Multi-Hop Swap with Per-Hop Protection"
+    description: |
+      For complex multi-hop swaps, enforce slippage protection on each hop
+      to prevent compounded MEV extraction.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract MultiHopSwap {
+          function swapMultiHop(
+              address[] calldata path,  // [tokenA, tokenB, tokenC]
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256[] calldata minIntermediateAmounts  // Per-hop minimums
+          ) external returns (uint256) {
+              require(path.length >= 2, "Invalid path");
+              require(
+                  minIntermediateAmounts.length == path.length - 2,
+                  "Invalid intermediate minimums"
+              );
+
+              uint256 currentAmount = amountIn;
+
+              // Perform each hop with slippage protection
+              for (uint256 i = 0; i < path.length - 1; i++) {
+                  uint256 outputAmount = _performSwap(
+                      path[i],
+                      path[i + 1],
+                      currentAmount
+                  );
+
+                  // ✅ Enforce slippage on intermediate hops
+                  if (i < path.length - 2) {
+                      require(
+                          outputAmount >= minIntermediateAmounts[i],
+                          "Intermediate slippage too high"
+                      );
+                  }
+
+                  currentAmount = outputAmount;
+              }
+
+              // ✅ Enforce final slippage protection
+              require(
+                  currentAmount >= minAmountOut,
+                  "Final slippage too high"
+              );
+
+              return currentAmount;
+          }
+
+          function _performSwap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn
+          ) internal returns (uint256) {
+              // Swap logic
+              // ...
+          }
+      }
+
+  - name: "Additional Best Practices"
+    description: |
+      Combine slippage protection with other MEV mitigation strategies.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      contract ComprehensiveMEVProtection {
+          function swap(
+              address tokenIn,
+              address tokenOut,
+              uint256 amountIn,
+              uint256 minAmountOut,
+              uint256 deadline  // ← Add deadline protection
+          ) external returns (uint256) {
+              // ✅ Deadline prevents stale transactions
+              require(block.timestamp <= deadline, "Transaction expired");
+
+              uint256 amountOut = _performSwap(tokenIn, tokenOut, amountIn);
+
+              // ✅ Slippage protection
+              require(amountOut >= minAmountOut, "Slippage too high");
+
+              return amountOut;
+          }
+
+          // Additional recommendations:
+          // 1. Emit events for MEV monitoring
+          // 2. Consider Flashbots Protect integration for private transactions
+          // 3. Document recommended slippage values in NatSpec
+          // 4. Implement circuit breakers for extreme price movements
+          // 5. Use off-chain price oracles to validate fair execution
+      }
+
+related_patterns:
+  - mev-002  # Missing deadline protection (related MEV pattern)
+  - oracle-003  # Oracle manipulation (price-related)
+  - ext-001  # Unprotected external calls (general external interaction)
+
+owasp_mapping:
+  - SC02  # Oracle Manipulation (price manipulation via MEV)
+  - SC04  # Input Validation (missing slippage validation)
+
+cwe_mapping:
+  - CWE-20   # Improper Input Validation
+  - CWE-754  # Improper Check for Unusual or Exceptional Conditions
+  - CWE-1284 # Improper Validation of Specified Quantity in Input
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations
+semantic_ops:
+  has_all_operations:
+    - TRANSFERS_VALUE_OUT  # Swaps move value/tokens
+  # Note: swap_like property already provides semantic detection
+
+# Behavioral Signature
+behavioral_signature:
+  pattern: "T:in→S:swap→T:out"
+  description: "Token transfer in → swap operation → token transfer out (without slippage validation)"
+
+# Tier A/B Matching
+tier_match:
+  tier_a:
+    all:
+      - property: swap_like
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+    any:
+      - property: risk_missing_slippage_parameter
+        value: true
+      - property: risk_missing_slippage_check
+        value: true
+    none:
+      - property: is_view
+        value: true
+      - property: is_pure
+        value: true
+  tier_b:
+    any: []
+  aggregation:
+    mode: tier_a_only  # Purely deterministic pattern
+
+# Multi-Agent Verification Hints
+verification_agents:
+  pattern:
+    require_all_conditions: true
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 6.0  # Medium-high exploitability
+  consensus:
+    min_agents_agree: 2
+    mode: voting
+
+# =============================================================================
+# ADDITIONAL METADATA
+# =============================================================================
+
+# Pattern Classification
+pattern_type: vulnerability
+quality_indicator: false
+
+# Auditor Guidance
+auditor_notes: |
+  This pattern identifies swap functions vulnerable to MEV sandwich attacks.
+
+  ⚠️ VULNERABILITY INDICATORS:
+  - Function performs token swaps (swap_like: true)
+  - No slippage parameter (risk_missing_slippage_parameter: true)
+  - OR parameter exists but not enforced (risk_missing_slippage_check: true)
+
+  VERIFICATION CHECKLIST:
+  1. Confirm function performs swaps (check token transfers, AMM calls)
+  2. Check for slippage parameter (minAmountOut, amountOutMin, etc.)
+  3. If parameter exists, verify enforcement:
+     - Search for require(amountOut >= minAmountOut)
+     - Check if parameter is actually used in logic
+  4. Assess MEV exposure:
+     - Public/external functions are MEV-exposed
+     - Internal functions may be safe if callers are protected
+  5. Review frontend integration:
+     - Does UI calculate and pass slippage parameters?
+     - Are default slippage values reasonable (0.5-2% for most assets)?
+
+  FALSE POSITIVE SCENARIOS:
+  - Internal helper functions (not externally callable)
+  - View/pure functions (read-only, no state changes)
+  - Swaps protected by alternative mechanisms (rare)
+  - Router-based swaps where router enforces slippage
+
+  SEVERITY ASSESSMENT:
+  - HIGH: Large-volume public swap functions without any protection
+  - MEDIUM: Moderate-volume swaps or those with partial protection
+  - LOW: Internal swaps or those with alternative MEV mitigation
+
+# Real-World Reference Implementations
+reference_implementations:
+  - name: "Uniswap V2 Router"
+    url: "https://github.com/Uniswap/v2-periphery/blob/master/contracts/UniswapV2Router02.sol"
+    description: "Industry-standard swap router with comprehensive slippage protection"
+
+  - name: "Uniswap V3 SwapRouter"
+    url: "https://github.com/Uniswap/v3-periphery/blob/main/contracts/SwapRouter.sol"
+    description: "Advanced router with per-tick slippage control"
+
+  - name: "SushiSwap Router"
+    url: "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/UniswapV2Router02.sol"
+    description: "Fork of Uniswap V2 Router with identical slippage protection"
+
+  - name: "1inch AggregationRouterV5"
+    url: "https://github.com/1inch/limit-order-protocol"
+    description: "DEX aggregator with mandatory slippage enforcement"
+
+# Exploit References
+exploit_references:
+  - name: "Flashbots MEV-Explore"
+    url: "https://explore.flashbots.net/"
+    description: "Real-time MEV extraction data showing billions in sandwich attacks"
+    amount: "$1.38B+ (2020-2024)"
+
+  - name: "Flash Boys 2.0 Research Paper"
+    url: "https://arxiv.org/abs/1904.05234"
+    description: "Academic research on frontrunning in DEXs"
+    impact: "Foundational research on MEV and sandwich attacks"
+
+  - name: "Flashbots MEV Research"
+    url: "https://writings.flashbots.net/"
+    description: "Industry research on MEV extraction mechanisms"
+    impact: "~5% average extraction per vulnerable swap transaction"
+
+# Migration Notes
+migration_notes: |
+  This pattern CONSOLIDATES and REPLACES:
+  - mev-missing-slippage-parameter.yaml (16 lines, minimal)
+  - mev-missing-slippage-check.yaml (16 lines, minimal)
+
+  DEPRECATION PLAN:
+  1. Mark old patterns as deprecated in their YAML files
+  2. Add deprecation notice pointing to mev-001
+  3. Update pattern test suite to use mev-001
+  4. Remove old patterns after one release cycle
+
+  MIGRATION BENEFITS:
+  - Single comprehensive pattern instead of two minimal patterns
+  - Detailed attack scenarios and fix recommendations
+  - Better auditor guidance and verification steps
+  - Consistent with other semantic patterns (oracle-001, etc.)
+  - Easier maintenance and testing
+
+# Success Metrics
+success_metrics:
+  has_slippage_parameter: "Parameter exists in function signature"
+  checks_slippage: "Parameter is enforced with require statement"
+  has_deadline_parameter: "Additional MEV protection (recommended)"
+  max_acceptable_slippage: "0.5-2% for stablecoins, 2-5% for volatile assets"
+  router_based: "Uses battle-tested router contracts (ideal)"

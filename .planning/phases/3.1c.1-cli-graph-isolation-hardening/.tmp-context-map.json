@@ -1,0 +1,106 @@
+{
+  "file": "3.1c.1-CONTEXT.md",
+  "phase_dir": ".planning/phases/3.1c.1-cli-graph-isolation-hardening",
+  "checksum": "79936cfdc7b7c3eac140e0da8c9cdfa387411adb48b5eb3d0e74f3857f36adc0",
+  "total_lines": 339,
+  "sections": [
+    {
+      "type": "xml_tag",
+      "name": "domain",
+      "start_line": 9,
+      "end_line": 31,
+      "line_count": 23
+    },
+    {
+      "type": "xml_tag",
+      "name": "assumptions",
+      "start_line": 33,
+      "end_line": 45,
+      "line_count": 13
+    },
+    {
+      "type": "xml_tag",
+      "name": "pre_research",
+      "start_line": 47,
+      "end_line": 88,
+      "line_count": 42
+    },
+    {
+      "type": "xml_tag",
+      "name": "research_needs",
+      "start_line": 90,
+      "end_line": 100,
+      "line_count": 11
+    },
+    {
+      "type": "xml_tag",
+      "name": "research_spikes",
+      "start_line": 102,
+      "end_line": 110,
+      "line_count": 9
+    },
+    {
+      "type": "xml_tag",
+      "name": "plans",
+      "start_line": 112,
+      "end_line": 196,
+      "line_count": 85,
+      "sub_sections": [
+        {
+          "name": "PLAN-01",
+          "start_line": 115,
+          "end_line": 125,
+          "line_count": 11
+        },
+        {
+          "name": "PLAN-02",
+          "start_line": 126,
+          "end_line": 137,
+          "line_count": 12
+        },
+        {
+          "name": "PLAN-03",
+          "start_line": 138,
+          "end_line": 150,
+          "line_count": 13
+        },
+        {
+          "name": "PLAN-04",
+          "start_line": 151,
+          "end_line": 196,
+          "line_count": 46
+        }
+      ]
+    },
+    {
+      "type": "xml_tag",
+      "name": "gaps_summary",
+      "start_line": 198,
+      "end_line": 208,
+      "line_count": 11
+    },
+    {
+      "type": "xml_tag",
+      "name": "novelty_map",
+      "start_line": 210,
+      "end_line": 226,
+      "line_count": 17
+    },
+    {
+      "type": "xml_tag",
+      "name": "decisions",
+      "start_line": 228,
+      "end_line": 299,
+      "line_count": 72
+    },
+    {
+      "type": "xml_tag",
+      "name": "deferred",
+      "start_line": 301,
+      "end_line": 323,
+      "line_count": 23
+    }
+  ],
+  "status": "aligned",
+  "stale": true
+}

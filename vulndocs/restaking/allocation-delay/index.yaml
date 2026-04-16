@@ -1,0 +1,30 @@
+# Allocation Delay Exploitation - Subcategory Index
+# Tier 8/10 Finding: EigenLayer Restaking Security
+
+id: allocation-delay
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Allocation Delay Exploitation
+category: restaking
+severity: high
+emerging: true
+protocols: ["eigenlayer"]
+
+description: |
+  Stakers can withdraw during allocation delay before slashing becomes active.
+  AVS economic security temporarily degraded during 17.5 day window.
+
+operations:
+  - ALLOCATES_STAKE
+  - READS_TIME
+  - WITHDRAWS_STAKE
+
+behavioral_signature: "ALLOCATE_STAKE -> (17.5_day_delay) -> WITHDRAW_BEFORE_SLASHABLE"
+
+related_cwes:
+  - CWE-362  # Concurrent Execution Using Shared Resource
+  - CWE-367  # Time-of-check Time-of-use (TOCTOU) Race Condition
+
+pattern_ids:
+  - rs-001

@@ -1,0 +1,75 @@
+# Token Investigation Template
+vulnerability_class: token
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify token interaction"
+    look_for: |
+      - IERC20.transfer()
+      - IERC20.transferFrom()
+      - IERC20.approve()
+      - SafeERC20 usage
+    evidence_needed: "Token interaction code"
+
+  - step_number: 2
+    action: "Check return value handling"
+    look_for: |
+      - Is return value checked?
+      - Using SafeERC20?
+      - require(token.transfer(...)) pattern
+    evidence_needed: "Return value handling code"
+    red_flag: "Return value ignored (silent failure possible)"
+    safe_if: "Using SafeERC20 or checking return value"
+
+  - step_number: 3
+    action: "Check for fee-on-transfer handling"
+    look_for: |
+      - Balance before/after comparison
+      - Assumes amount received equals amount sent
+    evidence_needed: "Transfer amount handling"
+    red_flag: "Assumes 1:1 transfer without verification"
+    safe_if: "Uses balance difference, not transfer amount"
+
+  - step_number: 4
+    action: "Check approval patterns"
+    look_for: |
+      - Approval to 0 before new approval
+      - Unlimited approval risks
+      - Approval race conditions
+    evidence_needed: "Approval pattern code"
+    red_flag: "Approves non-zero over existing non-zero"
+
+  - step_number: 5
+    action: "Check for rebasing/deflationary token handling"
+    look_for: |
+      - Stored balance vs actual balance
+      - Share-based accounting
+      - Balance change events
+    evidence_needed: "Balance tracking mechanism"
+
+questions_to_answer:
+  - "How are token transfers performed?"
+  - "Is the transfer return value checked?"
+  - "Does the code handle fee-on-transfer tokens?"
+  - "Are approvals handled safely?"
+  - "Can rebasing tokens break accounting?"
+
+common_false_positives:
+  - "Protocol explicitly only supports standard ERC20"
+  - "SafeERC20 is used throughout"
+  - "Token is protocol's own known-safe token"
+  - "Whitelist ensures only compatible tokens"
+
+key_indicators:
+  - "Unchecked transfer return value"
+  - "Assumes received == sent"
+  - "Approve non-zero over non-zero"
+  - "Stores absolute balances for rebasing tokens"
+
+safe_patterns:
+  - "SafeERC20 for all token operations"
+  - "Balance difference for actual received"
+  - "Approve to 0 before new approval"
+  - "Share-based accounting for rebasing"

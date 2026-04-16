@@ -1,0 +1,13 @@
+id: auth-048
+vulndoc: access-control/general
+name: Multisig Signer Change Without Access Control
+description: Multisig signer membership changes without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: multisig_signer_change_without_gate
+    op: eq
+    value: true

@@ -1,0 +1,145 @@
+# Yearn V3 Ground Truth
+# Source: Multiple Audits (ChainSecurity, StateMind)
+# URLs:
+# - https://github.com/yearn/yearn-vaults-v3/tree/master/audits
+
+project_name: yearn-v3
+project_type: yield_vault
+audit_source: Multiple (ChainSecurity, StateMind)
+audit_date: "2023-06-01"
+audit_url: https://github.com/yearn/yearn-vaults-v3/tree/master/audits
+code_url: https://github.com/yearn/yearn-vaults-v3
+code_commit: master
+solidity_version: "^0.8.18"
+
+findings:
+  # High Severity
+  - id: CHAIN-001
+    title: Strategy loss reporting can be manipulated
+    category: access_control
+    severity: high
+    location:
+      file: VaultV3.sol
+      function: processReport
+      line_start: 0
+      line_end: 0
+    description: "Malicious strategy can report false losses to extract value."
+    recommendation: "Add loss validation and strategy reputation system."
+    vkg_should_find: true
+
+  - id: CHAIN-002
+    title: First depositor share price manipulation
+    category: arithmetic
+    severity: high
+    location:
+      file: VaultV3.sol
+      function: deposit
+      line_start: 0
+      line_end: 0
+    description: "First depositor can manipulate share price by donating assets before others deposit."
+    vkg_should_find: true
+
+  # Medium Severity
+  - id: CHAIN-003
+    title: Withdrawal queue manipulation
+    category: access_control
+    severity: medium
+    location:
+      file: VaultV3.sol
+      function: setWithdrawalQueue
+      line_start: 0
+      line_end: 0
+    description: "Admin can manipulate withdrawal queue to favor certain strategies."
+    vkg_should_find: true
+
+  - id: STATE-001
+    title: Strategy debt ratio update front-running
+    category: mev_slippage
+    severity: medium
+    location:
+      file: VaultV3.sol
+      function: updateDebtRatio
+      line_start: 0
+      line_end: 0
+    description: "Debt ratio changes can be front-run by depositors/withdrawers."
+    vkg_should_find: true
+
+  - id: STATE-002
+    title: Oracle price deviation not checked
+    category: oracle_manipulation
+    severity: medium
+    location:
+      file: VaultV3.sol
+      function: pricePerShare
+      line_start: 0
+      line_end: 0
+    description: "Share price calculation doesn't validate underlying asset price."
+    vkg_should_find: true
+
+  - id: CHAIN-004
+    title: Emergency shutdown reentrancy
+    category: reentrancy
+    severity: medium
+    location:
+      file: VaultV3.sol
+      function: shutdown
+      line_start: 0
+      line_end: 0
+    description: "Emergency shutdown process may be re-entered during execution."
+    vkg_should_find: true
+
+  # Low Severity
+  - id: STATE-003
+    title: Unbounded strategy list iteration
+    category: dos
+    severity: low
+    location:
+      file: VaultV3.sol
+      function: withdrawFromStrategies
+      line_start: 0
+      line_end: 0
+    description: "Withdrawals iterate over all strategies, may exceed gas limit."
+    vkg_should_find: true
+
+  - id: CHAIN-005
+    title: Deposit limit can lock funds temporarily
+    category: dos
+    severity: low
+    location:
+      file: VaultV3.sol
+      function: deposit
+      line_start: 0
+      line_end: 0
+    description: "Deposit limit changes can prevent deposits but not affect withdrawals."
+    vkg_should_find: false  # Business logic
+
+  - id: STATE-004
+    title: Missing event on management fee change
+    category: informational
+    severity: low
+    location:
+      file: VaultV3.sol
+      function: setManagementFee
+      line_start: 0
+      line_end: 0
+    description: "Management fee changes don't emit events for tracking."
+    vkg_should_find: false  # Informational
+
+notes: |
+  Yearn V3 vaults are yield aggregators that:
+  - Accept user deposits
+  - Allocate to multiple strategies
+  - Automatically compound returns
+  - Handle strategy rotation
+
+  The V3 architecture is more modular than V2 with:
+  - Separate strategy contracts
+  - Configurable fees
+  - Emergency shutdown mechanisms
+
+  Note: Line numbers are placeholder (0) as exact lines vary by commit.
+
+  Out of scope:
+  - Strategy-specific logic (each strategy is separate)
+  - Economic optimization
+  - Informational findings

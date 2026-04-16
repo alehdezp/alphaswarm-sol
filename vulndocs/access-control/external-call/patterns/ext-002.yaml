@@ -1,0 +1,17 @@
+id: ext-002
+vulndoc: access-control/external-call
+name: Stale Oracle Data
+description: Oracle reads without freshness or staleness validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  any:
+  - property: has_staleness_check
+    op: eq
+    value: false

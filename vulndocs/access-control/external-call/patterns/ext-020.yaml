@@ -1,0 +1,16 @@
+id: ext-020
+vulndoc: access-control/external-call
+name: Zero Amount Not Rejected
+description: Amount parameters allow zero without validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_amount_parameter
+    op: eq
+    value: true
+  - property: has_amount_nonzero_check
+    op: eq
+    value: false

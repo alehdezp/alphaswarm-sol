@@ -1,0 +1,22 @@
+# Block Gas Limit DoS - Subcategory Index
+
+id: block-gas-limit
+name: Block Gas Limit DoS
+parent_category: dos
+
+description: |
+  Operations that can exceed block gas limits with sufficiently large
+  inputs, making functions uncallable.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - dos-002
+
+relevant_properties:
+  - has_unbounded_loop
+  - gas_estimation
+
+token_estimate: 400

@@ -1,0 +1,16 @@
+id: auth-026
+vulndoc: access-control/general
+name: Signature Missing Deadline
+description: Signature verification missing deadline enforcement.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_ecrecover
+    op: eq
+    value: true
+  - property: has_deadline_check
+    op: eq
+    value: false

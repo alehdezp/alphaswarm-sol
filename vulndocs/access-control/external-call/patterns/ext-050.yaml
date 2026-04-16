@@ -1,0 +1,16 @@
+id: ext-050
+vulndoc: access-control/external-call
+name: Liquidation Oracle Without Staleness Check
+description: Liquidation logic uses oracle price without staleness checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: critical
+match:
+  all:
+  - property: uses_oracle_price_in_liquidation
+    op: eq
+    value: true
+  - property: has_staleness_check
+    op: eq
+    value: false

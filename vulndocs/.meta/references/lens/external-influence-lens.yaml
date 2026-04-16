@@ -1,0 +1,1377 @@
+- id: ext-001
+  name: Spot Price Manipulation
+  description: Spot price from a single pool without TWAP or multi-source validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: reads_pool_reserves
+        op: eq
+        value: true
+      - property: price_input_flows_to_value
+        op: eq
+        value: true
+      - property: has_twap_validation
+        op: eq
+        value: false
+      - property: has_multi_source_oracle
+        op: eq
+        value: false
+
+- id: ext-002
+  name: Stale Oracle Data
+  description: Oracle reads without freshness or staleness validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: reads_oracle_price
+        op: eq
+        value: true
+    any:
+      - property: has_staleness_check
+        op: eq
+        value: false
+
+- id: ext-003
+  name: Chainlink Incomplete Validation
+  description: latestRoundData used without full round/answer validation or error handling.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: calls_chainlink_latest_round_data
+        op: eq
+        value: true
+    any:
+      - property: validates_answer_positive
+        op: eq
+        value: false
+      - property: validates_updated_at_recent
+        op: eq
+        value: false
+      - property: validates_answered_in_round_matches_round_id
+        op: eq
+        value: false
+      - property: handles_oracle_revert
+        op: eq
+        value: false
+
+- id: ext-004
+  name: Flash Loan Price Attack
+  description: Balance or reserve based pricing without flash loan or snapshot protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: reads_pool_reserves
+        op: eq
+        value: true
+      - property: balance_used_for_pricing_or_voting
+        op: eq
+        value: true
+    none:
+      - property: flash_loan_guard
+        op: eq
+        value: true
+      - property: uses_historical_snapshot
+        op: eq
+        value: true
+
+- id: ext-005
+  name: L2 Sequencer Uptime Missing
+  description: L2 oracle usage without sequencer uptime validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: l2_oracle_context
+        op: eq
+        value: true
+    none:
+      - property: has_sequencer_uptime_check
+        op: eq
+        value: true
+
+- id: ext-006
+  name: Missing Zero Address Check
+  description: Address input used for transfers without non-zero validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: accepts_address_parameter
+        op: eq
+        value: true
+      - property: address_parameter_used_for_transfer
+        op: eq
+        value: true
+      - property: validates_address_nonzero
+        op: eq
+        value: false
+
+- id: ext-007
+  name: Missing Amount Bounds
+  description: Amount parameters used without bounds or sanity validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_amount_parameter
+        op: eq
+        value: true
+      - property: has_amount_bounds
+        op: eq
+        value: false
+
+- id: ext-008
+  name: Array Length Manipulation
+  description: Array inputs without length validation enabling gas or mismatch risk.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_array_parameter
+        op: eq
+        value: true
+      - property: has_array_length_check
+        op: eq
+        value: false
+
+- id: ext-009
+  name: Deadline Validation Missing
+  description: Deadline parameter present without a timestamp validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_deadline_parameter
+        op: eq
+        value: true
+      - property: has_deadline_check
+        op: eq
+        value: false
+
+- id: ext-010
+  name: Unsafe ABI Decode
+  description: abi.decode without calldata length checks or try-catch guard.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: uses_abi_decode
+        op: eq
+        value: true
+      - property: has_abi_decode_guard
+        op: eq
+        value: false
+
+- id: ext-011
+  name: Merkle Proof Leaf Collision
+  description: Merkle proof leaf hashing without domain separation or leaf tagging.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: uses_merkle_proof
+        op: eq
+        value: true
+      - property: merkle_leaf_domain_separated
+        op: eq
+        value: false
+
+- id: ext-012
+  name: Single Source Oracle
+  description: Critical logic relies on a single oracle source.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_multi_source_oracle
+        op: eq
+        value: false
+
+- id: ext-013
+  name: TWAP Window Missing
+  description: TWAP usage without a defined window or interval parameter.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_window_parameter
+        op: eq
+        value: false
+
+- id: ext-014
+  name: Oracle Aggregation Missing Sanity Checks
+  description: Multiple sources aggregated without deviation or outlier checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_aggregation_sanity
+        op: eq
+        value: false
+
+- id: ext-015
+  name: Chainlink Decimals Not Queried
+  description: latestRoundData used without querying decimals for normalization.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: calls_chainlink_latest_round_data
+        op: eq
+        value: true
+      - property: calls_chainlink_decimals
+        op: eq
+        value: false
+
+- id: ext-016
+  name: Oracle Feed Not Upgradeable
+  description: Contract uses an oracle feed without a setter or upgrade path.
+  scope: Contract
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_oracle_state
+        op: eq
+        value: true
+      - property: has_oracle_feed_setter
+        op: eq
+        value: false
+
+- id: ext-017
+  name: Cross-Chain Oracle Missing Validation
+  description: Cross-chain price reads without proof or message validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_cross_chain_validation
+        op: eq
+        value: false
+
+- id: ext-018
+  name: Contract Address Not Verified
+  description: External call target is not checked for deployed code.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: address_parameter_used_for_call
+        op: eq
+        value: true
+      - property: validates_contract_code
+        op: eq
+        value: false
+
+- id: ext-019
+  name: Self Address Not Rejected
+  description: Address parameter can be set to address(this) in critical calls.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: address_parameter_used_for_call
+        op: eq
+        value: true
+      - property: validates_address_not_self
+        op: eq
+        value: false
+
+- id: ext-020
+  name: Zero Amount Not Rejected
+  description: Amount parameters allow zero without validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_amount_parameter
+        op: eq
+        value: true
+      - property: has_amount_nonzero_check
+        op: eq
+        value: false
+
+- id: ext-021
+  name: Array Index Not Validated
+  description: User index used without bounds validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_array_parameter
+        op: eq
+        value: true
+      - property: has_array_index_check
+        op: eq
+        value: false
+
+- id: ext-022
+  name: Array Length Mismatch
+  description: Multiple arrays used without matching length checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_array_parameter
+        op: eq
+        value: true
+      - property: has_array_length_match
+        op: eq
+        value: false
+
+- id: ext-023
+  name: External Data Integrity Missing
+  description: External bytes input used without integrity checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_bytes_parameter
+        op: eq
+        value: true
+      - property: has_external_data_integrity_check
+        op: eq
+        value: false
+
+- id: ext-024
+  name: Oracle Update Without Access Control
+  description: Oracle price update functions without access gates.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_access_gate
+        op: eq
+        value: false
+
+- id: ext-025
+  name: Oracle Answer Not Positive
+  description: Oracle reads without validating a positive, non-zero answer.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: validates_answer_positive
+        op: eq
+        value: false
+
+- id: ext-026
+  name: TWAP Observation Coverage Missing
+  description: TWAP usage without observation/cardinality validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_observation_check
+        op: eq
+        value: false
+
+- id: ext-027
+  name: Oracle Update Missing Rate Limit
+  description: Oracle update functions without cooldown or rate limiting.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_oracle_update_rate_limit
+        op: eq
+        value: false
+
+- id: ext-028
+  name: Oracle Update Missing Timelock
+  description: Oracle update functions without timelock delays.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_oracle_update_timelock
+        op: eq
+        value: false
+
+- id: ext-029
+  name: Oracle Update Missing Deviation Check
+  description: Oracle updates without bounds or deviation checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_oracle_update_deviation_check
+        op: eq
+        value: false
+
+- id: ext-030
+  name: Oracle Update Missing Signature Check
+  description: Oracle update functions without signature validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_oracle_update_signature_check
+        op: eq
+        value: false
+
+- id: ext-031
+  name: Oracle Update Missing Sequencing
+  description: Oracle updates without nonce or sequencing checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_oracle_update_sequence_check
+        op: eq
+        value: false
+
+- id: ext-032
+  name: Chainlink StartedAt Not Validated
+  description: Chainlink latestRoundData used without startedAt validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: calls_chainlink_latest_round_data
+        op: eq
+        value: true
+      - property: validates_started_at_recent
+        op: eq
+        value: false
+
+- id: ext-033
+  name: Flash Loan Collateralization Attack
+  description: Collateral valuation uses balance/reserve data without flash loan or snapshot protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: reads_pool_reserves
+        op: eq
+        value: true
+      - property: balance_used_for_collateralization
+        op: eq
+        value: true
+    none:
+      - property: flash_loan_guard
+        op: eq
+        value: true
+      - property: uses_historical_snapshot
+        op: eq
+        value: true
+
+- id: ext-034
+  name: L2 Finality Not Considered
+  description: L2 oracle usage without finality or challenge period checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: l2_oracle_context
+        op: eq
+        value: true
+      - property: has_l2_finality_check
+        op: eq
+        value: false
+
+- id: ext-035
+  name: Cross-Chain Replay Protection Missing
+  description: Cross-chain oracle usage without replay or sequencing protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_bridge_replay_protection
+        op: eq
+        value: false
+
+- id: ext-036
+  name: Amount Precision Guard Missing
+  description: Amount division or rounding logic without precision guards.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_amount_parameter
+        op: eq
+        value: true
+      - property: uses_amount_division
+        op: eq
+        value: true
+      - property: has_precision_guard
+        op: eq
+        value: false
+
+- id: ext-037
+  name: Duration Bounds Missing
+  description: Duration or lock parameters without sanity bounds.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_duration_parameter
+        op: eq
+        value: true
+      - property: has_duration_bounds
+        op: eq
+        value: false
+
+- id: ext-038
+  name: Calldata Slice Without Length Check
+  description: Calldata slicing without explicit length validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: uses_calldata_slice
+        op: eq
+        value: true
+      - property: has_calldata_length_check
+        op: eq
+        value: false
+
+- id: ext-039
+  name: TWAP Window Minimum Not Enforced
+  description: TWAP window parameters without minimum bound checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_window_parameter
+        op: eq
+        value: true
+      - property: has_twap_window_min_check
+        op: eq
+        value: false
+
+- id: ext-040
+  name: Chainlink Decimals Hardcoded
+  description: Chainlink price scaling hardcodes decimals without querying the feed.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: calls_chainlink_latest_round_data
+        op: eq
+        value: true
+      - property: uses_fixed_oracle_decimals
+        op: eq
+        value: true
+      - property: calls_chainlink_decimals
+        op: eq
+        value: false
+
+- id: ext-041
+  name: Reserve Price In Swap Without TWAP
+  description: Swap-like logic uses pool reserves without TWAP protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: pool_reserves_used_in_swap
+        op: eq
+        value: true
+      - property: has_twap_validation
+        op: eq
+        value: false
+
+- id: ext-042
+  name: Collateral Pricing From Spot Reserves
+  description: Collateral valuation uses pool reserves without TWAP or history.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: pool_reserves_used_for_collateral
+        op: eq
+        value: true
+      - property: has_twap_validation
+        op: eq
+        value: false
+
+- id: ext-043
+  name: Chainlink Round Completeness Missing
+  description: latestRoundData used without answeredInRound == roundId validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: calls_chainlink_latest_round_data
+        op: eq
+        value: true
+      - property: validates_answered_in_round_matches_round_id
+        op: eq
+        value: false
+
+- id: ext-044
+  name: Oracle Staleness Threshold Missing
+  description: Oracle freshness checks without a concrete staleness threshold.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_staleness_check
+        op: eq
+        value: true
+      - property: has_staleness_threshold
+        op: eq
+        value: false
+
+- id: ext-045
+  name: Governance Vote Without Snapshot
+  description: Voting logic uses current balance without snapshot protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: governance_vote_without_snapshot
+        op: eq
+        value: true
+
+- id: ext-046
+  name: Flash Loan Governance Without Snapshot
+  description: Governance voting without snapshots or flash loan protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: governance_vote_without_snapshot
+        op: eq
+        value: true
+    none:
+      - property: flash_loan_guard
+        op: eq
+        value: true
+      - property: uses_historical_snapshot
+        op: eq
+        value: true
+
+- id: ext-047
+  name: Balance-Based Rewards Without Snapshot
+  description: Rewards based on current balances without snapshots or flash loan guards.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: balance_used_for_rewards
+        op: eq
+        value: true
+    none:
+      - property: uses_historical_snapshot
+        op: eq
+        value: true
+      - property: flash_loan_guard
+        op: eq
+        value: true
+
+- id: ext-048
+  name: Chainlink UpdatedAt Missing
+  description: Chainlink latestRoundData used without updatedAt freshness checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: calls_chainlink_latest_round_data
+        op: eq
+        value: true
+      - property: validates_updated_at_recent
+        op: eq
+        value: false
+
+- id: ext-049
+  name: Liquidation Spot Reserves Without TWAP
+  description: Liquidation logic uses pool reserves without TWAP protection.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: pool_reserves_used_in_liquidation
+        op: eq
+        value: true
+      - property: has_twap_validation
+        op: eq
+        value: false
+
+- id: ext-050
+  name: Liquidation Oracle Without Staleness Check
+  description: Liquidation logic uses oracle price without staleness checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: uses_oracle_price_in_liquidation
+        op: eq
+        value: true
+      - property: has_staleness_check
+        op: eq
+        value: false
+
+- id: ext-051
+  name: Multi-Source Oracle Without Staleness Checks
+  description: Multiple oracle sources aggregated without freshness checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_staleness_check
+        op: eq
+        value: false
+
+- id: ext-052
+  name: Multi-Source Oracle Without Decimals Normalization
+  description: Aggregates multiple oracle sources without decimal normalization.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_decimals_normalized
+        op: eq
+        value: false
+
+- id: ext-053
+  name: TWAP Timestamp Validation Missing
+  description: TWAP usage without timestamp consistency checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_timestamp_check
+        op: eq
+        value: false
+
+- id: ext-054
+  name: TWAP Price Bounds Missing
+  description: TWAP usage without price bounds checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_price_bounds
+        op: eq
+        value: false
+
+- id: ext-055
+  name: Cross-Chain Consistency Missing
+  description: Cross-chain oracle usage without L1/L2 consistency checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_cross_chain_consistency_check
+        op: eq
+        value: false
+
+- id: ext-056
+  name: Bridge Finality Missing
+  description: Cross-chain oracle usage without finality or confirmation checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: has_bridge_finality_check
+        op: eq
+        value: false
+
+- id: ext-057
+  name: TWAP Precision Guard Missing
+  description: TWAP usage without explicit precision or scaling guards.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_precision_guard
+        op: eq
+        value: false
+
+- id: ext-058
+  name: L2 Timestamp Manipulation Risk
+  description: L2 oracle context uses block.timestamp without finality checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: l2_oracle_context
+        op: eq
+        value: true
+      - property: uses_block_timestamp
+        op: eq
+        value: true
+      - property: has_l2_finality_check
+        op: eq
+        value: false
+
+- id: ext-059
+  name: Amount Division Without Nonzero Check
+  description: Amount division without non-zero input validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: uses_amount_division
+        op: eq
+        value: true
+      - property: has_amount_nonzero_check
+        op: eq
+        value: false
+
+- id: ext-060
+  name: Oracle Aggregation Min Sources Missing
+  description: Aggregation without enforcing a minimum number of sources.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_min_source_count
+        op: eq
+        value: false
+
+- id: ext-061
+  name: Oracle Aggregation Per-Source Staleness Missing
+  description: Aggregation without per-source staleness validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_per_source_staleness
+        op: eq
+        value: false
+
+- id: ext-062
+  name: Oracle Aggregation Time Alignment Missing
+  description: Aggregation without time alignment checks across sources.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_time_alignment
+        op: eq
+        value: false
+
+- id: ext-063
+  name: Oracle Aggregation Weighted Reliability Missing
+  description: Aggregation without weighting by source reliability.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_weighted_aggregation
+        op: eq
+        value: false
+
+- id: ext-064
+  name: Oracle Update Missing Timestamp Check
+  description: Oracle update without timestamp or freshness validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: has_oracle_update_timestamp_check
+        op: eq
+        value: false
+
+- id: ext-065
+  name: Array Loop Without Bounds
+  description: Array input used in an unbounded loop without length checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_array_parameter
+        op: eq
+        value: true
+      - property: has_unbounded_loop
+        op: eq
+        value: true
+      - property: has_array_length_check
+        op: eq
+        value: false
+
+- id: ext-066
+  name: Oracle Aggregation Circuit Breaker Missing
+  description: Aggregation without circuit breaker or pause mechanism.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_circuit_breaker
+        op: eq
+        value: false
+
+- id: ext-067
+  name: Oracle Aggregation Fallback Missing
+  description: Aggregation without fallback on source disagreement.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_disagreement_fallback
+        op: eq
+        value: false
+
+- id: ext-068
+  name: Oracle Aggregation Min Agreement Missing
+  description: Aggregation without minimum agreement or quorum checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_min_agreement
+        op: eq
+        value: false
+
+- id: ext-069
+  name: Oracle Source Health Check Missing
+  description: Aggregation without source health checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_source_health_check
+        op: eq
+        value: false
+
+- id: ext-070
+  name: Bridge Source Chain Validation Missing
+  description: Cross-chain oracle usage without source chain checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: has_bridge_source_chain_check
+        op: eq
+        value: false
+
+- id: ext-071
+  name: TWAP Gap Handling Missing
+  description: TWAP usage without gap interpolation handling.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_gap_handling
+        op: eq
+        value: false
+
+- id: ext-072
+  name: TWAP Volatility Window Missing
+  description: TWAP usage without volatility-aware windowing.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: reads_twap
+        op: eq
+        value: true
+      - property: has_twap_volatility_window
+        op: eq
+        value: false
+
+- id: ext-073
+  name: Oracle Update Frequency Alignment Missing
+  description: Aggregation without update frequency alignment.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_multi_source_oracle
+        op: eq
+        value: true
+      - property: has_oracle_update_frequency_alignment
+        op: eq
+        value: false
+
+- id: ext-074
+  name: Bridge Message Ordering Missing
+  description: Bridge oracle usage without ordering or sequencing checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: has_bridge_ordering_check
+        op: eq
+        value: false
+
+- id: ext-075
+  name: Deadline Future Check Missing
+  description: Deadline parameters without future timestamp validation.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: medium
+  match:
+    all:
+      - property: has_deadline_parameter
+        op: eq
+        value: true
+      - property: has_deadline_future_check
+        op: eq
+        value: false
+
+- id: ext-076
+  name: Deadline Min Buffer Missing
+  description: Deadlines without minimum buffer from current time.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: low
+  match:
+    all:
+      - property: has_deadline_parameter
+        op: eq
+        value: true
+      - property: has_deadline_min_buffer
+        op: eq
+        value: false
+
+- id: ext-077
+  name: Deadline Max Bound Missing
+  description: Deadlines without maximum bound or reasonable limit.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: low
+  match:
+    all:
+      - property: has_deadline_parameter
+        op: eq
+        value: true
+      - property: has_deadline_max
+        op: eq
+        value: false
+
+- id: ext-078
+  name: Sequencer Grace Period Missing
+  description: L2 oracle usage without a sequencer grace period check.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: l2_oracle_context
+        op: eq
+        value: true
+      - property: has_sequencer_uptime_check
+        op: eq
+        value: true
+      - property: has_sequencer_grace_period
+        op: eq
+        value: false
+
+- id: ext-079
+  name: Oracle Update Without Multisig Guard
+  description: Oracle update in multisig context without access gating.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: oracle_update_function
+        op: eq
+        value: true
+      - property: contract_has_multisig
+        op: eq
+        value: true
+      - property: has_access_gate
+        op: eq
+        value: false
+
+- id: ext-080
+  name: Collateral Oracle Staleness Missing
+  description: Collateral valuation uses oracle price without staleness checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: balance_used_for_collateralization
+        op: eq
+        value: true
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_staleness_check
+        op: eq
+        value: false
+
+- id: ext-081
+  name: Cross-Chain Oracle Freshness Missing
+  description: Cross-chain oracle usage without freshness checks.
+  scope: Function
+  lens:
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: has_cross_chain_context
+        op: eq
+        value: true
+      - property: reads_oracle_price
+        op: eq
+        value: true
+      - property: has_staleness_check
+        op: eq
+        value: false

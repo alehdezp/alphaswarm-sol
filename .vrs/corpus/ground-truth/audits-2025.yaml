@@ -1,0 +1,319 @@
+# Ground Truth: 2025+ Audit Findings
+# Generated from Phase 7.2-03 audit discovery
+# Maps audit findings to testable ground truth records
+#
+# Schema version: 1.0
+# Created: 2026-01-29
+
+schema_version: "1.0"
+updated: "2026-01-29"
+source: "audits.yaml"
+
+# Ground truth entries derived from audit findings
+# Each entry maps to a specific audit finding and can be linked to corpus contracts
+
+entries:
+  # ============================================================
+  # Reentrancy Findings
+  # ============================================================
+  - id: gt-gmx-v1-reentrancy
+    audit_id: gmx-v1-reentrancy-jul2025
+    vulndocs_path: reentrancy/cross-function/specifics/gmx-v1-reentrancy
+    pattern: vm-003-cross-function
+    severity: critical
+    contract_path: ""  # To be populated when contract ingested
+    location: "executeDecreaseOrder"
+    description: "Cross-function reentrancy via ETH refund callback"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 42000000
+    chain: arbitrum
+    date: "2025-07-09"
+    tags:
+      - cross-function
+      - callback
+      - accounting
+      - audit-derived
+
+  - id: gt-penpie-reentrancy
+    audit_id: penpie-reentrancy-sep2024
+    vulndocs_path: reentrancy/classic/specifics/penpie-permissionless-callback
+    pattern: vm-001-classic
+    severity: critical
+    contract_path: ""
+    location: "createMarket"
+    description: "Permissionless callback enables classic reentrancy"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 27000000
+    chain: ethereum
+    date: "2024-09"
+    tags:
+      - classic
+      - callback
+      - audit-derived
+
+  - id: gt-euler-reentrancy
+    audit_id: euler-reentrancy-mar2023
+    vulndocs_path: reentrancy/cross-function
+    pattern: vm-003-cross-function
+    severity: critical
+    contract_path: ""
+    location: "donateToReserves"
+    description: "Donation function reentrancy before liquidation check"
+    has_vulnerability: true
+    confidence_min: 0.85
+    economic_impact_usd: 200000000
+    chain: ethereum
+    date: "2023-03"
+    tags:
+      - cross-function
+      - liquidation
+      - audit-derived
+
+  - id: gt-fei-rari-reentrancy
+    audit_id: fei-tribe-merge-apr2022
+    vulndocs_path: reentrancy/classic
+    pattern: vm-001-classic
+    severity: critical
+    contract_path: ""
+    location: "borrow"
+    description: "Reentrancy in Fuse pool borrow function"
+    has_vulnerability: true
+    confidence_min: 0.85
+    economic_impact_usd: 80000000
+    chain: ethereum
+    date: "2022-04"
+    tags:
+      - classic
+      - lending
+      - audit-derived
+
+  # ============================================================
+  # Oracle Findings
+  # ============================================================
+  - id: gt-uwu-lend-oracle
+    audit_id: uwu-lend-oracle-jun2024
+    vulndocs_path: oracle/price-manipulation/specifics/uwu-curve-spot-manipulation
+    pattern: oracle-spot-manipulation
+    severity: critical
+    contract_path: ""
+    location: "getPrice"
+    description: "Curve spot price used without TWAP protection"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 23000000
+    chain: ethereum
+    date: "2024-06"
+    tags:
+      - price-manipulation
+      - spot-price
+      - flash-loan
+      - audit-derived
+
+  - id: gt-beanstalk-governance
+    audit_id: beanstalk-oracle-apr2022
+    vulndocs_path: oracle/price-manipulation
+    pattern: oracle-flash-governance
+    severity: critical
+    contract_path: ""
+    location: "vote"
+    description: "Flash loan governance with oracle manipulation"
+    has_vulnerability: true
+    confidence_min: 0.85
+    economic_impact_usd: 182000000
+    chain: ethereum
+    date: "2022-04"
+    tags:
+      - governance
+      - flash-loan
+      - audit-derived
+
+  - id: gt-inverse-oracle
+    audit_id: inverse-oracle-apr2022
+    vulndocs_path: oracle/price-manipulation
+    pattern: oracle-twap-manipulation
+    severity: critical
+    contract_path: ""
+    location: "getCurrentPrice"
+    description: "Keep3r TWAP oracle manipulation via large swap"
+    has_vulnerability: true
+    confidence_min: 0.85
+    economic_impact_usd: 15000000
+    chain: ethereum
+    date: "2022-04"
+    tags:
+      - twap
+      - manipulation
+      - audit-derived
+
+  # ============================================================
+  # Logic Findings
+  # ============================================================
+  - id: gt-1inch-calldata
+    audit_id: 1inch-calldata-mar2025
+    vulndocs_path: logic/configuration/specifics/1inch-calldata-corruption
+    pattern: logic-calldata-corruption
+    severity: critical
+    contract_path: ""
+    location: "resolver"
+    description: "Yul assembly calldata corruption"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 5000000
+    chain: ethereum
+    date: "2025-03"
+    tags:
+      - yul
+      - assembly
+      - calldata
+      - audit-derived
+
+  - id: gt-clipper-invariant
+    audit_id: clipper-invariant-dec2024
+    vulndocs_path: logic/invariant-violation/specifics/clipper-single-asset-bypass
+    pattern: logic-invariant-violation
+    severity: critical
+    contract_path: ""
+    location: "swap"
+    description: "Single-asset swap bypasses pool invariants"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 450000
+    chain: optimism
+    date: "2024-12"
+    tags:
+      - invariant
+      - dex
+      - audit-derived
+
+  - id: gt-zklend-precision
+    audit_id: zklend-precision-feb2025
+    vulndocs_path: logic/arithmetic/specifics/zklend-precision-loss
+    pattern: arithmetic-precision-loss
+    severity: critical
+    contract_path: ""
+    location: "deposit"
+    description: "First depositor inflation via precision manipulation"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 9600000
+    chain: starknet
+    date: "2025-02"
+    tags:
+      - precision
+      - first-depositor
+      - audit-derived
+
+  - id: gt-balancer-rounding
+    audit_id: balancer-rounding-nov2025
+    vulndocs_path: logic/arithmetic/specifics/balancer-v2-rounding
+    pattern: arithmetic-rounding-direction
+    severity: critical
+    contract_path: ""
+    location: "onSwap"
+    description: "Rounding direction error in stable pool math"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 128000000
+    chain: ethereum
+    date: "2025-11"
+    tags:
+      - rounding
+      - stable-pool
+      - audit-derived
+
+  - id: gt-euler-v2-ltv
+    audit_id: euler-v2-ltv-2024
+    vulndocs_path: logic/liquidation-mechanics/specifics/euler-ltv-gap
+    pattern: logic-ltv-gap
+    severity: high
+    contract_path: ""
+    location: "borrow"
+    description: "LTV gap between borrow and liquidation thresholds"
+    has_vulnerability: true
+    confidence_min: 0.85
+    economic_impact_usd: 0
+    chain: ethereum
+    date: "2024-10"
+    tags:
+      - liquidation
+      - ltv
+      - audit-derived
+
+  - id: gt-uniswap-v4-hooks
+    audit_id: uniswap-v4-hooks-m1-2024
+    vulndocs_path: logic/state-isolation
+    pattern: logic-state-isolation
+    severity: high
+    contract_path: ""
+    location: "hook"
+    description: "Hook state isolation concerns across pools"
+    has_vulnerability: true
+    confidence_min: 0.80
+    economic_impact_usd: 0
+    chain: ethereum
+    date: "2024-09"
+    tags:
+      - uniswap-v4
+      - hooks
+      - state-isolation
+      - audit-derived
+
+  # ============================================================
+  # Governance Findings
+  # ============================================================
+  - id: gt-tornado-governance
+    audit_id: tornado-governance-may2023
+    vulndocs_path: governance/proposal-manipulation
+    pattern: governance-proposal-hijack
+    severity: critical
+    contract_path: ""
+    location: "execute"
+    description: "Governance takeover via CREATE2 + SELFDESTRUCT"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 0
+    chain: ethereum
+    date: "2023-05"
+    tags:
+      - governance
+      - create2
+      - selfdestruct
+      - audit-derived
+
+  # ============================================================
+  # Upgrade Findings
+  # ============================================================
+  - id: gt-audius-storage
+    audit_id: audius-proxy-jul2022
+    vulndocs_path: upgrade/storage-collision
+    pattern: upgrade-storage-collision
+    severity: critical
+    contract_path: ""
+    location: "governance"
+    description: "Proxy storage collision with governance contract"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 6000000
+    chain: ethereum
+    date: "2022-07"
+    tags:
+      - proxy
+      - storage
+      - audit-derived
+
+# Summary statistics
+statistics:
+  total_entries: 16
+  by_category:
+    reentrancy: 4
+    oracle: 3
+    logic: 6
+    governance: 1
+    upgrade: 1
+    cross_chain: 0
+  by_severity:
+    critical: 14
+    high: 2
+  total_economic_impact_usd: 718050000

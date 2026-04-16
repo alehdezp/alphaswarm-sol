@@ -1,0 +1,76 @@
+# Ground Truth for Naive Receiver (Damn Vulnerable DeFi)
+# Source: https://github.com/tinchoabbate/damn-vulnerable-defi
+# Challenge: naive-receiver
+# Official Solution: https://www.damnvulnerabledefi.xyz/challenges/naive-receiver/
+
+contract: NaiveReceiverPool
+file: src/NaiveReceiverPool.sol
+source: damn-vulnerable-defi
+challenge_url: https://www.damnvulnerabledefi.xyz/challenges/naive-receiver/
+
+vulnerabilities:
+  - id: DVD-NR-001
+    type: access-control
+    severity: critical
+    function: flashLoan
+    line_range: [63, 86]
+    description: |
+      The flashLoan function allows anyone to specify an arbitrary receiver
+      address. This means an attacker can repeatedly call flashLoan with
+      a victim's receiver contract, forcing them to pay the 1 ETH fee each
+      time until their balance is drained.
+
+      The vulnerability is in the design: there's no check that msg.sender
+      is authorized to request a loan on behalf of the receiver.
+
+    # Expected BSKG detection
+    expected_graph:
+      operations:
+        - CALLS_EXTERNAL
+        - TRANSFERS_VALUE_OUT
+      properties:
+        visibility: external
+        has_access_gate: false
+        external_call_target: "parameter:receiver"
+
+    # Expected pattern match
+    expected_pattern:
+      id: unauthorized-action-on-behalf
+      tier: B  # Requires semantic understanding of "on behalf of" pattern
+      confidence_min: 0.7
+
+    # Exploit steps (from official solution)
+    exploit_steps:
+      - Identify victim receiver contract with ETH balance (e.g., 10 ETH)
+      - Call flashLoan(victimReceiver, ETH, 0, "") 10 times
+      - Each call costs victim 1 ETH in fees (paid to pool)
+      - Victim's 10 ETH balance is drained to pool
+
+safe_functions:
+  - function: maxFlashLoan
+    reason: View function, no state changes
+    expected_properties:
+      state_mutability: view
+
+  - function: flashFee
+    reason: Pure function, no state access
+    expected_properties:
+      state_mutability: pure
+
+# Expected multi-agent debate outcomes
+expected_debates:
+  - finding: DVD-NR-001
+    attacker_claim: |
+      Attacker can drain any receiver contract by calling flashLoan
+      repeatedly with the victim's address, forcing fee payments.
+    defender_response: |
+      No authorization check exists between msg.sender and receiver parameter.
+      The receiver contract cannot prevent being specified in flashLoan calls.
+    verifier_verdict: CONFIRMED
+    confidence_min: 0.85
+
+# Validation thresholds
+thresholds:
+  precision_min: 0.70
+  recall_min: 0.80  # Higher recall expected for well-known pattern
+  f1_min: 0.75

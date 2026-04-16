@@ -1,0 +1,16 @@
+id: ext-041
+vulndoc: access-control/external-call
+name: Reserve Price In Swap Without TWAP
+description: Swap-like logic uses pool reserves without TWAP protection.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: pool_reserves_used_in_swap
+    op: eq
+    value: true
+  - property: has_twap_validation
+    op: eq
+    value: false

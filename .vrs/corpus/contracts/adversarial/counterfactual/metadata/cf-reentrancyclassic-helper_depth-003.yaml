@@ -1,0 +1,12 @@
+base_contract_id: reentrancyclassic
+base_contract_path: tests/contracts/ReentrancyClassic.sol
+counterfactual_hash: 94068ec73daed92a
+counterfactual_id: cf-reentrancyclassic-helper_depth-003
+counterfactual_path: .vrs/corpus/contracts/adversarial/counterfactual/cf-reentrancyclassic-helper_depth-003.sol
+counterfactual_type: helper_depth
+description: 'helper_depth: moved_to_helper__check_92eb5f'
+expected_vulnerability_status: vulnerable
+metadata:
+  generated_at: '1767047334.1234565'
+original_hash: f64f30677c93eca8
+semantic_diff: moved_to_helper__check_92eb5f

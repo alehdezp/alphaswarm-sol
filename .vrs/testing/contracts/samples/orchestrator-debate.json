@@ -1,0 +1,38 @@
+{
+  "workflow_id": "orchestrator-debate",
+  "category": "orchestrator",
+  "rule_refs": ["EXEC-INTEGRITY", "TRANSCRIPT-AUTH", "EVIDENCE-CHAIN", "GATE-INTEGRITY"],
+  "capability_checks": [
+    {
+      "id": "spawns-required-agents",
+      "description": "Debate orchestrator spawns attacker, defender, and verifier agents",
+      "expected_behavior": "Controller events show agent:spawned for attacker, defender, and verifier agent types",
+      "grader_type": "code"
+    },
+    {
+      "id": "collects-verdicts",
+      "description": "Orchestrator collects structured verdicts from all debate participants",
+      "expected_behavior": "Each spawned agent produces a verdict object with severity, confidence, and evidence fields",
+      "grader_type": "code"
+    },
+    {
+      "id": "verifier-arbitrates",
+      "description": "Verifier agent produces final arbitration after reviewing attacker and defender positions",
+      "expected_behavior": "Verifier output references both attacker findings and defender mitigations before rendering final verdict",
+      "grader_type": "model"
+    },
+    {
+      "id": "debate-produces-consensus",
+      "description": "Debate concludes with a consensus or documented disagreement for each finding",
+      "expected_behavior": "Final output contains resolution status (confirmed/refuted/disputed) for each finding discussed",
+      "grader_type": "code"
+    }
+  ],
+  "reasoning_dimensions": ["evidence_quality", "adversarial_rigor", "consensus_formation"],
+  "evidence_requirements": [
+    {"type": "transcript", "description": "Full orchestration session transcript including all agent sub-sessions"},
+    {"type": "graph_nodes", "description": "BSKG node IDs cited across attacker, defender, and verifier arguments"},
+    {"type": "tool_output", "description": "Controller event stream showing agent lifecycle and task completion"}
+  ],
+  "grader_type": "hybrid"
+}

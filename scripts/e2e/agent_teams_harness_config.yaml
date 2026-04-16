@@ -1,0 +1,7 @@
+# Harness Configuration - DEPRECATED
+#
+# The legacy testing harness has been removed.
+# This file is retained as a placeholder.
+
+deprecated: true
+reason: "Legacy testing infrastructure removed"

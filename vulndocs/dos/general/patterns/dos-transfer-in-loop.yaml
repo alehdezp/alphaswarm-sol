@@ -1,0 +1,21 @@
+id: dos-transfer-in-loop
+vulndoc: dos/general
+name: Transfer/Send in Loop
+description: |
+  Function uses transfer() or send() inside loop, which can fail if recipient is contract
+  with expensive fallback. The 2300 gas stipend may be insufficient, causing DoS.
+  Maps to SWC-113 and best practice violations.
+scope: Function
+lens:
+  - DoS
+  - ValueMovement
+severity: medium
+match:
+  all:
+    - property: has_loops
+      op: eq
+      value: true
+    - property: has_external_calls
+      op: eq
+      value: true
+  # Note: Detecting specific use of transfer/send in loop requires additional AST analysis

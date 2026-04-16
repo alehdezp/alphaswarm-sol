@@ -1,0 +1,22 @@
+# Backrunning - Subcategory Index
+
+id: backrunning
+name: Backrunning
+parent_category: mev
+
+description: |
+  Exploiting state changes from victim transactions by immediately
+  following with a transaction that profits from the new state.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - mev-003
+
+relevant_properties:
+  - modifies_price
+  - creates_arbitrage
+
+token_estimate: 400

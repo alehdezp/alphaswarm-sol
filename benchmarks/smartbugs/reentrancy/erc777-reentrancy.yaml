@@ -1,0 +1,29 @@
+# ERC777 Reentrancy via tokensReceived/tokensToSend hooks
+id: smartbugs-erc777-reentrancy
+name: ERC777 Token Hooks Reentrancy
+category: reentrancy
+source: examples/semgrep-smart-contracts/solidity/security/erc777-reentrancy.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: reentrancy-callback
+  description: |
+    ERC777 tokens have operator hooks (tokensReceived, tokensToSend) that are
+    called during transfers, enabling reentrancy attacks.
+  severity: critical
+  cwe: CWE-841
+  references:
+    - https://medium.com/consensys-diligence/uniswap-audit-b90335ac007
+
+expected_detections:
+  - pattern: vm-001
+    confidence: high
+    description: State write after ERC777 token transfer with hooks
+
+vkg_pattern_mapping:
+  primary: vm-001
+  secondary: [reentrancy-erc777]
+
+false_positives: []
+
+status: pending

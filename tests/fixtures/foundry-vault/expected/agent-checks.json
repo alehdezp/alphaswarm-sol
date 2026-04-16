@@ -1,0 +1,27 @@
+{
+  "description": "Expected agent investigations for Vault contract",
+  "expected_investigations": [
+    {
+      "pattern_id": "reentrancy-classic",
+      "function": "withdraw",
+      "severity": "critical",
+      "agent": "reentrancy-specialist",
+      "required_evidence": {
+        "has_bskg_node": true,
+        "has_code_location": true,
+        "has_exploit_path": true
+      }
+    },
+    {
+      "pattern_id": "weak-access-control",
+      "function": "setOwner",
+      "severity": "critical",
+      "agent": "access-specialist",
+      "required_evidence": {
+        "has_bskg_node": true,
+        "has_code_location": true,
+        "has_exploit_path": true
+      }
+    }
+  ]
+}

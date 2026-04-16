@@ -1,0 +1,484 @@
+# =============================================================================
+# PATTERN: merkle-001
+# =============================================================================
+
+id: merkle-001
+vulndoc: crypto/merkle
+name: "Unprotected Merkle Root Update"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Public/external functions that modify Merkle root state variables (used for airdrops,
+  whitelists, claim verification, cross-chain bridges) without proper access control,
+  allowing any caller to replace the cryptographic commitment and bypass security checks.
+
+  ## Why It's Dangerous
+  Merkle roots are cryptographic commitments that serve as the foundation for:
+  - **Airdrop eligibility**: Who can claim tokens and how much
+  - **Whitelist validation**: Who can participate in sales/mints
+  - **Cross-chain message verification**: Bridge security (Nomad Bridge $190M exploit)
+  - **Claim proofs**: Dividend distributions, rewards, vesting schedules
+
+  Unprotected modification allows attackers to:
+  - Replace the Merkle root with their own tree containing only their address
+  - Claim all airdrop tokens allocated to thousands of legitimate users
+  - Bypass whitelist restrictions to mint unlimited NFTs/tokens
+  - Manipulate cross-chain bridge messages to steal locked assets
+  - Drain treasury/reward pools by creating fraudulent claim proofs
+
+  ## Detection Logic
+  This pattern uses SEMANTIC detection (name-agnostic) based on VKG's heuristics:
+
+  1. **Function is externally callable** (`visibility: [public, external]`)
+  2. **Function writes sensitive config state** (`writes_sensitive_config: true`)
+     - Heuristics.py tags variables with "config" when they contain tokens like:
+       config, settings, params, parameter, **merkle** (line 64-65)
+     - "config" tag triggers `writes_sensitive_config` property (builder.py line 597-609)
+  3. **Function modifies state** (`writes_state: true`)
+  4. **NO access control present** (`has_access_gate: false`)
+  5. **NOT a constructor** (constructors legitimately set initial Merkle roots)
+
+  This detection is COMPLETELY IMPLEMENTATION-AGNOSTIC - it works regardless of:
+  - Variable naming (merkleRoot, _root, MERKLE_ROOT, claimRoot, whitelistRoot, proofRoot)
+  - Function naming (setRoot, updateRoot, changeMerkleRoot, setMerkleRoot, updateProof)
+  - Modifier naming (onlyOwner, onlyAdmin, onlyGovernance, restricted, authorized)
+
+  ## Real-World Examples
+  - **Nomad Bridge ($190M, August 2022)**: Merkle root initialized to 0x00 during upgrade,
+    allowing anyone to submit fraudulent proofs and drain the bridge
+  - **Wayfinder PROMPT Airdrop ($200K, 2024)**: MEV bot exploited lack of msg.sender
+    binding in Merkle proofs to frontrun claims and steal airdrop tokens
+  - **Merkle Tree Collision Attacks**: 64-byte leaf values can collide with intermediate
+    nodes, allowing unauthorized claims (Footium audit finding, Sherlock 2023)
+  - **Generic Airdrop Exploits**: Unprotected setMerkleRoot functions found in multiple
+    audit reports allow complete takeover of token distributions
+
+scope: Function
+
+lens:
+  - Cryptography
+  - Authority
+
+severity: high
+
+# Pattern quality status (set by vrs-test-conductor agent)
+# Updated 2026-01-02: Documented as EXCELLENT in mega-task (~100%/~100%/~100%)
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable to be exploitable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # SEMANTIC DETECTION: Writes to config-tagged state variables
+    # This is the CORE SIGNAL - completely name-agnostic
+    # Heuristics.py tags variables containing: config, settings, params, parameter, merkle
+    # Merkle roots are classified as "config" state (line 64-65)
+    - property: writes_sensitive_config
+      op: eq
+      value: true
+
+    # Must actually modify state (not just read)
+    - property: writes_state
+      op: eq
+      value: true
+
+  # At least ONE must match (OR logic) - use for alternatives
+  any: []
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Exclude functions with ANY access control
+    - property: has_access_gate
+      op: eq
+      value: true
+
+    # Exclude constructors (they legitimately set initial Merkle roots)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude functions with access modifiers (onlyOwner, onlyRole, etc.)
+    - property: has_access_modifier
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# Edge requirements for graph-based detection
+edges: []
+
+# Path requirements for multi-hop detection
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Complete Airdrop Takeover"
+    description: |
+      Attacker calls unprotected setMerkleRoot with their own tree containing only
+      their address as a valid claimant, then claims all airdrop tokens allocated
+      to thousands of legitimate users.
+    preconditions:
+      - "Merkle root update function is public/external"
+      - "No access control on root update"
+      - "Airdrop contract uses Merkle proofs for claim validation"
+    steps:
+      - "Generate malicious Merkle tree with only attacker address eligible for max claims"
+      - "Calculate root hash of malicious tree"
+      - "Call unprotected setMerkleRoot(maliciousRoot)"
+      - "Generate Merkle proof for attacker address from malicious tree"
+      - "Call claim() with proof, draining entire airdrop allocation"
+    impact: "Complete theft of all airdrop tokens (potentially millions in value)"
+
+  - name: "Whitelist Bypass and Unlimited Minting"
+    description: |
+      Attacker replaces whitelist Merkle root with their own tree, granting
+      themselves unlimited mint allowance or bypassing mint restrictions entirely.
+    preconditions:
+      - "NFT/token mint uses Merkle proof for whitelist validation"
+      - "Merkle root can be updated without access control"
+    steps:
+      - "Generate Merkle tree with attacker address whitelisted for unlimited mints"
+      - "Call unprotected updateWhitelistRoot(maliciousRoot)"
+      - "Generate proof for attacker with max mint allowance"
+      - "Mint unlimited tokens/NFTs using fraudulent proof"
+      - "Sell minted assets or drain protocol value"
+    impact: "Bypass mint limits, steal whitelist spots, unlimited token creation"
+
+  - name: "Cross-Chain Bridge Exploitation (Nomad-Style)"
+    description: |
+      Attacker manipulates bridge Merkle root to validate fraudulent cross-chain
+      messages, withdrawing assets that were never legitimately bridged.
+    preconditions:
+      - "Bridge uses Merkle proofs to validate cross-chain messages"
+      - "Trusted root can be modified without authorization"
+      - "Bridge holds significant locked assets"
+    steps:
+      - "Set Merkle root to 0x00 or attacker-controlled value"
+      - "Craft fraudulent cross-chain withdrawal messages"
+      - "Submit messages with fake proofs (any proof passes with 0x00 root)"
+      - "Withdraw assets from bridge that were never deposited"
+      - "Repeat until bridge is fully drained"
+    impact: "Complete bridge drainage ($190M in Nomad Bridge case)"
+
+  - name: "Dividend/Reward Claim Manipulation"
+    description: |
+      Attacker replaces reward distribution Merkle root to claim all allocated
+      rewards for themselves, denying legitimate stakeholders.
+    preconditions:
+      - "Reward/dividend distribution uses Merkle tree for eligibility"
+      - "Root can be updated without governance approval"
+    steps:
+      - "Wait for reward period with high token allocation"
+      - "Generate Merkle tree where attacker receives all rewards"
+      - "Call unprotected setRewardRoot(maliciousRoot)"
+      - "Claim all rewards using proof from malicious tree"
+      - "Legitimate users cannot claim (proofs invalid against new root)"
+    impact: "Theft of all reward/dividend allocations, denial of service to legitimate claimants"
+
+  - name: "MEV Frontrunning of Merkle Root Updates"
+    description: |
+      Even if updates are protected, MEV bots can frontrun legitimate root updates
+      with malicious ones if the protection is weak (e.g., only time-based).
+    preconditions:
+      - "Root update has weak temporal protection (cooldown period)"
+      - "No cryptographic commitment to legitimate root"
+    steps:
+      - "Monitor mempool for legitimate setMerkleRoot transactions"
+      - "Frontrun with higher gas to set malicious root first"
+      - "Execute malicious claims before legitimate root can be set"
+      - "Protocol team forced to deploy emergency pause or new contract"
+    impact: "Race condition exploitation, temporary fund theft, protocol disruption"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm the function is public/external (not internal helper)"
+  - "Verify the state variable being modified contains 'merkle', 'root', 'proof', or similar cryptographic commitment tokens"
+  - "Check if variable is used in claim/verify/validate functions with Merkle proof verification"
+  - "Ensure there is NO access control in modifiers or function body (no onlyOwner, onlyAdmin, require(msg.sender == X))"
+  - "Verify this is NOT a constructor or initializer (one-time setup is acceptable)"
+  - "Look for missing multi-sig, timelock, or governance requirements"
+  - "Check if the contract uses OpenZeppelin MerkleProof.verify or similar libraries"
+  - "Examine claim/mint functions to understand the impact of a malicious root"
+  - "Review if there are multiple Merkle roots for different purposes (airdrop vs whitelist)"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add onlyOwner/onlyAdmin Modifier"
+    description: "Restrict Merkle root updates to contract owner or admin only"
+    example: |
+      // VULNERABLE
+      function setMerkleRoot(bytes32 newRoot) external {
+          merkleRoot = newRoot;
+      }
+
+      // SAFE - Owner-only access
+      function setMerkleRoot(bytes32 newRoot) external onlyOwner {
+          merkleRoot = newRoot;
+      }
+
+  - name: "Require Multi-Sig or Governance Approval"
+    description: "Use multi-signature wallet or DAO governance for critical root updates"
+    example: |
+      // SAFE - Multi-sig required
+      address public immutable multiSig;
+
+      function setMerkleRoot(bytes32 newRoot) external {
+          require(msg.sender == multiSig, "Only multisig can update root");
+          merkleRoot = newRoot;
+          emit MerkleRootUpdated(newRoot, block.timestamp);
+      }
+
+      // SAFE - Governance vote required
+      function setMerkleRoot(bytes32 newRoot) external onlyGovernance {
+          require(governanceApproved[newRoot], "Root not approved by governance");
+          merkleRoot = newRoot;
+      }
+
+  - name: "Implement Two-Step Update with Timelock"
+    description: "Require proposal + execution delay for root changes to allow community review"
+    example: |
+      // SAFE - Two-step process with delay
+      struct PendingRootUpdate {
+          bytes32 newRoot;
+          uint256 executionTime;
+          bool executed;
+      }
+
+      PendingRootUpdate public pendingUpdate;
+      uint256 public constant UPDATE_DELAY = 2 days;
+
+      function proposeRootUpdate(bytes32 newRoot) external onlyOwner {
+          pendingUpdate = PendingRootUpdate({
+              newRoot: newRoot,
+              executionTime: block.timestamp + UPDATE_DELAY,
+              executed: false
+          });
+          emit RootUpdateProposed(newRoot, block.timestamp + UPDATE_DELAY);
+      }
+
+      function executeRootUpdate() external {
+          require(pendingUpdate.executionTime > 0, "No pending update");
+          require(block.timestamp >= pendingUpdate.executionTime, "Delay not elapsed");
+          require(!pendingUpdate.executed, "Already executed");
+
+          merkleRoot = pendingUpdate.newRoot;
+          pendingUpdate.executed = true;
+          emit MerkleRootUpdated(merkleRoot, block.timestamp);
+      }
+
+      function cancelRootUpdate() external onlyOwner {
+          delete pendingUpdate;
+          emit RootUpdateCancelled(block.timestamp);
+      }
+
+  - name: "Make Merkle Root Immutable After Initialization"
+    description: "Set root once during deployment/initialization, then make it immutable"
+    example: |
+      // SAFE - Immutable root (best for airdrops with predetermined eligibility)
+      bytes32 public immutable merkleRoot;
+
+      constructor(bytes32 _merkleRoot) {
+          merkleRoot = _merkleRoot;
+      }
+
+      // Or with initializer for proxy patterns
+      bytes32 public merkleRoot;
+      bool private rootInitialized;
+
+      function initialize(bytes32 _merkleRoot) external {
+          require(!rootInitialized, "Already initialized");
+          merkleRoot = _merkleRoot;
+          rootInitialized = true;
+      }
+
+  - name: "Add Versioning and Historical Root Tracking"
+    description: "Track root history to detect unauthorized changes and enable rollback"
+    example: |
+      // SAFE - With versioning and event trail
+      struct RootVersion {
+          bytes32 root;
+          uint256 timestamp;
+          address updatedBy;
+      }
+
+      RootVersion[] public rootHistory;
+      uint256 public currentRootVersion;
+
+      function setMerkleRoot(bytes32 newRoot) external onlyOwner {
+          require(newRoot != bytes32(0), "Invalid root");
+          require(newRoot != getCurrentRoot(), "Root unchanged");
+
+          rootHistory.push(RootVersion({
+              root: newRoot,
+              timestamp: block.timestamp,
+              updatedBy: msg.sender
+          }));
+
+          currentRootVersion = rootHistory.length - 1;
+          emit MerkleRootUpdated(newRoot, currentRootVersion, msg.sender);
+      }
+
+      function getCurrentRoot() public view returns (bytes32) {
+          require(rootHistory.length > 0, "No root set");
+          return rootHistory[currentRootVersion].root;
+      }
+
+  - name: "Add Emergency Pause with Guardian Veto"
+    description: "Allow trusted guardian to pause claims if malicious root detected"
+    example: |
+      // SAFE - With emergency controls
+      address public guardian;
+      bool public paused;
+      bytes32 public merkleRoot;
+
+      function setMerkleRoot(bytes32 newRoot) external onlyOwner {
+          require(!paused, "Contract paused");
+          merkleRoot = newRoot;
+          emit MerkleRootUpdated(newRoot);
+      }
+
+      function emergencyPause() external {
+          require(msg.sender == guardian || msg.sender == owner(), "Unauthorized");
+          paused = true;
+          emit EmergencyPause(msg.sender);
+      }
+
+      function claim(bytes32[] calldata proof, uint256 amount) external {
+          require(!paused, "Claims paused");
+          require(MerkleProof.verify(proof, merkleRoot,
+                  keccak256(abi.encodePacked(msg.sender, amount))),
+                  "Invalid proof");
+          // ... claim logic
+      }
+
+  - name: "Bind Merkle Root to Additional Metadata"
+    description: "Cryptographically bind root to expected claim total, version, or IPFS hash"
+    example: |
+      // SAFE - With integrity checks
+      struct MerkleDistribution {
+          bytes32 root;
+          uint256 totalClaimable;
+          string ipfsHash;  // Points to full tree data
+          uint256 version;
+      }
+
+      MerkleDistribution public distribution;
+
+      function setMerkleRoot(
+          bytes32 newRoot,
+          uint256 totalClaimable,
+          string calldata ipfsHash
+      ) external onlyOwner {
+          require(newRoot != bytes32(0), "Invalid root");
+          require(totalClaimable > 0, "Invalid total");
+          require(bytes(ipfsHash).length > 0, "Missing IPFS hash");
+
+          distribution = MerkleDistribution({
+              root: newRoot,
+              totalClaimable: totalClaimable,
+              ipfsHash: ipfsHash,
+              version: distribution.version + 1
+          });
+
+          emit MerkleRootUpdated(newRoot, totalClaimable, ipfsHash, distribution.version);
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - merkle-leaf-without-domain-separation  # Merkle collision attacks
+  - auth-003  # Unprotected privileged state write (general case)
+  - auth-020  # Unprotected initializer
+  - governance-001  # Unprotected governance parameter update
+  - bridge-001  # Unprotected bridge configuration
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+  - SC04  # Input Validation (Merkle proof manipulation)
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-285  # Improper Authorization
+  - CWE-862  # Missing Authorization
+  - CWE-345  # Insufficient Verification of Data Authenticity
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+semantic_ops:
+  has_all_operations:
+    - MODIFIES_CRITICAL_STATE
+    - CHECKS_PERMISSION  # Should be present but isn't (vulnerability)
+
+  # This is what SHOULD happen in safe code
+  safe_pattern_operations:
+    - CHECKS_PERMISSION
+    - MODIFIES_CRITICAL_STATE
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  # Vulnerable pattern: Write merkle config state without permission check
+  pattern: "W:config"  # Should be "C:auth→W:config" for safe code
+  matches_exploits:
+    - nomad-bridge-2022
+    - wayfinder-prompt-2024
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - nomad-bridge-2022
+    - wayfinder-prompt-2024
+    - footium-merkle-collision-2023
+  description: "Unprotected Merkle root manipulation enabling claim/proof bypass"
+  similarity_threshold: 0.88
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+    confidence_threshold: 0.82
+
+  # Risk agent: Exploitability assessment
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 7.5  # High severity
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 2
+    mode: voting

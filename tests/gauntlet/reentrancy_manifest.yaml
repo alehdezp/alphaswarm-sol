@@ -1,0 +1,276 @@
+# Reentrancy Gauntlet Manifest
+#
+# Defines 10 test cases for reentrancy vulnerability classification.
+# Binary scoring: PASS (correct classification) or FAIL (incorrect).
+#
+# Reference:
+#   - .planning/phases/07.3.3-adversarial-gauntlet/07.3.3-GAUNTLET-SPEC.md
+#   - configs/gauntlet_scoring.yaml
+
+version: "1.0.0"
+suite_id: gauntlet-reentrancy
+description: |
+  Reentrancy gauntlet with 10 contracts covering classic, cross-function,
+  and read-only reentrancy patterns. Includes safe controls for negative testing.
+
+# =============================================================================
+# SCORING CONFIG REFERENCE
+# =============================================================================
+
+scoring:
+  config_file: configs/gauntlet_scoring.yaml
+  thresholds:
+    pass_rate: 1.0              # 100% accuracy required (10/10)
+    max_false_positives: 0      # Zero FPs allowed
+    max_false_negatives: 0      # Zero FNs allowed
+    min_score: 10               # Minimum point total (all correct)
+
+# =============================================================================
+# REQUIRED GATES
+# =============================================================================
+
+required_gates:
+  - G0   # Preflight (environment validation)
+  - G1   # Evidence integrity (proof tokens)
+  - G2   # Graph soundness (BSKG valid)
+  - G4   # Mutation robustness (detection threshold)
+
+# =============================================================================
+# TEST CASES
+# =============================================================================
+#
+# Each case defines:
+#   - id: Unique identifier for tracking
+#   - contract: Contract name (file in tests/gauntlet/reentrancy/)
+#   - expected: VULNERABLE or SAFE
+#   - vuln_type: Specific vulnerability type (for VULNERABLE cases)
+#   - rationale: Why this classification is correct
+#   - detection_signals: What the system should detect
+#   - false_positive_traps: Patterns that might cause FP (for SAFE cases)
+
+cases:
+
+  # ---------------------------------------------------------------------------
+  # VULNERABLE CASES (5 contracts)
+  # ---------------------------------------------------------------------------
+
+  - id: RE-VULN-001
+    contract: Vault_01.sol
+    expected: VULNERABLE
+    vuln_type: classic-cei-violation
+    rationale: |
+      Classic reentrancy: external call (msg.sender.call) before state update
+      (balances[msg.sender] -= amount). Attacker can re-enter withdraw() and
+      drain funds.
+    detection_signals:
+      - external_call_before_state_write
+      - no_reentrancy_guard
+      - has_value_transfer
+      - writes_user_balance
+    evidence_required:
+      - function: withdraw
+        pattern: TRANSFERS_VALUE_OUT before WRITES_USER_BALANCE
+        line_range: [12, 17]
+
+  - id: RE-VULN-002
+    contract: Vault_03.sol
+    expected: VULNERABLE
+    vuln_type: guard-on-wrong-function
+    rationale: |
+      Reentrancy guard exists but is only applied to deposit(), not withdraw().
+      The vulnerable withdraw() function has no protection.
+    detection_signals:
+      - partial_guard_coverage
+      - external_call_unguarded
+      - has_value_transfer
+    evidence_required:
+      - function: withdraw
+        pattern: no_nonReentrant_modifier
+        line_range: [18, 25]
+
+  - id: RE-VULN-003
+    contract: Vault_05.sol
+    expected: VULNERABLE
+    vuln_type: cross-function-reentrancy
+    rationale: |
+      Attacker can re-enter via transfer() during withdraw() callback.
+      The mutex only protects withdraw() but transfer() reads the pre-update
+      balance, allowing double-spend.
+    detection_signals:
+      - cross_function_state_inconsistency
+      - shared_state_across_functions
+      - external_call_mid_update
+    evidence_required:
+      - function: withdraw
+        pattern: external_call_with_shared_state
+        related_function: transfer
+        line_range: [15, 22]
+
+  - id: RE-VULN-004
+    contract: Vault_07.sol
+    expected: VULNERABLE
+    vuln_type: read-only-reentrancy
+    rationale: |
+      View function getShareValue() can return stale/inconsistent data during
+      a withdraw() re-entrance. External protocols reading this value during
+      the callback can be exploited.
+    detection_signals:
+      - view_function_reads_pending_update
+      - external_call_before_state_finalized
+      - cross_contract_dependency_risk
+    evidence_required:
+      - function: withdraw
+        pattern: view_function_inconsistency
+        related_function: getShareValue
+        line_range: [20, 28]
+
+  - id: RE-VULN-005
+    contract: Vault_09.sol
+    expected: VULNERABLE
+    vuln_type: callback-reentrancy
+    rationale: |
+      External token callback (onERC721Received, onFlashLoan, etc.) can be
+      exploited for reentrancy. State is not finalized before callback triggers.
+    detection_signals:
+      - callback_before_state_update
+      - external_callback_invocation
+      - has_value_transfer_or_state_change
+    evidence_required:
+      - function: executeFlashLoan
+        pattern: callback_before_state_finalize
+        line_range: [25, 35]
+
+  # ---------------------------------------------------------------------------
+  # SAFE CASES (5 contracts) - Negative Controls
+  # ---------------------------------------------------------------------------
+
+  - id: RE-SAFE-001
+    contract: Vault_02.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Has ReentrancyGuard modifier from OpenZeppelin. The nonReentrant modifier
+      prevents re-entry via mutex pattern.
+    detection_signals:
+      - has_reentrancy_guard
+      - uses_openzeppelin_pattern
+    false_positive_traps:
+      - still_has_external_call
+      - still_has_state_after_call  # Order doesn't matter with guard
+    evidence_required:
+      - function: withdraw
+        pattern: has_nonReentrant_modifier
+        line_range: [10, 18]
+
+  - id: RE-SAFE-002
+    contract: Vault_04.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Uses pull pattern (pendingWithdrawals mapping). Users must call a separate
+      claim() function to receive funds, eliminating reentrancy attack vector.
+    detection_signals:
+      - uses_pull_pattern
+      - no_direct_value_transfer_in_critical_path
+    false_positive_traps:
+      - has_external_call_in_claim  # But claim is idempotent
+      - writes_balance_and_calls    # But operations are separated
+    evidence_required:
+      - function: initiateWithdraw
+        pattern: pull_pattern_safe
+        line_range: [15, 20]
+
+  - id: RE-SAFE-003
+    contract: Vault_06.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Correctly implements CEI (Checks-Effects-Interactions) pattern.
+      State update (balances[msg.sender] -= amount) happens before external call.
+    detection_signals:
+      - follows_cei_pattern
+      - state_write_before_external_call
+    false_positive_traps:
+      - has_external_call
+      - has_value_transfer
+    evidence_required:
+      - function: withdraw
+        pattern: WRITES_USER_BALANCE before TRANSFERS_VALUE_OUT
+        line_range: [12, 17]
+
+  - id: RE-SAFE-004
+    contract: Vault_08.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      Uses custom mutex lock (locked variable with require check).
+      Functionally equivalent to ReentrancyGuard.
+    detection_signals:
+      - has_mutex_lock
+      - custom_reentrancy_protection
+    false_positive_traps:
+      - not_standard_openzeppelin  # Custom implementation still valid
+      - external_call_present
+    evidence_required:
+      - function: withdraw
+        pattern: has_mutex_guard
+        line_range: [8, 20]
+
+  - id: RE-SAFE-005
+    contract: Vault_10.sol
+    expected: SAFE
+    vuln_type: null
+    rationale: |
+      No external calls in any state-modifying function. Pure internal
+      accounting with no attack surface for reentrancy.
+    detection_signals:
+      - no_external_calls
+      - pure_internal_accounting
+    false_positive_traps:
+      - writes_balances  # But no external interaction
+      - has_public_functions
+    evidence_required:
+      - function: withdraw
+        pattern: no_external_calls
+        line_range: [10, 15]
+
+# =============================================================================
+# GROUND TRUTH VERIFICATION
+# =============================================================================
+#
+# Ground truth is external and pre-defined (not derived from system output).
+# Each case has been manually verified against known vulnerability patterns.
+
+ground_truth:
+  source: manual_audit
+  verified_by: "AlphaSwarm.sol development team"
+  verification_date: "2026-01-31"
+  methodology: |
+    Each contract was manually reviewed for reentrancy patterns:
+    1. Identified all external calls (call, delegatecall, staticcall, send, transfer)
+    2. Traced state writes relative to external call positions
+    3. Checked for reentrancy guards (ReentrancyGuard, custom mutex)
+    4. Analyzed cross-function state dependencies
+    5. Verified CEI pattern compliance
+
+# =============================================================================
+# EXECUTION METADATA
+# =============================================================================
+
+metadata:
+  total_cases: 10
+  vulnerable_count: 5
+  safe_count: 5
+  max_score: 10
+  vuln_types:
+    - classic-cei-violation
+    - guard-on-wrong-function
+    - cross-function-reentrancy
+    - read-only-reentrancy
+    - callback-reentrancy
+  safe_patterns:
+    - reentrancy-guard
+    - pull-pattern
+    - cei-pattern
+    - mutex-lock
+    - no-external-calls

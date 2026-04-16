@@ -1,0 +1,13 @@
+id: auth-083
+vulndoc: access-control/general
+name: Default Admin Address Zero
+description: Default admin address set to zero.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: default_admin_address_is_zero
+    op: eq
+    value: true

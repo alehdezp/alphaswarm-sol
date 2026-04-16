@@ -1,0 +1,9 @@
+{
+  "session_id": "eeb93c51-cb2c-4594-a4d9-4a5e5c11600f",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la"
+  },
+  "tool_response": "total 48\ndrwxr-xr-x  12 user  staff  384 Feb 26 12:00 .\n",
+  "_schema_note": "PostToolUse stdin from real CC session. CRITICAL: field is tool_response NOT tool_output (P13-IMP-01). Using tool_output causes silent data loss."
+}

@@ -1,0 +1,16 @@
+id: ext-016
+vulndoc: access-control/external-call
+name: Oracle Feed Not Upgradeable
+description: Contract uses an oracle feed without a setter or upgrade path.
+scope: Contract
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_oracle_state
+    op: eq
+    value: true
+  - property: has_oracle_feed_setter
+    op: eq
+    value: false

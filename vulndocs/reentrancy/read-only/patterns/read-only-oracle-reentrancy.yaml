@@ -1,0 +1,26 @@
+id: read-only-oracle-reentrancy
+vulndoc: reentrancy/read-only
+name: Read-Only Oracle Exploitation
+description: View functions that read oracle/Dex data during reentrancy windows.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: read_only_reentrancy_surface
+    op: eq
+    value: true
+  - property: is_view
+    op: eq
+    value: true
+  any:
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: reads_dex_reserves
+    op: eq
+    value: true
+  - property: reads_twap
+    op: eq
+    value: true

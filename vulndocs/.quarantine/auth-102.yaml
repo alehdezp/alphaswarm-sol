@@ -1,0 +1,13 @@
+id: auth-102
+vulndoc: access-control/general
+name: Weak Auth Using Hash Compare
+description: Authentication relies on keccak256/string hash comparisons.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_gate_uses_hash_compare
+    op: eq
+    value: true

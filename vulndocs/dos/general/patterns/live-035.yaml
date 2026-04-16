@@ -1,0 +1,19 @@
+id: live-035
+vulndoc: dos/general
+name: Event Log Exhaustion
+description: Event emission inside loops.
+scope: Function
+lens:
+- Liveness
+severity: low
+match:
+  all:
+  - property: event_emission_in_loop
+    op: eq
+    value: true
+  - property: has_unbounded_loop
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false

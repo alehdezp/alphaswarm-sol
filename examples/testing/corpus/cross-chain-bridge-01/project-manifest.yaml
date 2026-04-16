@@ -1,0 +1,26 @@
+name: "cross-chain-bridge-01"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "bridge"
+tier: 2
+adversarial_categories: ["A", "B"]
+pattern_count: 7
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/BridgeGateway.sol"
+    - "contracts/periphery/MessageVerifier.sol"
+  safe:
+    - "contracts/core/BridgeGateway_safe.sol"
+    - "contracts/periphery/MessageVerifier_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

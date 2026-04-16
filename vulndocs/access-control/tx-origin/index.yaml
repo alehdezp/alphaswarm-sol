@@ -1,0 +1,81 @@
+# tx.origin Authentication - Subcategory Index
+# Using tx.origin instead of msg.sender for authentication
+
+id: tx-origin
+name: tx.origin Authentication
+parent_category: access-control
+
+description: |
+  Using tx.origin for authentication instead of msg.sender. tx.origin returns the
+  original external account that initiated the transaction, while msg.sender returns
+  the immediate caller. An attacker can trick a legitimate user into calling their
+  malicious contract, which then calls the vulnerable contract. Since tx.origin still
+  points to the victim, authentication is bypassed.
+
+severity_range:
+  - medium
+  - high
+
+# Associated detection patterns
+patterns:
+  - auth-005
+
+# VKG properties for detection
+relevant_properties:
+  - uses_tx_origin
+  - has_access_gate
+  - writes_privileged_state
+  - visibility
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: uses_tx_origin
+    expected: true
+    critical: true
+    description: Function uses tx.origin for authentication
+
+  - property: has_access_gate
+    expected: true
+    critical: false
+    description: Access check exists but uses tx.origin
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    description: Function modifies privileged state
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+# Behavioral signatures
+behavioral_signatures:
+  - "G:tx.origin->W:critical"
+  - "G:tx.origin->X:call{value}"
+  - "tx.origin==owner->W:owner"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "require(tx.origin == owner) -> MODIFIES_CRITICAL_STATE"
+    - "require(tx.origin == owner) -> TRANSFERS_VALUE_OUT"
+  safe:
+    - "require(msg.sender == owner) -> MODIFIES_CRITICAL_STATE"
+    - "CHECKS_PERMISSION (msg.sender) -> TRANSFERS_VALUE_OUT"
+
+# False positive indicators
+false_positive_indicators:
+  - "tx.origin used only for logging/events"
+  - "tx.origin checked alongside msg.sender"
+  - "Function is internal or private"
+  - "tx.origin used for gas refund recipient only"
+
+# Related real-world exploits
+related_exploits:
+  - tx-origin-phishing
+
+# Token estimate for this subcategory
+token_estimate: 400

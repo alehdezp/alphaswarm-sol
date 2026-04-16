@@ -1,0 +1,35 @@
+id: invariant-balance-unvalidated
+vulndoc: logic/invariants
+name: Balance Modification Without Validation
+description: 'Function modifies user balance without proper validation.
+
+  Balance changes should be validated against invariants.
+
+
+  Risk: Accounting errors leading to fund loss or incorrect balances.
+
+  Balance modifications need bounds checking and validation.
+
+  '
+severity: high
+scope: Function
+lens:
+- ValueTransfer
+- Invariants
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - has_operation: WRITES_USER_BALANCE
+    none:
+    - has_operation: VALIDATES_INPUT
+  tier_c:
+    all:
+    - type: has_category
+      value: value_handling
+    none:
+    - type: has_label
+      value: invariants.enforces_balance_check
+    - type: has_label
+      value: invariants.validates_amount
+required_labels: []

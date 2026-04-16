@@ -1,0 +1,54 @@
+name: VulnDocs Validation
+
+on:
+  pull_request:
+    paths:
+      - 'vulndocs/**'
+      - 'patterns/**'
+  push:
+    branches: [main]
+    paths:
+      - 'vulndocs/**'
+      - 'patterns/**'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Validate vulndocs structure
+        run: |
+          uv run alphaswarm vulndocs validate vulndocs/ --json > validation.json
+          cat validation.json
+
+      - name: Check for errors
+        run: |
+          # Fail only on errors, not warnings
+          if jq -e '.has_errors == true' validation.json > /dev/null; then
+            echo "::error::VulnDocs validation found errors"
+            jq '.vulnerabilities[] | select(.errors | length > 0)' validation.json
+            exit 1
+          fi
+
+      - name: Report warnings
+        if: always()
+        run: |
+          # Report warnings as annotations but don't fail
+          jq -r '.vulnerabilities[] | select(.warnings | length > 0) | "\(.path): \(.warnings | join(", "))"' validation.json | while read line; do
+            echo "::warning::$line"
+          done
+
+      - name: Upload validation results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vulndocs-validation
+          path: validation.json

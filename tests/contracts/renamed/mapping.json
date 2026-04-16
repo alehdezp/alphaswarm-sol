@@ -1,0 +1,196 @@
+{
+  "description": "Rename mapping for testing name-independent vulnerability detection",
+  "purpose": "These contracts use non-standard naming conventions to test whether VKG patterns can detect vulnerabilities without relying on function/variable names",
+  "target_detection_rate": ">90% (currently ~60%)",
+  "global_renames": {
+    "owner": "controller",
+    "admin": "supervisor",
+    "balances": "userDeposits",
+    "withdraw": "removeFunds",
+    "transfer": "moveFunds",
+    "deposit": "addFunds",
+    "mint": "createUnits",
+    "burn": "destroyUnits",
+    "allowance": "spendLimit",
+    "approve": "authorize",
+    "totalSupply": "circulation",
+    "balanceOf": "holdings",
+    "initialize": "setup",
+    "implementation": "logic",
+    "oracle": "dataSource",
+    "priceFeed": "dataSource",
+    "swap": "exchange",
+    "router": "liquidityPool",
+    "minAmountOut": "minimumReturn",
+    "deadline": "expiry",
+    "slippage": "tolerance",
+    "treasury": "vault",
+    "fee": "charge",
+    "users": "participants"
+  },
+  "contracts": [
+    {
+      "file": "ReentrancyRenamed.sol",
+      "original_equivalent": "ReentrancyClassic.sol",
+      "vulnerability_type": "reentrancy",
+      "renames": {
+        "withdraw": "removeFunds",
+        "deposit": "addFunds",
+        "balances": "userDeposits"
+      },
+      "expected_detections": [
+        "state_write_after_external_call",
+        "has_external_calls",
+        "reentrancy-basic (should detect)",
+        "state-write-after-call (should detect)"
+      ]
+    },
+    {
+      "file": "AccessControlRenamed.sol",
+      "original_equivalent": "NoAccessGate.sol",
+      "vulnerability_type": "access_control",
+      "renames": {
+        "owner": "controller",
+        "setOwner": "updateController"
+      },
+      "expected_detections": [
+        "writes_state without has_access_gate",
+        "weak-access-control (should detect)"
+      ]
+    },
+    {
+      "file": "ValueMovementRenamed.sol",
+      "original_equivalent": "ValueMovementReentrancy.sol",
+      "vulnerability_type": "value_movement",
+      "renames": {
+        "transfer": "moveFunds",
+        "withdraw": "extractValue",
+        "deposit": "insertValue",
+        "balances": "ledger",
+        "treasury": "vault"
+      },
+      "expected_detections": [
+        "eth_transfer_external_calls",
+        "public-payable-no-gate (should detect)",
+        "value-movement patterns"
+      ]
+    },
+    {
+      "file": "TokenRenamed.sol",
+      "original_equivalent": "TokenCalls.sol",
+      "vulnerability_type": "token_operations",
+      "renames": {
+        "balanceOf": "holdings",
+        "transfer": "moveTo",
+        "transferFrom": "moveFrom",
+        "approve": "authorize",
+        "allowance": "spendLimit",
+        "totalSupply": "circulation",
+        "mint": "createUnits",
+        "burn": "destroyUnits"
+      },
+      "expected_detections": [
+        "token-approval-race-condition (may miss due to name)",
+        "writes_state without has_access_gate"
+      ]
+    },
+    {
+      "file": "InitializerRenamed.sol",
+      "original_equivalent": "InitializerGuarded.sol (vulnerable variant)",
+      "vulnerability_type": "initializer",
+      "renames": {
+        "initialize": "setup",
+        "initialized": "hasBeenConfigured",
+        "owner": "controller"
+      },
+      "expected_detections": [
+        "is_initializer_function (may miss due to name)",
+        "initializer-no-gate (may miss due to name)"
+      ]
+    },
+    {
+      "file": "OracleRenamed.sol",
+      "original_equivalent": "OracleNoStaleness.sol",
+      "vulnerability_type": "oracle",
+      "renames": {
+        "oracle": "dataSource",
+        "priceFeed": "dataSource",
+        "getPrice": "fetchQuote",
+        "latestRoundData": "fetchLatestData",
+        "stalenessThreshold": "maximumDelay"
+      },
+      "expected_detections": [
+        "reads_oracle_price (may miss due to name)",
+        "oracle-freshness patterns (may miss)"
+      ]
+    },
+    {
+      "file": "SwapRenamed.sol",
+      "original_equivalent": "SwapNoSlippage.sol",
+      "vulnerability_type": "mev",
+      "renames": {
+        "swap": "exchange",
+        "router": "liquidityPool",
+        "minAmountOut": "minimumReturn",
+        "deadline": "expiry"
+      },
+      "expected_detections": [
+        "swap_like (may miss due to name)",
+        "risk_missing_slippage_parameter (may miss)",
+        "mev patterns (may miss due to naming)"
+      ]
+    },
+    {
+      "file": "DelegateCallRenamed.sol",
+      "original_equivalent": "DelegatecallNoAccessGate.sol",
+      "vulnerability_type": "delegatecall",
+      "renames": {
+        "implementation": "logic",
+        "admin": "supervisor",
+        "upgrade": "switchLogic"
+      },
+      "expected_detections": [
+        "uses_delegatecall (should detect - semantic property)",
+        "delegatecall-no-gate (should detect)",
+        "proxy patterns (may miss due to naming)"
+      ]
+    },
+    {
+      "file": "FeeOnTransferRenamed.sol",
+      "original_equivalent": "custom",
+      "vulnerability_type": "token_accounting",
+      "renames": {
+        "balanceOf": "holdings",
+        "transfer": "moveTo",
+        "transferFrom": "moveFrom",
+        "deposit": "insertAsset",
+        "balances": "credited"
+      },
+      "expected_detections": [
+        "token-fee-on-transfer-unhandled (may miss)",
+        "token-unchecked-return (should detect semantically)"
+      ]
+    },
+    {
+      "file": "LoopDosRenamed.sol",
+      "original_equivalent": "LoopDos.sol",
+      "vulnerability_type": "dos",
+      "renames": {
+        "users": "participants",
+        "balances": "credits",
+        "batchProcess": "distributeToAll"
+      },
+      "expected_detections": [
+        "has_unbounded_loop (should detect - semantic)",
+        "external_calls_in_loop (should detect - semantic)",
+        "dos patterns (should mostly detect)"
+      ]
+    }
+  ],
+  "notes": [
+    "Patterns that use 'label' property with regex are expected to fail on renamed contracts",
+    "Patterns that check semantic properties (writes_state, has_access_gate, uses_delegatecall) should succeed",
+    "Goal is to migrate patterns from name-based to semantic-based detection",
+    "Each contract preserves the vulnerable behavior while using non-standard names"
+  ]
+}

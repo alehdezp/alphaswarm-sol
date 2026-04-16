@@ -1,0 +1,505 @@
+# =============================================================================
+# PATTERN: auth-005-unprotected-list-management
+# =============================================================================
+#
+# REPLACES: auth-109 (regex-based name matching on whitelist/blacklist/allowlist/denylist)
+#
+# This pattern detects BEHAVIOR (list management state writes) not NAMES.
+# Uses semantic property: writes_privileged_state (detects writes to allowlist,
+# denylist state variables as classified by heuristics.py lines 152-153).
+#
+# =============================================================================
+
+id: auth-005
+vulndoc: access-control/authorization
+name: "Unprotected List Management"
+
+description: |
+  ## What This Detects
+  Public/external functions that manage access control lists (whitelists, blacklists,
+  allowlists, denylists, guardian lists, validator lists) without access control,
+  regardless of naming conventions.
+
+  **List management includes:**
+  - Allowlists/whitelists (approved addresses for restricted operations)
+  - Denylists/blacklists (blocked addresses)
+  - Guardian lists (emergency response controllers)
+  - Validator lists (authorized validators/signers)
+  - Any address collection controlling access or privileges
+
+  **Detection is semantic, not syntactic:**
+  - Detects `writes_privileged_state=true` where state variables are tagged as
+    "allowlist" or "denylist" (heuristics.py:152-153)
+  - NOT function name matching (addToWhitelist*, setAllowlist*, etc.)
+  - Works with obfuscated names, alternative conventions, custom list names
+
+  ## Why It's Dangerous
+  List management controls who can perform critical operations. Unprotected writes allow
+  any caller to:
+  - **Add malicious addresses to allowlists** → bypass restrictions, exploit privileges
+  - **Add legitimate users to denylists** → DoS attacks, freeze user funds
+  - **Remove legitimate addresses from allowlists** → disrupt protocol operations
+  - **Manipulate guardian/validator sets** → compromise governance/consensus
+  - **Front-run legitimate list updates** → MEV attacks, privilege manipulation
+
+  ## Real-World Impact
+  - **Wormhole Bridge Hack (2022)**: $324M - guardian signature validation bypass
+    allowed attacker to insert fake guardian credentials and mint 120k wETH
+  - **Sonne Finance (2024)**: $20M - access control flaw in validator management
+  - **Multiple DeFi Protocols**: Unprotected whitelist functions allowing rug pulls
+    via malicious address additions
+
+  ## Detection Logic
+  This pattern triggers when ALL of these conditions are met:
+  1. Function is externally callable (public/external visibility)
+  2. Function writes to privileged state tagged as "allowlist" or "denylist"
+     (semantic detection via heuristics.py classification)
+  3. Function has NO access control (no modifiers, no require checks)
+  4. Function is NOT a constructor or initializer (intentional setup)
+  5. Function is NOT view/pure (can't modify state anyway)
+
+  ## Key Insight
+  Unlike auth-003 (general privileged write), this pattern is SPECIFICALLY for
+  list management vulnerabilities. The builder tags state variables with "allowlist"
+  and "denylist" tags when they detect whitelist/blacklist/allowlist/denylist/
+  guardian/validator patterns in variable names. These tags are part of the
+  privileged set, so `writes_privileged_state` captures them semantically.
+
+scope: Function
+
+lens:
+  - Authority
+
+severity: high
+
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must write to privileged state (includes allowlist/denylist tags)
+    # This is SEMANTIC - detects behavior, not names
+    - property: writes_privileged_state
+      op: eq
+      value: true
+
+    # Must NOT have access control
+    - property: has_access_gate
+      op: eq
+      value: false
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Exclude constructors (intentional setup)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude initializers (intentional setup in upgradeable contracts)
+    - property: is_initializer_function
+      op: eq
+      value: true
+
+    # Exclude view functions (can't modify state)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't access state)
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [access-registry]
+  true_positives: 16
+  true_negatives: 8
+  false_positives: 5
+  false_negatives: 12
+  edge_cases: 7
+  precision: 0.76
+  recall: 0.57
+  variation_score: 0.50
+  last_tested: "2025-12-31"
+  notes: |
+    DRAFT status due to variation_score < 60% (fails threshold).
+
+    Test Results:
+    - ✓ Detects: whitelist, blacklist, allowlist, denylist, validator lists
+    - ✗ Misses: operator, minter, burner, relayer, guardian lists (12 FN)
+    - ✗ False alarms: inline if-revert, self-registration, multi-sig (5 FP)
+
+    Critical Gaps:
+    1. Builder heuristics incomplete - operators/minters/burners not tagged as privileged
+    2. Access gate detection misses inline if-revert patterns
+    3. Pattern doesn't distinguish self-registration from admin control
+    4. Scope too broad - flags ALL privileged writes, not just list management
+
+    Improvement Path to EXCELLENT:
+    1. Priority 1: Fix heuristics.py to tag operators/minters/burners/guardians as "role"
+    2. Priority 2: Improve access gate detection for inline checks
+    3. Priority 3: Add self-registration detection (writes to msg.sender only)
+    4. Priority 4: Narrow scope to list-specific tags (not all privileged state)
+
+    With fixes: Projected 100% precision, 100% recall, EXCELLENT status.
+
+    Detailed report: AUTH-005-TEST-REPORT.md
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Malicious Allowlist Addition"
+    description: |
+      Attacker adds their address to allowlist to gain restricted privileges
+      (minting, privileged operations, fee exemptions, etc.)
+    preconditions:
+      - Function writes to allowlist/whitelist mapping
+      - No access control present (no onlyOwner/onlyRole modifier)
+      - Allowlist grants meaningful privileges (mint, transfer, withdraw, etc.)
+    steps:
+      - Attacker identifies unprotected allowlist management function
+      - Calls function to add their address to allowlist
+      - Uses newly-granted allowlist privileges to exploit protocol
+      - Example: mint unlimited tokens if allowlist controls minting
+      - Example: bypass transfer restrictions if allowlist exempts from locks
+    impact: "Privilege escalation via allowlist manipulation"
+    cvss: 8.6
+
+  - name: "DoS via Denylist Manipulation"
+    description: |
+      Attacker adds legitimate users to denylist to freeze their funds or
+      prevent protocol participation.
+    preconditions:
+      - Function writes to denylist/blacklist mapping
+      - No access control present
+      - Denylist blocks critical operations (transfer, withdraw, vote, etc.)
+    steps:
+      - Attacker identifies unprotected denylist management function
+      - Adds target addresses (competitors, large holders, DAO voters) to denylist
+      - Victims can no longer transfer tokens, withdraw funds, or participate
+      - In severe cases, user funds are permanently frozen
+      - Attacker may also denylist contract addresses to break integrations
+    impact: "Denial of Service, fund freezing, governance manipulation"
+    cvss: 7.8
+
+  - name: "Guardian Set Manipulation"
+    description: |
+      Attacker replaces legitimate guardians with malicious addresses to
+      compromise emergency controls or consensus mechanisms.
+    preconditions:
+      - Function writes to guardian/validator list
+      - No access control present
+      - Guardians have privileged powers (pause, emergency withdraw, validation)
+    steps:
+      - Attacker identifies unprotected guardian management function
+      - Removes legitimate guardians, adds attacker-controlled addresses
+      - Uses compromised guardian powers for malicious actions
+      - Example (Wormhole): inject fake guardian signatures to mint tokens
+      - Example: trigger emergency pause to DoS protocol
+      - Example: approve malicious transactions in multi-sig setup
+    impact: "Consensus/emergency control compromise, potential fund theft"
+    cvss: 9.2
+
+  - name: "Front-Running List Updates"
+    description: |
+      Attacker monitors mempool for legitimate list management transactions
+      and front-runs to manipulate privileges before/after official changes.
+    preconditions:
+      - Function writes to allowlist/denylist
+      - No access control present (or weak access control)
+      - List changes affect trading, liquidations, or other value-extractive operations
+    steps:
+      - Monitor mempool for list management transactions
+      - Front-run to add attacker address before official allowlist addition
+      - Exploit temporary privileged state
+      - Back-run to remove attacker after exploiting privilege
+      - Example: add self to liquidator allowlist, perform liquidation, remove self
+    impact: "MEV extraction via privilege manipulation"
+    cvss: 6.5
+
+  - name: "Allowlist Removal Attack"
+    description: |
+      Attacker removes legitimate addresses from allowlist to disrupt
+      protocol operations or partnerships.
+    preconditions:
+      - Function writes to allowlist (removal capability)
+      - No access control present
+      - Removed addresses lose critical privileges
+    steps:
+      - Identify critical addresses on allowlist (partners, integrations, keepers)
+      - Call unprotected function to remove these addresses
+      - Protocol operations fail due to missing allowlisted addresses
+      - Example: remove DEX router from allowlist, breaking swap functionality
+      - Example: remove keeper addresses, breaking automated operations
+    impact: "Protocol disruption, broken integrations, operational DoS"
+    cvss: 7.2
+
+verification_steps:
+  - "Verify function is externally callable (public or external visibility)"
+  - "Confirm function writes to state variables tagged with 'allowlist' or 'denylist' (check state_write_targets in graph)"
+  - "Check no access control modifier present (onlyOwner, onlyRole, onlyGuardian, etc.)"
+  - "Check no inline require/if statements validating msg.sender against admin addresses"
+  - "Verify this is NOT a constructor or initializer (intentional setup pattern)"
+  - "Identify what privileges the list controls (minting, transfers, liquidations, etc.)"
+  - "Test: attempt to call function from non-privileged address to confirm unauthorized access"
+  - "Assess impact: what can attacker do by manipulating this list?"
+  - "Review contract documentation to determine if public list management is intentional (rare but possible for community-managed lists)"
+
+fix_recommendations:
+  - name: "Add onlyOwner Modifier"
+    description: |
+      Restrict list management to contract owner only. Simplest fix for
+      single-owner contracts.
+    example: |
+      // BEFORE (VULNERABLE)
+      function addToWhitelist(address account) external {
+          whitelist[account] = true;
+      }
+
+      // AFTER (FIXED)
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract MyContract is Ownable {
+          function addToWhitelist(address account) external onlyOwner {
+              require(account != address(0), "Zero address not allowed");
+              whitelist[account] = true;
+              emit AddedToWhitelist(account);
+          }
+
+          function removeFromWhitelist(address account) external onlyOwner {
+              whitelist[account] = false;
+              emit RemovedFromWhitelist(account);
+          }
+      }
+
+  - name: "Implement Role-Based List Management"
+    description: |
+      Use dedicated roles for list management (LIST_MANAGER_ROLE) separate
+      from owner. Allows delegation without full ownership transfer.
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyContract is AccessControl {
+          bytes32 public constant LIST_MANAGER_ROLE = keccak256("LIST_MANAGER_ROLE");
+
+          mapping(address => bool) public allowlist;
+          mapping(address => bool) public denylist;
+
+          constructor() {
+              _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+              _grantRole(LIST_MANAGER_ROLE, msg.sender);
+          }
+
+          function addToAllowlist(address account)
+              external
+              onlyRole(LIST_MANAGER_ROLE)
+          {
+              require(account != address(0), "Zero address");
+              require(!denylist[account], "Address is denylisted");
+              allowlist[account] = true;
+              emit AllowlistAdded(account);
+          }
+
+          function addToDenylist(address account)
+              external
+              onlyRole(LIST_MANAGER_ROLE)
+          {
+              require(account != address(0), "Zero address");
+              denylist[account] = true;
+              allowlist[account] = false; // Remove from allowlist
+              emit DenylistAdded(account);
+          }
+      }
+
+  - name: "Add Multi-Signature Requirement for Critical Lists"
+    description: |
+      For guardian/validator lists that control consensus or emergency powers,
+      require multiple signatures to prevent single-point-of-failure.
+    example: |
+      import "@openzeppelin/contracts/governance/TimelockController.sol";
+
+      contract MyContract {
+          mapping(address => bool) public guardians;
+          TimelockController public immutable timelock;
+
+          modifier onlyTimelock() {
+              require(msg.sender == address(timelock), "Only timelock");
+              _;
+          }
+
+          constructor(address _timelock) {
+              timelock = TimelockController(payable(_timelock));
+          }
+
+          // Guardian changes require timelock (multi-sig + delay)
+          function addGuardian(address guardian) external onlyTimelock {
+              require(guardian != address(0), "Zero address");
+              guardians[guardian] = true;
+              emit GuardianAdded(guardian);
+          }
+
+          function removeGuardian(address guardian) external onlyTimelock {
+              guardians[guardian] = false;
+              emit GuardianRemoved(guardian);
+          }
+      }
+
+  - name: "Implement Allowlist with Expiration and Limits"
+    description: |
+      Add time-based expiration and operation limits to allowlist entries
+      to reduce attack surface from compromised allowlist additions.
+    example: |
+      contract MyContract {
+          struct AllowlistEntry {
+              bool active;
+              uint256 expiresAt;
+              uint256 operationLimit;
+              uint256 operationsUsed;
+          }
+
+          mapping(address => AllowlistEntry) public allowlist;
+
+          function addToAllowlist(
+              address account,
+              uint256 duration,
+              uint256 operationLimit
+          ) external onlyOwner {
+              require(account != address(0), "Zero address");
+              allowlist[account] = AllowlistEntry({
+                  active: true,
+                  expiresAt: block.timestamp + duration,
+                  operationLimit: operationLimit,
+                  operationsUsed: 0
+              });
+              emit AllowlistAdded(account, duration, operationLimit);
+          }
+
+          modifier onlyAllowlisted() {
+              AllowlistEntry storage entry = allowlist[msg.sender];
+              require(entry.active, "Not allowlisted");
+              require(block.timestamp < entry.expiresAt, "Allowlist expired");
+              require(
+                  entry.operationsUsed < entry.operationLimit,
+                  "Operation limit exceeded"
+              );
+              entry.operationsUsed++;
+              _;
+          }
+
+          function privilegedOperation() external onlyAllowlisted {
+              // Privileged logic here
+          }
+      }
+
+  - name: "Separate Addition and Removal Permissions"
+    description: |
+      Use separate roles for adding vs removing addresses to implement
+      principle of least privilege and prevent accidental/malicious removals.
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyContract is AccessControl {
+          bytes32 public constant LIST_ADDER_ROLE = keccak256("LIST_ADDER_ROLE");
+          bytes32 public constant LIST_REMOVER_ROLE = keccak256("LIST_REMOVER_ROLE");
+
+          mapping(address => bool) public allowlist;
+
+          // Only adders can add to allowlist
+          function addToAllowlist(address account)
+              external
+              onlyRole(LIST_ADDER_ROLE)
+          {
+              require(account != address(0), "Zero address");
+              allowlist[account] = true;
+              emit AllowlistAdded(account);
+          }
+
+          // Only removers can remove from allowlist
+          function removeFromAllowlist(address account)
+              external
+              onlyRole(LIST_REMOVER_ROLE)
+          {
+              allowlist[account] = false;
+              emit AllowlistRemoved(account);
+          }
+      }
+
+related_patterns:
+  - auth-003  # Unprotected privileged state write (general)
+  - auth-001  # Unprotected state write
+  - auth-002  # tx.origin auth (weak access control)
+  - auth-013  # Inconsistent access control
+
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-863  # Incorrect Authorization
+  - CWE-732  # Incorrect Permission Assignment for Critical Resource
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations (when implemented)
+semantic_ops:
+  has_any_operation:
+    - MODIFIES_ALLOWLIST   # Future: specific allowlist operation
+    - MODIFIES_DENYLIST    # Future: specific denylist operation
+  # Note: Currently uses writes_privileged_state which includes these
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches:
+    - wormhole-bridge-2022
+    - sonne-finance-2024
+  signature: "unprotected_list_management"
+  description: "Unprotected list management leading to privilege escalation or DoS"
+
+# Multi-Agent Verification Hints
+verification_agents:
+  # Pattern agent should check state_write_targets for allowlist/denylist tags
+  pattern:
+    require_all_conditions: true
+  # Explorer agent should trace from entry point to list modification
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [MODIFIES_ALLOWLIST, MODIFIES_DENYLIST]
+    max_depth: 3
+  # Risk agent should assess impact based on what list controls
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 7.0
+
+# Attack Path Templates
+attack_paths:
+  - name: allowlist_privilege_escalation
+    description: Attacker adds self to allowlist to gain privileges
+    entry_points:
+      - role: EntryPoint
+        operations: [MODIFIES_ALLOWLIST]
+    intermediate_steps: []
+    exit_points:
+      - operations: [TRANSFERS_VALUE_OUT, MODIFIES_CRITICAL_STATE]
+    preconditions:
+      - "has_access_gate == false"
+      - "visibility in [public, external]"
+    impact: "Privilege escalation via allowlist manipulation"

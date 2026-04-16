@@ -1,0 +1,21 @@
+name: health-check-basic
+category: infrastructure
+description: Verify /vrs-health-check produces valid output (infrastructure smoke test)
+prompt_template: "Run /vrs-health-check and verify all components are available"
+timeout_seconds: 120
+model: sonnet
+modes: [single]
+steps:
+  - prompt: "Run /vrs-health-check"
+    expect:
+      response_contains: ["alphaswarm", "build-kg"]
+      tool_was_used: ["Bash"]
+graders:
+  - type: code
+    method: string_match
+trials: 1
+evaluation_guidance:
+  reasoning_questions:
+    - "Did the health check verify CLI tool availability?"
+    - "Were all expected components mentioned in the output?"
+  hooks_if_failed: []

@@ -1,0 +1,13 @@
+id: ext-045
+vulndoc: access-control/external-call
+name: Governance Vote Without Snapshot
+description: Voting logic uses current balance without snapshot protection.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: governance_vote_without_snapshot
+    op: eq
+    value: true

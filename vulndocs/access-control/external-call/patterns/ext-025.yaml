@@ -1,0 +1,16 @@
+id: ext-025
+vulndoc: access-control/external-call
+name: Oracle Answer Not Positive
+description: Oracle reads without validating a positive, non-zero answer.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: validates_answer_positive
+    op: eq
+    value: false

@@ -1,0 +1,20 @@
+id: dataflow-input-taints-state
+vulndoc: access-control/input-validation
+name: Input Taints State (Dataflow Edge)
+description: Functions with explicit input-to-state dataflow edges.
+scope: Function
+lens:
+  - ExternalInfluence
+severity: high
+match:
+  none:
+    - property: is_constructor
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: true
+edges:
+  - type: FUNCTION_INPUT_TAINTS_STATE
+    direction: out
+    target_type: StateVariable

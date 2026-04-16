@@ -1,0 +1,79 @@
+# Cross-Chain Signature Replay - Subcategory Index
+# Signature replay attacks across multiple blockchains
+
+id: signature-replay
+name: Cross-Chain Signature Replay
+parent_category: cross-chain
+
+description: |
+  Cross-chain signature replay occurs when a valid signature on one blockchain
+  can be reused on another blockchain due to missing chainId validation, missing
+  deadlines, or user-supplied domain separators. Attackers replay signatures
+  across chains if nonces match or if signatures never expire.
+
+severity_range:
+  - critical
+  - high
+
+# Associated detection patterns
+patterns:
+  - cc-009
+
+# VKG properties for detection
+relevant_properties:
+  - uses_ecrecover
+  - checks_chainid
+  - has_deadline_check
+  - validates_domain_separator
+  - uses_nonce
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: uses_ecrecover
+    expected: true
+    critical: true
+    description: Uses signature verification
+
+  - property: checks_chainid
+    expected: false
+    critical: true
+    description: Missing chainId validation
+
+  - property: has_deadline_check
+    expected: false
+    critical: true
+    description: Missing signature expiration
+
+  - property: validates_domain_separator
+    expected: false
+    critical: true
+    description: User-supplied domain separator not validated
+
+# Behavioral signatures
+behavioral_signatures:
+  - "R:sig->ECRECOVER->CHECK:signer->EXECUTE"
+  - "R:domainSep(user)->R:sig->VALIDATE->REPLAY"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "READS_SIGNATURE -> VALIDATES_SIGNER -> EXECUTES (missing chainId)"
+    - "ACCEPTS_USER_DOMAIN_SEPARATOR -> VALIDATES_SIG -> REPLAYS_CROSS_CHAIN"
+  safe:
+    - "READS_SIGNATURE -> VALIDATES_CHAINID -> VALIDATES_DEADLINE -> EXECUTES"
+    - "HARDCODED_DOMAIN_SEPARATOR -> VALIDATES_SIG -> NONCE_INCREMENT"
+
+# False positive indicators
+false_positive_indicators:
+  - "chainId included in signature hash"
+  - "Deadline timestamp enforced"
+  - "Domain separator hardcoded or validated"
+  - "Nonce tracking prevents replay"
+  - "Contract only deployed on single chain"
+
+# Related real-world exploits
+related_exploits:
+  - next-generation-trusted-forwarder
+
+# Token estimate for this subcategory
+token_estimate: 500

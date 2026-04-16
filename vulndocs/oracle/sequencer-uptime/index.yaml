@@ -1,0 +1,78 @@
+# Sequencer Uptime - Subcategory Index
+# L2 sequencer uptime oracle issues and grace period handling
+
+id: sequencer-uptime
+name: Sequencer Uptime
+parent_category: oracle
+
+description: |
+  L2 networks like Arbitrum and Optimism use centralized sequencers that can go
+  offline. During downtime, transactions can still reach L1 but may execute with
+  stale oracle prices once the sequencer resumes. Protocols must check sequencer
+  uptime and enforce grace periods before trusting oracle data post-recovery.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - oracle-005
+  - oracle-l2-sequencer-grace-missing  # Phase 7.2 exemplar pattern
+
+# VKG properties for detection
+relevant_properties:
+  - reads_oracle_price
+  - has_sequencer_uptime_check
+  - has_grace_period_check
+  - is_l2_deployment
+  - external_call_sites
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: reads_oracle_price
+    expected: true
+    critical: true
+    description: Function reads from price oracle
+
+  - property: has_sequencer_uptime_check
+    expected: false
+    critical: true
+    description: No L2 sequencer uptime verification
+
+  - property: has_grace_period_check
+    expected: false
+    critical: false
+    description: No grace period after sequencer recovery
+
+  - property: is_l2_deployment
+    expected: true
+    critical: true
+    description: Contract deployed on L2 network
+
+# Behavioral signatures
+behavioral_signatures:
+  - "X:oracle->C:price->W:state"
+  - "X:chainlink->R:price->W:liquidation"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "READS_ORACLE -> MODIFIES_CRITICAL_STATE"
+  safe:
+    - "READS_SEQUENCER_STATUS -> VALIDATES_UPTIME -> READS_ORACLE -> MODIFIES_CRITICAL_STATE"
+    - "READS_SEQUENCER_STATUS -> VALIDATES_GRACE_PERIOD -> READS_ORACLE"
+
+# False positive indicators
+false_positive_indicators:
+  - "Sequencer uptime feed checked before price read"
+  - "Grace period enforced after sequencer recovery"
+  - "L1 deployment only (no sequencer dependency)"
+  - "Price updates blocked during downtime"
+
+# Related real-world exploits
+related_exploits:
+  - arbitrum-sequencer-downtime
+
+# Token estimate for this subcategory
+token_estimate: 450

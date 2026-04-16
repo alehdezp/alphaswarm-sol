@@ -1,0 +1,85 @@
+# logic Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: logic
+name: Logic
+description: 'Vulnerability subcategories for logic domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: accounting
+  name: Accounting
+  path: accounting/
+- id: arithmetic
+  name: Arithmetic Issues
+  path: arithmetic/
+- id: array-handling
+  name: Array Handling
+  path: array-handling/
+- id: balance-manipulation
+  name: Balance Manipulation
+  path: balance-manipulation/
+- id: business-logic
+  name: Business Logic
+  path: business-logic/
+- id: calldata
+  name: Calldata
+  path: calldata/
+- id: config
+  name: Config
+  path: config/
+- id: configuration
+  name: Configuration and Low-Level Assembly Issues
+  path: configuration/
+- id: empty-loop-bypass
+  name: Empty Loop Bypass
+  path: empty-loop-bypass/
+- id: general
+  name: General
+  path: general/
+- id: invariant-violation
+  name: Invariant Violation
+  path: invariant-violation/
+- id: invariants
+  name: Invariants
+  path: invariants/
+- id: library-usage
+  name: Library Usage
+  path: library-usage/
+- id: liquidation-mechanics
+  name: Liquidation Mechanics Flaws
+  path: liquidation-mechanics/
+- id: msg-value
+  name: Msg Value
+  path: msg-value/
+- id: parameter-confusion
+  name: Parameter Confusion
+  path: parameter-confusion/
+- id: precision-accounting
+  name: Precision Loss Accounting
+  path: precision-accounting/
+- id: rounding
+  name: Rounding Errors
+  path: rounding/
+- id: sequencing
+  name: L2 Transaction Sequencing Issues
+  path: sequencing/
+- id: state-inconsistency
+  name: State Inconsistency
+  path: state-inconsistency/
+- id: state-isolation
+  path: state-isolation/
+- id: state-machine
+  name: State Machine
+  path: state-machine/
+- id: transient-storage
+  name: Transient Storage Misuse
+  path: transient-storage/
+- id: unsafe-downcast
+  name: Unsafe Integer Downcasting
+  path: unsafe-downcast/
+statistics:
+  subcategory_count: 24
+  last_updated: '2026-02-18'

@@ -1,0 +1,34 @@
+# MEV Safe Reference Implementation
+id: safe-mev
+name: MevSafe
+category: internal_safe
+source: tests/contracts/safe/MevSafe.sol
+solidity_version: "0.8.x"
+
+contract_info:
+  description: |
+    Reference implementation demonstrating MEV protection:
+    - Slippage parameters
+    - Deadline checks
+    - TWAP usage
+  security_features:
+    - Slippage protection
+    - Deadline enforcement
+    - TWAP oracle
+    - Commit-reveal where needed
+  safe_since: 2025-12
+  review_status: internal
+
+expected_findings: []
+
+false_positive_categories:
+  - mev-*
+  - slippage-*
+  - deadline-*
+  - sandwich-*
+
+notes: |
+  This contract demonstrates correct MEV protection patterns.
+  Any MEV-related finding is a false positive.
+
+status: validated

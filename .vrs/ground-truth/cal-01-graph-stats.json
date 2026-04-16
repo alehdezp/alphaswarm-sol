@@ -1,0 +1,18 @@
+{
+  "contract": "ReentrancyClassic",
+  "contract_id": "cal-01",
+  "contract_path": "tests/contracts/ReentrancyClassic.sol",
+  "built_at": "2026-03-02T14:52:32Z",
+  "identity": "271b6cf5c178",
+  "nodes": 12,
+  "edges": 17,
+  "graph_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/ground-truth/cal-01/graph.toon",
+  "expected_vulnerability_class": "reentrancy",
+  "semantic_fingerprint": "CEI_violation_withdraw",
+  "function_names": [
+    "deposit",
+    "withdraw"
+  ],
+  "has_external_calls": true,
+  "has_state_modification_after_call": true
+}

@@ -1,0 +1,87 @@
+# llms.txt - AlphaSwarm.sol
+
+> Multi-agent Solidity security framework. Names lie, behavior doesn't.
+
+## Overview
+
+AlphaSwarm.sol detects smart contract vulnerabilities through behavioral patterns, not function names. It builds a knowledge graph, coordinates AI agents (attacker/defender/verifier), and produces evidence-linked findings.
+
+**Status:** ~98% complete | 84.6% DVDeFi | 78.2% Gauntlet
+
+## Session Starters
+
+| If you want to... | Load |
+|-------------------|------|
+| Run first audit | docs/getting-started/first-audit.md |
+| Understand vision | docs/PHILOSOPHY.md |
+| Write patterns | docs/guides/patterns-basics.md |
+| Query graph | docs/guides/queries.md |
+| Use skills | docs/guides/skills-basics.md |
+| Configure agents | docs/reference/agents.md |
+| Integrate tools | docs/reference/tools-overview.md |
+
+## Key Concepts
+
+- **BSKG**: Behavioral Security Knowledge Graph
+- **Semantic Operations**: 20 behavior-based detections
+- **Behavioral Signatures**: R:bal→X:out→W:bal = reentrancy
+- **Three-Tier Detection**: Tier A (deterministic) + Tier B (LLM) + Tier C (labels)
+- **Graph-First**: Agents MUST query BSKG before conclusions
+- **Proof Tokens**: Non-fakeable evidence of execution
+- **Validation Gates**: G0-G7 quality gates
+
+## The 7-Stage Audit Pipeline
+
+```
+/vrs-audit contracts/
+
+Stage 1: Setup & Validation
+Stage 2: Build Knowledge Graph (200+ emitted properties/function)
+Stage 3: Protocol Context (Exa MCP research)
+Stage 4: Pattern Matching (680+ patterns)
+Stage 5: Agent Investigation
+Stage 6: Multi-Agent Debate
+Stage 7: Report Generation
+```
+
+## Quick Stats
+
+| Metric | Value |
+|--------|-------|
+| Patterns | 680+ |
+| Agents | 24 |
+| Skills | 47 |
+| Tools | 7 |
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| alphaswarm build-kg contracts/ | Build graph |
+| alphaswarm query "pattern:X" | Query patterns |
+| alphaswarm tools status | Check tools |
+| /vrs-audit contracts/ | Full audit |
+
+## Structure
+
+```
+src/alphaswarm_sol/
+├── kg/builder/       # Graph construction
+├── orchestration/    # Pool workflows
+├── tools/adapters/   # 7 tool integrations
+├── agents/           # 24 agents
+└── skills/           # 47 skills
+
+vulndocs/             # 680+ patterns
+docs/                 # 20 docs
+.planning/            # Roadmap/state
+```
+
+## Quick Start
+
+```bash
+git clone https://github.com/truevkg/alphaswarm.git && cd alphaswarm
+uv tool install -e .
+alphaswarm build-kg contracts/
+# In Claude Code: /vrs-audit contracts/
+```

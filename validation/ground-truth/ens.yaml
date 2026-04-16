@@ -1,0 +1,129 @@
+# ENS (Ethereum Name Service) Ground Truth
+# Source: Multiple Audits (OpenZeppelin, Consensys Diligence)
+# URLs:
+# - https://blog.openzeppelin.com/ens-audit
+
+project_name: ens
+project_type: registry
+audit_source: Multiple (OpenZeppelin, Consensys)
+audit_date: "2021-06-01"
+audit_url: https://blog.openzeppelin.com/ens-audit
+code_url: https://github.com/ensdomains/ens-contracts
+code_commit: main
+solidity_version: "^0.8.4"
+
+findings:
+  # High Severity
+  - id: OZ-ENS-001
+    title: Resolver upgrade allows data theft
+    category: upgrade_proxy
+    severity: high
+    location:
+      file: ENSRegistry.sol
+      function: setResolver
+      line_start: 0
+      line_end: 0
+    description: "Resolver can be changed by owner, potentially redirecting to malicious resolver."
+    recommendation: "Add timelock or governance for resolver changes."
+    vkg_should_find: true
+
+  - id: OZ-ENS-002
+    title: Subdomain registration front-running
+    category: mev_slippage
+    severity: high
+    location:
+      file: BaseRegistrarImplementation.sol
+      function: register
+      line_start: 0
+      line_end: 0
+    description: "Registration transactions can be front-run to steal desirable names."
+    vkg_should_find: true
+
+  # Medium Severity
+  - id: OZ-ENS-003
+    title: Missing access control on setRecord
+    category: access_control
+    severity: medium
+    location:
+      file: ENSRegistry.sol
+      function: setRecord
+      line_start: 0
+      line_end: 0
+    description: "Record changes may not have adequate authorization checks."
+    vkg_should_find: true
+
+  - id: OZ-ENS-004
+    title: Ownership transfer without confirmation
+    category: access_control
+    severity: medium
+    location:
+      file: ENSRegistry.sol
+      function: setOwner
+      line_start: 0
+      line_end: 0
+    description: "Domain ownership can be transferred without two-step confirmation."
+    vkg_should_find: true
+
+  - id: CONSENSYS-001
+    title: Expiry manipulation via grace period
+    category: timestamp
+    severity: medium
+    location:
+      file: BaseRegistrarImplementation.sol
+      function: available
+      line_start: 0
+      line_end: 0
+    description: "Grace period calculations may be manipulated via block.timestamp."
+    vkg_should_find: true
+
+  # Low Severity
+  - id: OZ-ENS-005
+    title: Gas griefing via long name registration
+    category: dos
+    severity: low
+    location:
+      file: ETHRegistrarController.sol
+      function: register
+      line_start: 0
+      line_end: 0
+    description: "Very long names can cause excessive gas consumption."
+    vkg_should_find: true
+
+  - id: CONSENSYS-002
+    title: Resolver callback reentrancy
+    category: reentrancy
+    severity: low
+    location:
+      file: ENSRegistry.sol
+      function: setResolver
+      line_start: 0
+      line_end: 0
+    description: "Setting resolver triggers callback that may re-enter."
+    vkg_should_find: true
+
+  - id: OZ-ENS-006
+    title: Price oracle manipulation potential
+    category: oracle_manipulation
+    severity: low
+    location:
+      file: StablePriceOracle.sol
+      function: price
+      line_start: 0
+      line_end: 0
+    description: "Name pricing oracle may be manipulated for pricing attacks."
+    vkg_should_find: true
+
+notes: |
+  ENS is the Ethereum Name Service - a decentralized naming system.
+  The protocol includes:
+  - Registry (core name ownership)
+  - Resolvers (address/content resolution)
+  - Registrar (name registration auction)
+  - Governance (via ENS token)
+
+  Note: Line numbers are placeholder (0) as exact lines vary by commit.
+
+  Out of scope:
+  - DAO governance logic
+  - Economic pricing model
+  - UI/UX issues

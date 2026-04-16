@@ -1,0 +1,16 @@
+id: ext-048
+vulndoc: access-control/external-call
+name: Chainlink UpdatedAt Missing
+description: Chainlink latestRoundData used without updatedAt freshness checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: calls_chainlink_latest_round_data
+    op: eq
+    value: true
+  - property: validates_updated_at_recent
+    op: eq
+    value: false

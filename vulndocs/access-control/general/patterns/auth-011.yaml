@@ -1,0 +1,16 @@
+id: auth-011
+vulndoc: access-control/general
+name: Unprotected Value Transfer
+description: Value transfers without access control.
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: can_affect_user_funds
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

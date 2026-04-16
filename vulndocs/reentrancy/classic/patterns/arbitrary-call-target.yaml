@@ -1,0 +1,20 @@
+id: arbitrary-call-target
+vulndoc: reentrancy/classic
+name: Arbitrary Call Target
+description: User-controlled low-level call target.
+scope: Function
+lens:
+- ValueMovement
+severity: critical
+match:
+  all:
+  - property: uses_call
+    op: eq
+    value: true
+  - property: call_target_user_controlled
+    op: eq
+    value: true
+  none:
+  - property: call_target_validated
+    op: eq
+    value: true

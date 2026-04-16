@@ -1,0 +1,20 @@
+id: proxy-reinitializer-missing
+vulndoc: upgrade/proxy
+name: Missing Versioned Reinitializer
+description: Upgraded implementation adds state variables without versioned reinitializer modifier
+scope: Function
+lens:
+  - Upgradeability
+  - Authority
+severity: high
+match:
+  all:
+    - property: is_initializer_function
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: writes_state
+      op: eq
+      value: true

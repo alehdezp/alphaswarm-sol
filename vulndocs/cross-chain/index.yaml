@@ -1,0 +1,37 @@
+# cross-chain Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: cross-chain
+name: Cross Chain
+description: 'Vulnerability subcategories for cross-chain domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: adapter-replay
+  name: Cross-Chain Adapter Replay Attack
+  path: adapter-replay/
+- id: bridge
+  name: Bridge
+  path: bridge/
+- id: bridge-compromise
+  name: Bridge Compromise
+  path: bridge-compromise/
+- id: bridge-vulnerabilities
+  path: bridge-vulnerabilities/
+- id: general
+  name: General
+  path: general/
+- id: investigation
+  name: Investigation
+  path: investigation/
+- id: replay-protection
+  name: Cross-Chain Replay Attack
+  path: replay-protection/
+- id: signature-replay
+  name: Cross-Chain Signature Replay
+  path: signature-replay/
+statistics:
+  subcategory_count: 8
+  last_updated: '2026-02-18'

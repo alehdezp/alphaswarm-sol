@@ -1,0 +1,13 @@
+id: auth-099
+vulndoc: access-control/general
+name: Multisig Signer Removal Without Minimum Check
+description: Multisig signer changes without minimum signer checks.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: multisig_member_change_without_minimum_check
+    op: eq
+    value: true

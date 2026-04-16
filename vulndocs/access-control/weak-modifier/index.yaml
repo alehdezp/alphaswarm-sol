@@ -1,0 +1,83 @@
+# Weak or Bypassable Modifier - Subcategory Index
+# Access control present but insufficient or bypassable
+
+id: weak-modifier
+name: Weak or Bypassable Modifier
+parent_category: access-control
+
+description: |
+  Access control mechanisms that are present but can be bypassed or are insufficient.
+  This includes empty modifiers, incorrect comparison logic, modifiers that check the
+  wrong variables, or access control that can be circumvented through contract state
+  manipulation.
+
+severity_range:
+  - medium
+  - high
+
+# Associated detection patterns
+patterns:
+  - auth-003
+  - auth-004
+
+# VKG properties for detection
+relevant_properties:
+  - has_access_gate
+  - writes_privileged_state
+  - visibility
+  - empty_modifier
+  - modifier_logic_weak
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: has_access_gate
+    expected: true
+    critical: false
+    description: Access control is present but may be bypassable
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    description: Function writes to privileged state variables
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+  - property: empty_modifier
+    expected: true
+    critical: true
+    description: Modifier body is empty or has no effective checks
+
+# Behavioral signatures
+behavioral_signatures:
+  - "G:empty->W:critical"
+  - "G:weak->W:owner"
+  - "G:bypassable->W:role"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "CHECKS_PERMISSION (weak) -> MODIFIES_OWNER"
+    - "Empty modifier -> MODIFIES_CRITICAL_STATE"
+    - "Bypassable check -> MODIFIES_ROLES"
+  safe:
+    - "CHECKS_PERMISSION (strong) -> MODIFIES_OWNER"
+    - "Multi-check -> MODIFIES_CRITICAL_STATE"
+
+# False positive indicators
+false_positive_indicators:
+  - "Modifier is intentionally permissive by design"
+  - "Additional inline checks after modifier"
+  - "Modifier delegates to external access control contract"
+  - "Function is behind a timelock or multi-sig"
+
+# Related real-world exploits
+related_exploits:
+  - harvest-finance-hack
+
+# Token estimate for this subcategory
+token_estimate: 400

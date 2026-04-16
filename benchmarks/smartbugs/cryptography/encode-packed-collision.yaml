@@ -1,0 +1,22 @@
+# Encode Packed Collision
+id: smartbugs-encode-packed-collision
+name: Encode Packed Collision
+category: cryptography
+source: examples/semgrep-smart-contracts/solidity/security/encode-packed-collision.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: hash-collision
+  description: abi.encodePacked with dynamic types causes hash collisions
+  severity: medium
+  cwe: CWE-328
+
+expected_detections:
+  - pattern: crypto-003
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: crypto-003
+  secondary: [encode-packed-collision]
+
+status: pending

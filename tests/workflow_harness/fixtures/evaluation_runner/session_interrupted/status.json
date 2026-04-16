@@ -1,0 +1,5 @@
+{
+  "session_id": "sess-interrupted-001",
+  "status": "interrupted",
+  "reason": "Session terminated before agent stop event"
+}

@@ -1,0 +1,16 @@
+id: mev-risk-medium
+vulndoc: mev/protection
+name: MEV Risk Medium
+description: Swap-like functions missing slippage/deadline parameters.
+scope: Function
+lens:
+  - Ordering
+severity: medium
+match:
+  any:
+    - property: risk_missing_slippage_parameter
+      op: eq
+      value: true
+    - property: risk_missing_deadline_parameter
+      op: eq
+      value: true

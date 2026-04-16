@@ -1,0 +1,15 @@
+id: arith-016
+vulndoc: arithmetic/general
+name: Division Precision Loss
+description: Division without precision guards.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: division_precision_risk
+    op: eq
+    value: true

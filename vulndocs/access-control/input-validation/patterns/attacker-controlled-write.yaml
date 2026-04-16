@@ -1,0 +1,21 @@
+id: attacker-controlled-write
+vulndoc: access-control/input-validation
+name: Attacker-Controlled Input Reaches State Write
+description: Functions where attacker-controlled input flows into state writes (dataflow-derived).
+scope: Function
+lens:
+  - ExternalInfluence
+  - ValueMovement
+severity: high
+match:
+  all:
+    - property: attacker_controlled_write
+      op: eq
+      value: true
+  none:
+    - property: is_constructor
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: true

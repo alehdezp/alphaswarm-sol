@@ -1,0 +1,16 @@
+id: ext-014
+vulndoc: access-control/external-call
+name: Oracle Aggregation Missing Sanity Checks
+description: Multiple sources aggregated without deviation or outlier checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_aggregation_sanity
+    op: eq
+    value: false

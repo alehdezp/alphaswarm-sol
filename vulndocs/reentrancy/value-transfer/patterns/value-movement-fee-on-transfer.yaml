@@ -1,0 +1,20 @@
+id: value-movement-fee-on-transfer
+vulndoc: reentrancy/value-transfer
+name: Fee-on-Transfer Accounting Gap
+description: Transfers without checking received amounts.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: checks_received_amount
+    op: eq
+    value: false
+  any:
+  - property: uses_erc20_transfer
+    op: eq
+    value: true
+  - property: uses_erc20_transfer_from
+    op: eq
+    value: true

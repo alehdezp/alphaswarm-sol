@@ -1,0 +1,16 @@
+id: auth-059
+vulndoc: access-control/general
+name: Role Revoke Without Access Control
+description: Role revoke functions without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: role_revoke_like
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

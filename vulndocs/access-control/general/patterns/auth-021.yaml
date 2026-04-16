@@ -1,0 +1,16 @@
+id: auth-021
+vulndoc: access-control/general
+name: Multisig Threshold One
+description: Multisig with threshold set to one.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_multisig
+    op: eq
+    value: true
+  - property: multisig_threshold_is_one
+    op: eq
+    value: true

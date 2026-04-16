@@ -1,0 +1,39 @@
+workflow_id: agent-vrs-pattern-scout
+category: agent
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- evidence_quality
+- reasoning_depth
+- conclusion_support
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: session_completed
+  description: Agent session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+- id: triage_performed
+  description: 'TODO: validate against real run - Pattern triage decision produced'
+  expected_behavior: Response contains triage decision with confidence level
+  grader_type: model
+evidence_requirements:
+- type: graph_nodes
+  description: Graph evidence in output
+hooks:
+- SessionStart
+- Stop
+- PreCompact
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: important
+  model_tier: haiku

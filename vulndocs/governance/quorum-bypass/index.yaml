@@ -1,0 +1,22 @@
+# Quorum Bypass - Subcategory Index
+
+id: quorum-bypass
+name: Quorum Bypass
+parent_category: governance
+
+description: |
+  Circumventing quorum requirements through supply manipulation or
+  calculation errors.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - gov-003
+
+relevant_properties:
+  - quorum_calculation
+  - total_supply_snapshot
+
+token_estimate: 400

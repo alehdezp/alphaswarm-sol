@@ -1,0 +1,19 @@
+version: 1
+suites:
+  - suite_id: gauntlet-reentrancy
+    manifest: tests/gauntlet/reentrancy_manifest.yaml
+    scoring: configs/gauntlet_scoring.yaml
+    required_gates: [G0, G1, G2, G4]
+    evidence_pack_required: true
+
+  - suite_id: gauntlet-access-oracle
+    manifest: tests/gauntlet/access_oracle_manifest.yaml
+    scoring: configs/gauntlet_scoring.yaml
+    required_gates: [G0, G1, G2, G4]
+    evidence_pack_required: true
+
+  - suite_id: gauntlet-mutation
+    manifest: tests/gauntlet/mutation_matrix.yaml
+    scoring: configs/gauntlet_scoring.yaml
+    required_gates: [G0, G1, G2, G4]
+    evidence_pack_required: true

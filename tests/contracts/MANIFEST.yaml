@@ -1,0 +1,422 @@
+# Test Contracts Manifest
+# Purpose: Ground truth registry for test contracts with known vulnerabilities
+# Usage: Validation runs should reference this manifest to prove detection accuracy
+
+# Version tracking
+version: "1.1"
+updated: "2026-02-04"
+source: ".planning/phases/07.3.1.6-full-testing-hardening/IMPROVEMENT-ROADMAP.md"
+
+# ============================================================================
+# VERIFICATION STATUS (IMP-B3)
+# ============================================================================
+# This section documents the verification performed on 2026-02-04 as part
+# of IMP-B3 (Test Contract Verification) from the improvement roadmap.
+#
+# Plans referenced:
+#   - Plan 09: semantic-test-set (SemanticPrivilegedStateTest.sol)
+#   - Plan 11, 15, 16: CrossFunctionReentrancy.sol
+#   - Plan 11, 12: dvd/side-entrance
+#   - Plan 13: hard-case/NovelStorageCollision.sol
+#
+# Verification date: 2026-02-04
+# All referenced contracts VERIFIED to exist.
+# ============================================================================
+
+# Validation rules
+validation_rules:
+  # Anti-fabrication: Perfect detection is suspicious
+  max_precision: 0.98  # 100% precision is invalid
+  max_recall: 0.98     # 100% recall is invalid
+
+  # Minimum evidence requirements
+  min_graph_nodes_per_finding: 1
+  min_code_locations_per_finding: 1
+
+# Contract categories
+contracts:
+  # ===========================================================================
+  # TIER A: Deterministic Graph Patterns
+  # ===========================================================================
+  tier_a:
+    - name: "CrossFunctionReentrancy.sol"
+      path: "tests/contracts/CrossFunctionReentrancy.sol"
+      vulnerabilities:
+        - type: "cross-function-reentrancy"
+          severity: "high"
+          description: "Reentrancy via withdraw() allowing balance manipulation in transfer()"
+          expected_detection_tier: "A"
+          expected_operations:
+            - "TRANSFERS_VALUE_OUT"
+            - "WRITES_USER_BALANCE"
+          attack_path:
+            entry: "withdraw()"
+            external_call: "msg.sender.call{value: amount}()"
+            reentry_target: "transfer()"
+      expected_agents:
+        - vrs-attacker
+        - vrs-defender
+        - vrs-verifier
+      ground_truth_source: "manual annotation"
+
+    - name: "SimpleReentrancy.sol"
+      path: "tests/contracts/SimpleReentrancy.sol"
+      vulnerabilities:
+        - type: "classic-reentrancy"
+          severity: "high"
+          description: "State update after external call in withdraw()"
+          expected_detection_tier: "A"
+          expected_operations:
+            - "TRANSFERS_VALUE_OUT"
+            - "WRITES_USER_BALANCE"
+      expected_agents:
+        - vrs-attacker
+        - vrs-verifier
+      ground_truth_source: "manual annotation"
+
+    - name: "MissingAccessControl.sol"
+      path: "tests/contracts/MissingAccessControl.sol"
+      vulnerabilities:
+        - type: "missing-access-control"
+          severity: "high"
+          description: "Admin function callable by anyone"
+          expected_detection_tier: "A"
+          expected_operations:
+            - "MODIFIES_CRITICAL_STATE"
+            # Missing: "CHECKS_PERMISSION"
+      expected_agents:
+        - vrs-attacker
+        - vrs-defender
+      ground_truth_source: "manual annotation"
+
+  # ===========================================================================
+  # TIER B: LLM-Verified (Requires Reasoning)
+  # ===========================================================================
+  tier_b:
+    - name: "SideEntranceLenderPool.sol"
+      path: "tests/fixtures/dvd/side-entrance/src/SideEntranceLenderPool.sol"
+      vulnerabilities:
+        - type: "flash-loan-accounting"
+          severity: "high"
+          description: "Deposit during flash loan callback satisfies repayment while crediting attacker"
+          expected_detection_tier: "B"
+          attack_path:
+            entry: "flashLoan()"
+            callback: "execute() on attacker contract"
+            vulnerable_call: "deposit() during callback"
+            exploit: "deposit satisfies repayment check while crediting attacker balance"
+      expected_agents:
+        - vrs-attacker
+        - vrs-defender
+        - vrs-verifier
+      ground_truth_source: "DamnVulnerableDeFi"
+
+    - name: "NaiveReceiver.sol"
+      path: "tests/fixtures/dvd/naive-receiver/src/NaiveReceiver.sol"
+      vulnerabilities:
+        - type: "griefing-via-flash-loan"
+          severity: "medium"
+          description: "Flash loan fee drains receiver's balance"
+          expected_detection_tier: "B"
+      expected_agents:
+        - vrs-attacker
+        - vrs-defender
+      ground_truth_source: "DamnVulnerableDeFi"
+
+  # ===========================================================================
+  # TIER C: Protocol Context Required
+  # ===========================================================================
+  tier_c:
+    - name: "PuppetPool.sol"
+      path: "tests/fixtures/dvd/puppet/src/PuppetPool.sol"
+      vulnerabilities:
+        - type: "oracle-manipulation"
+          severity: "critical"
+          description: "Uniswap price oracle manipulation for undercollateralized borrowing"
+          expected_detection_tier: "C"
+          required_context:
+            - "oracle_source"
+            - "price_feed_mechanism"
+            - "collateral_ratio"
+      expected_agents:
+        - vrs-attacker
+        - vrs-defender
+        - vrs-verifier
+      ground_truth_source: "DamnVulnerableDeFi"
+      note: "Requires protocol context for oracle dependency understanding"
+
+  # ===========================================================================
+  # SAFE CONTRACTS (Should NOT trigger vulnerabilities)
+  # ===========================================================================
+  safe:
+    - name: "SafeReentrancyGuard.sol"
+      path: "tests/contracts/SafeReentrancyGuard.sol"
+      vulnerabilities: []  # Should not trigger any
+      expected_detection: "no_findings"
+      note: "Uses ReentrancyGuard - should NOT trigger reentrancy pattern"
+
+    - name: "ProperAccessControl.sol"
+      path: "tests/contracts/ProperAccessControl.sol"
+      vulnerabilities: []  # Should not trigger any
+      expected_detection: "no_findings"
+      note: "Has proper onlyOwner modifier - should NOT trigger access control"
+
+# Metrics interpretation guide (from IMPROVEMENT-ROADMAP.md)
+metrics_interpretation:
+  tier_a:
+    expected_precision: "80-95%"
+    expected_recall: "70-90%"
+    description: "Deterministic patterns should have high accuracy"
+
+  tier_b:
+    expected_precision: "60-85%"
+    expected_recall: "50-80%"
+    description: "LLM verification introduces variance"
+
+  tier_c:
+    expected_precision: "50-75%"
+    expected_recall: "40-70%"
+    description: "Context-dependent detection has highest variance"
+
+  e2e:
+    minimum_true_positives: 1
+    description: "At least 1 TP per known vulnerable contract"
+
+# Timeout calibration (from IMPROVEMENT-ROADMAP.md)
+timeout_thresholds:
+  smoke_test:
+    min_duration_seconds: 5
+    max_duration_seconds: 60
+  agent_run:
+    min_duration_seconds: 30
+    max_duration_seconds: 300
+  e2e_validation:
+    min_duration_seconds: 120
+    max_duration_seconds: 600
+
+# Anti-fabrication thresholds
+anti_fabrication:
+  smoke_test:
+    min_transcript_lines: 50
+  e2e_test:
+    min_transcript_lines: 200
+  forbidden_metrics:
+    - "100% precision"
+    - "100% recall"
+    - "0 false positives on mixed corpus"
+
+# ============================================================================
+# ADDITIONAL CONTRACT INVENTORY (IMP-B3 Verified 2026-02-04)
+# ============================================================================
+
+additional_contracts:
+  # ---------------------------------------------------------------------------
+  # Cross-Function Reentrancy (Plans 11, 15, 16)
+  # ---------------------------------------------------------------------------
+  cross_function_reentrancy:
+    path: "tests/contracts/CrossFunctionReentrancy.sol"
+    verified: true
+    verification_date: "2026-02-04"
+    plans_referenced: [11, 15, 16]
+    tier: A
+    solidity_version: "^0.8.20"
+    description: |
+      Demonstrates cross-function reentrancy vulnerability where:
+      - withdraw() makes external call before state update
+      - attacker can re-enter via transfer() during callback
+      - inWithdraw lock only protects transfer(), not withdraw()
+    vulnerabilities:
+      - type: "cross-function-reentrancy"
+        severity: "high"
+        entry_function: "withdraw(uint256)"
+        reentry_target: "transfer(address,uint256)"
+        vulnerable_line: 18
+        description: "External call (msg.sender.call) before balance update"
+    expected_operations:
+      - TRANSFERS_VALUE_OUT
+      - WRITES_USER_BALANCE
+      - READS_USER_BALANCE
+    contracts_in_file:
+      - CrossFunctionReentrancy
+
+  # ---------------------------------------------------------------------------
+  # Side Entrance (Damn Vulnerable DeFi) (Plans 11, 12)
+  # ---------------------------------------------------------------------------
+  side_entrance:
+    path: "tests/fixtures/dvd/side-entrance/"
+    verified: true
+    verification_date: "2026-02-04"
+    plans_referenced: [11, 12]
+    tier: B
+    source: "DamnVulnerableDeFi"
+    ground_truth_file: "tests/fixtures/dvd/side-entrance/ground-truth.yaml"
+    files:
+      - "src/SideEntranceLenderPool.sol"
+      - "ground-truth.yaml"
+    solidity_version: "^0.8.0"
+    description: |
+      Flash loan accounting vulnerability from Damn Vulnerable DeFi.
+      The flash loan only checks that pool balance doesn't decrease,
+      but deposit() during callback satisfies this while crediting
+      the attacker's balance - allowing drain via withdraw().
+    vulnerabilities:
+      - id: "DVD-SE-001"
+        type: "flash-loan-accounting"
+        severity: "critical"
+        function: "flashLoan"
+        tier: B
+        description: "Deposit during callback satisfies repayment while crediting attacker"
+      - id: "DVD-SE-002"
+        type: "reentrancy-potential"
+        severity: "high"
+        function: "withdraw"
+        tier: A
+        description: "External call after state update (CEI followed - actually safe)"
+        note: "This is a false positive trap - CEI pattern makes it safe"
+    contracts_in_file:
+      - IFlashLoanEtherReceiver
+      - SideEntranceLenderPool
+    expected_debate_outcome:
+      - finding: "DVD-SE-001"
+        verdict: "CONFIRMED"
+        confidence_min: 0.9
+      - finding: "DVD-SE-002"
+        verdict: "MITIGATED"
+        confidence_min: 0.7
+
+  # ---------------------------------------------------------------------------
+  # Hard Case: Novel Storage Collision (Plan 13)
+  # ---------------------------------------------------------------------------
+  hard_case_storage_collision:
+    path: "tests/contracts/hard-case/"
+    verified: true
+    verification_date: "2026-02-04"
+    plans_referenced: [13]
+    tier: "discovery"
+    purpose: "Novel pattern discovery testing"
+    files:
+      - "NovelStorageCollision.sol"
+      - "README.md"
+    solidity_version: "^0.8.20"
+    description: |
+      Storage collision via delegatecall pattern. The proxy's slot 0 (admin)
+      collides with the library's slot 0 (owner). The delegateSetOwner()
+      function has no access control and allows anyone to overwrite admin.
+    vulnerabilities:
+      - type: "storage-collision-delegatecall"
+        severity: "critical"
+        function: "delegateSetOwner"
+        description: "No access control on delegatecall that writes to slot 0"
+        vulnerable_line: 45
+        attack_path:
+          - "Deploy CollisionLibrary"
+          - "Call delegateSetOwner(attacker_address)"
+          - "Library writes to slot 0 (owner in library layout)"
+          - "This overwrites admin in proxy layout"
+          - "Attacker now controls proxy admin"
+    contracts_in_file:
+      - CollisionLibrary
+      - StorageCollisionProxy
+    discovery_notes: |
+      This is a "hard case" intended for testing novel pattern discovery.
+      Detection requires understanding:
+      1. Storage layout collision between proxy and library
+      2. delegatecall semantics (executes in caller's context)
+      3. Missing access control on delegateSetOwner
+
+  # ---------------------------------------------------------------------------
+  # Semantic Test Set (Plan 09)
+  # ---------------------------------------------------------------------------
+  semantic_test_set:
+    path: "tests/contracts/semantic-test-set/"
+    verified: true
+    verification_date: "2026-02-04"
+    plans_referenced: [9]
+    tier: "validation"
+    purpose: "Semantic operation accuracy validation"
+    files:
+      - "SemanticPrivilegedStateTest.sol"
+      - "README.md"
+    solidity_version: "^0.8.20"
+    description: |
+      Curated contracts for validating semantic detection accuracy.
+      Tests that BSKG correctly identifies writes_privileged_state
+      and has_access_gate properties regardless of function naming.
+    test_cases:
+      true_positives:
+        count: 7
+        functions:
+          - "fn_0x123abc"      # Obfuscated name
+          - "adjustControlAddress"  # Non-standard naming
+          - "changeIt"         # Generic name
+          - "chg"              # Abbreviated
+          - "assignRole"       # Role without "grant"
+          - "toggleEmergency"  # Pause without "pause"
+          - "setOwner"         # Standard naming
+        description: "Should be caught by semantic pattern (writes_privileged_state=true, has_access_gate=false)"
+      true_negatives:
+        count: 4
+        functions:
+          - "setOwnerProtected"  # Has access control
+          - "constructor"        # Intentional setup
+          - "setCounter"         # Non-privileged state
+          - "getOwner"           # View function
+        description: "Should NOT be caught (safe patterns)"
+    contracts_in_file:
+      - SemanticPrivilegedStateTest
+    validation_purpose: |
+      Proves semantic detection (writes_privileged_state) is superior to
+      regex name matching (set*, update*, configure*). The contract contains:
+      - Functions with obfuscated names that MISS regex but CATCH semantic
+      - Functions matching regex but NOT writing privileged state (TN for semantic)
+
+# ============================================================================
+# SKILL REGISTRY VERIFICATION (IMP-B4)
+# ============================================================================
+# This section documents verification of skills referenced in plans.
+# Performed: 2026-02-04
+#
+# Skills verified:
+#   - /vrs-workflow-test: EXISTS at .claude/skills/vrs-workflow-test.md
+#   - /vrs-evaluate-workflow: EXISTS at .claude/skills/vrs-evaluate-workflow.md
+#   - /pattern-forge: EXISTS at .claude/skills/pattern-forge/SKILL.md
+#   - /vrs-refine: EXISTS at .claude/skills/vrs/refine.md
+#
+# All skills are also registered in src/alphaswarm_sol/skills/registry.yaml
+# ============================================================================
+
+skill_verification:
+  verification_date: "2026-02-04"
+  all_skills_exist: true
+  skills:
+    vrs-workflow-test:
+      exists: true
+      registry_entry: true
+      registry_id: "workflow-test"
+      definition_path: ".claude/skills/vrs-workflow-test.md"
+      category: "validation"
+      description: "Orchestrate interactive workflow testing via Claude Code execution"
+
+    vrs-evaluate-workflow:
+      exists: true
+      registry_entry: true
+      registry_id: "evaluate-workflow"
+      definition_path: ".claude/skills/vrs-evaluate-workflow.md"
+      category: "validation"
+      description: "Evaluate workflow transcripts against criteria and ground truth"
+
+    pattern-forge:
+      exists: true
+      registry_entry: true
+      registry_id: "pattern-forge"
+      definition_path: ".claude/skills/pattern-forge/SKILL.md"
+      category: "pattern-development"
+      description: "Iterative pattern creation until quality gates met"
+
+    vrs-refine:
+      exists: true
+      registry_entry: true
+      registry_id: "refine"
+      definition_path: ".claude/skills/vrs/refine.md"
+      category: "pattern-development"
+      description: "Improve patterns based on test feedback"

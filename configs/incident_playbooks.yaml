@@ -1,0 +1,117 @@
+# Incident Response Playbooks
+#
+# Define automated response procedures for SLO violations.
+# Each playbook includes ordered steps with actions to execute.
+#
+# Available actions:
+# - query: Query data from stores (event_store, cost_ledger)
+# - alert: Send alert/notification
+# - log: Log information
+# - escalate: Escalate to on-call
+# - retry: Retry failed operation
+
+playbooks:
+  - id: pool_success_rate_degradation
+    name: Pool Success Rate Degradation
+    description: Respond to pool success rate dropping below threshold
+    trigger_slo: pool_success_rate
+    steps:
+      - id: step1
+        name: Query failing pools
+        action: query
+        params:
+          query_type: failed_pools
+          target: event_store
+          time_window_minutes: 5
+
+      - id: step2
+        name: Log degradation details
+        action: log
+        params:
+          level: warning
+          message: "Pool success rate degraded - investigating failed pools"
+
+      - id: step3
+        name: Alert operations team
+        action: alert
+        params:
+          channel: slack
+          message: "Pool success rate below threshold - check pool execution logs"
+
+      - id: step4
+        name: Escalate if critical
+        action: escalate
+        params:
+          to: oncall
+          reason: "Pool success rate critically degraded"
+        condition: "success_rate < 85"
+
+  - id: cost_spike
+    name: Cost Per Finding Spike
+    description: Respond to cost per finding exceeding budget
+    trigger_slo: cost_per_finding
+    steps:
+      - id: step1
+        name: Query cost breakdown
+        action: query
+        params:
+          query_type: cost_by_agent
+          target: cost_ledger
+          time_window_minutes: 5
+
+      - id: step2
+        name: Log cost spike
+        action: log
+        params:
+          level: warning
+          message: "Cost per finding exceeded threshold - reviewing agent costs"
+
+      - id: step3
+        name: Alert budget team
+        action: alert
+        params:
+          channel: email
+          message: "Cost per finding spike detected - budget review needed"
+
+      - id: step4
+        name: Query high-cost agents
+        action: query
+        params:
+          query_type: expensive_agents
+          target: cost_ledger
+          threshold_usd: 1.0
+
+  - id: latency_spike
+    name: Pool Completion Latency Spike
+    description: Respond to pool completion latency exceeding target
+    trigger_slo: pool_completion_latency_p95
+    steps:
+      - id: step1
+        name: Query slow pools
+        action: query
+        params:
+          query_type: slow_pools
+          target: event_store
+          threshold_seconds: 300
+
+      - id: step2
+        name: Log latency spike
+        action: log
+        params:
+          level: warning
+          message: "Pool completion latency spike detected"
+
+      - id: step3
+        name: Alert performance team
+        action: alert
+        params:
+          channel: slack
+          message: "Pool latency P95 exceeded target - performance investigation needed"
+
+      - id: step4
+        name: Retry slow beads
+        action: retry
+        params:
+          operation: slow_beads
+          max_attempts: 2
+        condition: "latency_p95 > 360"

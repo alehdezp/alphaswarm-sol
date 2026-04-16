@@ -1,0 +1,101 @@
+{
+  "plan_id": "3.1-01",
+  "status": "PASS",
+  "started_at": "2026-02-11T17:02:34Z",
+  "ended_at": "2026-02-11T17:20:00Z",
+  "duration_ms": 1046000,
+  "commands_executed": [
+    {
+      "command": "uv run python scripts/analyze_testing_imports.py",
+      "exit_code": 0,
+      "description": "Build AST-based import graph"
+    },
+    {
+      "command": "python -c \"from alphaswarm_sol.testing import TestTier, generate_with_fallback, detect_project_structure, write_scaffold_to_file, batch_generate_with_quality, QualityTracker, TIER_DEFINITIONS, format_tier_summary\"",
+      "exit_code": 0,
+      "description": "Verify CLI imports work after rewrite"
+    },
+    {
+      "command": "uv run alphaswarm --help",
+      "exit_code": 0,
+      "description": "Verify CLI help works"
+    },
+    {
+      "command": "uv run alphaswarm build-kg tests/contracts/AccessGateIfReturn.sol",
+      "exit_code": 0,
+      "description": "Verify build-kg pipeline works"
+    },
+    {
+      "command": "uv run pytest tests/ -q",
+      "exit_code": 1,
+      "description": "Full test suite (891 pre-existing failures, 9806 passed, 0 new failures)"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "import_graph_exists",
+      "status": "PASS",
+      "detail": ".vrs/debug/phase-3.1/import-graph.json exists and is valid JSON"
+    },
+    {
+      "check": "cli_symbols_production_dependent",
+      "status": "PASS",
+      "detail": "All 8 CLI-consumed symbols traced to PRODUCTION_DEPENDENT source modules"
+    },
+    {
+      "check": "init_py_reduced",
+      "status": "PASS",
+      "detail": "__init__.py reduced from 456 lines to 44 lines"
+    },
+    {
+      "check": "no_truly_dead_has_cli_caller",
+      "status": "PASS",
+      "detail": "No TRULY_DEAD file has CLI as production caller"
+    },
+    {
+      "check": "barrel_imports_excluded",
+      "status": "PASS",
+      "detail": "13 barrel __init__.py files excluded from caller counts"
+    },
+    {
+      "check": "cli_works",
+      "status": "PASS",
+      "detail": "alphaswarm --help and build-kg both succeed"
+    },
+    {
+      "check": "wildcard_import",
+      "status": "PASS",
+      "detail": "from alphaswarm_sol.testing import * succeeds"
+    },
+    {
+      "check": "no_new_test_failures",
+      "status": "PASS",
+      "detail": "9806 passed, 891 pre-existing failures, zero new failures, zero collection errors"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "scripts/analyze_testing_imports.py",
+      "description": "AST-based import graph analyzer"
+    },
+    {
+      "path": ".vrs/debug/phase-3.1/import-graph.json",
+      "description": "Symbol-level import analysis with categories"
+    },
+    {
+      "path": "src/alphaswarm_sol/testing/__init__.py",
+      "description": "Rewritten barrel export (44 lines, 8 CLI symbols)"
+    }
+  ],
+  "metrics": {
+    "loc_before": 30892,
+    "loc_after": 9242,
+    "loc_deleted": 21650,
+    "init_py_before": 456,
+    "init_py_after": 44,
+    "files_deleted_production": 29,
+    "files_deleted_tests": 26,
+    "test_collection_errors_before": 26,
+    "test_collection_errors_after": 0
+  }
+}

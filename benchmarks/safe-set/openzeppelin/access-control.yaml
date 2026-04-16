@@ -1,0 +1,24 @@
+# OpenZeppelin AccessControl
+id: oz-access-control
+name: OpenZeppelin AccessControl
+category: openzeppelin
+source: "@openzeppelin/contracts/access/AccessControl.sol"
+version: "5.0.x"
+
+contract_info:
+  description: |
+    OpenZeppelin's role-based access control.
+    Proper RBAC implementation.
+  deployed_since: 2020
+  audit_sources:
+    - OpenZeppelin Internal
+
+expected_findings: []
+
+false_positive_categories:
+  - auth-*
+  - role-*
+  - access-control-*
+  - permission-*
+
+status: validated

@@ -1,0 +1,13 @@
+id: live-025
+vulndoc: dos/general
+name: Storage Slot Exhaustion
+description: Storage growth without limits.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: array_growth_unbounded
+    op: eq
+    value: true

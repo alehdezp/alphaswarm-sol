@@ -1,0 +1,50 @@
+id: auth-111
+vulndoc: access-control/general
+name: Unprotected Reward/Emission/Vesting Update
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `tokenomics-001-unprotected-reward-parameter`
+  instead.
+
+
+  Location: `patterns/semantic/tokenomics/tokenomics-001-unprotected-reward-parameter.yaml`
+
+
+  The semantic pattern uses `updates_reward_parameter` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Reward, emission, or vesting parameters updated without access
+  control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: tokenomics-001-unprotected-reward-parameter
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(reward|emission|vesting)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

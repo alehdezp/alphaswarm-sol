@@ -1,0 +1,289 @@
+# Ground Truth: Novel 2025-2026 Exploits
+# Generated from Phase 7.3-01 corpus expansion
+# Maps novel attack vectors to testable ground truth records
+#
+# Schema version: 1.0
+# Created: 2026-01-29
+# Source: 07.3-01-NOVEL-PROTOCOLS.md research
+
+schema_version: "1.0"
+updated: "2026-01-29"
+source: "07.3-01-NOVEL-PROTOCOLS.md"
+
+# Ground truth entries for novel 2025-2026 exploits
+# Each entry maps to a specific exploit and provides testable patterns
+
+entries:
+  # ============================================================
+  # PRECISION LOSS / ARITHMETIC EXPLOITS
+  # ============================================================
+  - id: gt-balancer-v2-rounding
+    source_id: balancer-v2-exploit
+    vulndocs_path: logic/arithmetic/specifics/balancer-v2-rounding
+    pattern: arithmetic-cumulative-rounding
+    severity: critical
+    contract_path: ""  # To be populated on ingest
+    location: "_upscaleArray"
+    description: "Cumulative rounding errors via 65+ micro-swaps in ComposableStablePool"
+    has_vulnerability: true
+    confidence_min: 0.95
+    economic_impact_usd: 128640000
+    chain: ethereum
+    date: "2025-11-03"
+    tags:
+      - precision-loss
+      - cumulative-rounding
+      - stable-pool
+      - batched-exploitation
+      - novel-2025
+
+  - id: gt-bunni-rounding-direction
+    source_id: bunni-exploit
+    vulndocs_path: logic/arithmetic
+    pattern: arithmetic-rounding-direction
+    severity: critical
+    contract_path: ""
+    location: "withdraw"
+    description: "Incorrect rounding direction in withdraw function"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 8400000
+    chain: ethereum
+    date: "2025-09"
+    tags:
+      - rounding-direction
+      - uniswap-v4
+      - audit-ignored
+      - novel-2025
+
+  # ============================================================
+  # CACHED STORAGE / MULTI-TX EXPLOITS
+  # ============================================================
+  - id: gt-yearn-yeth-cached-storage
+    source_id: yearn-yeth-exploit
+    vulndocs_path: logic/state-isolation
+    pattern: logic-cached-storage-poisoning
+    severity: critical
+    contract_path: ""
+    location: "packed_vbs"
+    description: "Multi-tx state poisoning via cached storage (16 wei to $9M)"
+    has_vulnerability: true
+    confidence_min: 0.95
+    economic_impact_usd: 9000000
+    chain: ethereum
+    date: "2025-11-30"
+    tags:
+      - cached-storage
+      - multi-tx-corruption
+      - zero-supply-edge-case
+      - capital-efficient
+      - novel-2025
+
+  # ============================================================
+  # ZK PROOF / L2 EXPLOITS
+  # ============================================================
+  - id: gt-zkswap-zk-proof-bypass
+    source_id: zkswap-bridge-exploit
+    vulndocs_path: zk-rollup/proof-verification
+    pattern: zk-proof-verification-bypass
+    severity: critical
+    contract_path: ""
+    location: "verifyExitProof"
+    description: "ZK proof verification no-op in exodus mode"
+    has_vulnerability: true
+    confidence_min: 0.95
+    economic_impact_usd: 5000000
+    chain: ethereum
+    date: "2025-07-09"
+    tags:
+      - zk-proof-bypass
+      - l2-bridge
+      - exodus-mode
+      - novel-2025
+
+  # ============================================================
+  # LEGACY SOLIDITY / INTEGER OVERFLOW
+  # ============================================================
+  - id: gt-truebit-integer-overflow
+    source_id: truebit-exploit
+    vulndocs_path: arithmetic/integer-overflow
+    pattern: arithmetic-legacy-overflow
+    severity: critical
+    contract_path: ""
+    location: "getPurchasePrice"
+    description: "Integer overflow in Solidity 0.6.10 price calculation"
+    has_vulnerability: true
+    confidence_min: 0.95
+    economic_impact_usd: 26440000
+    chain: ethereum
+    date: "2026-01-08"
+    tags:
+      - integer-overflow
+      - legacy-solidity
+      - solidity-0.6.x
+      - price-manipulation
+      - novel-2026
+
+  # ============================================================
+  # BUFFER OVERFLOW / MEMORY EXPLOITS
+  # ============================================================
+  - id: gt-1inch-buffer-overflow
+    source_id: 1inch-fusion-exploit
+    vulndocs_path: logic/configuration/specifics/1inch-calldata-corruption
+    pattern: memory-buffer-overflow
+    severity: critical
+    contract_path: ""
+    location: "_settleOrder"
+    description: "Web2-style buffer overflow in calldata manipulation"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 5000000
+    chain: ethereum
+    date: "2025-03-05"
+    tags:
+      - buffer-overflow
+      - calldata-manipulation
+      - web2-style
+      - novel-2025
+
+  # ============================================================
+  # EIP-7702 DELEGATION EXPLOITS (ZERO PRIOR COVERAGE)
+  # ============================================================
+  - id: gt-ipor-eip7702-delegation
+    source_id: ipor-eip7702-exploit
+    vulndocs_path: account-abstraction/eip7702-delegation
+    pattern: eip7702-delegation-hijack
+    severity: critical
+    contract_path: ""
+    location: "configureInstantWithdrawalFuses"
+    description: "EIP-7702 delegation hijacking via malicious fuse injection"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 336000
+    chain: arbitrum
+    date: "2026-01-06"
+    tags:
+      - eip7702-delegation
+      - fuse-injection
+      - admin-hijack
+      - pectra-upgrade
+      - novel-2026
+
+  - id: gt-gana-eip7702-onlyeoa-bypass
+    source_id: gana-eip7702-exploit
+    vulndocs_path: account-abstraction/eip7702-delegation
+    pattern: eip7702-onlyeoa-bypass
+    severity: critical
+    contract_path: ""
+    location: "unstake"
+    description: "EIP-7702 delegation bypasses onlyEOA access control"
+    has_vulnerability: true
+    confidence_min: 0.85
+    economic_impact_usd: 3100000
+    chain: bsc
+    date: "2025-11"
+    tags:
+      - eip7702-delegation
+      - onlyeoa-bypass
+      - access-control
+      - novel-2025
+
+  # ============================================================
+  # FORK VULNERABILITIES
+  # ============================================================
+  - id: gt-radiant-fork-vulnerability
+    source_id: radiant-exploit
+    vulndocs_path: logic/arithmetic
+    pattern: fork-empty-market-rounding
+    severity: critical
+    contract_path: ""
+    location: "deposit"
+    description: "Inherited Aave v2 rounding bug in empty market"
+    has_vulnerability: true
+    confidence_min: 0.9
+    economic_impact_usd: 4500000
+    chain: arbitrum
+    date: "2025-01"
+    tags:
+      - fork-vulnerability
+      - empty-market
+      - liquidity-index
+      - aave-fork
+      - novel-2025
+
+# Summary statistics
+statistics:
+  total_entries: 9
+  by_category:
+    precision_loss: 2
+    cached_storage: 1
+    zk_proof: 1
+    legacy_solidity: 1
+    buffer_overflow: 1
+    eip7702: 2
+    fork_vulnerability: 1
+  by_severity:
+    critical: 9
+  total_economic_impact_usd: 190416000
+  chains:
+    ethereum: 5
+    arbitrum: 2
+    bsc: 1
+
+# New vulnerability categories introduced
+new_categories:
+  - name: precision-loss
+    description: "Cumulative rounding, direction errors, sub-wei precision"
+    operations_needed:
+      - EXPLOITS_ROUNDING_BOUNDARY
+      - LOOPS_OVER_OPERATIONS
+      - MANIPULATES_INVARIANT
+    examples:
+      - gt-balancer-v2-rounding
+      - gt-bunni-rounding-direction
+
+  - name: cached-storage
+    description: "Multi-transaction state poisoning via cached values"
+    operations_needed:
+      - READS_CACHED_STORAGE
+      - POISONS_STATE_ACROSS_TXS
+      - EXPLOITS_ZERO_SUPPLY_EDGE_CASE
+    examples:
+      - gt-yearn-yeth-cached-storage
+
+  - name: zk-proof-bypass
+    description: "ZK proof verification bypass or no-op"
+    operations_needed:
+      - VERIFIES_ZK_PROOF
+      - ACCEPTS_EXODUS_WITHDRAWAL
+      - VALIDATES_STATE_ROOT
+    examples:
+      - gt-zkswap-zk-proof-bypass
+
+  - name: eip7702-delegation
+    description: "EIP-7702 account delegation attacks"
+    operations_needed:
+      - DELEGATES_VIA_EIP7702
+      - HIJACKS_DELEGATED_ACCOUNT
+      - BYPASSES_EOA_CHECK_VIA_DELEGATION
+    examples:
+      - gt-ipor-eip7702-delegation
+      - gt-gana-eip7702-onlyeoa-bypass
+
+  - name: buffer-overflow
+    description: "Memory/calldata buffer overflow in Solidity"
+    operations_needed:
+      - PROCESSES_VARIABLE_LENGTH_CALLDATA
+      - HANDLES_NEGATIVE_NUMBERS
+      - EXPLOITS_BUFFER_OVERFLOW
+    examples:
+      - gt-1inch-buffer-overflow
+
+  - name: fork-vulnerability
+    description: "Inherited bugs from forked protocols"
+    operations_needed:
+      - INHERITS_FORK_VULNERABILITY
+      - EXPLOITS_EMPTY_MARKET
+      - MANIPULATES_LIQUIDITY_INDEX
+    examples:
+      - gt-radiant-fork-vulnerability

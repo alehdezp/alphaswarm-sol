@@ -1,0 +1,14 @@
+id: value-movement-callback-entrypoint-reentrancy
+vulndoc: reentrancy/classic
+name: Callback Entrypoint Reentrancy
+description: Callback entrypoints making cross-contract calls without guards.
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: callback_entrypoint_surface
+    op: eq
+    value: true

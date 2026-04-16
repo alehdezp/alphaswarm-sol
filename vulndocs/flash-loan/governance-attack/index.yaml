@@ -1,0 +1,22 @@
+# Flash Loan Governance Attack - Subcategory Index
+
+id: governance-attack
+name: Flash Loan Governance
+parent_category: flash-loan
+
+description: |
+  Using flash-borrowed governance tokens to gain temporary voting power
+  and pass malicious proposals within a single transaction.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - fl-002
+
+relevant_properties:
+  - reads_voting_power
+  - uses_snapshot
+
+token_estimate: 400

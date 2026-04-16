@@ -1,0 +1,18 @@
+id: auth-053
+vulndoc: access-control/general
+name: Public tx.origin Usage
+description: Public/external functions that reference tx.origin.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_tx_origin
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

@@ -1,0 +1,33 @@
+# Crypto Safe Reference Implementation
+id: safe-crypto
+name: CryptoSafe
+category: internal_safe
+source: tests/contracts/safe/CryptoSafe.sol
+solidity_version: "0.8.x"
+
+contract_info:
+  description: |
+    Reference implementation demonstrating safe cryptographic patterns:
+    - ECDSA with malleability protection
+    - Proper signature validation
+    - Chain ID verification
+  security_features:
+    - Signature malleability check
+    - Zero address validation
+    - Chain ID in signature
+    - Nonce tracking
+  safe_since: 2025-12
+  review_status: internal
+
+expected_findings: []
+
+false_positive_categories:
+  - crypto-*
+  - signature-*
+  - ecrecover-*
+
+notes: |
+  This contract demonstrates correct cryptographic patterns.
+  Any crypto-related finding is a false positive.
+
+status: validated

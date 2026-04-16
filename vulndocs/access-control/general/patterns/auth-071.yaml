@@ -1,0 +1,16 @@
+id: auth-071
+vulndoc: access-control/general
+name: Oracle Update Without Access Control
+description: Oracle update functions without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

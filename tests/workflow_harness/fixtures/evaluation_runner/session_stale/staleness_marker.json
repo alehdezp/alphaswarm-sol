@@ -1,0 +1,5 @@
+{
+  "session_id": "sess-stale-001",
+  "stale": true,
+  "reason": "Session data from 2025-01-01, exceeds maximum staleness threshold"
+}

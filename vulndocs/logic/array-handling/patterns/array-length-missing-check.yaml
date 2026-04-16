@@ -1,0 +1,16 @@
+id: array-length-missing-check
+vulndoc: logic/array-handling
+name: Array Length Missing Check
+description: Array parameters used without length bounds checks can cause inconsistent accounting or DoS.
+scope: Function
+lens:
+  - DoS
+severity: medium
+match:
+  all:
+    - property: has_array_parameter
+      op: eq
+      value: true
+    - property: has_array_length_check
+      op: eq
+      value: false

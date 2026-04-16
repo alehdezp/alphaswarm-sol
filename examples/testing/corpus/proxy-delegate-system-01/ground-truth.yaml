@@ -1,0 +1,152 @@
+project:
+  name: proxy-delegate-system-01
+  theme: vault
+  tier: 2
+  adversarial_categories:
+  - B
+  description: 'Proxy-delegate pattern with storage collision and initialization flaws.
+    Category B: proxy/delegate hiding (B2).'
+findings:
+- pattern_id: proxy-storage-collision-risk
+  contract: VaultLogicV1
+  function: initialize
+  line_range: 12-22
+  severity: critical
+  adversarial_techniques:
+  - B2-proxy-delegate-hiding
+  expected_reasoning_chain:
+  - Identify StorageProxy stores implementation at slot 0, proxyAdmin at slot 1
+  - VaultLogicV1 stores owner at slot 0, totalDeposits at slot 1
+  - Via delegatecall, writing owner overwrites implementation address
+  - Writing totalDeposits overwrites proxyAdmin
+  - 'Conclude: storage collision corrupts proxy state via implementation'
+- pattern_id: proxy-uninitialized-implementation
+  contract: VaultLogicV1
+  function: initialize
+  line_range: 19-22
+  severity: high
+  adversarial_techniques:
+  - B2-proxy-delegate-hiding
+  expected_reasoning_chain:
+  - Identify initialize sets owner without checking initialized flag
+  - No require(!initialized) check
+  - Attacker can call initialize multiple times to change owner
+  - 'Conclude: missing initializer protection allows owner takeover'
+- pattern_id: proxy-upgrade-surface
+  contract: StorageProxy
+  function: upgradeTo
+  line_range: 21-25
+  severity: critical
+  adversarial_techniques:
+  - B2-proxy-delegate-hiding
+  expected_reasoning_chain:
+  - Identify upgradeTo changes implementation address
+  - No msg.sender == proxyAdmin check
+  - Anyone can set malicious implementation
+  - 'Conclude: missing access control on proxy upgrade'
+- pattern_id: auth-001
+  contract: StorageProxy
+  function: changeAdmin
+  line_range: 28-30
+  severity: critical
+  adversarial_techniques:
+  - B2-proxy-delegate-hiding
+  expected_reasoning_chain:
+  - Identify changeAdmin sets proxyAdmin
+  - No access control
+  - Anyone can become proxy admin
+  - 'Conclude: missing access control on admin change'
+- pattern_id: balance-update-after-transfer
+  contract: VaultLogicV1
+  function: withdraw
+  line_range: 33-40
+  severity: high
+  adversarial_techniques:
+  - B2-proxy-delegate-hiding
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount}'
+  - Balance update occurs AFTER call
+  - When called via proxy delegatecall, reentrancy drains proxy storage
+  - 'Conclude: reentrancy through proxy context'
+- pattern_id: delegatecall-to-untrusted
+  contract: StorageProxy
+  function: fallback
+  line_range: 33-43
+  severity: high
+  adversarial_techniques:
+  - B2-proxy-delegate-hiding
+  expected_reasoning_chain:
+  - Identify delegatecall to implementation address
+  - implementation can be changed by anyone (missing access control)
+  - Malicious implementation can steal all proxy funds via selfdestruct
+  - 'Conclude: delegatecall to potentially untrusted implementation'
+- pattern_id: auth-002
+  contract: VaultLogicV1
+  function: destroy
+  line_range: 50-52
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify destroy calls selfdestruct
+  - No access control
+  - Anyone can destroy the implementation contract
+  - 'Conclude: unrestricted selfdestruct'
+- pattern_id: storage-collision
+  contract: VaultLogicV1
+  function: initialize
+  line_range: 12-22
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Map StorageProxy storage layout — slot 0 is implementation (address), slot 1 is proxyAdmin (address)
+  - Map VaultLogicV1 storage layout — slot 0 is owner (address), slot 1 is totalDeposits (uint256)
+  - When proxy delegatecalls to VaultLogicV1, writing owner at slot 0 overwrites the implementation address
+  - Writing totalDeposits at slot 1 overwrites proxyAdmin with an arbitrary uint256 interpreted as address
+  - Calling initialize(_owner) through the proxy sets slot 0 to _owner, effectively changing the proxy implementation to _owner
+  - 'Conclude: storage slot collision — VaultLogicV1 slots 0-1 directly overwrite proxy critical state (implementation and admin)'
+- pattern_id: proxy-reinitializer-missing
+  contract: VaultLogicV1
+  function: initialize
+  line_range: 19-22
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify initialize sets owner = _owner and initialized = true but never checks the initialized flag
+  - The bool initialized exists at slot 4 (after balances mapping) but require(!initialized) is absent
+  - After a proxy upgrade to a new implementation (e.g., VaultLogicV2), initialize can be called again
+  - Each re-initialization overwrites owner (and due to storage collision, the proxy implementation address)
+  - No reinitializer version tracking exists to distinguish V1 init from V2 init
+  - 'Conclude: missing reinitializer guard — no version-aware initialization protection means upgrades can be exploited via re-initialization'
+- pattern_id: arbitrary-delegatecall-target
+  contract: StorageProxy
+  function: fallback
+  line_range: 33-43
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify fallback executes delegatecall(gas(), impl, ...) where impl = implementation (slot 0)
+  - The implementation address is set via upgradeTo which has no access control — anyone can call it
+  - An attacker calls upgradeTo(maliciousContract) then sends any transaction to trigger fallback
+  - The proxy delegatecalls into attacker-controlled code, executing in the proxy storage context
+  - The malicious implementation can selfdestruct, drain funds, or corrupt any storage slot
+  - 'Conclude: arbitrary delegatecall target — unprotected upgradeTo allows anyone to set the delegatecall destination to attacker-controlled code'
+- pattern_id: proxy-selector-clash-risk
+  contract: StorageProxy
+  function: fallback
+  line_range: 33-43
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify StorageProxy has explicit functions upgradeTo, changeAdmin with their own selectors
+  - The fallback forwards ALL other selectors to implementation via delegatecall
+  - No selector clash check exists — if VaultLogicV1 defines a function with the same 4-byte selector as upgradeTo or changeAdmin, calls are ambiguous
+  - StorageProxy does not use the transparent proxy pattern (where admin calls go to proxy, user calls go to impl)
+  - A user intending to call an implementation function could accidentally hit a proxy admin function or vice versa
+  - 'Conclude: selector clash risk — no transparent proxy separation means proxy admin functions and implementation functions share the same call namespace'
+safe_patterns: []
+summary:
+  total_findings: 11
+  total_safe_patterns: 0
+  difficulty: hard
+  notes: 'Category B: proxy-delegate pattern (B2) with storage collision, initialization,
+    and delegatecall vulnerabilities'

@@ -1,0 +1,16 @@
+id: oracle-update-missing-signature-check
+vulndoc: oracle/freshness
+name: Oracle Update Missing Signature Check
+description: Oracle update functions without signature verification can accept spoofed updates.
+scope: Function
+lens:
+  - Oracle
+severity: high
+match:
+  all:
+    - property: oracle_update_function
+      op: eq
+      value: true
+    - property: has_oracle_update_signature_check
+      op: eq
+      value: false

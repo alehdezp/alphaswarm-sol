@@ -1,0 +1,103 @@
+# DVDeFi Benchmark Suite
+# All 13 challenges from Damn Vulnerable DeFi v4
+
+name: dvd
+description: Damn Vulnerable DeFi v4 Benchmark Suite
+version: "4.0"
+source: https://www.damnvulnerabledefi.xyz/
+
+challenges:
+  # Tier 1: Basic (Difficulty 1-2)
+  - id: unstoppable
+    file: unstoppable.yaml
+    difficulty: 1
+    status: detected
+
+  - id: naive-receiver
+    file: naive-receiver.yaml
+    difficulty: 1
+    status: detected
+
+  - id: truster
+    file: truster.yaml
+    difficulty: 2
+    status: detected
+
+  - id: side-entrance
+    file: side-entrance.yaml
+    difficulty: 2
+    status: detected
+
+  # Tier 2: Intermediate (Difficulty 3)
+  - id: the-rewarder
+    file: the-rewarder.yaml
+    difficulty: 3
+    status: detected
+
+  - id: selfie
+    file: selfie.yaml
+    difficulty: 3
+    status: detected
+
+  - id: puppet
+    file: puppet.yaml
+    difficulty: 3
+    status: detected
+
+  # Tier 3: Advanced (Difficulty 4-5)
+  - id: puppet-v2
+    file: puppet-v2.yaml
+    difficulty: 4
+    status: detected
+
+  - id: puppet-v3
+    file: puppet-v3.yaml
+    difficulty: 5
+    status: detected
+
+  - id: free-rider
+    file: free-rider.yaml
+    difficulty: 4
+    status: detected
+
+  - id: backdoor
+    file: backdoor.yaml
+    difficulty: 5
+    status: detected
+
+  - id: compromised
+    file: compromised.yaml
+    difficulty: 4
+    status: not-applicable
+    reason: "Off-chain vulnerability"
+
+  # Tier 4: Expert (Difficulty 6)
+  - id: climber
+    file: climber.yaml
+    difficulty: 6
+    status: not-detected
+    reason: "Needs builder.py enhancement"
+
+summary:
+  total_challenges: 13
+  detectable: 12
+  detected: 11
+  not_applicable: 1
+  not_detected: 1
+  detection_rate: 0.846
+
+targets:
+  minimum: 0.70
+  target: 0.80
+  excellent: 0.90
+
+categories:
+  DoS: [unstoppable]
+  Access Control: [naive-receiver, backdoor, climber]
+  Arbitrary Call: [truster]
+  Reentrancy: [side-entrance, free-rider]
+  Flash Loan: [the-rewarder, selfie]
+  Oracle: [puppet, puppet-v2, puppet-v3]
+  Off-Chain: [compromised]
+
+last_updated: "2026-01-07"

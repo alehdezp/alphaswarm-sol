@@ -1,0 +1,44 @@
+# DVDeFi Challenge: Compromised
+# Vulnerability: Off-chain private key leak (NOT detectable by code analysis)
+
+id: dvd-compromised
+name: Compromised
+version: "4"
+difficulty: 4
+category: Off-Chain
+
+source_path: examples/damm-vuln-defi/src/compromised
+
+vulnerability:
+  type: off-chain-key-compromise
+  description: |
+    Oracle private keys are leaked via hex-encoded HTTP response headers.
+    This is an off-chain vulnerability, NOT detectable by static code analysis.
+  cwe: CWE-798
+  severity: critical
+
+expected_detections: []
+
+detection_note: |
+  This challenge tests off-chain key management, not code vulnerabilities.
+  VKG cannot and should not detect this - it requires operational security analysis.
+  The code itself is secure; the vulnerability is in key management.
+
+expected_functions:
+  vulnerable: []
+  safe:
+    - TrustfulOracle.postPrice
+    - Exchange.buyOne
+    - Exchange.sellOne
+
+false_positive_exclusions:
+  - description: "Oracle requires trusted sources - this is correct design"
+    reason: Operational security issue, not code vulnerability
+
+verification:
+  exploit_summary: "Decode hex from HTTP headers to get oracle private keys, manipulate price"
+  fix_summary: "Secure key management, HSMs, multi-sig oracle updates"
+
+status: not-applicable
+detection_date: null
+reason: "Off-chain vulnerability - not detectable by static analysis"

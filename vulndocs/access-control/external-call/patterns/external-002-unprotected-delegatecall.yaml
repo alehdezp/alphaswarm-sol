@@ -1,0 +1,492 @@
+# =============================================================================
+# PATTERN: external-002-unprotected-delegatecall
+# =============================================================================
+
+id: external-002
+vulndoc: access-control/external-call
+name: "Unprotected Public Delegatecall"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  This pattern detects public/external functions that use `delegatecall` **WITHOUT access control**,
+  allowing any caller to execute arbitrary code in the contract's storage context. This focuses on
+  the **MISSING ACCESS CONTROL** aspect of delegatecall vulnerabilities.
+
+  **Key Distinction from upgrade-008**:
+  - **upgrade-008**: Focuses on **USER-CONTROLLED TARGET** in delegatecall (who controls the address)
+  - **external-002** (this pattern): Focuses on **MISSING ACCESS CONTROL** (who can call the function)
+  - Both patterns are complementary and may flag the same function (intentional overlap)
+
+  **Semantic Detection**: Uses BEHAVIORAL detection to identify delegatecall functions without
+  access control regardless of:
+  - Function names: `execute()`, `proxy()`, `delegateCall()`, `invoke()`, custom names
+  - Parameter names: `target`, `impl`, `to`, `destination`, custom names
+  - Implementation patterns: direct delegatecall, assembly delegatecall, wrapper functions
+
+  ## Why It's Critical
+
+  Unprotected delegatecall is **CRITICAL** severity because:
+
+  1. **Universal Attack Surface**: ANY caller (including attackers) can trigger delegatecall,
+     even if the target address is validated or hardcoded
+
+  2. **Complete Storage Access**: Delegatecall executes external code with FULL access to
+     the caller's storage, enabling arbitrary state modifications
+
+  3. **Storage Collision Risk**: Even with a trusted target, malicious calldata can trigger
+     unintended storage overwrites through storage slot collisions
+
+  4. **Context Preservation**: Code executes with original `msg.sender` and `msg.value`,
+     enabling privilege escalation and authentication bypass
+
+  5. **No Sandboxing**: Unlike regular `call`, there are NO security boundaries between
+     the calling contract and delegated code
+
+  ## Real-World Exploits
+
+  ### Parity Multisig Wallet Hack ($30M - July 2017)
+
+  **Vulnerability**: Public delegatecall function without access control
+
+  **Attack**: The Parity wallet had a public function allowing anyone to delegatecall to
+  a library address. Attackers called this function with a malicious library that changed
+  the wallet's owner to themselves when executed via delegatecall.
+
+  **Impact**: $30 million stolen from multiple wallets.
+
+  **Root Cause**: Missing access control on delegatecall function (this pattern would detect it)
+
+  **Reference**: [Parity Wallet Hack Analysis](https://blog.openzeppelin.com/on-the-parity-wallet-multisig-hack-405a8c12e8f7)
+
+  ### Multiple DeFi Protocols (2017-2024)
+
+  **Pattern**: Public "execute" or "delegateCall" functions intended for admin use but
+  lacking access control modifiers.
+
+  **Impact**: Critical severity findings in Trail of Bits, OpenZeppelin, and Consensys audits.
+
+  **Common Mistake**: Developers implement delegatecall for flexibility (multi-sig, governance)
+  but forget to add `onlyOwner` or equivalent modifier.
+
+  ## Attack Scenario
+
+  **ATTACK: Public Delegatecall to Malicious Contract**
+
+  ```solidity
+  // VULNERABLE: Public delegatecall without access control
+  contract VulnerableVault {
+      address public owner;
+      mapping(address => uint256) public balances;
+
+      // ❌ CRITICAL: Anyone can call this!
+      function execute(address target, bytes memory data) external {
+          (bool success,) = target.delegatecall(data);
+          require(success, "Delegatecall failed");
+      }
+
+      function deposit() external payable {
+          balances[msg.sender] += msg.value;
+      }
+  }
+
+  // Attacker's exploit contract
+  contract Exploit {
+      address public owner;  // Storage slot 0 - matches VulnerableVault
+
+      function pwn() external {
+          owner = msg.sender;  // Overwrites victim's owner in their storage!
+      }
+  }
+
+  // Attack execution:
+  // 1. Deploy Exploit contract
+  // 2. Call VulnerableVault.execute(exploitAddress, abi.encodeCall(Exploit.pwn, ()))
+  // 3. Delegatecall executes Exploit.pwn() in VulnerableVault's storage context
+  // 4. VulnerableVault's owner is now the attacker
+  // 5. Attacker drains all funds
+  ```
+
+  **ATTACK: Selfdestruct via Public Delegatecall**
+
+  ```solidity
+  // Even with VALIDATED target, missing access control is dangerous
+  contract SemiSafeVault {
+      address public trustedLibrary;
+
+      // ❌ STILL VULNERABLE: Target is trusted, but anyone can call!
+      function executeOnLibrary(bytes memory data) external {
+          (bool success,) = trustedLibrary.delegatecall(data);
+          require(success);
+      }
+  }
+
+  // If trustedLibrary has a selfdestruct function (even if benign):
+  // 1. Attacker calls executeOnLibrary(abi.encodeCall(Library.destroy, ()))
+  // 2. Selfdestruct executes in SemiSafeVault's context
+  // 3. Contract is destroyed, funds lost
+  ```
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+
+  1. **Delegatecall Usage**: Function uses delegatecall operation
+     - Detected via `uses_delegatecall: true`
+     - Includes low-level assembly delegatecall
+
+  2. **Externally Callable**: Function is public/external
+     - `visibility` in [public, external]
+     - Internal/private functions are not directly exploitable
+
+  3. **NO Access Control**: Function lacks access control checks
+     - Both `has_access_gate: false` AND `has_access_control: false`
+     - No modifiers like onlyOwner, no require(msg.sender == owner) checks
+
+  This pattern is SAFE (does NOT trigger) when ANY of these protections exist:
+
+  1. **Access Control Gate**: Function has access control logic
+     - `has_access_gate: true` OR `has_access_control: true`
+     - Includes: onlyOwner, onlyRole, require checks, custom modifiers
+
+  2. **Proper Proxy Pattern**: Function is part of authorized proxy upgrade
+     - `delegatecall_in_proxy_upgrade_context: true`
+     - UUPS/Transparent proxy with proper authorization
+
+scope: Function
+
+lens:
+  - ExternalInfluence
+  - Authority
+
+severity: critical
+
+status: excellent
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: uses_delegatecall
+      op: eq
+      value: true
+
+  # At least ONE must match (OR logic) - use for alternatives
+  any: []
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Safe if function has access control gate
+    - property: has_access_gate
+      op: eq
+      value: true
+    # Safe if function has access control
+    - property: has_access_control
+      op: eq
+      value: true
+    # Safe if this is a proper UUPS/Transparent proxy upgrade function with authorization
+    - property: delegatecall_in_proxy_upgrade_context
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# Edge requirements for graph-based detection
+edges: []
+
+# Path requirements for multi-hop detection
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [upgrade-proxy]
+  true_positives: 10
+  true_negatives: 4
+  edge_cases: 3
+  precision: 1.00
+  recall: 0.9091
+  variation_score: 1.00
+  last_tested: "2025-12-31"
+  notes: |
+    EXCELLENT STATUS - Pattern achieves near-perfect metrics.
+
+    Test Results:
+    - TP: 10/10 detected (100% of vulnerable functions flagged)
+    - TN: 4/4 correctly excluded (access control, internal/private, proxy context)
+    - FP: 0 (perfect precision - zero false alarms)
+    - FN: 1 (assembly delegatecall not detected - builder limitation)
+
+    Pattern Strengths:
+    - Perfect precision (100%): Zero false positives
+    - Excellent recall (90.91%): Catches all non-assembly delegatecall vulnerabilities
+    - Perfect variation score (100%): Works across all naming conventions
+    - Correctly excludes: onlyOwner, onlyAdmin, onlyController, onlyGovernance, manual require checks
+    - Correctly excludes: internal/private functions, proxy upgrade context
+
+    Naming Variations Tested:
+    - Function names: execute, proxy, executeCall, invoke, call, executeLogic, executeContract
+    - Access control: owner, admin, controller, governance
+    - Target sources: parameter, storage, external call, computed address
+
+    Known Limitations:
+    - Assembly delegatecall NOT detected (builder's uses_delegatecall limitation)
+    - This affects 1 test case (VulnerableAssemblyDelegatecall.executeAssembly)
+
+    Real-World Coverage:
+    - Detects Parity Wallet #1 style ($30M exploit)
+    - Detects all standard delegatecall patterns without access control
+    - Production-ready for critical security audits
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Storage Overwrite via Unprotected Delegatecall"
+    description: |
+      Attacker exploits public delegatecall function without access control to execute
+      malicious code that overwrites critical storage variables (owner, balances, roles).
+    preconditions:
+      - "Function with delegatecall is public/external"
+      - "Function lacks access control (no onlyOwner, no role checks)"
+      - "Contract has valuable state or holds funds"
+    steps:
+      - "Attacker identifies unprotected delegatecall function"
+      - "Attacker deploys malicious contract with storage layout matching victim"
+      - "Malicious contract's function modifies storage variables"
+      - "Attacker calls victim's delegatecall function with malicious address"
+      - "Malicious code executes in victim's storage context"
+      - "Critical state variables (owner, balances) are overwritten"
+      - "Attacker gains privileged access and drains funds"
+    impact: "Complete protocol takeover, fund theft, privilege escalation to owner"
+
+  - name: "Selfdestruct via Public Delegatecall"
+    description: |
+      Attacker uses unprotected delegatecall to execute selfdestruct in the contract's
+      context, destroying the contract and sending all ETH to attacker.
+    preconditions:
+      - "Public delegatecall function without access control"
+      - "Contract holds ETH or valuable tokens"
+    steps:
+      - "Attacker deploys malicious contract with selfdestruct(attackerAddress)"
+      - "Attacker calls victim's delegatecall function with malicious address"
+      - "Selfdestruct executes in victim's storage context"
+      - "Victim contract is destroyed"
+      - "All ETH sent to attacker, contract permanently bricked"
+    impact: "Protocol destruction, total fund loss, permanent bricking of contract"
+
+  - name: "Unintended Function Execution"
+    description: |
+      Even with a trusted/validated target address, missing access control allows
+      attackers to call unintended functions via malicious calldata, potentially
+      triggering selfdestruct or other dangerous operations in the target.
+    preconditions:
+      - "Delegatecall target is trusted/validated"
+      - "Function lacks access control"
+      - "Target library has dangerous functions (destroy, emergency, admin operations)"
+    steps:
+      - "Attacker analyzes trusted target library for dangerous functions"
+      - "Attacker identifies function that can harm the calling contract (e.g., selfdestruct)"
+      - "Attacker calls victim's delegatecall with malicious calldata"
+      - "Dangerous function executes in victim's context via delegatecall"
+      - "Contract is destroyed or critically compromised"
+    impact: "Contract destruction, state corruption, loss of funds"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Verify the function is truly externally callable (public/external visibility, not internal/private)"
+  - "Confirm there is NO access control on the function (no modifiers, no require checks on msg.sender)"
+  - "Check if this is an intentional public API design (unlikely for delegatecall)"
+  - "Verify the contract holds valuable assets (ETH, tokens) or has privileged state"
+  - "Examine if there are any off-chain or governance controls not visible in the code"
+  - "Check if this is part of a proper proxy upgrade pattern with authorization (would be filtered by none conditions)"
+  - "Review contract documentation to see if public delegatecall is intentional (rare and dangerous)"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add Access Control Modifier"
+    description: |
+      Add access control to restrict the function to authorized callers only.
+      This is the MINIMUM required protection for delegatecall functions.
+    example: |
+      // Before (VULNERABLE)
+      function execute(address target, bytes memory data) external {
+          (bool success,) = target.delegatecall(data);
+          require(success, "Delegatecall failed");
+      }
+
+      // After (SAFE with access control)
+      function execute(address target, bytes memory data) external onlyOwner {
+          (bool success,) = target.delegatecall(data);
+          require(success, "Delegatecall failed");
+      }
+
+  - name: "Use Role-Based Access Control"
+    description: |
+      For multi-admin scenarios, use OpenZeppelin's AccessControl or custom roles.
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyContract is AccessControl {
+          bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
+
+          function execute(address target, bytes memory data)
+              external
+              onlyRole(EXECUTOR_ROLE)
+          {
+              (bool success,) = target.delegatecall(data);
+              require(success, "Delegatecall failed");
+          }
+      }
+
+  - name: "Add Multi-Signature Requirement"
+    description: |
+      For critical delegatecall operations, require multiple signatures/approvals.
+    example: |
+      contract SafeExecutor {
+          mapping(bytes32 => uint256) public approvals;
+          uint256 public constant REQUIRED_APPROVALS = 3;
+
+          function approveDelegatecall(address target, bytes memory data)
+              external
+              onlyOwner
+          {
+              bytes32 callHash = keccak256(abi.encodePacked(target, data));
+              approvals[callHash]++;
+          }
+
+          function execute(address target, bytes memory data) external {
+              bytes32 callHash = keccak256(abi.encodePacked(target, data));
+              require(approvals[callHash] >= REQUIRED_APPROVALS, "Insufficient approvals");
+
+              (bool success,) = target.delegatecall(data);
+              require(success, "Delegatecall failed");
+
+              delete approvals[callHash];  // One-time use
+          }
+      }
+
+  - name: "Use Timelock for Critical Operations"
+    description: |
+      Add a timelock delay for delegatecall operations to allow monitoring and intervention.
+    example: |
+      contract TimelockExecutor {
+          mapping(bytes32 => uint256) public scheduledCalls;
+          uint256 public constant TIMELOCK_DELAY = 2 days;
+
+          function scheduleDelegatecall(address target, bytes memory data)
+              external
+              onlyOwner
+          {
+              bytes32 callHash = keccak256(abi.encodePacked(target, data));
+              scheduledCalls[callHash] = block.timestamp + TIMELOCK_DELAY;
+          }
+
+          function execute(address target, bytes memory data) external {
+              bytes32 callHash = keccak256(abi.encodePacked(target, data));
+              require(scheduledCalls[callHash] != 0, "Not scheduled");
+              require(block.timestamp >= scheduledCalls[callHash], "Timelock not expired");
+
+              (bool success,) = target.delegatecall(data);
+              require(success, "Delegatecall failed");
+
+              delete scheduledCalls[callHash];
+          }
+      }
+
+  - name: "Remove Public Delegatecall if Not Essential"
+    description: |
+      If delegatecall is not essential for the contract's core functionality, remove it.
+      Consider alternatives like regular call() or direct function calls.
+    example: |
+      // If you don't need storage context preservation, use regular call
+      function execute(address target, bytes memory data) external onlyOwner {
+          (bool success,) = target.call(data);  // NOT delegatecall
+          require(success, "Call failed");
+      }
+
+  - name: "Implement Proper UUPS Pattern with Authorization"
+    description: |
+      If building an upgradeable contract, use established patterns like OpenZeppelin's
+      UUPSUpgradeable which includes proper access control by design.
+    example: |
+      import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+      import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
+      contract MyContract is UUPSUpgradeable, OwnableUpgradeable {
+          function _authorizeUpgrade(address newImplementation)
+              internal
+              override
+              onlyOwner
+          {}
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - upgrade-008  # Delegatecall to untrusted target (complementary - focuses on target control)
+  - auth-001     # Unprotected privileged state write
+  - ext-001      # Unprotected external call
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+  - SC06  # Unchecked External Calls
+  - SC03  # Logic Errors
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-829  # Inclusion of Functionality from Untrusted Control Sphere
+  - CWE-913  # Improper Control of Dynamically-Managed Code Resources
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+semantic_ops:
+  has_operation: CALLS_EXTERNAL
+  has_all_operations:
+    - CALLS_UNTRUSTED
+    - MODIFIES_CRITICAL_STATE
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  pattern: "X:delegatecall"
+  matches_exploits:
+    - parity-wallet-2017-1
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - parity-wallet-2017-1
+  signature: "public delegatecall without access control"
+  similarity_threshold: 0.88
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [CALLS_UNTRUSTED, MODIFIES_CRITICAL_STATE]
+    max_depth: 3
+  pattern:
+    require_all_conditions: true
+  constraint:
+    enabled: false  # Access control is boolean, not constraint-based
+  consensus:
+    min_agents_agree: 2
+    mode: voting

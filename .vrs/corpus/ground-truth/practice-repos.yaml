@@ -1,0 +1,313 @@
+# Ground Truth: Practice Repositories
+# Generated from Phase 7.3-01 corpus expansion
+# Maps practice repo challenges to testable ground truth records
+#
+# Schema version: 1.0
+# Created: 2026-01-29
+# Source: 07.3-01-PRACTICE-REPOS.md research
+
+schema_version: "1.0"
+updated: "2026-01-29"
+source: "07.3-01-PRACTICE-REPOS.md"
+
+# Ground truth entries for practice repository contracts
+# Each source covers multiple vulnerability categories
+
+entries:
+  # ============================================================
+  # DeFiHackLabs (SunWeb3Sec) - 600+ real exploits
+  # ============================================================
+  - id: gt-defihacklabs
+    source_id: defihacklabs
+    category: practice-repo
+    description: "600+ real DeFi exploits with Foundry POCs"
+    has_vulnerability: true
+    expected_contracts: 600
+    vulnerability_classes:
+      - flash_loan
+      - oracle_manipulation
+      - reentrancy
+      - access_control
+      - price_manipulation
+      - bridge_exploit
+      - mev
+      - business_logic
+    tags:
+      - real-world
+      - foundry
+      - comprehensive
+    ground_truth_status: stub  # Individual entries to be generated on ingest
+    priority: critical
+
+  # ============================================================
+  # DeFiVulnLabs (SunWeb3Sec) - 48 vulnerability types
+  # ============================================================
+  - id: gt-defivulnlabs
+    source_id: defivulnlabs
+    category: practice-repo
+    description: "48 vulnerability types with educational focus"
+    has_vulnerability: true
+    expected_contracts: 150
+    vulnerability_classes:
+      - reentrancy
+      - integer_overflow
+      - access_control
+      - oracle_manipulation
+      - flash_loan
+      - signature_replay
+      - erc20_vulnerabilities
+      - proxy_vulnerabilities
+      - randomness
+      - frontrunning
+    tags:
+      - educational
+      - comprehensive-taxonomy
+      - foundry
+    ground_truth_status: stub
+    priority: critical
+
+  # ============================================================
+  # Damn Vulnerable DeFi v4
+  # ============================================================
+  - id: gt-dvdefi-v4
+    source_id: dvdefi-v4
+    category: practice-repo
+    description: "17 progressive DeFi security challenges"
+    has_vulnerability: true
+    expected_contracts: 30
+    vulnerability_classes:
+      - flash_loan
+      - oracle_manipulation
+      - governance
+      - nft_vulnerabilities
+      - lending
+      - wallet
+      - timelock
+      - dex_manipulation
+    challenges:
+      - name: Unstoppable
+        vulnerability: flash_loan_dos
+      - name: Naive Receiver
+        vulnerability: flash_loan_receiver
+      - name: Truster
+        vulnerability: approval_manipulation
+      - name: Side Entrance
+        vulnerability: accounting_error
+      - name: The Rewarder
+        vulnerability: timing_attack
+      - name: Selfie
+        vulnerability: governance_takeover
+      - name: Compromised
+        vulnerability: oracle_manipulation
+      - name: Puppet
+        vulnerability: price_manipulation
+      - name: Puppet V2
+        vulnerability: twap_manipulation
+      - name: Puppet V3
+        vulnerability: uniswap_v3_manipulation
+      - name: Free Rider
+        vulnerability: nft_flash_loan
+      - name: Backdoor
+        vulnerability: safe_initialization
+      - name: Climber
+        vulnerability: timelock_bypass
+      - name: Wallet Mining
+        vulnerability: create2_manipulation
+      - name: ABI Smuggling
+        vulnerability: calldata_manipulation
+      - name: Curvy Puppet
+        vulnerability: curve_oracle
+      - name: Shards
+        vulnerability: erc1155_manipulation
+    tags:
+      - ctf
+      - progressive
+      - foundry
+      - industry-standard
+    ground_truth_status: stub
+    priority: critical
+
+  # ============================================================
+  # minaminao CTF Blockchain - 200+ challenges
+  # ============================================================
+  - id: gt-ctf-blockchain
+    source_id: ctf-blockchain
+    category: practice-repo
+    description: "200+ CTF blockchain challenges with solutions"
+    has_vulnerability: true
+    expected_contracts: 200
+    vulnerability_classes:
+      - delegatecall
+      - reentrancy
+      - arithmetic
+      - access_control
+      - oracle_manipulation
+      - flash_loan
+      - mev
+      - storage_collision
+    sources_compiled:
+      - ethernaut
+      - damn_vulnerable_defi
+      - ethernautdao
+      - paradigm_ctf
+    tags:
+      - ctf-compilation
+      - comprehensive
+      - solutions-included
+    ground_truth_status: stub
+    priority: high
+
+  # ============================================================
+  # Secureum A-MAZE-X
+  # ============================================================
+  - id: gt-secureum-amazex
+    source_id: secureum-amazex
+    category: practice-repo
+    description: "DeFi-focused CTF from Secureum"
+    has_vulnerability: true
+    expected_contracts: 30
+    vulnerability_classes:
+      - defi_vulnerabilities
+      - solidity_edge_cases
+      - access_control
+      - storage_manipulation
+      - economic_attacks
+    editions:
+      - stanford
+      - paris
+    tags:
+      - ctf
+      - defi-focused
+      - hardhat
+    ground_truth_status: stub
+    priority: high
+
+  # ============================================================
+  # GCTF 2024
+  # ============================================================
+  - id: gt-gctf-2024
+    source_id: gctf-2024
+    category: practice-repo
+    description: "2024 CTF with modern patterns"
+    has_vulnerability: true
+    expected_contracts: 15
+    vulnerability_classes:
+      - overflow
+      - reentrancy
+      - access_control
+    challenges:
+      - name: Timelock
+        vulnerability: overflow
+      - name: TheClassic
+        vulnerability: reentrancy
+      - name: TokenBonanza
+        vulnerability: access_control
+    tags:
+      - ctf
+      - 2024-patterns
+      - foundry
+      - solutions-included
+    ground_truth_status: stub
+    priority: high
+
+  # ============================================================
+  # Trail of Bits - building-secure-contracts
+  # ============================================================
+  - id: gt-building-secure-contracts
+    source_id: building-secure-contracts
+    category: practice-repo
+    description: "Trail of Bits authoritative security examples"
+    has_vulnerability: true
+    expected_contracts: 40
+    vulnerability_classes:
+      - reentrancy
+      - access_control
+      - arithmetic
+      - unchecked_returns
+      - denial_of_service
+      - bad_randomness
+      - frontrunning
+      - time_manipulation
+    tags:
+      - authoritative
+      - trail-of-bits
+      - best-practices
+    ground_truth_status: stub
+    priority: high
+
+  # ============================================================
+  # QuillHash DeFi Attack Vectors
+  # ============================================================
+  - id: gt-quillhash-defi-attacks
+    source_id: quillhash-defi-attacks
+    category: practice-repo
+    description: "DeFi attack vector catalog with examples"
+    has_vulnerability: true
+    expected_contracts: 30
+    vulnerability_classes:
+      - flash_loan
+      - oracle_manipulation
+      - reentrancy
+      - access_control
+    tags:
+      - attack-vectors
+      - real-world-examples
+    ground_truth_status: stub
+    priority: medium
+
+  # ============================================================
+  # QuillHash Proxies Security
+  # ============================================================
+  - id: gt-quillhash-proxies
+    source_id: quillhash-proxies
+    category: practice-repo
+    description: "Proxy/upgradeable contract security examples"
+    has_vulnerability: true
+    expected_contracts: 20
+    vulnerability_classes:
+      - proxy_uups
+      - proxy_transparent
+      - storage_collision
+      - function_clashing
+      - uninitialized_proxy
+    tags:
+      - proxy-security
+      - upgradeable
+    ground_truth_status: stub
+    priority: medium
+
+# Summary statistics
+statistics:
+  total_sources: 9
+  total_expected_contracts: 1115
+  by_priority:
+    critical: 3  # defihacklabs, defivulnlabs, dvdefi-v4
+    high: 4      # ctf-blockchain, secureum-amazex, gctf-2024, building-secure-contracts
+    medium: 2    # quillhash repos
+  vulnerability_coverage:
+    - reentrancy
+    - access_control
+    - flash_loan
+    - oracle_manipulation
+    - arithmetic
+    - delegatecall
+    - storage_collision
+    - proxy_vulnerabilities
+    - governance
+    - mev
+    - frontrunning
+    - signature_replay
+    - time_manipulation
+    - randomness
+
+# Ingestion priority order
+ingestion_order:
+  - defihacklabs      # 600+ contracts, highest priority
+  - defivulnlabs      # 150 contracts, comprehensive taxonomy
+  - dvdefi-v4         # 30 contracts, industry standard
+  - ctf-blockchain    # 200+ challenges
+  - gctf-2024         # 15 contracts, modern patterns
+  - secureum-amazex   # 30 contracts, DeFi focused
+  - building-secure-contracts  # 40 contracts, authoritative
+  - quillhash-defi-attacks     # 30 contracts
+  - quillhash-proxies          # 20 contracts

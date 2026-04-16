@@ -1,0 +1,28 @@
+id: op-safe-cei-signature
+vulndoc: crypto/signature
+name: Safe CEI Pattern Verification
+description: 'Behavioral signature matching safe CEI (Checks-Effects-Interactions):
+
+  R:bal (read) → W:bal (write/effect) → X:out (external interaction)
+
+  This is safe because state is updated BEFORE external call.
+
+  Note: Use this to EXCLUDE from vulnerability findings, not as a finding itself.
+
+  '
+scope: Function
+lens:
+- ValueMovement
+severity: info
+match:
+  tier_a:
+    all:
+    - has_all_operations:
+      - READS_USER_BALANCE
+      - WRITES_USER_BALANCE
+      - TRANSFERS_VALUE_OUT
+    - sequence_order:
+        before: WRITES_USER_BALANCE
+        after: TRANSFERS_VALUE_OUT
+aggregation:
+  mode: tier_a_only

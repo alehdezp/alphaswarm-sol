@@ -1,0 +1,23 @@
+# External Revert DoS - Subcategory Index
+
+id: external-revert
+name: External Revert DoS
+parent_category: dos
+
+description: |
+  External calls that can revert and block contract execution. Common
+  in batch payment patterns where one failing recipient blocks all.
+
+severity_range:
+  - low
+  - high
+
+patterns:
+  - dos-003
+
+relevant_properties:
+  - uses_transfer
+  - external_call_sites
+  - has_try_catch
+
+token_estimate: 400

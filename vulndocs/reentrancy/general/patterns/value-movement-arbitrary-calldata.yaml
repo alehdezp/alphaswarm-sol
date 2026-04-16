@@ -1,0 +1,16 @@
+id: value-movement-arbitrary-calldata
+vulndoc: reentrancy/general
+name: Arbitrary Calldata Forwarding
+description: User-controlled calldata forwarded in low-level calls.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: uses_call
+    op: eq
+    value: true
+  - property: call_data_user_controlled
+    op: eq
+    value: true

@@ -1,0 +1,370 @@
+# Fresh Environment Persona Matrix
+# Phase: 07.3.4 - User Journey Validation
+#
+# Defines user personas for outsider testing with expected workflows
+# and success criteria for each persona type.
+
+version: "1.0.0"
+updated: "2026-01-31"
+
+# ============================================================================
+# Persona Definitions
+# ============================================================================
+
+personas:
+  # --------------------------------------------------------------------------
+  # Novice: First-time user with minimal background
+  # --------------------------------------------------------------------------
+  novice:
+    id: novice
+    name: "Novice User"
+    description: |
+      A developer who heard about AlphaSwarm and wants to try it.
+      Has basic CLI skills but no Solidity security experience.
+      Expects clear guidance at every step.
+
+    knowledge_level:
+      cli: basic          # Can run commands but may not understand flags
+      solidity: none      # No smart contract experience
+      security: none      # No security auditing experience
+      tooling: minimal    # May not have uv/slither pre-installed
+
+    expected_workflow:
+      - step: discovery
+        action: "Read README on GitHub"
+        expectation: "Understand what AlphaSwarm does"
+        friction_risk: high  # README may be too technical
+
+      - step: installation
+        action: "Run uv tool install alphaswarm-sol"
+        expectation: "Tool installs without errors"
+        friction_risk: medium  # May not have uv
+
+      - step: verification
+        action: "Run alphaswarm --help"
+        expectation: "See clear usage instructions"
+        friction_risk: low
+
+      - step: first_audit
+        action: "Run /vrs-audit on sample contracts"
+        expectation: "Audit completes with results"
+        friction_risk: high  # Many dependencies
+
+      - step: understanding
+        action: "Read audit report"
+        expectation: "Understand what vulnerabilities were found"
+        friction_risk: high  # May not understand findings
+
+    success_criteria:
+      # Hard requirements for GA
+      - id: NC-01
+        gate: P0
+        criterion: "Installation completes without cryptic errors"
+        verification: "alphaswarm --version returns valid version"
+
+      - id: NC-02
+        gate: P0
+        criterion: "First audit runs to completion"
+        verification: "/vrs-audit produces report file"
+
+      - id: NC-03
+        gate: P1
+        criterion: "Help output is understandable"
+        verification: "--help explains main commands clearly"
+
+      - id: NC-04
+        gate: P1
+        criterion: "Error messages suggest fixes"
+        verification: "Errors include 'Try: ...' suggestions"
+
+      - id: NC-05
+        gate: P2
+        criterion: "Audit report explains findings in plain English"
+        verification: "Report includes 'What this means' section"
+
+    test_scenarios:
+      - scenario: "Fresh machine install"
+        contracts: ["SimpleVault.sol"]
+        expected_findings: 1  # Reentrancy
+
+      - scenario: "Missing slither"
+        simulate: "slither not installed"
+        expected_behavior: "Clear error with install instructions"
+
+      - scenario: "No contracts found"
+        contracts: []
+        expected_behavior: "Helpful message about contract location"
+
+  # --------------------------------------------------------------------------
+  # Intermediate: Solidity developer trying security tooling
+  # --------------------------------------------------------------------------
+  intermediate:
+    id: intermediate
+    name: "Intermediate User"
+    description: |
+      A Solidity developer who writes smart contracts but has not
+      done formal security auditing. Wants to check their own code
+      before deployment. Has development toolchain installed.
+
+    knowledge_level:
+      cli: proficient     # Comfortable with CLI tools
+      solidity: good      # Writes contracts, understands patterns
+      security: basic     # Knows about reentrancy, basic vulns
+      tooling: good       # Has Foundry/Hardhat, maybe slither
+
+    expected_workflow:
+      - step: quick_install
+        action: "pip/uv install alphaswarm-sol"
+        expectation: "Quick install, ready to use"
+        friction_risk: low
+
+      - step: immediate_audit
+        action: "/vrs-audit contracts/"
+        expectation: "Point at contracts, get results"
+        friction_risk: medium  # May have compilation issues
+
+      - step: interpret_results
+        action: "Review findings"
+        expectation: "Understand if findings are real"
+        friction_risk: medium  # Need to distinguish FP
+
+      - step: fix_and_rerun
+        action: "Fix issues, audit again"
+        expectation: "See reduced findings"
+        friction_risk: low
+
+    success_criteria:
+      - id: IC-01
+        gate: P0
+        criterion: "Audit runs on standard Foundry project"
+        verification: "forge build project audits successfully"
+
+      - id: IC-02
+        gate: P0
+        criterion: "Findings link to exact code locations"
+        verification: "Each finding has file:line reference"
+
+      - id: IC-03
+        gate: P1
+        criterion: "False positives are minimized"
+        verification: "Precision > 70% on known contracts"
+
+      - id: IC-04
+        gate: P1
+        criterion: "Evidence is sufficient for understanding"
+        verification: "Each finding has code snippet + explanation"
+
+      - id: IC-05
+        gate: P2
+        criterion: "Incremental audits are faster"
+        verification: "Re-audit after fix < 50% of initial time"
+
+    test_scenarios:
+      - scenario: "Foundry project audit"
+        contracts: ["src/Vault.sol", "src/Token.sol"]
+        expected_findings: 2-4
+
+      - scenario: "No vulnerabilities found"
+        contracts: ["SafeToken.sol"]  # Intentionally safe
+        expected_behavior: "Clean report with confidence score"
+
+      - scenario: "Compilation error"
+        contracts: ["BrokenSyntax.sol"]
+        expected_behavior: "Clear error pointing to issue"
+
+  # --------------------------------------------------------------------------
+  # Power User: Experienced auditor evaluating the tool
+  # --------------------------------------------------------------------------
+  power_user:
+    id: power_user
+    name: "Power User"
+    description: |
+      An experienced security auditor or bug bounty hunter evaluating
+      AlphaSwarm against known vulnerabilities. Wants to benchmark
+      the tool against their manual findings.
+
+    knowledge_level:
+      cli: expert         # Uses complex CLI workflows
+      solidity: expert    # Deep EVM/Solidity knowledge
+      security: expert    # Knows attack patterns, has found CVEs
+      tooling: expert     # Uses slither, mythril, echidna
+
+    expected_workflow:
+      - step: benchmark_setup
+        action: "Prepare known-vulnerable contracts"
+        expectation: "Compare against ground truth"
+        friction_risk: low
+
+      - step: full_audit
+        action: "/vrs-audit with all options"
+        expectation: "Maximum detection capability"
+        friction_risk: low
+
+      - step: compare_findings
+        action: "Compare to manual audit"
+        expectation: "See precision/recall metrics"
+        friction_risk: medium  # May not match exactly
+
+      - step: investigate_gaps
+        action: "Check what was missed"
+        expectation: "Understand detection limits"
+        friction_risk: medium
+
+      - step: custom_patterns
+        action: "Add custom vulnerability patterns"
+        expectation: "Extend detection capability"
+        friction_risk: high  # Advanced feature
+
+    success_criteria:
+      - id: PC-01
+        gate: P0
+        criterion: "Detects well-known vulnerabilities"
+        verification: "Finds reentrancy, access control, oracle issues"
+
+      - id: PC-02
+        gate: P0
+        criterion: "Evidence quality matches manual audit"
+        verification: "Code paths, conditions, and context are accurate"
+
+      - id: PC-03
+        gate: P1
+        criterion: "Performance on large codebases"
+        verification: "Audits 10k+ LOC in < 5 minutes"
+
+      - id: PC-04
+        gate: P1
+        criterion: "Low false positive rate"
+        verification: "FP rate < 30% on benchmark suite"
+
+      - id: PC-05
+        gate: P2
+        criterion: "Extensibility for custom patterns"
+        verification: "Can add new pattern via vulndocs/"
+
+    test_scenarios:
+      - scenario: "Known CVE detection"
+        contracts: ["Damn Vulnerable DeFi challenges"]
+        expected_findings: "Match ground truth CVEs"
+
+      - scenario: "Large codebase performance"
+        contracts: ["OpenZeppelin Contracts (subset)"]
+        expected_behavior: "Complete in reasonable time"
+
+      - scenario: "Edge case handling"
+        contracts: ["Assembly-heavy.sol", "Proxy.sol"]
+        expected_behavior: "Handle or gracefully skip"
+
+# ============================================================================
+# Workflow Stages
+# ============================================================================
+
+workflow_stages:
+  # Standard journey stages for all personas
+  - id: install
+    name: "Installation"
+    description: "Getting alphaswarm installed and ready"
+    max_duration_seconds: 300  # 5 minutes
+
+  - id: verify
+    name: "Verification"
+    description: "Confirming tool works"
+    max_duration_seconds: 30
+
+  - id: audit
+    name: "First Audit"
+    description: "Running the first audit"
+    max_duration_seconds: 600  # 10 minutes for complex projects
+
+  - id: understand
+    name: "Result Understanding"
+    description: "Reading and comprehending findings"
+    max_duration_seconds: null  # No time limit
+
+  - id: iterate
+    name: "Fix and Re-audit"
+    description: "Making fixes and auditing again"
+    max_duration_seconds: 300
+
+# ============================================================================
+# Friction Point Categories
+# ============================================================================
+
+friction_categories:
+  blocker:
+    priority: P0
+    description: "Prevents completion of the journey"
+    action: "Must fix before GA"
+    examples:
+      - "Installation fails"
+      - "Audit crashes"
+      - "No output generated"
+
+  confusion:
+    priority: P1
+    description: "User doesn't understand what to do"
+    action: "Should fix before GA"
+    examples:
+      - "Unclear error message"
+      - "Missing next step guidance"
+      - "Ambiguous command syntax"
+
+  annoyance:
+    priority: P2
+    description: "Works but is frustrating"
+    action: "Improve after GA"
+    examples:
+      - "Slow performance"
+      - "Verbose output"
+      - "Extra steps needed"
+
+  enhancement:
+    priority: P3
+    description: "Wish it could do this"
+    action: "Future roadmap"
+    examples:
+      - "Integration with IDE"
+      - "Automatic fix suggestions"
+      - "CI/CD integration"
+
+# ============================================================================
+# Evidence Requirements
+# ============================================================================
+
+evidence_requirements:
+  per_run:
+    - transcript: "Full session transcript"
+    - timing: "Start/end timestamps for each stage"
+    - outcome: "Success/failure/partial status"
+    - friction_log: "All friction points encountered"
+
+  per_friction_point:
+    - id: "Unique identifier"
+    - timestamp: "When it occurred"
+    - category: "blocker/confusion/annoyance/enhancement"
+    - description: "What happened"
+    - expected: "What user expected"
+    - actual: "What actually happened"
+    - proposed_fix: "How to resolve"
+
+# ============================================================================
+# Gate Enforcement
+# ============================================================================
+
+gates:
+  ga_required:
+    description: "Must pass for GA release"
+    criteria:
+      - "All P0 criteria pass for all personas"
+      - "80% of P1 criteria pass for all personas"
+      - "No unresolved blockers"
+
+  recommended:
+    description: "Should pass for good UX"
+    criteria:
+      - "All P1 criteria pass for all personas"
+      - "50% of P2 criteria pass"
+
+  stretch:
+    description: "Nice to have"
+    criteria:
+      - "P2/P3 criteria for power users"

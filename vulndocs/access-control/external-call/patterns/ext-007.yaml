@@ -1,0 +1,16 @@
+id: ext-007
+vulndoc: access-control/external-call
+name: Missing Amount Bounds
+description: Amount parameters used without bounds or sanity validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_amount_parameter
+    op: eq
+    value: true
+  - property: has_amount_bounds
+    op: eq
+    value: false

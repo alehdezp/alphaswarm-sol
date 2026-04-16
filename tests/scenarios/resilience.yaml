@@ -1,0 +1,81 @@
+# Resilience Test Scenario
+# Tests the self-healing supervision loop
+
+name: resilience_test
+description: "Test auto-fix capabilities for missing dependencies"
+version: "1.0"
+
+# This test intentionally creates a broken environment
+setup:
+  sandbox:
+    type: blind
+    copy_only: ["contracts/FlashLoanArb.sol"]
+  environment:
+    # Don't pre-install pandas to trigger ModuleNotFoundError
+    skip_optional_deps: true
+
+# Contract with economic vulnerability
+contract:
+  path: "tests/contracts/economic/FlashLoanArb.sol"
+  expected_findings:
+    - type: "flash_loan_arbitrage"
+      severity: "high"
+      keywords: ["profit", "arbitrage", "flash loan"]
+
+# Workflow that will trigger dependency errors
+workflow:
+  command: "/vrs-audit {contract_path}"
+  timeout_seconds: 300  # Longer timeout for recovery
+
+# Supervision configuration
+supervision:
+  enabled: true
+  stall_threshold_seconds: 60
+  max_interventions: 5
+
+  # Expected interventions (at least one should trigger)
+  expected_interventions:
+    - type: "missing_dep"
+      likelihood: "possible"
+    - type: "stall_check"
+      likelihood: "possible"
+
+# Completion criteria
+completion:
+  markers:
+    - "Audit Complete"
+    - "findings"
+    - "report"
+  error_markers:
+    - "Fatal:"
+    - "Unrecoverable"
+
+# Artifact validation
+artifacts:
+  required:
+    - pattern: "*.toon"
+      description: "Knowledge graph"
+    - pattern: ".vrs/beads/*.json"
+      description: "Investigation beads"
+
+# Success criteria
+success_criteria:
+  # Must complete despite initial failures
+  recovery_required: true
+  # Must identify economic context
+  economic_context_required: true
+  economic_keywords:
+    - "profit"
+    - "arbitrage"
+    - "flash loan"
+    - "price dependence"
+  # At least one auto-fix intervention should occur
+  min_interventions: 0  # 0 means OK if no issues
+  max_interventions: 5
+
+# Anti-lazy validation
+anti_lazy:
+  enabled: true
+  require_tool_invocations: true
+  require_artifacts: true
+  require_economic: true

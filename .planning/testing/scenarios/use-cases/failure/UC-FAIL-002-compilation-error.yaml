@@ -1,0 +1,67 @@
+id: UC-FAIL-002
+name: "Graceful error on Solidity compilation failure"
+workflow: failure
+category: failure
+tier: important
+
+input:
+  contract: "tests/contracts/CompilationError.sol"
+  command: "/vrs-audit tests/contracts/CompilationError.sol"
+  context: >
+    The target contract has a Solidity syntax error or uses an unsupported
+    compiler version, causing compilation to fail. The workflow must detect
+    the compilation failure, report a clear error message with the compiler
+    output, and suggest fixes (e.g., pragma version mismatch, syntax error
+    location).
+
+expected_behavior:
+  summary: |
+    The workflow should attempt to compile the contract (via Slither or solc),
+    detect the compilation failure, extract useful error information from the
+    compiler output, and present a clear error message to the user. It should
+    not attempt to build a graph or run analysis on uncompilable code.
+  must_happen:
+    - "Attempt to compile or analyze the contract"
+    - "Detect the compilation failure"
+    - "Extract error location from compiler output (file, line)"
+    - "Report clear error message including the compiler error"
+    - "Suggest possible fix (version pragma, syntax fix)"
+    - "Exit cleanly without attempting graph build on failed compilation"
+  must_not_happen:
+    - "Crash with unhandled exception"
+    - "Attempt to build graph from uncompiled code"
+    - "Report generic 'something went wrong' without compiler details"
+    - "Silently produce empty results"
+    - "Hang waiting for compilation that will never succeed"
+  expected_tools:
+    required:
+      - "Bash"
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: error_detection
+      description: "Did the workflow correctly detect the compilation failure?"
+    - name: error_message_quality
+      description: "Does the error include compiler output with file and line information?"
+    - name: fix_suggestion
+      description: "Does the error suggest a possible fix?"
+    - name: graceful_exit
+      description: "Did the workflow exit cleanly without attempting further analysis?"
+  regression_signals:
+    - "Unhandled crash on compilation error -> CRITICAL REGRESSION: error handling broken"
+    - "Graph build attempted on failed compilation -> REGRESSION: validation bypass"
+    - "No compiler output in error message -> REGRESSION: error detail lost"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/CompilationError.sol"
+  related_scenarios:
+    - "UC-FAIL-001"
+    - "UC-FAIL-003"
+
+status: draft
+last_validated: null
+notes: >
+  Important tier. Compilation errors are the most common failure mode in
+  practice. Good error messages save users significant debugging time.

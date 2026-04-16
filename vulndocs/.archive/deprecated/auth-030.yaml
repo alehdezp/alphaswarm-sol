@@ -1,0 +1,16 @@
+id: auth-030
+vulndoc: access-control/general
+name: Multicall Auth Bypass
+description: Functions callable via multicall with context-dependent auth.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: callable_via_multicall
+    op: eq
+    value: true
+  - property: has_context_dependent_auth
+    op: eq
+    value: true

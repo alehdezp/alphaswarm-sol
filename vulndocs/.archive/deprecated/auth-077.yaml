@@ -1,0 +1,13 @@
+id: auth-077
+vulndoc: access-control/general
+name: Governance Execute Without Vote Period Check
+description: Governance execution without voting period enforcement.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: governance_exec_without_vote_period_check
+    op: eq
+    value: true

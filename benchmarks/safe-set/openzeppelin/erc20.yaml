@@ -1,0 +1,35 @@
+# OpenZeppelin ERC20
+id: oz-erc20
+name: OpenZeppelin ERC20
+category: openzeppelin
+source: "@openzeppelin/contracts/token/ERC20/ERC20.sol"
+version: "5.0.x"
+
+contract_info:
+  description: |
+    OpenZeppelin's reference ERC20 implementation.
+    Battle-tested across thousands of tokens.
+  deployed_since: 2019
+  tvl_or_usage: "Billions USD across ecosystem"
+  audit_sources:
+    - OpenZeppelin Internal
+    - Trail of Bits
+    - Community Audited
+  security_features:
+    - ERC20 standard compliant
+    - Proper overflow handling
+    - Allowance management
+
+expected_findings: []
+
+false_positive_categories:
+  - token-*
+  - erc20-*
+  - transfer-*
+  - approval-*
+
+notes: |
+  OpenZeppelin ERC20 is the most widely used token implementation.
+  Any finding is definitionally a false positive.
+
+status: validated

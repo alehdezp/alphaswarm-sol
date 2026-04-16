@@ -1,0 +1,29 @@
+id: public-external-withdraw-no-gate
+vulndoc: access-control/unprotected-functions
+name: Withdraw-like Function Without Access Gate
+description: |
+  DEPRECATED: This pattern uses name-based regex matching and will miss functions
+  with non-standard names like extract(), removeFunds(), fn_0x123(), etc.
+
+  Please use semantic/value-movement/vm-002-unprotected-transfer.yaml instead,
+  which detects BEHAVIOR (value transfers) not NAMES.
+
+  Public/external functions with withdraw/transfer naming without access control.
+scope: Function
+lens:
+  - ValueMovement
+  - Authority
+severity: high
+status: deprecated
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: has_access_gate
+      op: eq
+      value: false
+  any:
+    - property: label
+      op: regex
+      value: "withdraw|transfer|redeem"

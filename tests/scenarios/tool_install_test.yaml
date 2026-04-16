@@ -1,0 +1,93 @@
+# Tool Installation Test Scenario
+# Phase 7.3-00.8-v4: Stage 0 Self-Bootstrapping Test
+#
+# Purpose: Tests the "it worked on my machine" failure mode from plan_improvement.md
+# This verifies that the supervision loop can detect and respond to missing tools.
+
+name: tool_install_test
+description: "Verify tool detection and auto-installation capability"
+version: "1.0"
+phase: "07.3-ga-validation"
+plan: "00.8-v4"
+
+# Test type
+test_type: self-bootstrapping
+simulated_condition: fresh_environment
+
+# Contract for testing
+contract:
+  path: "tests/contracts/ReentrancyClassic.sol"
+  name: "ReentrancyClassic.sol"
+  expected_complexity: low
+
+# Tools to verify detection/installation for
+tools_to_verify:
+  - name: alphaswarm
+    install_command: "uv tool install alphaswarm-sol"
+    check_command: "which alphaswarm"
+  - name: slither
+    install_command: "uv tool install slither-analyzer"
+    check_command: "which slither"
+
+# Supervision loop configuration
+supervision:
+  stall_threshold_seconds: 60
+  max_interventions: 5
+  timeout_seconds: 180
+  poll_interval_seconds: 5
+
+# Expected behaviors
+expected_behaviors:
+  tool_error_detection:
+    description: "command not found OR ModuleNotFoundError patterns"
+    patterns:
+      - "command not found"
+      - "ModuleNotFoundError"
+  auto_install_trigger:
+    description: "uv tool install command injection"
+    patterns:
+      - "uv tool install"
+      - "uv add"
+  workflow_continuation:
+    description: "Knowledge graph or Building keywords after install"
+    patterns:
+      - "Knowledge graph"
+      - "Building"
+      - "nodes"
+
+# Test execution parameters
+execution:
+  mode: live  # LIVE mode required (A1)
+  min_duration_ms: 5000  # Real duration required (A3)
+  max_duration_ms: 180000
+  cost_budget: "$0 (subscription)"
+
+# Validation rules compliance
+validation_rules:
+  A1: true  # LIVE mode
+  A2: true  # Real Claude Code CLI execution
+  A3: true  # Real duration > 5000ms
+  A4: true  # CLI-based execution
+  D1: true  # Uses SupervisionLoop, FixRetestLoop infrastructure
+  D2: true  # Transcript capture
+  D3: true  # Blind sandbox concept
+
+# plan_improvement.md requirements
+plan_improvement_coverage:
+  stage_0_self_bootstrapping: "Tests autonomous tool installation"
+  environment_verification: "Tests fresh user scenario"
+  it_worked_on_my_machine: "Addresses by testing without assuming tools exist"
+
+# Success criteria
+success_criteria:
+  - "Sandbox setup completed"
+  - "Tool detection mechanism tested"
+  - "Auto-installation response verified (or tools already present)"
+  - "Report generated with mode: live"
+
+# Limitations
+limitations:
+  - "Cannot fully restrict PATH in testing session without breaking Claude CLI"
+  - "Tests supervision loop response to tool errors via transcript analysis"
+  - "True fresh environment test requires Docker container isolation"
+  - "Current test verifies auto-install CAPABILITY, not isolated environment"

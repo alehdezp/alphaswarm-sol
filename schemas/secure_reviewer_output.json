@@ -1,0 +1,293 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Secure Reviewer Output Contract",
+  "description": "Output schema for secure Solidity code reviewer agents that blend creative attack thinking with adversarial skepticism",
+  "type": "object",
+  "required": [
+    "summary",
+    "risk_level",
+    "evidence",
+    "graph_queries",
+    "gaps",
+    "recommendations",
+    "known_unknowns",
+    "mode"
+  ],
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Concise summary of the review findings (1-3 sentences)",
+      "minLength": 20,
+      "maxLength": 500
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFORMATIONAL", "NONE"],
+      "description": "Overall risk level based on evidence"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["creative", "adversarial"],
+      "description": "Review mode: creative (attack brainstorming) or adversarial (refutation/skepticism)"
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Evidence items supporting findings (must be anchored to code or graph)",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "required": ["type", "description", "confidence"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "code_property",
+              "semantic_operation",
+              "behavioral_signature",
+              "missing_guard",
+              "operation_sequence",
+              "graph_structure",
+              "counter_signal"
+            ],
+            "description": "Type of evidence"
+          },
+          "description": {
+            "type": "string",
+            "description": "Clear description of the evidence"
+          },
+          "code_location": {
+            "type": "string",
+            "description": "Code location (e.g., 'Vault.sol:L42') - required if graph_node_id not provided"
+          },
+          "graph_node_id": {
+            "type": "string",
+            "description": "BSKG graph node ID - required if code_location not provided"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Confidence in this evidence (0.0 to 1.0)"
+          },
+          "property": {
+            "type": "string",
+            "description": "Specific property being referenced (e.g., 'has_reentrancy_guard', 'TRANSFERS_VALUE_OUT')"
+          },
+          "value": {
+            "description": "Property value (can be boolean, string, or number)"
+          }
+        },
+        "oneOf": [
+          {"required": ["code_location"]},
+          {"required": ["graph_node_id"]}
+        ]
+      }
+    },
+    "graph_queries": {
+      "type": "array",
+      "description": "BSKG queries used to gather evidence (graph-first requirement)",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["query", "rationale"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "VQL or structured graph query"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this query was needed"
+          },
+          "results_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of results returned"
+          }
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Knowledge gaps or missing information identified during review",
+      "items": {
+        "type": "object",
+        "required": ["gap_type", "description"],
+        "properties": {
+          "gap_type": {
+            "type": "string",
+            "enum": [
+              "missing_guard",
+              "unclear_intent",
+              "incomplete_context",
+              "undocumented_invariant",
+              "missing_taint_flow",
+              "unknown_external_behavior"
+            ],
+            "description": "Type of knowledge gap"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of what is missing or unclear"
+          },
+          "impact": {
+            "type": "string",
+            "enum": ["blocks_verification", "reduces_confidence", "informational"],
+            "description": "How this gap affects the review"
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Actionable recommendations based on findings",
+      "items": {
+        "type": "object",
+        "required": ["priority", "action", "rationale"],
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
+            "description": "Priority of this recommendation"
+          },
+          "action": {
+            "type": "string",
+            "description": "Specific action to take"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this action is recommended"
+          },
+          "code_location": {
+            "type": "string",
+            "description": "Where to apply this recommendation (optional)"
+          }
+        }
+      }
+    },
+    "known_unknowns": {
+      "type": "object",
+      "description": "Explicit acknowledgment of uncertainty",
+      "required": ["has_uncertainty"],
+      "properties": {
+        "has_uncertainty": {
+          "type": "boolean",
+          "description": "Whether there are known unknowns in this review"
+        },
+        "uncertainties": {
+          "type": "array",
+          "description": "List of specific uncertainties (required if has_uncertainty is true)",
+          "items": {
+            "type": "object",
+            "required": ["area", "reason"],
+            "properties": {
+              "area": {
+                "type": "string",
+                "description": "What aspect has uncertainty"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Why there is uncertainty"
+              },
+              "needs_human_review": {
+                "type": "boolean",
+                "default": false,
+                "description": "Whether human review is needed for this uncertainty"
+              }
+            }
+          }
+        }
+      }
+    },
+    "creative_hypotheses": {
+      "type": "array",
+      "description": "Creative attack hypotheses (only in creative mode)",
+      "items": {
+        "type": "object",
+        "required": ["hypothesis", "attack_path", "feasibility"],
+        "properties": {
+          "hypothesis": {
+            "type": "string",
+            "description": "Attack hypothesis description"
+          },
+          "attack_path": {
+            "type": "array",
+            "description": "Step-by-step attack path",
+            "items": {
+              "type": "string"
+            }
+          },
+          "feasibility": {
+            "type": "string",
+            "enum": ["HIGH", "MEDIUM", "LOW"],
+            "description": "Estimated feasibility of this attack"
+          },
+          "supporting_evidence": {
+            "type": "array",
+            "description": "Evidence indices from main evidence array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "refutations": {
+      "type": "array",
+      "description": "Refutations or counterarguments (only in adversarial mode)",
+      "items": {
+        "type": "object",
+        "required": ["claim_being_refuted", "refutation", "strength"],
+        "properties": {
+          "claim_being_refuted": {
+            "type": "string",
+            "description": "The claim being challenged"
+          },
+          "refutation": {
+            "type": "string",
+            "description": "The counterargument or refutation"
+          },
+          "strength": {
+            "type": "string",
+            "enum": ["STRONG", "MODERATE", "WEAK"],
+            "description": "Strength of this refutation"
+          },
+          "supporting_evidence": {
+            "type": "array",
+            "description": "Evidence indices from main evidence array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "reviewer_metadata": {
+      "type": "object",
+      "description": "Metadata about the review process",
+      "properties": {
+        "review_duration_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Time taken for review"
+        },
+        "graph_queries_executed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of graph queries executed"
+        },
+        "code_locations_examined": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of code locations examined"
+        },
+        "model_used": {
+          "type": "string",
+          "description": "Model tier used for review (e.g., 'sonnet-4.5')"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+id: auth-018
+vulndoc: access-control/general
+name: Weak Time-Based Authentication
+description: Access control relies on block.timestamp without caller validation.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_control_weak_source
+    op: eq
+    value: true

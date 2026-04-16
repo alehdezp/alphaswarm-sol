@@ -1,0 +1,1134 @@
+# =============================================================================
+# PATTERN: logic-002-balancer-rounding
+# Balancer V2 Rounding Direction Bias (Semantic, Name-Agnostic)
+# =============================================================================
+
+id: logic-002-balancer-rounding
+vulndoc: logic/business-logic
+name: "Balancer V2 Rounding Direction Bias"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Functions that perform scaling/unscaling of token amounts using integer division
+  (rounding DOWN) combined with subsequent state modifications, without employing
+  explicit rounding protection (rounding UP, ceiling division, or invariant validation).
+
+  This pattern specifically detects the vulnerability chain that enabled the $128.64M
+  Balancer V2 exploit: precision loss through rounding down in balance scaling,
+  compounded across multiple atomic operations, leading to artificial suppression of
+  invariant values and pool pricing.
+
+  **Semantic Detection**: This pattern detects what the function DOES:
+  - Performs division operations on balance-like values (performs_division = true)
+  - Uses scaling factors to adjust token amounts (uses_scaling_factors = true)
+  - Reads user/pool balance state (reads_user_balance = true)
+  - Modifies critical state without prior invariant validation (modifies_critical_state = true)
+  - Performs arithmetic operations in loops over arrays (loops_over_array = true)
+
+  This catches ANY balance scaling/unscaling function regardless of naming convention
+  (upscaleArray, downscaleArray, computeInvariant, etc.).
+
+  ## Why It's Dangerous
+
+  The Balancer V2 ComposableStablePool vulnerability demonstrates that subtle
+  rounding direction asymmetries can have catastrophic consequences:
+
+  ### Root Cause
+  The _upscaleArray function performs `mulDown` (rounds down) when scaling amounts
+  by decimal factors, but lacks a counterpart `mulUp` for safety. This asymmetry
+  means:
+  - Balances are systematically underestimated during scaling
+  - The invariant D (StableSwap pricing formula) becomes underestimated
+  - BPT price = D / totalSupply becomes artificially deflated
+
+  ### Compounding Effect
+  When 65+ micro-swaps execute atomically within a single batchSwap:
+  - Each swap triggers _upscaleArray → rounding down
+  - Precision losses accumulate within the atomic context
+  - By swap #65, the invariant D can be underestimated by 10%+
+  - BPT minting price becomes critically suppressed
+
+  ### Attack Mechanics
+  1. **Setup Phase**: Execute large swaps to position token balance at critical
+     wei threshold (8-9 wei) where rounding errors reach 10% relative loss
+  2. **Exploitation Phase**: Execute 65+ micro-swaps atomically
+     - Each triggers division with rounding down
+     - Precision losses compound (1% → 2% → 5% → 10%+)
+     - State not committed between ops, losses accumulate
+  3. **Extraction Phase**: Mint BPT at artificially deflated price
+     - Cost 10%+ less than fair value
+     - Redeem BPT for full underlying asset value
+     - Profit entire 10%+ difference per pool
+
+  ### Real-World Impact
+  - **Ethereum**: $99M extracted
+  - **Base**: $15M extracted
+  - **Multi-chain**: $14.64M extracted (Polygon, Arbitrum, Avalanche, Berachain)
+  - **Total Loss**: $128.64M (Nov 2025)
+  - **Berachain**: Halted blockchain and coordinated emergency hard fork
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function performs division operations (performs_division = true)
+  2. Function uses scaling factors (uses_scaling_factors = true)
+  3. Function reads balance/reserve state (reads_user_balance = true)
+  4. Function modifies critical state (modifies_critical_state = true)
+  5. NOT a view/pure function (must modify state)
+  6. Lacks explicit rounding protection safeguards
+
+  Safe patterns that are EXCLUDED:
+  - Functions using divUp or ceiling division for balance scaling
+  - Functions with invariant validation checks (D before/after comparison)
+  - Functions with hard limits on atomic operation counts (< 10 ops)
+  - Functions with BPT price validation against external oracle
+  - Functions with explicit rounding direction enforcement (divUp paired with divDown)
+
+  **Implementation-Agnostic**: Works regardless of:
+  - Function names (upscaleArray, scaleAmount, adjustBalance, computeInvariant, etc.)
+  - Variable names (balances, amounts, reserves, invariant, etc.)
+  - Specific library usage (FixedPoint, Math, custom implementations)
+  - Comment/documentation presence or absence
+
+scope: Function
+
+lens:
+  - Arithmetic
+  - Logic
+
+severity: critical
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Core vulnerability: Division operations on balance/amount values
+      # Indicates scaling or unscaling with potential rounding loss
+      - property: has_division
+        op: eq
+        value: true
+
+      # Use of scaling factors (decimal adjustments, conversion factors)
+      # Indicates balance transformation without guaranteed precision preservation
+      - property: uses_scaling_factors
+        op: eq
+        value: true
+
+      # Must read balance/reserve state being transformed
+      # Indicates this is a balance-scaling function affecting pool accounting
+      - property: reads_balance_state
+        op: eq
+        value: true
+
+      # Critical: Modifies state without prior invariant validation
+      # State modification without safety checks enables the compounding effect
+      - property: modifies_critical_state
+        op: eq
+        value: true
+
+    # At least ONE must match (OR logic) - optional detection enhancers
+    any:
+      # Looping over array of balances strengthens signal
+      # Loop + division = compounding rounding errors
+      - property: loops_over_array
+        op: eq
+        value: true
+
+      # Arithmetic on balances strengthens vulnerability signal
+      # Multiplication + division = precision loss amplification
+      - property: arithmetic_operations_on_balances
+        op: eq
+        value: true
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # Not applicable to view/pure functions
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Rounding UP is a protective measure - excludes safe patterns
+      - property: has_rounding_protection
+        op: eq
+        value: true
+
+      # Explicit ceiling division safeguards against downward rounding
+      - property: uses_floor_ceiling_explicitly
+        op: eq
+        value: true
+
+      # Minimum output validation prevents price suppression exploitation
+      - property: has_minimum_output_validation
+        op: eq
+        value: true
+
+      # Invariant validation detects and prevents precision loss
+      - property: validates_invariant_stability
+        op: eq
+        value: true
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_only  # Only Tier A (deterministic) matching
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [balancer-composable, synthetic-dex]
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: |
+    Pattern requires VKG property detection support for:
+    - performs_division (detects / operations on uint256 values)
+    - uses_scaling_factors (detects decimal/factor multiplication operations)
+    - reads_user_balance (detects balances mapping reads)
+    - modifies_critical_state (detects pool reserve/invariant updates)
+    - loops_over_array (detects for loops over array values)
+    - arithmetic_operations_on_balances (detects * and / on balance values)
+    - has_rounding_protection (detects divUp, ceilingDiv, upRound calls)
+    - uses_floor_ceiling_explicitly (detects explicit rounding direction)
+    - has_minimum_output_validation (detects slippage/min amount checks)
+    - validates_invariant_stability (detects D/invariant comparison checks)
+
+  testing_plan: |
+    1. Create vulnerable ComposableStablePool implementation
+       - _upscaleArray with mulDown and divDown
+       - batchSwap enabling 65+ atomic operations
+       - No invariant validation
+
+    2. Create safe implementations
+       - upscaleArray using mulUp
+       - downscaleArray with invariant D validation before/after
+       - batchSwap with operation count limit (max 10)
+       - Price validation against previous block price
+
+    3. Test variations
+       - Different naming (upscale, scaleBalances, adjustAmounts)
+       - Different scaling approaches (decimal factors, fixed point)
+       - With/without explicit rounding in other functions
+
+    4. Edge cases
+       - Balances at critical wei thresholds (8-9 wei)
+       - Balances well above thresholds (avoiding false positives)
+       - Mixed safe/unsafe patterns in same contract
+
+status: draft
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Atomic Precision Loss Compounding Attack"
+    description: |
+      Attacker exploits rounding direction bias to artificially suppress
+      invariant calculations through compounding precision losses in atomic
+      batch swap operations.
+    preconditions:
+      - "Function performs balance scaling with rounding down (mulDown, divDown)"
+      - "Function lacks rounding protection (divUp, invariant validation)"
+      - "Batch swap allows 65+ atomic operations within single transaction"
+      - "Invariant D used for BPT pricing without validation checks"
+      - "Token balance at critical wei threshold (8-9 wei per token)"
+    steps:
+      - "Attacker positions target token balance at rounding boundary via large swap"
+      - "Token balance: 8 wei (multiplier 1e18, scaling factor 1e6 → rounding loss)"
+      - "Attacker executes 65 micro-swaps within atomic batchSwap"
+      - "Each swap triggers _upscaleArray:"
+      - "  - Read balance: 8 wei"
+      - "  - Multiply by scaling factor: 8 * 1e6"
+      - "  - Divide by precision (rounding down): result < expected"
+      - "  - Precision loss compounds across 65 ops"
+      - "Accumulated rounding loss reaches 10% of invariant D"
+      - "BPT price = D_underestimated / totalSupply becomes artificially low"
+      - "Attacker mints BPT at suppressed price (costs 10% less)"
+      - "Attacker redeems BPT for underlying assets at fair value"
+      - "Attacker extracts 10%+ profit per pool (millions per large pool)"
+    impact: |
+      Critical financial loss. Attacker extracts millions per pool by minting
+      BPT at artificially suppressed prices and redeeming at fair value.
+      Multi-pool coordinated attacks extract $100M+ before detection/circuit breakers.
+
+  - name: "Rounding Direction Exploitation Across Scaling Layers"
+    description: |
+      Attacker exploits asymmetry between upscaling (mulDown only) and
+      downscaling (mixed divUp/divDown) to systematically underestimate
+      all balance-dependent calculations.
+    preconditions:
+      - "upscaleArray uses only mulDown (rounding down)"
+      - "downscaleArray uses both divUp and divDown inconsistently"
+      - "Critical calculations depend on upscaled balances"
+      - "No invariant recalculation after scaling operations"
+    steps:
+      - "Multiple token pools with different decimal places"
+      - "Pool 1: Token A (6 decimals), Token B (18 decimals)"
+      - "Scaling factors differ by 1e12"
+      - "Balance A: 5 wei (critical threshold)"
+      - "upscaleArray multiplies by 1e12: 5 * 1e12 / rounding down"
+      - "Systematic underestimation of token A value"
+      - "Invariant D calculation uses underestimated values"
+      - "All subsequent swaps use underestimated D"
+      - "Pricing becomes progressively more biased"
+    impact: |
+      Sustained value extraction through persistently underestimated invariants,
+      enabling long-term arbitrage and MEV extraction.
+
+  - name: "Precision Loss Accumulation in Loop Context"
+    description: |
+      Balances scaling within loops over array of token amounts compounds
+      precision loss through iteration, especially with heterogeneous
+      token decimal places.
+    preconditions:
+      - "Array of token amounts looped for scaling"
+      - "Each token has different decimal place"
+      - "Scaling factors differ by orders of magnitude"
+      - "Critical thresholds only triggered for specific token combinations"
+    steps:
+      - "Loop processes array of 20 tokens with varying decimals"
+      - "Token 1-10: 18 decimals (standard)"
+      - "Token 11-15: 8 decimals (USDC-like)"
+      - "Token 16-20: 6 decimals (stablecoin-like)"
+      - "Balances of low-decimal tokens at critical thresholds"
+      - "Loop upscales all balances using mulDown"
+      - "Precision loss accumulates across loop iterations"
+      - "By iteration 15, accumulated loss reaches detection threshold"
+      - "Final invariant calculation uses significantly underestimated values"
+    impact: |
+      Systematic precision loss distributed across multiple iterations,
+      making detection harder but enabling sustained value extraction.
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm function performs division on balance-related values (not just constants)"
+  - "Identify scaling factors being applied (decimal conversion, fixed-point multipliers)"
+  - "Check for rounding direction enforcement:"
+  - "  - Look for: FixedPoint.divUp, ceilingDiv, upRound"
+  - "  - Look for: Paired divUp/divDown usage patterns"
+  - "  - Missing: Explicit rounding control = vulnerable signal"
+  - "Verify state modification happens without invariant checks:"
+  - "  - Check if function updates reserves, balances, or invariant D"
+  - "  - Check if any D_before/D_after comparison exists"
+  - "  - Check if price validation against oracle exists"
+  - "Assess atomic operation batching:"
+  - "  - Can caller execute 65+ division-triggering operations in single transaction?"
+  - "  - Is there a per-transaction operation count limit?"
+  - "  - What is the practical limit (if any)?"
+  - "Identify token balance thresholds where rounding error is maximum:"
+  - "  - Balances 1-10 wei with 1e6 or 1e12 scaling factors"
+  - "  - Calculate relative precision loss for edge cases"
+  - "Assess pool recovery mechanisms:"
+  - "  - Does protocol have circuit breakers?"
+  - "  - Does protocol monitor for unusual invariant changes?"
+  - "  - Are there rate limits on swap frequency?"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Implement Consistent Rounding Direction (divUp for Invariant Preservation)"
+    description: |
+      Use divUp (ceiling division) when scaling balances for invariant calculations
+      to systematically overestimate rather than underestimate. This prevents artificial
+      price suppression at the source.
+    example: |
+      // VULNERABLE CODE - mulDown causes systematic underestimation
+      function _upscaleArray(uint256[] memory amounts, uint256[] memory scalingFactors)
+          internal
+          pure
+          returns (uint256[] memory)
+      {
+          for (uint i = 0; i < amounts.length; i++) {
+              amounts[i] = FixedPoint.mulDown(amounts[i], scalingFactors[i]);
+              // Rounding DOWN systematically underestimates all amounts
+          }
+          return amounts;
+      }
+
+      // FIXED CODE - Use divUp for safety (overestimate, not underestimate)
+      function _upscaleArray(uint256[] memory amounts, uint256[] memory scalingFactors)
+          internal
+          pure
+          returns (uint256[] memory)
+      {
+          for (uint i = 0; i < amounts.length; i++) {
+              amounts[i] = FixedPoint.mulUp(amounts[i], scalingFactors[i]);
+              // Rounding UP prevents artificial suppression of invariant
+          }
+          return amounts;
+      }
+
+  - name: "Enforce Hard Limit on Atomic Operations"
+    description: |
+      Limit the number of swap operations per batchSwap transaction to prevent
+      compounding of precision losses. The Balancer exploit required 65+ operations;
+      limiting to <10-20 dramatically reduces exploitation window.
+    example: |
+      // VULNERABLE - No limit on operations per batch
+      function batchSwap(
+          SwapKind kind,
+          BatchSwapStep[] calldata swaps,
+          IAsset[] calldata assets,
+          FundManagement calldata funds,
+          int256[] calldata limits,
+          uint256 deadline
+      )
+          external
+          payable
+          returns (int256[] memory deltas)
+      {
+          // Attacker can execute 65+ operations, compounding precision loss
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);  // Each triggers division and rounding down
+          }
+          // No operation count limit
+      }
+
+      // FIXED - Enforce operation count limit
+      function batchSwap(
+          SwapKind kind,
+          BatchSwapStep[] calldata swaps,
+          IAsset[] calldata assets,
+          FundManagement calldata funds,
+          int256[] calldata limits,
+          uint256 deadline
+      )
+          external
+          payable
+          returns (int256[] memory deltas)
+      {
+          // Hard limit prevents compounding of precision loss
+          require(swaps.length <= 10, "Balancer: Too many operations per batch");
+
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+          }
+      }
+
+  - name: "Validate Invariant Stability Before and After Operations"
+    description: |
+      Implement checks verifying that the invariant D doesn't deviate unexpectedly
+      between operations. Sudden drops indicate precision loss or manipulation.
+    example: |
+      // VULNERABLE - No invariant validation
+      function batchSwap(...) external {
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+              // Precision loss compounds undetected
+          }
+      }
+
+      // FIXED - Validate invariant stability
+      function batchSwap(...) external {
+          uint256 invariantBefore = _calculateInvariant(balances);
+
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+
+              uint256 invariantAfter = _calculateInvariant(balances);
+
+              // Prevent dramatic invariant drops (indicates precision loss/manipulation)
+              // Allow max 0.5% deviation per operation
+              require(
+                  invariantAfter >= invariantBefore * 995 / 1000,
+                  "Invariant dropped unexpectedly - precision loss or manipulation detected"
+              );
+
+              invariantBefore = invariantAfter;  // Update for next iteration
+          }
+      }
+
+  - name: "Implement BPT Price Validation Against External Oracle"
+    description: |
+      Validate BPT price against an external source to detect artificial price
+      suppression. Prices deviating from expected ranges indicate manipulation.
+    example: |
+      // VULNERABLE - BPT price calculated without validation
+      function batchSwap(...) external {
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+              // BPT price can become artificially suppressed
+          }
+      }
+
+      // FIXED - Validate BPT price reasonableness
+      function batchSwap(...) external {
+          uint256 previousBPTPrice = _calculateBPTPrice();
+
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+
+              uint256 currentBPTPrice = _calculateBPTPrice();
+
+              // BPT price shouldn't drop dramatically (indicates suppression)
+              // Allow max 1% variance between operations
+              require(
+                  currentBPTPrice >= previousBPTPrice * 99 / 100,
+                  "BPT price suppressed - possible precision loss exploitation"
+              );
+
+              previousBPTPrice = currentBPTPrice;
+          }
+      }
+
+  - name: "Use Higher Precision for Invariant Calculations"
+    description: |
+      Increase precision for invariant calculations by upscaling intermediate
+      values to 256-bit range before division, reducing relative rounding error.
+      Production-ready implementations use mulDiv() for safe 512-bit arithmetic.
+    example: |
+      // VULNERABLE - Direct division on native precision
+      function _calculateInvariant(uint256[] memory balances, uint256[] memory scalingFactors)
+          internal
+          pure
+          returns (uint256)
+      {
+          // Balances: [8 wei, 1e18 wei]
+          // Scaling: [1e12, 1e6]
+          // Direct: 8 * 1e12 / scale = minimal precision
+          uint256 invariant = (balances[0] * balances[1]) / (scale1 * scale2);
+          return invariant;
+      }
+
+      // FIXED (Safe) - Use FullMath.mulDiv for 512-bit precision
+      function _calculateInvariant(uint256[] memory balances, uint256[] memory scalingFactors)
+          internal
+          pure
+          returns (uint256)
+      {
+          // Use 512-bit multiplication and division (handles overflow)
+          // This prevents intermediate overflow while maintaining precision
+          uint256 numerator = FullMath.mulDiv(balances[0], balances[1], 1);
+          uint256 invariant = FullMath.mulDiv(numerator, 1e18, scalingFactors[0] * scalingFactors[1]);
+          return invariant;
+      }
+
+      // FIXED (Alternative) - Use PRBMath for fixed-point arithmetic
+      function _calculateInvariant(uint256[] memory balances, uint256[] memory scalingFactors)
+          internal
+          pure
+          returns (uint256)
+      {
+          // Upscale intermediate values while preventing overflow
+          uint256 scaled0 = (balances[0] * 1e18);
+          uint256 scaled1 = (balances[1] * 1e18);
+
+          // Perform multiplication with overflow protection
+          uint256 product = FullMath.mulDiv(scaled0, scaled1, 1e36);
+
+          // Apply scaling factors with rounding UP for safety
+          uint256 invariant = FullMath.mulDiv(product, 1e18, scalingFactors[0] * scalingFactors[1]);
+          return invariant;
+      }
+
+  - name: "Implement Rate Limiting on Precision-Loss-Inducing Patterns"
+    description: |
+      Rate limit swap operations that target specific balance boundaries or
+      execute high-frequency micro-swaps. This prevents rapid compounding of
+      precision losses.
+    example: |
+      // VULNERABLE - No rate limiting on swap frequency
+      function batchSwap(...) external {
+          // Attacker can execute unlimited micro-swaps per block
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+          }
+      }
+
+      // FIXED - Implement rate limiting
+      mapping(address => uint256) public lastSwapTime;
+      mapping(address => uint256) public swapCountInWindow;
+      uint256 public constant SWAP_COOLDOWN = 10 minutes;
+      uint256 public constant MAX_SWAPS_PER_WINDOW = 5;
+
+      function batchSwap(...) external {
+          address caller = msg.sender;
+
+          // Enforce cooldown between swap batches
+          require(
+              block.timestamp >= lastSwapTime[caller] + SWAP_COOLDOWN,
+              "Swap rate limit - cooldown required"
+          );
+
+          // Limit operations per window
+          require(
+              swaps.length <= MAX_SWAPS_PER_WINDOW,
+              "Too many operations - rate limit exceeded"
+          );
+
+          for (uint i = 0; i < swaps.length; i++) {
+              _swap(swaps[i]);
+          }
+
+          lastSwapTime[caller] = block.timestamp;
+          swapCountInWindow[caller] += swaps.length;
+      }
+
+# =============================================================================
+# PRODUCTION-READY SAFE IMPLEMENTATIONS
+# =============================================================================
+
+safe_implementations:
+  - name: "FullMath Library - Safe 512-bit Multiplication and Division"
+    description: |
+      Industry-standard library (Uniswap V3, Compound) for safe multiplication
+      and division with overflow protection. Handles "phantom overflow" by
+      computing 512-bit products and dividing with full precision.
+    source: "Uniswap V3 FullMath.sol"
+    semantic_operations:
+      - PERFORMS_MULTIPLICATION  # Safe: 512-bit multiplication
+      - PERFORMS_DIVISION        # Safe: Full precision division
+      - CHECKS_OVERFLOW          # Protection: Validates 512-bit result
+    code: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      /// @title Contains 512-bit math functions
+      /// @notice Facilitates multiplication and division that can have overflow
+      /// of an intermediate value without any loss of precision
+      /// @dev Handles "phantom overflow" i.e., allows multiplication and division
+      /// where an intermediate value overflows 256 bits
+      library FullMath {
+          /// @notice Calculates floor(a×b÷denominator) with full precision.
+          /// @param a The multiplicand
+          /// @param b The multiplier
+          /// @param denominator The divisor
+          /// @return result The 256-bit result
+          function mulDiv(
+              uint256 a,
+              uint256 b,
+              uint256 denominator
+          ) internal pure returns (uint256 result) {
+              unchecked {
+                  // 512-bit multiply [prod1 prod0] = a * b
+                  uint256 prod0; // Least significant 256 bits
+                  uint256 prod1; // Most significant 256 bits
+                  assembly {
+                      let mm := mulmod(a, b, not(0))
+                      prod0 := mul(a, b)
+                      prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+                  }
+
+                  // Handle non-overflow cases, 256 by 256 division
+                  if (prod1 == 0) {
+                      require(denominator > 0);
+                      assembly {
+                          result := div(prod0, denominator)
+                      }
+                      return result;
+                  }
+
+                  // Make sure the result is less than 2**256
+                  require(denominator > prod1);
+
+                  // 512 by 256 division
+                  uint256 remainder;
+                  assembly {
+                      remainder := mulmod(a, b, denominator)
+                  }
+                  assembly {
+                      prod1 := sub(prod1, gt(remainder, prod0))
+                      prod0 := sub(prod0, remainder)
+                  }
+
+                  // Factor powers of two out of denominator
+                  uint256 twos = (~denominator + 1) & denominator;
+                  assembly {
+                      denominator := div(denominator, twos)
+                  }
+
+                  assembly {
+                      prod0 := div(prod0, twos)
+                  }
+
+                  assembly {
+                      twos := add(div(sub(0, twos), twos), 1)
+                  }
+
+                  prod0 |= prod1 * twos;
+
+                  // Invert denominator mod 2**256
+                  uint256 inv = (3 * denominator) ^ 2;
+                  inv *= 2 - denominator * inv; // inverse mod 2**8
+                  inv *= 2 - denominator * inv; // inverse mod 2**16
+                  inv *= 2 - denominator * inv; // inverse mod 2**32
+                  inv *= 2 - denominator * inv; // inverse mod 2**64
+                  inv *= 2 - denominator * inv; // inverse mod 2**128
+                  inv *= 2 - denominator * inv; // inverse mod 2**256
+
+                  result = prod0 * inv;
+                  return result;
+              }
+          }
+
+          /// @notice Calculates ceil(a×b÷denominator) with full precision.
+          function mulDivRoundingUp(
+              uint256 a,
+              uint256 b,
+              uint256 denominator
+          ) internal pure returns (uint256 result) {
+              result = mulDiv(a, b, denominator);
+              if (mulmod(a, b, denominator) > 0) {
+                  require(result < type(uint256).max);
+                  result++;
+              }
+          }
+      }
+    semantic_signature:
+      vulnerable: "A:mul → A:div (native) → M:state"  # Native precision loss
+      safe: "A:mulDiv(512-bit) → M:state"              # Safe: Full precision preserved
+    key_properties:
+      - performs_multiplication_with_overflow_protection: true
+      - performs_division_with_full_precision: true
+      - handles_phantom_overflow: true
+      - uses_assembly_for_efficiency: true
+
+  - name: "Safe Upscaling/Downscaling Pattern"
+    description: |
+      Production pattern for safely scaling token amounts across different
+      decimal places. Uses consistent rounding UP for safety (prefer overestimate).
+    semantic_operations:
+      - READS_USER_BALANCE      # Input: Token balance
+      - PERFORMS_MULTIPLICATION # Operation: Scale by factor
+      - PERFORMS_DIVISION       # Operation: Divide with rounding UP
+      - WRITES_USER_BALANCE     # Output: Scaled balance
+    code: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      library SafeScaling {
+          /// @dev Safely upscale amount to canonical precision
+          /// Uses mulDivRoundingUp to prevent systematic underestimation
+          function upscale(
+              uint256 amount,
+              uint8 decimals,
+              uint256 canonicalDecimals
+          ) internal pure returns (uint256) {
+              require(decimals <= canonicalDecimals, "Invalid decimal places");
+              if (decimals == canonicalDecimals) return amount;
+
+              uint256 scaleFactor = 10 ** (canonicalDecimals - decimals);
+              return FullMath.mulDiv(amount, scaleFactor, 1);  // Exact (no loss)
+          }
+
+          /// @dev Safely downscale amount from canonical precision
+          /// Uses mulDivRoundingUp to prevent artificial price suppression
+          function downscale(
+              uint256 amount,
+              uint8 decimals,
+              uint256 canonicalDecimals
+          ) internal pure returns (uint256) {
+              require(decimals <= canonicalDecimals, "Invalid decimal places");
+              if (decimals == canonicalDecimals) return amount;
+
+              uint256 scaleFactor = 10 ** (canonicalDecimals - decimals);
+              return FullMath.mulDivRoundingUp(amount, 1, scaleFactor);  // ROUNDING UP
+          }
+
+          /// @dev Safely scale array of amounts
+          function upscaleArray(
+              uint256[] memory amounts,
+              uint8[] memory decimals,
+              uint256 canonicalDecimals
+          ) internal pure returns (uint256[] memory scaled) {
+              scaled = new uint256[](amounts.length);
+              for (uint256 i = 0; i < amounts.length; i++) {
+                  scaled[i] = upscale(amounts[i], decimals[i], canonicalDecimals);
+              }
+          }
+
+          function downscaleArray(
+              uint256[] memory amounts,
+              uint8[] memory decimals,
+              uint256 canonicalDecimals
+          ) internal pure returns (uint256[] memory scaled) {
+              scaled = new uint256[](amounts.length);
+              for (uint256 i = 0; i < amounts.length; i++) {
+                  scaled[i] = downscale(amounts[i], decimals[i], canonicalDecimals);
+              }
+          }
+      }
+    usage_example: |
+      // Safe pool invariant calculation
+      function _calculatePoolInvariant(
+          uint256[] memory balances,
+          uint8[] memory tokenDecimals
+      ) internal pure returns (uint256) {
+          // SAFE: Upscale all balances using consistent precision
+          uint256[] memory scaledBalances = SafeScaling.upscaleArray(
+              balances,
+              tokenDecimals,
+              18  // Canonical decimal place
+          );
+
+          // SAFE: Calculate invariant at uniform precision
+          uint256 invariant = _invariantFormula(scaledBalances);
+
+          return invariant;
+      }
+    key_properties:
+      - consistent_rounding_direction: true
+      - uses_safe_math_library: true
+      - performs_dimension_check: true
+      - no_precision_loss: true
+
+  - name: "Solmate Fixed-Point Math Library"
+    description: |
+      Alternative: Solmate's mulWadUp/mulWadDown functions for WAD (18-decimal)
+      arithmetic. Simpler than FullMath but suitable for homogeneous token
+      decimal environments (all 18-decimal or all 8-decimal).
+    semantic_operations:
+      - PERFORMS_FIXED_POINT_MULTIPLICATION
+      - PERFORMS_FIXED_POINT_DIVISION
+    code: |
+      // SPDX-License-Identifier: AGPL-3.0-only
+      pragma solidity >=0.8.0;
+
+      /// @notice Emitted when mulDiv reverts
+      error MulWadFailed();
+
+      library FixedPointMathLib {
+          uint256 internal constant WAD = 1e18; // The scalar of ETH and most ERC20s
+
+          function mulWadDown(uint256 x, uint256 y) internal pure returns (uint256 r) {
+              assembly {
+                  // Equivalent to (x * y) / WAD rounded down.
+                  r := div(mul(x, y), WAD)
+              }
+          }
+
+          function mulWadUp(uint256 x, uint256 y) internal pure returns (uint256 r) {
+              assembly {
+                  // Equivalent to (x * y) / WAD rounded up
+                  r := add(div(mul(x, y), WAD), gt(mod(mul(x, y), WAD), 0))
+              }
+          }
+
+          function divWadDown(uint256 x, uint256 y) internal pure returns (uint256 r) {
+              assembly {
+                  // Equivalent to (x / y) * WAD rounded down
+                  r := div(mul(x, WAD), y)
+              }
+          }
+
+          function divWadUp(uint256 x, uint256 y) internal pure returns (uint256 r) {
+              assembly {
+                  // Equivalent to (x / y) * WAD rounded up
+                  r := add(div(mul(x, WAD), y), gt(mod(mul(x, WAD), y), 0))
+              }
+          }
+
+          // Use for heterogeneous token decimals (more precision)
+          function mulDivDown(
+              uint256 x,
+              uint256 y,
+              uint256 denominator
+          ) internal pure returns (uint256 result) {
+              uint256 prod0;
+              uint256 prod1;
+              assembly {
+                  let mm := mulmod(x, y, not(0))
+                  prod0 := mul(x, y)
+                  prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+              }
+
+              if (prod1 == 0) {
+                  unchecked {
+                      return prod0 / denominator;
+                  }
+              }
+
+              require(denominator > prod1);
+
+              uint256 remainder;
+              assembly {
+                  remainder := mulmod(x, y, denominator)
+                  prod1 := sub(prod1, gt(remainder, prod0))
+                  prod0 := sub(prod0, remainder)
+              }
+
+              assembly {
+                  let diff := sub(denominator, prod1)
+                  let diff2 := sub(diff, 1)
+                  let twos := and(diff2, denominator)
+
+                  prod1 := div(prod1, twos)
+                  prod0 := div(prod0, twos)
+                  diff := div(diff, twos)
+
+                  prod0 := div(prod0, diff)
+
+                  result := prod0
+              }
+          }
+
+          function mulDivUp(
+              uint256 x,
+              uint256 y,
+              uint256 denominator
+          ) internal pure returns (uint256 z) {
+              z = mulDivDown(x, y, denominator);
+              unchecked {
+                  if (mulmod(x, y, denominator) != 0) ++z;
+              }
+          }
+      }
+    key_properties:
+      - simple_and_gas_efficient: true
+      - suitable_for_homogeneous_decimals: true
+      - provides_both_rounding_directions: true
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - arith-001-precision-loss  # General precision loss pattern
+  - token-001-unhandled-fee-on-transfer  # Token amount discrepancies
+  - mev-002-slippage-attack  # Price suppression and extraction
+  - vm-002-unprotected-transfer  # Value transfer without validation
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC03  # Logic Errors
+  - SC07  # Numeric Precision and Arithmetic
+
+# CWE mapping
+cwe_mapping:
+  - CWE-682  # Incorrect Calculation
+  - CWE-195  # Signed to Unsigned Conversion Error
+  - CWE-834  # Excessive Iteration
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations Detection
+semantic_ops:
+  has_all_operations:
+    - PERFORMS_DIVISION
+    - READS_USER_BALANCE
+    - MODIFIES_CRITICAL_STATE
+  has_any_operations:
+    - LOOPS_OVER_ARRAY
+    - PERFORMS_MULTIPLICATION
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  vulnerable: "R:bal → A:div → M:crit"
+  description: "Read balance, perform division (rounding down), modify critical state without validation"
+  alternatives:
+    - "R:bal → A:div(×N) → A:mul → M:crit (compounding in loop)"
+    - "L:arr(R:bal) → A:div(down) → A:mul(down) → M:crit"
+
+  safe: "R:bal → V:div(up or validated) → M:crit"
+  safe_description: "Division with rounding up or explicit validation prevents suppression"
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - balancer-nov-2025-eth
+    - balancer-nov-2025-base
+    - balancer-nov-2025-multi-chain
+  description: "Matches precision loss in atomic batch operation patterns"
+  severity: critical
+  total_loss_usd: 128640000
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Explorer agent: Trace balance reads and modifications
+  explorer:
+    entry_points: [batchSwap, upscaleArray, calculateInvariant]
+    must_traverse:
+      - operation: READS_USER_BALANCE
+      - operation: PERFORMS_DIVISION
+      - operation: MODIFIES_CRITICAL_STATE
+    max_depth: 5
+
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+    bonus_signals:
+      - loops_over_array
+      - arithmetic_operations_on_balances
+      - external_call_to_vault
+
+  # Constraint agent: Verify precision loss can occur
+  constraint:
+    enabled: true
+    variables:
+      - name: balance
+        type: uint256
+        source: balance_mapping
+        range: [1, 10]  # Critical wei range
+      - name: scalingFactor
+        type: uint256
+        source: constant
+        range: [1e6, 1e18]
+      - name: precision_loss
+        type: uint256
+        derived: "max_possible_rounding_error(balance, scalingFactor)"
+    vulnerability_condition: "precision_loss > balance * 1 / 100 AND invariant_unvalidated"
+    verdict:
+      sat: vulnerable
+      unsat: safe
+
+  # Risk agent: Assess value extraction potential
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 8.0  # Critical severity
+    factors:
+      - atomic_operation_count_limit
+      - invariant_validation_presence
+      - external_price_validation
+      - circuit_breaker_presence
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 3
+    mode: voting
+
+# =============================================================================
+# ADDITIONAL CONTEXT
+# =============================================================================
+
+# Balancer V2 Exploit Timeline
+exploit_timeline:
+  discovery_date: "2025-11-03"
+  announcement_date: "2025-11-03"
+  total_loss: "$128.64M across Ethereum, Base, and multi-chain"
+  affected_pools: "wstETH/rETH/cbETH ComposableStablePools"
+  response:
+    - "Balancer team issued emergency disclosure"
+    - "Berachain halted blockchain for hard fork"
+    - "20% white-hat bounty offered for fund recovery"
+    - "Bug fixes and operation limits deployed"
+
+# Why Balancer V2 Exploit Was Sophisticated
+sophistication_factors: |
+  1. **Mathematical Insight**: Attacker understood that rounding DOWN in balance
+     scaling systematically underestimates all subsequent calculations
+
+  2. **Threshold Targeting**: Identified exact wei-level thresholds (8-9 wei)
+     that maximize relative rounding error (10%+ loss)
+
+  3. **Atomic Compounding**: Leveraged atomic transaction semantics to compound
+     errors across 65+ operations within single block
+
+  4. **Invariant Manipulation**: Deep understanding of StableSwap D calculation
+     and how underestimated D directly suppresses BPT pricing
+
+  5. **Multi-Chain Execution**: Coordinated attacks across Ethereum, Base,
+     Polygon, Arbitrum, Avalanche within 30-minute window
+
+  6. **MEV Resistance**: Executed complex transaction flows while maintaining
+     resistance to sandwich attacks and frontrunning
+
+# Lessons Learned for Pattern Design
+lessons_learned: |
+  1. Rounding direction bias can be catastrophic in pricing formulas
+     → Patterns must detect asymmetric rounding (mulDown without mulUp)
+
+  2. Compounding effects are critical in batch operations
+     → Patterns must consider operation count and cumulative precision loss
+
+  3. Invariant validations are essential safety checks
+     → Patterns must flag missing before/after comparisons
+
+  4. Atomic semantics enable sophisticated exploits
+     → Patterns must consider execution context and atomic isolation
+
+  5. External validation is necessary for critical prices
+     → Patterns must encourage oracle validation and circuit breakers
+
+# References and Sources
+references:
+  - title: "How an Attacker Drained $128M from Balancer Through Rounding Error Exploitation"
+    url: "https://research.checkpoint.com/2025/how-an-attacker-drained-128m-from-balancer-through-rounding-error-exploitation/"
+    source: "Check Point Research"
+    date: "2025-11-03"
+    type: "technical_analysis"
+
+  - title: "In-Depth Analysis: The Balancer V2 Exploit"
+    url: "https://blocksec.com/blog/in-depth-analysis-the-balancer-v2-exploit"
+    source: "BlockSec"
+    date: "2025-11-03"
+    type: "technical_analysis"
+
+  - title: "Explained: The Balancer Hack (November 2025)"
+    url: "https://www.halborn.com/blog/post/explained-the-balancer-hack-november-2025"
+    source: "Halborn"
+    date: "2025-11"
+    type: "postmortem"
+
+  - title: "Balancer V2 Vulnerability Disclosure and Mitigation"
+    url: "https://forum.balancer.fi/t/balancer-v2-vulnerability-disclosure-and-mitigation"
+    source: "Balancer Team"
+    date: "2025-11-03"
+    type: "official_disclosure"
+
+  - title: "VulnDocs: Balancer V2 Rounding Exploit"
+    url: "file:///Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/knowledge/vulndocs/categories/logic/subcategories/arithmetic/specifics/balancer-v2-rounding/"
+    source: "VKG Knowledge Base"
+    type: "vulndocs_reference"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "Solidity Security Documentation Architect"
+  vulndocs_reference: "logic/arithmetic/balancer-v2-rounding"
+  pattern_tier: "semantic_critical"
+
+  severity_assessment: |
+    CRITICAL - This vulnerability enabled the largest DeFi exploit of 2025
+    ($128.64M loss). The pattern detects the fundamental vulnerability class:
+    rounding direction bias in balance scaling leading to artificial invariant
+    suppression in pricing formulas.
+
+  detection_readiness: |
+    DRAFT - Pattern requires VKG builder support for:
+    1. performs_division property detection
+    2. uses_scaling_factors property detection
+    3. reads_user_balance property detection
+    4. modifies_critical_state property detection
+    5. loops_over_array property detection
+    6. arithmetic_operations_on_balances property detection
+    7. has_rounding_protection property detection
+    8. uses_floor_ceiling_explicitly property detection
+    9. has_minimum_output_validation property detection
+    10. validates_invariant_stability property detection
+
+  next_steps: |
+    1. Implement property detection in VKG builder
+    2. Create test contracts for pattern validation
+    3. Run vrs-test-conductor agent for metrics
+    4. Achieve ready/excellent status based on metrics
+    5. Deploy for production vulnerability scanning
+
+# Cross-Reference to VulnDocs
+vulndocs_reference:
+  category: "logic"
+  subcategory: "arithmetic"
+  specific: "balancer-v2-rounding"
+  confidence: 0.98
+  severity: critical
+  exploits:
+    - balancer-nov-2025-eth ($99M)
+    - balancer-nov-2025-base ($15M)
+    - balancer-nov-2025-multi-chain ($14.64M)

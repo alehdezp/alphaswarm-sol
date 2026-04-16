@@ -1,0 +1,26 @@
+id: ext-003
+vulndoc: access-control/external-call
+name: Chainlink Incomplete Validation
+description: latestRoundData used without full round/answer validation or error handling.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: calls_chainlink_latest_round_data
+    op: eq
+    value: true
+  any:
+  - property: validates_answer_positive
+    op: eq
+    value: false
+  - property: validates_updated_at_recent
+    op: eq
+    value: false
+  - property: validates_answered_in_round_matches_round_id
+    op: eq
+    value: false
+  - property: handles_oracle_revert
+    op: eq
+    value: false

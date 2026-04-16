@@ -1,0 +1,323 @@
+# Penpie Permissionless Callback Reentrancy - Specific Vulnerability
+# Discovered via Task 17.3a: Solodit/Exploit DB Crawl (2024-2026)
+
+id: penpie-permissionless-callback
+name: Penpie Reentrancy via Permissionless Market Registration
+parent_category: reentrancy
+parent_subcategory: classic
+
+description: |
+  Reentrancy vulnerability in PendleStaking contract where an attacker exploited
+  the permissionless market registration feature to register a malicious Pendle
+  market with a crafted SY (Standardized Yield) contract. During the reward
+  harvesting process in batchHarvestMarketRewards(), the attacker reentered via
+  the redeemRewards() callback to deposit additional tokens, inflating reward
+  calculations.
+
+  Key insight: The function lacked reentrancy protection AND assumed all
+  registered markets were benign (trust assumption on permissionless input).
+
+severity: critical
+exploit_severity: critical
+confidence_score: 0.97
+
+# Related VKG Properties for Detection
+detection:
+  graph_signals:
+    - property: state_write_after_external_call
+      expected: true
+      critical: true
+      description: "Reward balance updated after external call to market contract"
+      confidence: 0.95
+
+    - property: has_reentrancy_guard
+      expected: false
+      critical: true
+      description: "No nonReentrant modifier on batchHarvestMarketRewards"
+      confidence: 0.98
+
+    - property: external_call_sites
+      expected: ">0"
+      critical: true
+      description: "Calls to user-controlled/registered contract addresses"
+      confidence: 0.95
+
+    - property: visibility
+      expected:
+        - public
+        - external
+      critical: true
+      description: "Function publicly callable"
+      confidence: 0.95
+
+    - property: accepts_external_address_input
+      expected: true
+      critical: true
+      description: "Function accepts market addresses that can be user-registered"
+      confidence: 0.90
+
+    - property: iterates_over_external_contracts
+      expected: true
+      critical: false
+      description: "Loops over array of external contract addresses"
+      confidence: 0.85
+
+  semantic_operations:
+    - CALLS_UNTRUSTED
+    - READS_USER_BALANCE
+    - WRITES_USER_BALANCE
+    - TRANSFERS_VALUE_OUT
+    - LOOPS_OVER_ARRAY
+
+  behavioral_signatures:
+    - vulnerable: "R:bal[before]->X:untrusted{callback}->W:bal[after]"
+      description: "Read balance, call untrusted contract (reenters), write balance"
+
+    - vulnerable: "L:markets->X:market.redeem->W:reward"
+      description: "Loop over markets, call redeem (callback), write reward state"
+
+  operation_sequences:
+    vulnerable:
+      - "R:amountsBefore[j] -> X:market.redeemRewards() -> CALLBACK:depositMarket() -> W:amountsAfter[j]"
+      - "ITERATE:markets -> X:untrusted -> W:state (no guard)"
+
+    safe:
+      - "G:nonReentrant -> R:amountsBefore -> X:market.redeemRewards() -> W:amountsAfter"
+      - "V:isValidMarket(market) -> X:market.redeemRewards() -> W:state"
+
+  false_positive_indicators:
+    - "nonReentrant modifier on function"
+    - "ReentrancyGuard inherited"
+    - "Whitelist validation before external call"
+    - "Only admin-registered contracts called (not permissionless)"
+    - "CEI pattern: state updates before external calls"
+
+# Attack Mechanism Details
+attack_mechanism:
+  preconditions:
+    - "Ability to register custom Pendle markets (permissionless)"
+    - "Access to create malicious SY (Standardized Yield) contract"
+    - "Flash loan access for initial liquidity"
+    - "Understanding of reward calculation: amountsAfter[j] - amountsBefore[j]"
+
+  attack_steps:
+    - step: 1
+      phase: "Setup - Deploy Malicious Contracts"
+      description: |
+        Deploy a malicious SY contract that serves as attack vector.
+        Create a fake Pendle market using PendleMarketFactoryV3.
+        Register fake market with Penpie via registerPenpiePool().
+      operations:
+        - "Deploy MaliciousSY contract with reentrant callback"
+        - "Create fake Pendle market via factory"
+        - "Register market: registerPenpiePool(fakeMarket)"
+        - "Obtain fake PRT tokens representing staked position"
+
+    - step: 2
+      phase: "Prepare Flash Loan Liquidity"
+      description: |
+        Obtain flash loans from Balancer and other sources.
+        Deposit into malicious SY contract to have tokens for reentrant deposit.
+      operations:
+        - "Flash loan wstETH, rETH, other assets from Balancer"
+        - "Deposit assets into MaliciousSY contract"
+        - "Mint fake PT/YT tokens via controlled SY"
+
+    - step: 3
+      phase: "Trigger Reentrancy"
+      description: |
+        Call batchHarvestMarketRewards() which iterates over markets.
+        When redeemRewards() is called on fake market, the MaliciousSY
+        contract calls back into depositMarket(), adding tokens BEFORE
+        amountsAfter is calculated.
+      operations:
+        - "Call: batchHarvestMarketRewards([fakeMarket])"
+        - "Function reads: amountsBefore[j] = token.balanceOf(this)"
+        - "Function calls: market.redeemRewards() -> MaliciousSY.callback()"
+        - "REENTER: MaliciousSY calls depositMarket(fakeMarket, tokens)"
+        - "Deposited tokens inflate balance"
+        - "Function reads: amountsAfter[j] = token.balanceOf(this)"
+        - "Reward calculation: amountsAfter - amountsBefore = INFLATED"
+
+    - step: 4
+      phase: "Extract Inflated Rewards"
+      description: |
+        Withdraw inflated rewards based on fake balance difference.
+        Repay flash loan and extract profit.
+      operations:
+        - "Receive inflated reward tokens"
+        - "Swap reward tokens to ETH"
+        - "Repay flash loan"
+        - "Keep profit (~$27M across Ethereum + Arbitrum)"
+
+  exploitation_difficulty: "medium-high"
+  exploitation_notes: |
+    The attack required:
+    1. Understanding Penpie's permissionless market registration
+    2. Creating compatible malicious SY contract with callback
+    3. Knowledge of reward calculation timing vulnerability
+    4. Flash loan orchestration across multiple protocols
+
+    The vulnerability existed due to a scope change: batchHarvestMarketRewards
+    was originally admin-only but was made permissionless without re-audit.
+
+# Real-World Exploits
+exploits:
+  - id: penpie-sep-2024
+    name: "Penpie Protocol Reentrancy Exploit"
+    date: "2024-09-03"
+    loss_usd: 27000000
+    protocol: "Penpie"
+    chain: "ethereum, arbitrum"
+    category: reentrancy
+    subcategory: classic
+    description: |
+      Attacker exploited reentrancy in batchHarvestMarketRewards() by
+      registering a malicious Pendle market with a crafted SY contract.
+      During reward redemption, the callback reentered depositMarket(),
+      inflating the reward calculation. Approximately $27M stolen across
+      Ethereum (majority) and Arbitrum.
+    attack_flow: |
+      1. Deploy malicious SY contract and fake Pendle market
+      2. Register fake market via permissionless registerPenpiePool()
+      3. Flash loan assets from Balancer
+      4. Call batchHarvestMarketRewards([fakeMarket])
+      5. During redeemRewards() callback, reenter via depositMarket()
+      6. Inflated amountsAfter - amountsBefore yields excess rewards
+      7. Extract rewards, swap to ETH, repay flash loan, profit
+    tx_hash: "0x56e09abb35ff12271fdb38ff8a23e4d4a7396844426a94c4d89b68d374c6903a"
+    postmortem_url: "https://blog.penpiexyz.io/penpie-post-mortem-report-1ac9863b663a"
+    vulnerable_code_url: "https://github.com/penpie-io/pendle-staking"
+    pattern_ids:
+      - vm-001
+      - vm-002
+
+# Remediation Guidance
+fixes:
+  root_cause:
+    description: |
+      Two contributing factors:
+      1. Missing reentrancy guard on batchHarvestMarketRewards()
+      2. Trust assumption that permissionlessly-registered markets are benign
+
+      The function was originally admin-only (safe scope) but was changed
+      to permissionless without security re-evaluation.
+
+  recommended:
+    - fix_id: "add-reentrancy-guard"
+      name: "Add nonReentrant Modifier"
+      priority: critical
+      description: |
+        Apply OpenZeppelin's ReentrancyGuard to all functions that make
+        external calls before state updates.
+      code_pattern: |
+        // VULNERABLE
+        function batchHarvestMarketRewards(address[] calldata markets) external {
+            // ... external calls without guard
+        }
+
+        // SAFE
+        function batchHarvestMarketRewards(address[] calldata markets)
+            external
+            nonReentrant
+        {
+            // ... protected
+        }
+      effectiveness: "Very High - Prevents reentrancy completely"
+
+    - fix_id: "validate-market-whitelist"
+      name: "Whitelist Market Contracts"
+      priority: critical
+      description: |
+        Validate that market addresses are from approved/audited sources.
+        Do not trust permissionlessly-created contracts for security-sensitive
+        operations.
+      code_pattern: |
+        // VULNERABLE - trusts any registered market
+        for (uint i = 0; i < markets.length; i++) {
+            markets[i].redeemRewards();  // Calls arbitrary contract
+        }
+
+        // SAFE - validate against whitelist
+        for (uint i = 0; i < markets.length; i++) {
+            require(isApprovedMarket[markets[i]], "Market not whitelisted");
+            markets[i].redeemRewards();
+        }
+      effectiveness: "High - Prevents malicious contract registration"
+
+    - fix_id: "cei-pattern"
+      name: "Follow Checks-Effects-Interactions Pattern"
+      priority: high
+      description: |
+        Calculate all state changes before external calls. Update state,
+        then make external calls. This prevents reentrancy from affecting
+        state calculations.
+      code_pattern: |
+        // VULNERABLE - reads state after external call
+        amountsBefore = token.balanceOf(this);
+        market.redeemRewards();  // EXTERNAL CALL - can reenter!
+        amountsAfter = token.balanceOf(this);
+        rewards = amountsAfter - amountsBefore;
+
+        // SAFE - use pull pattern or validate expected amounts
+        uint expectedReward = market.pendingRewards(address(this));
+        market.redeemRewards();
+        uint actualReward = token.balanceOf(this) - amountsBefore;
+        require(actualReward <= expectedReward * 101 / 100, "Unexpected reward");
+      effectiveness: "High - Prevents inflation attacks"
+
+    - fix_id: "scope-change-reaudit"
+      name: "Re-audit After Scope Changes"
+      priority: high
+      description: |
+        When changing function access from admin-only to permissionless,
+        conduct a full security review. Trust assumptions change when
+        anyone can interact with the function.
+      effectiveness: "Process - Prevents introduction of vulnerabilities"
+
+# References and Sources
+references:
+  - title: "Penpie Post-Mortem Report"
+    url: "https://blog.penpiexyz.io/penpie-post-mortem-report-1ac9863b663a"
+    source: "Penpie Team"
+    date: "2024-09-04"
+    type: "official_disclosure"
+
+  - title: "Penpie Hack Analysis"
+    url: "https://blog.solidityscan.com/penpie-hack-analysis-29034a6f2a61"
+    source: "SolidityScan"
+    date: "2024-09-04"
+    type: "technical_analysis"
+
+  - title: "Explained: The Penpie Hack (September 2024)"
+    url: "https://www.halborn.com/blog/post/explained-the-penpie-hack-september-2024"
+    source: "Halborn"
+    date: "2024-09-10"
+    type: "technical_analysis"
+
+  - title: "PenPie Incident Analysis"
+    url: "https://blog.verichains.io/p/penpie-incident-analysis"
+    source: "Verichains"
+    date: "2024-09-03"
+    type: "technical_analysis"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "knowledge-aggregation-worker"
+  source: "Task 17.3a Solodit Crawl"
+  token_estimate: 2200
+  context_cache_key: "penpie-permissionless-callback-v1"
+
+  key_learnings:
+    - "Permissionless features require extra scrutiny for reentrancy"
+    - "Trust assumptions change when admin-only becomes public"
+    - "Balance-based reward calculations vulnerable to inflation"
+    - "Multiple audits may miss vulnerabilities after scope changes"
+
+  novel_aspects:
+    - "Combination of reentrancy + permissionless registration"
+    - "Callback via user-registered contract address"
+    - "Balance inflation attack pattern in reward harvesting"

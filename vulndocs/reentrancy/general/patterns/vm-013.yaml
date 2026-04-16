@@ -1,0 +1,13 @@
+id: vm-013
+vulndoc: reentrancy/general
+name: Cross-Function Reentrancy Reader
+description: Public/external readers of shared state during reentrancy windows.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: cross_function_reentrancy_read
+    op: eq
+    value: true

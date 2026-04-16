@@ -1,0 +1,126 @@
+# Code4rena Contest: 2024-04-dyad
+# Ground Truth Findings - External Source
+# DO NOT modify based on tool output
+
+contest:
+  id: "2024-04-dyad"
+  name: "DYAD"
+  report_url: "https://code4rena.com/reports/2024-04-dyad"
+  findings_repo: "https://github.com/code-423n4/2024-04-dyad-findings"
+  audit_period: "April 2024"
+  prize_pool: "$36,500"
+
+metadata:
+  imported_date: "2026-02-04"
+  source: "Code4rena"
+  trust_level: "high"
+  external_ground_truth: true
+
+statistics:
+  total_findings: 4
+  high: 2
+  medium: 2
+  vulnerability_classes:
+    - arithmetic
+    - logic_error
+    - front_running
+    - reentrancy
+
+findings:
+  - id: "H-01"
+    title: "Vault shares can be stolen via donation attack (inflation attack)"
+    severity: "high"
+    vulnerability_class: "arithmetic"
+    swc_id: "SWC-101"
+    affected_contracts:
+      - "Vault.sol"
+    affected_functions:
+      - "deposit"
+      - "withdraw"
+    ground_truth_verdict: "confirmed"
+    auditor: "0xMojito"
+    judge_confirmed: true
+    description: |
+      First depositor can inflate share price via direct token transfer,
+      causing subsequent depositors to receive 0 shares (classic ERC4626 attack).
+    exploit_requirements:
+      - "Be first depositor"
+      - "Deposit minimal amount"
+      - "Donate tokens directly to vault"
+      - "Wait for victim deposit"
+    code_location:
+      file: "Vault.sol"
+      line_start: 45
+      line_end: 78
+
+  - id: "H-02"
+    title: "Incorrect collateral ratio check allows undercollateralized minting"
+    severity: "high"
+    vulnerability_class: "logic_error"
+    swc_id: "SWC-110"
+    affected_contracts:
+      - "VaultManagerV2.sol"
+    affected_functions:
+      - "mintDyad"
+      - "_isCollateralized"
+    ground_truth_verdict: "confirmed"
+    auditor: "carrotsmuggler"
+    judge_confirmed: true
+    description: |
+      Collateralization check uses pre-mint balances instead of post-mint,
+      allowing positions to be minted below minimum collateral ratio.
+    exploit_requirements:
+      - "Open vault position"
+      - "Mint DYAD up to exact collateral limit"
+      - "Collateral ratio check passes incorrectly"
+    code_location:
+      file: "VaultManagerV2.sol"
+      line_start: 156
+      line_end: 189
+
+  - id: "M-01"
+    title: "Missing slippage protection in liquidation allows sandwich attacks"
+    severity: "medium"
+    vulnerability_class: "front_running"
+    swc_id: "SWC-114"
+    affected_contracts:
+      - "VaultManagerV2.sol"
+    affected_functions:
+      - "liquidate"
+    ground_truth_verdict: "confirmed"
+    auditor: "MohammedRizwan"
+    judge_confirmed: true
+    description: |
+      Liquidation does not include minimum output checks, allowing
+      MEV bots to sandwich liquidation transactions.
+    exploit_requirements:
+      - "Monitor mempool for liquidation calls"
+      - "Sandwich with price manipulation"
+    code_location:
+      file: "VaultManagerV2.sol"
+      line_start: 234
+      line_end: 267
+
+  - id: "M-02"
+    title: "Reentrancy in withdraw allows double withdrawal"
+    severity: "medium"
+    vulnerability_class: "reentrancy"
+    swc_id: "SWC-107"
+    affected_contracts:
+      - "Vault.sol"
+    affected_functions:
+      - "withdraw"
+    ground_truth_verdict: "confirmed"
+    auditor: "Trust"
+    judge_confirmed: true
+    description: |
+      Withdraw function makes external call before state update,
+      allowing reentrancy with ERC777 tokens.
+    exploit_requirements:
+      - "Vault must accept ERC777 tokens"
+      - "Deploy malicious recipient"
+      - "Trigger reentrant withdrawal"
+    code_location:
+      file: "Vault.sol"
+      line_start: 89
+      line_end: 112

@@ -1,0 +1,64 @@
+id: msg-value-loop-reuse
+vulndoc: logic/msg-value
+name: msg.value Reused in Loop
+description: |
+  Payable function with a loop that processes items using msg.value without
+  accumulating the total cost. This allows a single msg.value payment to be
+  "reused" across multiple iterations.
+
+  Attack Pattern:
+  1. Contract has a payable function that loops over items
+  2. Each item requires payment validation using msg.value
+  3. But msg.value is constant across all iterations
+  4. Attacker can buy N items for the price of 1
+
+  Example vulnerable code:
+  ```solidity
+  function buyMany(uint256[] calldata tokenIds) external payable {
+      for (uint256 i = 0; i < tokenIds.length; i++) {
+          _buyOne(tokenIds[i]); // Each call checks msg.value separately
+      }
+  }
+
+  function _buyOne(uint256 tokenId) private {
+      require(msg.value >= prices[tokenId]); // msg.value is same for ALL!
+      // ... transfer NFT
+  }
+  ```
+
+  Real-world examples: DVDeFi free-rider challenge.
+
+scope: Function
+lens:
+  - ValueMovement
+  - Authority
+severity: critical
+
+match:
+  all:
+    - property: payable
+      op: eq
+      value: true
+    - property: has_loops
+      op: eq
+      value: true
+    - property: has_internal_calls
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  any:
+    - property: has_array_parameter
+      op: eq
+      value: true
+    - property: has_unbounded_loop
+      op: eq
+      value: true
+  none:
+    - property: has_access_gate
+      op: eq
+      value: true
+
+references:
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/free-rider"

@@ -1,0 +1,17 @@
+{
+  "contract": "NoAccessGate",
+  "contract_id": "cal-02",
+  "contract_path": "tests/contracts/NoAccessGate.sol",
+  "built_at": "2026-03-02T14:52:36Z",
+  "identity": "552b722c4b15",
+  "nodes": 6,
+  "edges": 9,
+  "graph_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/ground-truth/cal-02/graph.toon",
+  "expected_vulnerability_class": "access-control",
+  "semantic_fingerprint": "missing_access_gate_setOwner",
+  "function_names": [
+    "setOwner"
+  ],
+  "has_external_calls": false,
+  "has_state_modification_after_call": false
+}

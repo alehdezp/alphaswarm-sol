@@ -1,0 +1,19 @@
+id: vm-010
+vulndoc: reentrancy/general
+name: First Depositor Share Inflation
+description: Deposit-like functions reading shares without bounds.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: is_deposit_like
+    op: eq
+    value: true
+  - property: reads_share_state
+    op: eq
+    value: true
+  - property: has_require_bounds
+    op: eq
+    value: false

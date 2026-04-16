@@ -1,0 +1,230 @@
+# Dimension Registry — Canonical source for all evaluation dimensions
+# Plan 06 deliverable. Authoritative for all validation.
+# Plan 07 uses this as prompt template index.
+# New Scored Concept Governance: all 4 steps in same commit
+# (a) add name here, (b) add DIMENSION_TO_MOVE_TYPES mapping,
+# (c) add to contract reasoning_dimensions, (d) add prompt template section.
+
+# 7 canonical reasoning move types (locked by CONTEXT.md)
+canonical_move_types:
+  - HYPOTHESIS_FORMATION
+  - QUERY_FORMULATION
+  - RESULT_INTERPRETATION
+  - EVIDENCE_INTEGRATION
+  - CONTRADICTION_HANDLING
+  - CONCLUSION_SYNTHESIS
+  - SELF_CRITIQUE
+
+# 27 domain dimensions
+dimensions:
+  # --- Investigation dimensions ---
+  - name: graph_utilization
+    description: "Degree to which the agent queries and leverages the BSKG graph for evidence gathering rather than relying on manual code reading alone."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - RESULT_INTERPRETATION
+      - EVIDENCE_INTEGRATION
+    has_handler: true
+
+  - name: evidence_quality
+    description: "Quality and specificity of evidence cited: graph node IDs, code locations, tool output references. Higher scores for precise, verifiable citations."
+    applicable_move_types:
+      - EVIDENCE_INTEGRATION
+      - CONCLUSION_SYNTHESIS
+    has_handler: true
+
+  - name: reasoning_depth
+    description: "Depth of analytical reasoning: multi-step inference chains, consideration of edge cases, cross-function analysis."
+    applicable_move_types:
+      - HYPOTHESIS_FORMATION
+      - RESULT_INTERPRETATION
+      - CONCLUSION_SYNTHESIS
+    has_handler: true
+
+  - name: hypothesis_formation
+    description: "Quality of initial hypotheses: grounded in graph data, considers multiple attack vectors, prioritizes by likelihood."
+    applicable_move_types:
+      - HYPOTHESIS_FORMATION
+    has_handler: true
+
+  - name: hypothesis_testing
+    description: "Systematic testing of hypotheses against evidence: seeks disconfirming evidence, adjusts hypotheses when contradicted."
+    applicable_move_types:
+      - HYPOTHESIS_FORMATION
+      - CONTRADICTION_HANDLING
+      - SELF_CRITIQUE
+    has_handler: true
+
+  - name: investigation_depth
+    description: "Thoroughness of investigation: explores multiple code paths, follows data flow across functions, considers protocol-level interactions."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - RESULT_INTERPRETATION
+      - EVIDENCE_INTEGRATION
+    has_handler: true
+
+  - name: conclusion_support
+    description: "Degree to which conclusions are supported by cited evidence: logical chain from evidence to conclusion, acknowledgment of limitations."
+    applicable_move_types:
+      - CONCLUSION_SYNTHESIS
+      - SELF_CRITIQUE
+    has_handler: true
+
+  - name: creative_adversarial_thinking
+    description: "Ability to think creatively about attack vectors: considers non-obvious exploit paths, economic attacks, composition vulnerabilities."
+    applicable_move_types:
+      - HYPOTHESIS_FORMATION
+      - QUERY_FORMULATION
+    has_handler: true
+
+  # --- Defender-specific dimensions ---
+  - name: guard_identification
+    description: "Ability to identify existing security guards, access controls, modifiers, and safety mechanisms in the codebase."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - RESULT_INTERPRETATION
+      - EVIDENCE_INTEGRATION
+    has_handler: false
+
+  - name: rebuttal_quality
+    description: "Quality of rebuttals to attacker claims: evidence-based counter-arguments, identification of guards that mitigate reported vulnerabilities."
+    applicable_move_types:
+      - CONTRADICTION_HANDLING
+      - EVIDENCE_INTEGRATION
+      - CONCLUSION_SYNTHESIS
+    has_handler: false
+
+  # --- Verifier-specific dimensions ---
+  - name: arbitration_quality
+    description: "Quality of arbitration between attacker and defender claims: fair weighing of evidence, independent verification attempts."
+    applicable_move_types:
+      - EVIDENCE_INTEGRATION
+      - CONTRADICTION_HANDLING
+      - CONCLUSION_SYNTHESIS
+    has_handler: true
+
+  - name: evidence_weighing
+    description: "Ability to weigh conflicting evidence: considers evidence strength, source reliability, and corroboration across multiple sources."
+    applicable_move_types:
+      - EVIDENCE_INTEGRATION
+      - CONTRADICTION_HANDLING
+    has_handler: true
+
+  - name: verdict_justification
+    description: "Quality of verdict justification: clear reasoning chain from evidence to verdict, explicit acknowledgment of uncertainty."
+    applicable_move_types:
+      - CONCLUSION_SYNTHESIS
+      - SELF_CRITIQUE
+    has_handler: true
+
+  # --- Reviewer-specific dimensions ---
+  - name: review_thoroughness
+    description: "Comprehensiveness of security review: coverage of vulnerability categories, systematic rather than ad-hoc analysis."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - RESULT_INTERPRETATION
+      - CONCLUSION_SYNTHESIS
+    has_handler: false
+
+  # --- Tool integration dimensions ---
+  - name: tool_selection
+    description: "Appropriateness of external tool selection for the task: correct tool for the analysis type, proper configuration."
+    applicable_move_types:
+      - QUERY_FORMULATION
+    has_handler: true
+
+  - name: result_interpretation
+    description: "Quality of interpretation of tool output: distinguishes true positives from false positives, contextualizes findings."
+    applicable_move_types:
+      - RESULT_INTERPRETATION
+      - EVIDENCE_INTEGRATION
+    has_handler: true
+
+  - name: error_handling
+    description: "Graceful handling of tool failures: reports errors clearly, suggests fixes, falls back to alternative approaches."
+    applicable_move_types:
+      - RESULT_INTERPRETATION
+      - SELF_CRITIQUE
+    has_handler: true
+
+  # --- Orchestration dimensions ---
+  - name: coordination_quality
+    description: "Quality of multi-agent coordination: clear role assignment, efficient task delegation, evidence routing between agents."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - EVIDENCE_INTEGRATION
+    has_handler: true
+
+  - name: evidence_flow
+    description: "Quality of evidence passing between agents: findings referenced across agent boundaries, no information loss in handoffs."
+    applicable_move_types:
+      - EVIDENCE_INTEGRATION
+    has_handler: true
+
+  - name: debate_coherence
+    description: "Coherence of multi-agent debate: arguments build on prior turns, rebuttals address specific claims, convergence toward verdict."
+    applicable_move_types:
+      - CONTRADICTION_HANDLING
+      - CONCLUSION_SYNTHESIS
+    has_handler: true
+
+  - name: consensus_quality
+    description: "Quality of consensus reached: well-justified agreement or well-documented disagreement with clear reasoning."
+    applicable_move_types:
+      - CONCLUSION_SYNTHESIS
+      - SELF_CRITIQUE
+    has_handler: true
+
+  - name: task_delegation
+    description: "Appropriateness of task delegation to sub-agents: correct agent roles, clear task descriptions, proper context passing."
+    applicable_move_types:
+      - QUERY_FORMULATION
+    has_handler: true
+
+  # --- Finding quality dimensions ---
+  - name: finding_quality
+    description: "Quality of reported findings: severity assessment accuracy, clear impact description, actionable remediation suggestions."
+    applicable_move_types:
+      - CONCLUSION_SYNTHESIS
+      - EVIDENCE_INTEGRATION
+    has_handler: true
+
+  - name: completeness
+    description: "Completeness of analysis coverage: all relevant code paths examined, no obvious areas skipped, systematic approach."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - SELF_CRITIQUE
+    has_handler: true
+
+  # --- Support dimensions ---
+  - name: task_completion
+    description: "Whether the support task completed its primary objective without errors."
+    applicable_move_types:
+      - CONCLUSION_SYNTHESIS
+    has_handler: true
+
+  # --- Cross-cutting dimensions ---
+  - name: verification_thoroughness
+    description: "Thoroughness of verification process: independent evidence gathering, cross-referencing claims against graph data."
+    applicable_move_types:
+      - QUERY_FORMULATION
+      - EVIDENCE_INTEGRATION
+      - SELF_CRITIQUE
+    has_handler: true
+
+  - name: rubric_coverage
+    description: "Degree to which agent reasoning covers the process steps specified in ground_truth_rubric. Scored separately from other dimensions."
+    applicable_move_types:
+      - HYPOTHESIS_FORMATION
+      - QUERY_FORMULATION
+      - RESULT_INTERPRETATION
+      - EVIDENCE_INTEGRATION
+      - CONCLUSION_SYNTHESIS
+    has_handler: false
+
+  - name: exploit_path_construction
+    description: "Quality of exploit path construction: concrete step-by-step scenarios, consideration of prerequisites, realistic economic analysis."
+    applicable_move_types:
+      - HYPOTHESIS_FORMATION
+      - CONCLUSION_SYNTHESIS
+    has_handler: false

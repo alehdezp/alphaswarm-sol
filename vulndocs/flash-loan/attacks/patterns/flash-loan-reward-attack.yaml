@@ -1,0 +1,53 @@
+id: flash-loan-reward-attack
+vulndoc: flash-loan/attacks
+name: Flash Loan Reward Distribution Attack
+description: |
+  Reward distribution functions vulnerable to flash loan timing attacks.
+  Functions that distribute rewards based on current token holdings without
+  requiring time-locked deposits can be exploited by flash loaning tokens
+  and claiming rewards in the same transaction.
+
+  Attack Pattern:
+  1. Attacker flash loans tokens
+  2. Deposits tokens to become eligible for rewards
+  3. Claims rewards immediately (no time-lock check)
+  4. Withdraws tokens and repays flash loan
+
+  Key indicators:
+  - Reward/withdraw-like function with no time-lock
+  - Missing accounting updates that would prevent same-tx claim
+  - No snapshot mechanism for reward eligibility
+
+  Real-world examples: DVDeFi the-rewarder challenge.
+
+scope: Function
+lens:
+  - Authority
+  - ValueMovement
+severity: critical
+
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: is_withdraw_like
+      op: eq
+      value: true
+    - property: can_affect_user_funds
+      op: eq
+      value: true
+  any:
+    - property: accounting_update_missing
+      op: eq
+      value: true
+    - property: in_financial_context
+      op: eq
+      value: true
+  none:
+    - property: has_access_gate
+      op: eq
+      value: true
+
+references:
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/the-rewarder"

@@ -1,0 +1,23 @@
+# No Slippage Check
+id: smartbugs-no-slippage-check
+name: No Slippage Check
+category: oracle
+source: examples/semgrep-smart-contracts/solidity/security/no-slippage-check.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: mev-slippage
+  description: Swap operations without slippage protection
+  severity: medium
+  cwe: CWE-754
+
+expected_detections:
+  - pattern: mev-001
+    confidence: high
+    description: Missing slippage parameter
+
+vkg_pattern_mapping:
+  primary: mev-001
+  secondary: [slippage-missing]
+
+status: pending

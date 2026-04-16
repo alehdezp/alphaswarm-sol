@@ -1,0 +1,462 @@
+# =============================================================================
+# PATTERN: emergency-001-unprotected-recovery
+# =============================================================================
+#
+# REPLACES: auth-115 (regex-based name matching)
+#
+# This pattern detects BEHAVIOR (recovery/emergency value movement) not NAMES
+# (emergency*, rescue*, recover*, etc.). Uses semantic properties:
+# - can_affect_user_funds: true (transfers ETH/tokens, modifies balances)
+# - writes_state: true (modifies contract state)
+# - has_access_gate: false (no access control)
+#
+# Emergency/rescue functions are designed to recover stuck or trapped funds.
+# Without access control, attackers can drain all contract holdings.
+#
+# =============================================================================
+
+id: emergency-001
+vulndoc: access-control/emergency
+name: "Unprotected Emergency/Recovery Operation"
+
+description: |
+  ## What This Detects
+
+  Public/external functions that can affect user funds and modify state without
+  access control, **regardless of function naming conventions**.
+
+  **Emergency/Recovery operations typically:**
+  - Transfer trapped/stuck ETH or tokens out of the contract
+  - Modify user balance tracking to correct accounting errors
+  - Sweep accidentally-sent tokens to designated addresses
+  - Drain contract holdings in emergency situations
+  - Force-withdraw funds from external protocols
+
+  **Detection is semantic, not syntactic:**
+  - Detects `can_affect_user_funds=true` + `writes_state=true` (behavior)
+  - NOT function name matching (emergency*, rescue*, recover*, sweep*, drain*, force*)
+  - Works with obfuscated names, alternative conventions, renamed functions
+
+  ## Why It's Dangerous
+
+  Emergency/rescue functions are high-privilege operations designed to move value
+  in exceptional circumstances. Without proper access control, any caller can:
+
+  - **Drain all contract funds** → complete fund extraction via "emergency" functions
+  - **Steal stuck tokens** → extract accidentally-sent tokens meant for recovery
+  - **Manipulate accounting** → modify balance state to create fund imbalances
+  - **Force unwanted withdrawals** → extract user funds without authorization
+  - **Bypass withdrawal limits** → circumvent normal withdrawal restrictions
+
+  The impact is **direct fund loss** - attackers can extract all holdings by
+  calling what should be admin-only recovery functions.
+
+  ## Real-World Impact
+
+  **2024 DeFi Exploits:**
+  - **Access control vulnerabilities**: 17 incidents in 2024, with unprotected
+    `emergencyWithdraw()` and `setFeeRecipient()` functions allowing fund drainage
+  - **$1.4B+ lost in 2024**: 75% from vulnerabilities that should have been caught
+    before deployment, including unprotected emergency functions
+  - **Cetus Protocol (2025)**: $223M breach from smart contract vulnerability
+    involving unprotected critical functions
+
+  **Historical Exploits:**
+  - **Poly Network (2021)**: $611M stolen via unprotected keeper modification
+    function that should have required multi-sig authorization
+  - **Numerous DeFi hacks**: Unprotected sweep/rescue/drain functions with
+    non-standard names exploited for fund extraction
+
+  ## Detection Logic
+
+  This pattern triggers when ALL of these conditions are met:
+  1. Function is externally callable (public/external visibility)
+  2. Function can affect user funds (transfers ETH/tokens OR modifies balances)
+  3. Function writes to contract state (not pure read-only)
+  4. Function has NO access control (no modifiers, no require checks)
+  5. Function is NOT a constructor/initializer (intentional setup)
+  6. Function is NOT view/pure (can't modify state anyway)
+
+  **Why this combination is dangerous:**
+  Emergency/recovery functions are **intended** to move value in exceptional
+  circumstances, but they must be restricted to trusted administrators. The
+  combination of `can_affect_user_funds=true` + `writes_state=true` +
+  `has_access_gate=false` indicates a function with the **power** to move funds
+  but **no authorization check** to prevent abuse.
+
+scope: Function
+
+lens:
+  - Authority
+  - ValueMovement
+
+severity: high
+
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must be able to affect user funds (SEMANTIC DETECTION)
+    # Detects: ETH transfers, token transfers, balance modifications
+    - property: can_affect_user_funds
+      op: eq
+      value: true
+
+    # Must write state (recovery operations modify state)
+    - property: writes_state
+      op: eq
+      value: true
+
+    # Must NOT have access control - this is the vulnerability
+    - property: has_access_gate
+      op: eq
+      value: false
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Exclude constructors (one-time initialization)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude initializers (one-time setup in upgradeable contracts)
+    - property: is_initializer_function
+      op: eq
+      value: true
+
+    # Exclude view functions (can't modify state or transfer value)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't access state at all)
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Awaiting vrs-test-conductor validation"
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Emergency Function Exploitation"
+    description: |
+      Attacker discovers unprotected emergency/rescue function and drains
+      all contract funds by calling what should be admin-only recovery function.
+    preconditions:
+      - Function can transfer ETH or tokens (can_affect_user_funds=true)
+      - Function modifies contract state (writes_state=true)
+      - No access control present (no onlyOwner, no require checks)
+      - Function is externally callable (public/external)
+    steps:
+      - Attacker scans contract for public/external functions
+      - Identifies emergency/recovery function without access control
+      - Calls function to extract contract funds (e.g., emergencyWithdraw(), rescueTokens(), sweep())
+      - Contract transfers all holdings to attacker without authorization check
+      - Attacker repeats or extracts all assets in single transaction
+    impact: "Complete fund drainage - attacker steals all contract ETH and token holdings"
+    cvss: 9.1
+    severity: critical
+
+  - name: "Stuck Token Theft"
+    description: |
+      Attacker exploits unprotected token sweep/rescue function to steal
+      tokens that were accidentally sent to contract or are meant to be recovered.
+    preconditions:
+      - Contract holds accidentally-sent tokens or has rescue mechanism
+      - Rescue function has no access control
+      - Function can transfer arbitrary tokens
+    steps:
+      - User or protocol accidentally sends tokens to contract
+      - Attacker monitors contract for token balance increases
+      - Calls unprotected rescue/sweep function
+      - Specifies token address and recipient (attacker address)
+      - Contract sends all tokens to attacker
+    impact: "Theft of stuck/trapped tokens meant for recovery or refund"
+    cvss: 8.2
+    severity: high
+
+  - name: "Forced Withdrawal Attack"
+    description: |
+      Attacker uses unprotected force-withdraw function to extract user
+      deposits or bypass withdrawal restrictions.
+    preconditions:
+      - Contract has force-withdraw or emergency-exit functionality
+      - Function modifies balance state and transfers value
+      - No authorization check on who can trigger forced withdrawals
+    steps:
+      - Attacker identifies unprotected force-withdraw function
+      - Calls function targeting other users' deposits
+      - Modifies balance tracking state to debit victim's account
+      - Transfers victim's funds to attacker address
+      - Victim loses funds, attacker gains unauthorized access to deposits
+    impact: "Theft of user deposits via forced unauthorized withdrawals"
+    cvss: 9.3
+    severity: critical
+
+  - name: "Emergency Fee Bypass"
+    description: |
+      Attacker exploits emergency withdrawal to bypass normal withdrawal
+      fees or restrictions that apply to regular withdrawal functions.
+    preconditions:
+      - Regular withdrawal charges fees or has limits
+      - Emergency withdrawal bypasses normal restrictions
+      - Emergency function lacks access control
+    steps:
+      - Attacker deposits funds via normal deposit function
+      - Instead of using regular withdrawal (with fees/limits)
+      - Calls unprotected emergency withdrawal function
+      - Extracts full deposit amount without fees
+      - Repeats to drain protocol revenue or bypass rate limits
+    impact: "Revenue loss via fee bypass, potential economic attack on protocol"
+    cvss: 6.5
+    severity: medium
+
+verification_steps:
+  - "Verify function is externally callable (public or external visibility)"
+  - "Confirm function can affect user funds (check for: transfers_eth, uses_erc20_transfer, uses_erc20_transfer_from, uses_call, uses_transfer, uses_send, or balance state modifications)"
+  - "Confirm function writes to state (writes_state=true)"
+  - "Check no access control modifier present (onlyOwner, onlyRole, onlyAdmin, etc.)"
+  - "Check no inline require/if statements validating msg.sender against privileged addresses"
+  - "Verify this is NOT a constructor or initializer (intentional setup pattern)"
+  - "Review function behavior: does it move value? modify balances? rescue tokens?"
+  - "Assess business logic: SHOULD this function be restricted to admins?"
+  - "Test: attempt to call function from non-privileged address to confirm unauthorized access"
+  - "Check if this is part of intended public withdrawal (pull-payment pattern may be legitimate)"
+
+fix_recommendations:
+  - name: "Add onlyOwner Modifier"
+    description: |
+      Restrict emergency/recovery functions to contract owner only.
+      This is appropriate for single-admin emergency operations.
+    example: |
+      // BEFORE (VULNERABLE)
+      function emergencyWithdraw() external {
+          payable(msg.sender).transfer(address(this).balance);
+      }
+
+      // AFTER (FIXED)
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract MyContract is Ownable {
+          function emergencyWithdraw() external onlyOwner {
+              require(address(this).balance > 0, "No funds to withdraw");
+              payable(owner()).transfer(address(this).balance);
+              emit EmergencyWithdrawal(owner(), address(this).balance);
+          }
+      }
+
+  - name: "Implement Multi-Signature Requirement"
+    description: |
+      For high-value emergency operations, require multiple authorized
+      signatures to prevent single compromised admin from draining funds.
+    example: |
+      import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
+
+      contract MyContract {
+          GnosisSafe public multiSig;
+
+          modifier onlyMultiSig() {
+              require(msg.sender == address(multiSig), "Only multisig");
+              _;
+          }
+
+          function rescueTokens(address token, uint256 amount)
+              external
+              onlyMultiSig
+          {
+              IERC20(token).transfer(address(multiSig), amount);
+              emit TokensRescued(token, amount);
+          }
+      }
+
+  - name: "Add Timelock for Emergency Functions"
+    description: |
+      Require time delay before emergency operations take effect, allowing
+      users to react to potential malicious calls.
+    example: |
+      import "@openzeppelin/contracts/governance/TimelockController.sol";
+
+      contract MyContract {
+          TimelockController public timelock;
+
+          modifier onlyTimelock() {
+              require(msg.sender == address(timelock), "Only timelock");
+              _;
+          }
+
+          // Emergency withdrawal requires 48-hour timelock
+          function emergencyDrain() external onlyTimelock {
+              uint256 balance = address(this).balance;
+              payable(msg.sender).transfer(balance);
+              emit EmergencyDrain(msg.sender, balance);
+          }
+      }
+
+  - name: "Use Role-Based Access Control"
+    description: |
+      Assign emergency operations to specific EMERGENCY_ADMIN_ROLE,
+      separate from regular admin roles for least-privilege security.
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyContract is AccessControl {
+          bytes32 public constant EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
+
+          constructor() {
+              _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+              _grantRole(EMERGENCY_ADMIN_ROLE, msg.sender);
+          }
+
+          function sweep(address token, address to, uint256 amount)
+              external
+              onlyRole(EMERGENCY_ADMIN_ROLE)
+          {
+              require(to != address(0), "Invalid recipient");
+              require(amount > 0, "Invalid amount");
+              IERC20(token).transfer(to, amount);
+              emit TokensSwept(token, to, amount);
+          }
+      }
+
+  - name: "Implement Emergency Pause + Pull Pattern"
+    description: |
+      Allow users to withdraw their own funds during emergencies (pull pattern)
+      rather than having admin push funds, reducing trust requirements.
+    example: |
+      import "@openzeppelin/contracts/security/Pausable.sol";
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract MyContract is Pausable, Ownable {
+          mapping(address => uint256) public deposits;
+
+          // Admin can pause in emergency (stops new deposits)
+          function emergencyPause() external onlyOwner {
+              _pause();
+              emit EmergencyPauseActivated();
+          }
+
+          // Users can always withdraw their own funds (pull pattern)
+          // This works even during pause, allowing safe exit
+          function withdraw() external {
+              uint256 amount = deposits[msg.sender];
+              require(amount > 0, "No funds to withdraw");
+
+              deposits[msg.sender] = 0;
+              payable(msg.sender).transfer(amount);
+              emit Withdrawal(msg.sender, amount);
+          }
+      }
+
+  - name: "Add Recipient Validation for Rescue Functions"
+    description: |
+      If rescue function must be public, at least validate recipient
+      to prevent arbitrary fund extraction.
+    example: |
+      // BEFORE (VULNERABLE)
+      function rescueTokens(address token, address recipient) external {
+          uint256 balance = IERC20(token).balanceOf(address(this));
+          IERC20(token).transfer(recipient, balance);
+      }
+
+      // AFTER (IMPROVED - still needs access control!)
+      address public immutable treasury;  // Set in constructor
+
+      function rescueTokens(address token) external {
+          require(msg.sender == owner(), "Only owner");
+          require(token != address(0), "Invalid token");
+
+          uint256 balance = IERC20(token).balanceOf(address(this));
+          require(balance > 0, "No tokens to rescue");
+
+          // Always send to known safe address, not arbitrary recipient
+          IERC20(token).transfer(treasury, balance);
+          emit TokensRescued(token, treasury, balance);
+      }
+
+related_patterns:
+  - auth-003  # Unprotected privileged state write
+  - vm-002-unprotected-transfer  # Unprotected value transfer
+  - auth-001  # Unprotected state write (general)
+  - circuit-001-unprotected-pause  # Unprotected circuit breaker
+
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-306  # Missing Authentication for Critical Function
+  - CWE-863  # Incorrect Authorization
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations (when fully implemented)
+semantic_ops:
+  has_any_operation:
+    - TRANSFERS_VALUE_OUT      # Sends ETH/tokens out
+    - WRITES_USER_BALANCE      # Modifies user balance state
+    - MODIFIES_CRITICAL_STATE  # Changes critical state variables
+
+# Behavioral Signature
+behavioral_signature:
+  pattern: "X:out|W:bal"
+  description: "Emergency value extraction or balance modification without authorization"
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches:
+    - poly-network-2021
+    - cetus-protocol-2025
+  description: "Unprotected emergency/rescue functions leading to fund drainage"
+  attack_type: "Emergency function exploitation"
+
+# Multi-Agent Verification Hints
+verification_agents:
+  # Explorer agent: Trace value movement from entry to exit
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE]
+    max_depth: 5
+
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+
+  # Risk agent: Assess exploitability and impact
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 7.5  # High severity for fund extraction
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 3
+    mode: voting

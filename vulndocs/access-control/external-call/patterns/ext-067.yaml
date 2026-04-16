@@ -1,0 +1,16 @@
+id: ext-067
+vulndoc: access-control/external-call
+name: Oracle Aggregation Fallback Missing
+description: Aggregation without fallback on source disagreement.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_disagreement_fallback
+    op: eq
+    value: false

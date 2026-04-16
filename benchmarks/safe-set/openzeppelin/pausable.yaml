@@ -1,0 +1,22 @@
+# OpenZeppelin Pausable
+id: oz-pausable
+name: OpenZeppelin Pausable
+category: openzeppelin
+source: "@openzeppelin/contracts/utils/Pausable.sol"
+version: "5.0.x"
+
+contract_info:
+  description: |
+    OpenZeppelin's Pausable utility.
+    Emergency stop mechanism.
+  deployed_since: 2019
+  audit_sources:
+    - OpenZeppelin Internal
+
+expected_findings: []
+
+false_positive_categories:
+  - pause-*
+  - emergency-*
+
+status: validated

@@ -1,0 +1,310 @@
+# zkLend Decimal Precision Exploit - Specific Vulnerability
+# Discovered via Task 17.3a: Solodit/Exploit DB Crawl (2024-2026)
+
+id: zklend-precision-loss
+name: zkLend Integer Precision Loss Exploit
+parent_category: logic
+parent_subcategory: arithmetic
+
+description: |
+  Integer precision vulnerability in zkLend (Starknet-based lending protocol)
+  where the attacker exploited how the safeMath library handled division.
+  Direct integer division rounds down, and the attacker manipulated decimal
+  precision to extract value through rounding errors in deposit/withdrawal
+  calculations.
+
+  Key insight: Integer division in DeFi calculations can be exploited when
+  the attacker controls the precision of input values, especially in
+  lending protocols with decimal-sensitive share calculations.
+
+severity: critical
+exploit_severity: critical
+confidence_score: 0.93
+
+# Related VKG Properties for Detection
+detection:
+  graph_signals:
+    - property: uses_division
+      expected: true
+      critical: true
+      description: "Function performs integer division"
+      confidence: 0.95
+
+    - property: handles_decimal_conversion
+      expected: true
+      critical: true
+      description: "Converts between different decimal precisions"
+      confidence: 0.90
+
+    - property: writes_user_balance
+      expected: true
+      critical: true
+      description: "Updates user share or balance state"
+      confidence: 0.90
+
+    - property: has_rounding_protection
+      expected: false
+      critical: true
+      description: "No explicit rounding direction control"
+      confidence: 0.88
+
+    - property: small_value_handling
+      expected: false
+      critical: true
+      description: "No minimum value checks preventing precision attacks"
+      confidence: 0.85
+
+  semantic_operations:
+    - PERFORMS_DIVISION
+    - READS_USER_BALANCE
+    - WRITES_USER_BALANCE
+    - MODIFIES_CRITICAL_STATE
+    - HANDLES_DECIMALS
+
+  behavioral_signatures:
+    - vulnerable: "R:bal->C:div{round_down}->W:bal"
+      description: "Read balance, divide with rounding down, write balance"
+
+    - vulnerable: "C:div{precision_loss}->W:shares"
+      description: "Division with precision loss affecting share calculation"
+
+  operation_sequences:
+    vulnerable:
+      - "R:deposit -> C:shares = deposit / rate (round down) -> W:shares"
+      - "R:shares -> C:withdraw = shares * rate (precision gained) -> W:balance"
+
+    safe:
+      - "R:deposit -> V:min_amount -> C:shares = deposit / rate (round up) -> W:shares"
+      - "R:deposit -> C:shares = (deposit * PRECISION) / rate -> W:shares"
+
+  false_positive_indicators:
+    - "Explicit rounding direction (divUp, divDown) based on context"
+    - "Minimum deposit/withdrawal amounts enforced"
+    - "High precision internal accounting (18+ decimals)"
+    - "Share inflation protection (initial deposit mechanism)"
+    - "Dust amount checks preventing micro-deposits"
+
+# Attack Mechanism Details
+attack_mechanism:
+  preconditions:
+    - "Lending protocol with share-based accounting"
+    - "Integer division in share calculation"
+    - "Ability to make small, precision-targeting deposits"
+    - "No minimum deposit/withdrawal thresholds"
+
+  attack_steps:
+    - step: 1
+      phase: "Identify Precision Boundary"
+      description: |
+        Analyze the share calculation to identify values where
+        integer division produces maximum rounding error relative
+        to the input value.
+      operations:
+        - "Study: shares = deposit / exchangeRate"
+        - "Identify: values where division rounds to zero or near-zero"
+        - "Calculate: optimal attack amounts"
+
+    - step: 2
+      phase: "Deposit at Precision Boundary"
+      description: |
+        Make deposits at amounts carefully chosen to minimize
+        shares received while maximizing the rounding error.
+      operations:
+        - "Deposit: amount just below precision threshold"
+        - "Receive: shares = floor(amount / rate) = 0 or minimal"
+        - "Protocol holds: actual deposited value"
+
+    - step: 3
+      phase: "Exploit Exchange Rate"
+      description: |
+        Manipulate or wait for exchange rate changes that amplify
+        the precision difference. When withdrawing, the rounding
+        works in the attacker's favor.
+      operations:
+        - "Exchange rate shifts or is manipulated"
+        - "Withdraw: amount = shares * new_rate"
+        - "Rounding in withdrawal favors attacker"
+
+    - step: 4
+      phase: "Repeat and Extract"
+      description: |
+        Repeat the process to accumulate profits from rounding
+        differences. Each cycle extracts small amounts that
+        compound significantly.
+      operations:
+        - "Repeat deposit/withdraw cycles"
+        - "Accumulate rounding profits"
+        - "Total extracted: ~$9.57M"
+
+  exploitation_difficulty: "medium"
+  exploitation_notes: |
+    The attack exploited fundamental properties of integer arithmetic:
+    1. Division always rounds down in integer math
+    2. Small deposits can result in zero shares
+    3. Exchange rate changes amplify precision errors
+    4. No minimum thresholds allowed precision-targeting attacks
+
+    This is a common vulnerability class in lending protocols
+    that use share-based accounting without proper safeguards.
+
+# Real-World Exploits
+exploits:
+  - id: zklend-feb-2025
+    name: "zkLend Precision Exploit"
+    date: "2025-02-12"
+    loss_usd: 9570000
+    protocol: "zkLend"
+    chain: starknet
+    category: logic
+    subcategory: arithmetic
+    description: |
+      Attacker exploited integer precision handling in zkLend's
+      safeMath library. By making precision-targeted deposits and
+      exploiting rounding behavior, the attacker extracted approximately
+      $9.57 million from the Starknet-based lending protocol.
+    attack_flow: |
+      1. Identify precision boundaries in share calculation
+      2. Make small deposits at boundary values
+      3. Exploit integer division rounding (floor)
+      4. Exchange rate manipulation amplifies precision errors
+      5. Withdraw with favorable rounding
+      6. Repeat cycles to accumulate ~$9.57M
+    postmortem_url: "https://www.halborn.com/blog/post/explained-the-zklend-hack-february-2025"
+    vulnerable_code_url: "zkLend safeMath library"
+    pattern_ids:
+      - logic-001
+
+# Remediation Guidance
+fixes:
+  root_cause:
+    description: |
+      The root cause was direct integer division without precision
+      protection. The safeMath library performed division that always
+      rounded down, which attackers exploited by choosing inputs that
+      maximized relative rounding error.
+
+  recommended:
+    - fix_id: "round-against-user"
+      name: "Round Against User in Favor of Protocol"
+      priority: critical
+      description: |
+        Always round in the direction that favors the protocol:
+        - Deposits: round DOWN shares (user gets fewer shares)
+        - Withdrawals: round DOWN amount (user gets less)
+        This ensures protocol is never at a loss from rounding.
+      code_pattern: |
+        // VULNERABLE - Consistent rounding direction
+        function deposit(uint amount) external {
+            uint shares = amount / exchangeRate;  // Rounds down
+            // ...
+        }
+
+        function withdraw(uint shares) external {
+            uint amount = shares * exchangeRate;  // Can round up due to prior ops
+            // ...
+        }
+
+        // SAFE - Round against user
+        function deposit(uint amount) external {
+            // Round DOWN - user gets fewer shares (protocol favored)
+            uint shares = amount / exchangeRate;
+            require(shares > 0, "Deposit too small");
+            // ...
+        }
+
+        function withdraw(uint shares) external {
+            // Round DOWN - user gets less (protocol favored)
+            uint amount = (shares * exchangeRate) / PRECISION;
+            // ...
+        }
+      effectiveness: "Very High - Eliminates profitable precision attacks"
+
+    - fix_id: "minimum-amounts"
+      name: "Enforce Minimum Deposit/Withdrawal Amounts"
+      priority: critical
+      description: |
+        Set minimum thresholds that prevent precision-targeting attacks.
+        The minimum should be large enough that rounding errors are
+        negligible relative to the amount.
+      code_pattern: |
+        // SAFE - Minimum amount check
+        uint constant MIN_DEPOSIT = 1e15;  // 0.001 tokens minimum
+
+        function deposit(uint amount) external {
+            require(amount >= MIN_DEPOSIT, "Below minimum deposit");
+            uint shares = amount / exchangeRate;
+            require(shares >= MIN_SHARES, "Shares too small");
+            // ...
+        }
+      effectiveness: "High - Prevents micro-deposit attacks"
+
+    - fix_id: "high-precision-internal"
+      name: "Use High Precision Internal Accounting"
+      priority: high
+      description: |
+        Perform calculations with high internal precision (e.g., 27 or 36
+        decimals) and only convert to lower precision at boundaries.
+      code_pattern: |
+        // SAFE - High precision internal
+        uint constant PRECISION = 1e27;
+
+        function deposit(uint amount) external {
+            // Scale up for precision
+            uint scaledAmount = amount * PRECISION;
+            uint shares = scaledAmount / exchangeRate;
+            // shares stored with high precision internally
+            // ...
+        }
+      effectiveness: "High - Reduces relative rounding error"
+
+    - fix_id: "share-inflation-protection"
+      name: "Implement Share Inflation Protection"
+      priority: high
+      description: |
+        Use the first-depositor pattern where initial shares are minted
+        in a way that prevents manipulation of the exchange rate.
+      code_pattern: |
+        // SAFE - First deposit protection (virtual shares)
+        uint constant VIRTUAL_SHARES = 1e18;
+        uint constant VIRTUAL_ASSETS = 1e18;
+
+        function convertToShares(uint assets) public view returns (uint) {
+            return (assets * (totalShares + VIRTUAL_SHARES)) /
+                   (totalAssets + VIRTUAL_ASSETS);
+        }
+      effectiveness: "High - Prevents share inflation attacks"
+
+# References and Sources
+references:
+  - title: "Explained: The zkLend Hack (February 2025)"
+    url: "https://www.halborn.com/blog/post/explained-the-zklend-hack-february-2025"
+    source: "Halborn"
+    date: "2025-02-18"
+    type: "technical_analysis"
+
+  - title: "zkLend Post-Mortem"
+    url: "https://zklend.io/blog/post-mortem"
+    source: "zkLend Team"
+    date: "2025-02"
+    type: "official_disclosure"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "knowledge-aggregation-worker"
+  source: "Task 17.3a Solodit Crawl"
+  token_estimate: 1600
+  context_cache_key: "zklend-precision-loss-v1"
+
+  key_learnings:
+    - "Integer division always rounds down - attackers exploit this"
+    - "Share-based accounting requires rounding direction awareness"
+    - "Minimum amount thresholds prevent precision attacks"
+    - "First-depositor protection prevents share inflation"
+
+  novel_aspects:
+    - "Starknet-specific implementation (Cairo language)"
+    - "SafeMath library precision handling"
+    - "Exchange rate manipulation for precision amplification"

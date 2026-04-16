@@ -1,0 +1,79 @@
+id: UC-AUDIT-001
+name: "Detect classic reentrancy in single contract"
+workflow: vrs-audit
+category: audit
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-audit tests/contracts/ReentrancyClassic.sol"
+  context: >
+    ReentrancyClassic.sol contains a textbook reentrancy vulnerability: an
+    external call (via .call{value:}) is made before the balance state update.
+    This is the simplest possible reentrancy pattern and should be detected
+    with high confidence by any competent audit workflow.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build a knowledge graph, query for
+    TRANSFERS_VALUE_OUT operations that precede WRITES_USER_BALANCE, identify
+    the reentrancy pattern, and produce a high-severity finding with specific
+    code location references. The finding must trace through the graph, not
+    just pattern-match the function name.
+  must_happen:
+    - "Build BSKG from ReentrancyClassic.sol via alphaswarm build-kg"
+    - "Query graph for TRANSFERS_VALUE_OUT semantic operations"
+    - "Query graph for WRITES_USER_BALANCE semantic operations"
+    - "Detect that external call precedes state update (CEI violation)"
+    - "Produce at least one finding categorized as reentrancy"
+    - "Finding references specific function name and line numbers"
+    - "Finding severity is high or critical"
+    - "Finding includes exploit scenario description"
+  must_not_happen:
+    - "Skip graph building and jump straight to code reading"
+    - "Report false positive on unrelated functions"
+    - "Miss the reentrancy entirely (zero findings)"
+    - "Produce findings without code location references"
+    - "Crash or produce empty output"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+      - "Write"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "reentrancy"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: graph_utilization
+      description: "Did the workflow use BSKG queries before drawing conclusions about reentrancy?"
+    - name: evidence_quality
+      description: "Are findings anchored to specific code locations with line numbers?"
+    - name: finding_accuracy
+      description: "Is the reentrancy correctly identified with proper severity?"
+    - name: reasoning_depth
+      description: "Does the finding explain the CEI violation and exploit path?"
+  regression_signals:
+    - "Score drops below 60 on graph_utilization -> REGRESSION: agents bypassing graph-first"
+    - "Finding count drops to 0 -> CRITICAL REGRESSION: reentrancy detection broken"
+    - "False positive count > 0 on unrelated code -> REGRESSION: precision degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-AUDIT-002"
+    - "UC-ATK-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  This is the most basic smoke test for the audit workflow. If this fails,
+  nothing else matters. Core tier because reentrancy detection is table stakes.

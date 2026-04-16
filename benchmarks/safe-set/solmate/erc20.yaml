@@ -1,0 +1,28 @@
+# Solmate ERC20
+id: solmate-erc20
+name: Solmate ERC20
+category: solmate
+source: "solmate/tokens/ERC20.sol"
+version: "6.x"
+
+contract_info:
+  description: |
+    Solmate's gas-optimized ERC20 implementation.
+    Widely used in DeFi protocols.
+  deployed_since: 2021
+  tvl_or_usage: "Billions USD in DeFi"
+  audit_sources:
+    - Paradigm
+    - Community Audited
+  security_features:
+    - Gas optimized
+    - ERC20 compliant
+    - Minimal attack surface
+
+expected_findings: []
+
+false_positive_categories:
+  - token-*
+  - erc20-*
+
+status: validated

@@ -1,0 +1,67 @@
+id: UC-TOOL-001
+name: "Run Slither on simple contract and integrate findings"
+workflow: tool-run
+category: tools
+tier: important
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-tool-slither tests/contracts/ReentrancyClassic.sol"
+  context: >
+    Run Slither static analysis on ReentrancyClassic.sol, parse the JSON
+    output, and integrate the findings into the standard finding format.
+    The contract has a known reentrancy that Slither should detect via its
+    reentrancy detectors.
+
+expected_behavior:
+  summary: |
+    The tool workflow should invoke Slither on the contract, capture its JSON
+    output, parse the detector findings, and produce standardized findings
+    with code locations, severity, and detector metadata. The output should
+    be ready for consumption by the verification pipeline.
+  must_happen:
+    - "Invoke Slither via alphaswarm tools run or direct slither command"
+    - "Capture Slither JSON output successfully"
+    - "Parse at least one reentrancy-related detector finding"
+    - "Map Slither severity to standard severity levels"
+    - "Output includes code location (file, line, function)"
+    - "Output is in standardized finding format"
+  must_not_happen:
+    - "Slither invocation fails silently without error reporting"
+    - "Raw Slither JSON returned without parsing"
+    - "Findings missing code locations"
+    - "Crash on Slither output parsing"
+  expected_tools:
+    ordered:
+      - "Bash(slither)"
+    required:
+      - "Bash"
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: tool_invocation
+      description: "Was Slither invoked correctly with proper arguments?"
+    - name: output_parsing
+      description: "Was the JSON output parsed into structured findings?"
+    - name: finding_quality
+      description: "Do parsed findings include severity, location, and detector info?"
+    - name: integration_readiness
+      description: "Are findings in standard format ready for verification pipeline?"
+  regression_signals:
+    - "Slither invocation fails -> CRITICAL REGRESSION: tool integration broken"
+    - "No findings parsed from Slither output -> REGRESSION: output parsing broken"
+    - "Raw JSON returned unparsed -> REGRESSION: integration layer missing"
+
+links:
+  workflow_doc: "docs/reference/tools-overview.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-VER-004"
+    - "UC-TOOL-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier. Tests the basic tool integration pipeline. Prerequisite
+  for UC-VER-004 which adds reasoning on top of tool findings.

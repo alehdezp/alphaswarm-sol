@@ -1,0 +1,306 @@
+# Pattern Context Pack (PCP) v2 - Cross-Function Reentrancy
+# Path: vulndocs/reentrancy/cross-function/patterns/cross-function-reentrancy.pcp.yaml
+
+schema_version: "2.0"
+
+# =============================================================================
+# IDENTITY (Required)
+# =============================================================================
+
+id: pcp-cross-function-reentrancy
+version: "2.0"
+pattern_id: "cross-function-reentrancy"
+name: "Cross-Function Reentrancy"
+summary: |
+  Detects reentrancy vulnerabilities where an attacker exploits shared state
+  across multiple functions by reentering through a different function than
+  the one that initiated the external call.
+scope: Function
+
+# =============================================================================
+# DETERMINISM CONSTRAINTS (Required - do not modify defaults)
+# =============================================================================
+
+determinism:
+  no_rag: true
+  no_name_heuristics: true
+  serialization_order:
+    - pcp
+    - slice
+    - protocol
+    - evidence
+  hash_seed: "graph_hash + pcp_version + pattern_id"
+
+# =============================================================================
+# TOKEN BUDGET
+# =============================================================================
+
+budget:
+  pcp_max_tokens: 800
+  context_max_tokens: 2200
+  cheap_pass_tokens: 1200
+  verify_pass_tokens: 1800
+  deep_pass_tokens: 2400
+
+# =============================================================================
+# EVIDENCE WEIGHTS
+# =============================================================================
+
+evidence_weights:
+  required:
+    - "ev-external-call"
+    - "ev-shared-state-write"
+  strong:
+    - "ev-state-read-before-call"
+    - "ev-public-entry-point"
+  weak:
+    - "ev-balance-related"
+  optional:
+    - "ev-event-emission"
+
+# =============================================================================
+# WITNESS REQUIREMENTS
+# =============================================================================
+
+witness:
+  minimal_required:
+    - "external_call_to_untrusted"
+    - "writes_shared_state"
+    - "multiple_public_functions_share_state"
+  negative_required:
+    - "reentrancy_guard_on_all_entry_points"
+    - "state_written_before_external_call"
+
+# =============================================================================
+# EXPLOIT MODELING
+# =============================================================================
+
+preconditions:
+  - id: "pre-001"
+    description: "Contract has multiple public/external functions that share mutable state"
+    evidence_refs:
+      - "ev-shared-state"
+  - id: "pre-002"
+    description: "At least one function performs external call to untrusted address"
+    evidence_refs:
+      - "ev-external-call"
+  - id: "pre-003"
+    description: "State is not consistently protected by reentrancy guard across all entry points"
+    evidence_refs:
+      - "ev-inconsistent-guards"
+
+exploit_steps:
+  - id: "step-001"
+    description: "Attacker calls function A which reads shared state and makes external call"
+    required_ops:
+      - "READS_STATE"
+      - "CALLS_EXTERNAL"
+    evidence_refs:
+      - "ev-function-a-call"
+  - id: "step-002"
+    description: "During external call, attacker reenters via function B"
+    required_ops:
+      - "CALLS_EXTERNAL"
+    evidence_refs:
+      - "ev-reentry-point"
+  - id: "step-003"
+    description: "Function B modifies shared state (e.g., balance) based on stale values"
+    required_ops:
+      - "WRITES_STATE"
+    evidence_refs:
+      - "ev-stale-state-write"
+  - id: "step-004"
+    description: "Original function A resumes with corrupted/drained state"
+    required_ops:
+      - "WRITES_STATE"
+    evidence_refs:
+      - "ev-final-state-corruption"
+
+impact_invariants:
+  - id: "impact-001"
+    description: "Funds can be drained via repeated withdrawals before state update"
+    evidence_refs:
+      - "ev-fund-drain"
+  - id: "impact-002"
+    description: "Protocol invariants can be violated (e.g., total supply mismatch)"
+    evidence_refs:
+      - "ev-invariant-violation"
+
+# =============================================================================
+# OPERATION SIGNATURES (Required)
+# =============================================================================
+
+op_signatures:
+  required_ops:
+    - "CALLS_EXTERNAL"
+    - "WRITES_STATE"
+    - "READS_STATE"
+
+  ordering_variants:
+    - id: "seq-001"
+      description: "Classic CEI violation: read state, external call, write state"
+      sequence:
+        - "READS_STATE"
+        - "CALLS_EXTERNAL"
+        - "WRITES_STATE"
+    - id: "seq-002"
+      description: "State check after call (vulnerable to cross-function manipulation)"
+      sequence:
+        - "CALLS_EXTERNAL"
+        - "READS_STATE"
+        - "WRITES_STATE"
+
+  forbidden_ops: []
+
+# =============================================================================
+# ANTI-SIGNALS
+# =============================================================================
+
+anti_signals:
+  - id: "guard.reentrancy-lock"
+    guard_type: "reentrancy_guard"
+    severity: "critical"
+    expected_context: "nonReentrant modifier or explicit lock variable on all public entry points sharing state"
+    evidence_refs:
+      - "ev-reentrancy-modifier"
+    bypass_notes:
+      - "Guard only applies to single function, not all entry points"
+      - "Guard uses different lock variable per function"
+      - "Read-only reentrancy (view functions) may bypass"
+      - "Cross-contract reentrancy through trusted intermediary"
+
+  - id: "guard.cei-pattern"
+    guard_type: "custom"
+    severity: "high"
+    expected_context: "All state writes occur before external calls (Check-Effects-Interactions)"
+    evidence_refs:
+      - "ev-cei-ordering"
+    bypass_notes:
+      - "CEI only enforced in one function but not all entry points"
+      - "State written in helper function after call"
+
+  - id: "guard.pull-payment"
+    guard_type: "custom"
+    severity: "high"
+    expected_context: "Uses pull payment pattern where users withdraw rather than receive pushes"
+    evidence_refs:
+      - "ev-pull-pattern"
+    bypass_notes:
+      - "Pull pattern only for some transfers, not all"
+
+# =============================================================================
+# COUNTERFACTUALS
+# =============================================================================
+
+counterfactuals:
+  - id: "cf-001"
+    if_removed: "guard.reentrancy-lock"
+    becomes_true: true
+    notes: "Without reentrancy guard on all entry points, cross-function reentrancy is possible"
+  - id: "cf-002"
+    if_removed: "guard.cei-pattern"
+    becomes_true: true
+    notes: "Without CEI ordering, attacker can manipulate state during external call"
+
+# =============================================================================
+# GUARD TAXONOMY
+# =============================================================================
+
+guard_taxonomy:
+  - id: "g-001"
+    type: "reentrancy_guard"
+    description: "Global reentrancy lock (e.g., OpenZeppelin ReentrancyGuard)"
+    expected_ops:
+      - "CHECKS_REENTRANCY_GUARD"
+    bypass_notes:
+      - "Must be applied to ALL functions sharing state"
+      - "Cross-contract reentrancy may bypass single-contract guard"
+  - id: "g-002"
+    type: "custom"
+    description: "CEI (Check-Effects-Interactions) ordering pattern"
+    expected_ops:
+      - "WRITES_STATE"  # Before CALLS_EXTERNAL
+    bypass_notes:
+      - "Requires consistent application across all related functions"
+
+# =============================================================================
+# ORDERING VARIANTS
+# =============================================================================
+
+ordering_variants:
+  - id: "ov-001"
+    description: "CEI violation - external call before state update"
+    sequence:
+      - "READS_STATE"
+      - "CALLS_EXTERNAL"
+      - "WRITES_STATE"
+
+# =============================================================================
+# RISK ENVELOPE
+# =============================================================================
+
+risk_envelope:
+  asset_type: "mixed"
+  trust_boundary: "user->contract"
+  value_movement: "out"
+  severity_floor: "high"
+
+# =============================================================================
+# COMPOSITION HINTS
+# =============================================================================
+
+composition_hints:
+  co_occurs_with:
+    - "single-function-reentrancy"
+    - "read-only-reentrancy"
+  combine_with:
+    - "cross-function-inheritance-reentrancy"
+    - "cross-function-composition-reentrancy"
+
+# =============================================================================
+# ECONOMIC PLACEHOLDERS (Phase 5.11)
+# =============================================================================
+
+economic_placeholders:
+  value_flows:
+    - "user_deposit -> contract_balance -> user_withdrawal"
+  incentive_hooks:
+    - "Attacker profit from draining contract balance"
+  role_assumptions:
+    - "External call recipient may be malicious"
+  offchain_dependencies: []
+  risk_pre_score: "high"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS
+# =============================================================================
+
+evidence_requirements:
+  node_types:
+    - "Function"
+    - "StateVariable"
+    - "ExternalCall"
+  edge_types:
+    - "CALLS"
+    - "WRITES_STATE"
+    - "READS_STATE"
+    - "SHARES_STATE_WITH"
+  path_constraints:
+    - "Function -[CALLS_EXTERNAL]-> * -[REENTERS]-> Function"
+
+# =============================================================================
+# UNKNOWNS POLICY
+# =============================================================================
+
+unknowns_policy:
+  missing_required: "unknown"
+  missing_optional: "unknown"
+  missing_anti_signal: "unknown"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: 2026-01-29
+updated: 2026-01-29
+author: "claude-opus-4.5"

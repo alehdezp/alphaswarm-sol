@@ -1,0 +1,15 @@
+id: logic-004
+vulndoc: logic/general
+name: Double Counting Error
+description: Accounting updates double count balances or supply.
+scope: Function
+lens:
+- LogicState
+severity: high
+cwe:
+- 682
+match:
+  all:
+  - property: double_counting_risk
+    op: eq
+    value: true

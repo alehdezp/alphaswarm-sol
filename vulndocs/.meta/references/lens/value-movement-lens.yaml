@@ -1,0 +1,1073 @@
+- id: value-movement-classic-reentrancy
+  name: Classic Reentrancy - State After External Call
+  description: External call before state update without reentrancy guard.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: has_untrusted_external_call
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-eth-transfer-reentrancy
+  name: ETH Transfer Reentrancy
+  description: ETH transfer followed by state updates without a guard.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: transfers_eth
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-balance-update-after-transfer
+  name: Balance Update After Transfer
+  description: Balance or share state updated after external interaction.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+      - property: state_write_targets
+        op: contains_any
+        value: [balance, shares, stake, collateral, debt, liquidity, reserve, pool, vault, position, claimable, pending, reward, asset]
+
+- id: value-movement-loop-reentrancy
+  name: Loop Reentrancy Surface
+  description: External calls inside loops without protection.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: external_calls_in_loop
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-cross-function-reentrancy
+  name: Cross-Function Reentrancy
+  description: External call before state write with shared-state readers.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: cross_function_reentrancy_surface
+        op: eq
+        value: true
+
+- id: value-movement-cross-function-reentrancy-read
+  name: Cross-Function Reentrancy Reader
+  description: Public/external readers of shared state during reentrancy windows.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: cross_function_reentrancy_read
+        op: eq
+        value: true
+
+- id: value-movement-cross-contract-reentrancy
+  name: Cross-Contract Reentrancy Surface
+  description: User-controlled external call before state write.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+      - property: call_target_user_controlled
+        op: eq
+        value: true
+
+- id: value-movement-inheritance-reentrancy
+  name: Inheritance Reentrancy Surface
+  description: External call before state write in inherited contracts.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: contract_has_inheritance
+        op: eq
+        value: true
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-composition-reentrancy
+  name: Composition Reentrancy Surface
+  description: External call before state write in composed contracts.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: contract_has_composition
+        op: eq
+        value: true
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-protocol-reentrancy
+  name: Protocol Reentrancy Surface
+  description: External calls touching dependency state before commit.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: reads_dependency_state
+        op: eq
+        value: true
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-callback-chain-reentrancy
+  name: Callback Chain Reentrancy Surface
+  description: Cross-contract external calls before state commit.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: callback_chain_surface
+        op: eq
+        value: true
+      - property: calls_external_contract
+        op: eq
+        value: true
+
+- id: value-movement-callback-chain-path
+  name: Callback Chain Path Surface
+  description: Multi-hop contract call chain with post-call state writes.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+  paths:
+    - steps:
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+        - edge_type: CONTAINS_FUNCTION
+          direction: out
+          target_type: Function
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+
+- id: value-movement-callback-entrypoint-reentrancy
+  name: Callback Entrypoint Reentrancy
+  description: Callback entrypoints making cross-contract calls without guards.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: callback_entrypoint_surface
+        op: eq
+        value: true
+
+- id: value-movement-callback-chain-strict
+  name: Callback Chain Reentrancy (Strict)
+  description: Multi-hop call chain plus callback-chain surface signals.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: callback_chain_surface
+        op: eq
+        value: true
+      - property: calls_external_contract
+        op: eq
+        value: true
+  paths:
+    - steps:
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+        - edge_type: CONTAINS_FUNCTION
+          direction: out
+          target_type: Function
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+
+- id: value-movement-read-only-reentrancy
+  name: Read-Only Reentrancy Surface
+  description: View function reads state modified after external call.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: read_only_reentrancy_surface
+        op: eq
+        value: true
+
+- id: value-movement-callback-reentrancy
+  name: Callback Reentrancy Surface
+  description: Callback-style functions that write state without a reentrancy guard.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: is_callback
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-token-callback-reentrancy
+  name: Token Callback Reentrancy
+  description: Token callback surface with state writes after external call.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: token_callback_surface
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: value-movement-unchecked-low-level-call
+  name: Unchecked Low-Level Call
+  description: Low-level call without checking success.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: high
+  match:
+    all:
+      - property: uses_call
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+
+- id: value-movement-unchecked-erc20-transfer
+  name: Unchecked ERC20 Transfer
+  description: ERC20 transfer/transferFrom without return guard.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: token_return_guarded
+        op: eq
+        value: false
+    any:
+      - property: uses_erc20_transfer
+        op: eq
+        value: true
+      - property: uses_erc20_transfer_from
+        op: eq
+        value: true
+
+- id: value-movement-gas-stipend
+  name: Gas Stipend Call Risk
+  description: Fixed gas stipend usage in value transfers.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: has_hardcoded_gas
+        op: eq
+        value: true
+
+- id: value-movement-returndata-decode
+  name: Unsafe Return Data Decode
+  description: Decoding return data without length checks.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: decodes_call_return
+        op: eq
+        value: true
+      - property: checks_returndata_length
+        op: eq
+        value: false
+
+- id: value-movement-arbitrary-call-target
+  name: Arbitrary Call Target
+  description: User-controlled low-level call target.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: uses_call
+        op: eq
+        value: true
+      - property: call_target_user_controlled
+        op: eq
+        value: true
+    none:
+      - property: call_target_validated
+        op: eq
+        value: true
+
+- id: value-movement-arbitrary-calldata
+  name: Arbitrary Calldata Forwarding
+  description: User-controlled calldata forwarded in low-level calls.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: uses_call
+        op: eq
+        value: true
+      - property: call_data_user_controlled
+        op: eq
+        value: true
+
+- id: value-movement-value-forwarding
+  name: User-Controlled Value Forwarding
+  description: Value forwarded from user-controlled source.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: has_call_with_value
+        op: eq
+        value: true
+      - property: call_value_user_controlled
+        op: eq
+        value: true
+
+- id: value-movement-arbitrary-delegatecall
+  name: Arbitrary Delegatecall
+  description: Delegatecall target controlled by user input.
+  scope: Function
+  lens:
+    - ValueMovement
+    - ExternalInfluence
+  severity: critical
+  match:
+    all:
+      - property: uses_delegatecall
+        op: eq
+        value: true
+      - property: delegatecall_target_user_controlled
+        op: eq
+        value: true
+    none:
+      - property: delegatecall_in_proxy_upgrade_context
+        op: eq
+        value: true
+    none:
+      - property: delegatecall_in_proxy_upgrade_context
+        op: eq
+        value: true
+
+- id: value-movement-delegatecall-storage-collision
+  name: Delegatecall Storage Collision Risk
+  description: Delegatecall used outside proxy upgrade context.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: uses_delegatecall
+        op: eq
+        value: true
+      - property: delegatecall_in_non_proxy
+        op: eq
+        value: true
+
+- id: value-movement-delegatecall-context
+  name: Delegatecall Context Confusion
+  description: Delegatecall combined with msg.sender/tx.origin usage.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: uses_delegatecall
+        op: eq
+        value: true
+      - property: delegatecall_context_sensitive
+        op: eq
+        value: true
+
+- id: value-movement-approval-race
+  name: Token Approval Race
+  description: ERC20 approve without allowance adjustment helpers.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: uses_erc20_approve
+        op: eq
+        value: true
+      - property: uses_allowance_adjust
+        op: eq
+        value: false
+
+- id: value-movement-fee-on-transfer
+  name: Fee-on-Transfer Accounting Gap
+  description: Transfers without checking received amounts.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: checks_received_amount
+        op: eq
+        value: false
+    any:
+      - property: uses_erc20_transfer
+        op: eq
+        value: true
+      - property: uses_erc20_transfer_from
+        op: eq
+        value: true
+
+- id: value-movement-balance-vs-accounting
+  name: Balance vs Internal Accounting
+  description: Uses token balance directly without internal tracking.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: uses_balance_of
+        op: eq
+        value: true
+      - property: balance_of_used_for_state_mutation
+        op: eq
+        value: true
+      - property: contract_has_balance_tracking
+        op: eq
+        value: false
+
+- id: value-movement-share-inflation
+  name: First Depositor Share Inflation
+  description: Deposit-like functions reading shares without bounds.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: is_deposit_like
+        op: eq
+        value: true
+      - property: reads_share_state
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+
+- id: value-movement-supply-accounting
+  name: Supply Accounting Gap
+  description: Mint/burn without updating supply state.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: writes_supply_state
+        op: eq
+        value: false
+    any:
+      - property: is_mint_like
+        op: eq
+        value: true
+      - property: is_burn_like
+        op: eq
+        value: true
+
+- id: value-movement-withdrawal-without-balance-check
+  name: Withdrawal Without Balance Check
+  description: Withdraw-like functions without balance checks.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: is_withdraw_like
+        op: eq
+        value: true
+      - property: has_balance_check
+        op: eq
+        value: false
+
+- id: value-movement-deposit-without-checks
+  name: Deposit Without Safety Checks
+  description: Deposit-like functions without bounds or received-amount checks.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: is_deposit_like
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+      - property: checks_received_amount
+        op: eq
+        value: false
+
+- id: value-movement-flash-loan-callback
+  name: Flash Loan Callback Safety
+  description: Flash loan callbacks without validation.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: flash_loan_callback
+        op: eq
+        value: true
+      - property: flash_loan_validation
+        op: eq
+        value: false
+
+- id: value-movement-flash-loan-sensitive-operation
+  name: Flash Loan Sensitive Operation
+  description: Price-sensitive operations without flash loan guards.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: flash_loan_sensitive_operation
+        op: eq
+        value: true
+      - property: flash_loan_guard
+        op: eq
+        value: false
+
+- id: vm-001
+  name: Classic Reentrancy - State Before External
+  description: External call before state update without a reentrancy guard.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: critical
+  match:
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: has_untrusted_external_call
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-002
+  name: ETH Transfer Reentrancy
+  description: ETH transfer followed by state updates without guard.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: critical
+  match:
+    all:
+      - property: transfers_eth
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-003
+  name: Cross-Function Reentrancy
+  description: Shared state reentrancy across functions.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: cross_function_reentrancy_surface
+        op: eq
+        value: true
+
+- id: vm-013
+  name: Cross-Function Reentrancy Reader
+  description: Public/external readers of shared state during reentrancy windows.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: cross_function_reentrancy_read
+        op: eq
+        value: true
+
+- id: vm-004
+  name: Read-Only Reentrancy
+  description: View functions reading state modified after external calls.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: read_only_reentrancy_surface
+        op: eq
+        value: true
+
+- id: vm-014
+  name: Callback Reentrancy Surface
+  description: Callback-style functions that write state without a reentrancy guard.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: is_callback
+        op: eq
+        value: true
+      - property: writes_state
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-005
+  name: ERC Token Callback Reentrancy
+  description: Token callback surface with post-call state writes.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: token_callback_surface
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-015
+  name: Inheritance Reentrancy Surface
+  description: External call before state write in inherited contracts.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: contract_has_inheritance
+        op: eq
+        value: true
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-016
+  name: Composition Reentrancy Surface
+  description: External call before state write in composed contracts.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: contract_has_composition
+        op: eq
+        value: true
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-017
+  name: Protocol Reentrancy Surface
+  description: External calls touching dependency state before commit.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: reads_dependency_state
+        op: eq
+        value: true
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+    none:
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+- id: vm-018
+  name: Callback Chain Reentrancy Surface
+  description: Cross-contract external calls before state commit.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: callback_chain_surface
+        op: eq
+        value: true
+
+- id: vm-020
+  name: Callback Chain Path Surface
+  description: Multi-hop contract call chain with post-call state writes.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+  paths:
+    - steps:
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+        - edge_type: CONTAINS_FUNCTION
+          direction: out
+          target_type: Function
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+
+- id: vm-019
+  name: Callback Entrypoint Reentrancy
+  description: Callback entrypoints making cross-contract calls without guards.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: callback_entrypoint_surface
+        op: eq
+        value: true
+
+- id: vm-021
+  name: Callback Chain Reentrancy (Strict)
+  description: Multi-hop call chain plus callback-chain surface signals.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: callback_chain_surface
+        op: eq
+        value: true
+  paths:
+    - steps:
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+        - edge_type: CONTAINS_FUNCTION
+          direction: out
+          target_type: Function
+        - edge_type: CALLS_CONTRACT
+          direction: out
+          target_type: Contract
+
+- id: vm-006
+  name: Unchecked Low-Level Call
+  description: Low-level call without success checks.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: uses_call
+        op: eq
+        value: true
+      - property: checks_low_level_call_success
+        op: eq
+        value: false
+
+- id: vm-007
+  name: Unchecked ERC20 Transfer
+  description: ERC20 transfer/transferFrom without return guard.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: token_return_guarded
+        op: eq
+        value: false
+    any:
+      - property: uses_erc20_transfer
+        op: eq
+        value: true
+      - property: uses_erc20_transfer_from
+        op: eq
+        value: true
+
+- id: vm-008
+  name: Arbitrary Delegatecall
+  description: Delegatecall target controlled by user input.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: critical
+  match:
+    all:
+      - property: uses_delegatecall
+        op: eq
+        value: true
+      - property: delegatecall_target_user_controlled
+        op: eq
+        value: true
+
+- id: vm-009
+  name: Approval Race Condition
+  description: ERC20 approve without allowance adjustments.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: uses_erc20_approve
+        op: eq
+        value: true
+      - property: uses_allowance_adjust
+        op: eq
+        value: false
+
+- id: vm-010
+  name: First Depositor Share Inflation
+  description: Deposit-like functions reading shares without bounds.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: high
+  match:
+    all:
+      - property: is_deposit_like
+        op: eq
+        value: true
+      - property: reads_share_state
+        op: eq
+        value: true
+      - property: has_require_bounds
+        op: eq
+        value: false
+
+- id: vm-011
+  name: Flash Loan Price Manipulation
+  description: Price-sensitive operations without flash loan guards.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: critical
+  match:
+    all:
+      - property: flash_loan_sensitive_operation
+        op: eq
+        value: true
+      - property: flash_loan_guard
+        op: eq
+        value: false
+
+- id: vm-012
+  name: Balance vs Internal Accounting
+  description: Uses token balance directly without internal tracking.
+  scope: Function
+  lens:
+    - ValueMovement
+  severity: medium
+  match:
+    all:
+      - property: uses_balance_of
+        op: eq
+        value: true
+      - property: balance_of_used_for_state_mutation
+        op: eq
+        value: true
+      - property: contract_has_balance_tracking
+        op: eq
+        value: false

@@ -1,0 +1,20 @@
+id: dos-array-return-unbounded
+vulndoc: dos/unbounded
+name: Unbounded Array Return
+description: |
+  View/pure function returns entire storage array, which can cause out-of-gas as array grows.
+  Large memory allocation can exceed block gas limit. Maps to CWE-770 (Allocation of Resources
+  Without Limits or Throttling).
+scope: Function
+lens:
+  - DoS
+severity: medium
+match:
+  all:
+    - property: state_mutability
+      op: in
+      value: [view, pure]
+    - property: visibility
+      op: in
+      value: [public, external]
+  # Note: Detecting array returns requires analyzing return types, which may need additional properties

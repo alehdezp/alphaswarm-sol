@@ -1,0 +1,114 @@
+{
+  "file": "3.1e-CONTEXT.md",
+  "phase_dir": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.planning/phases/3.1e-evaluation-zero-empirical-sprint",
+  "checksum": "b36783410ce62183a79a22666dfde9abc48008498cd8e396763b4df9302f4bfc",
+  "total_lines": 588,
+  "sections": [
+    {
+      "type": "xml_tag",
+      "name": "domain",
+      "start_line": 24,
+      "end_line": 56,
+      "line_count": 33
+    },
+    {
+      "type": "xml_tag",
+      "name": "assumptions",
+      "start_line": 58,
+      "end_line": 77,
+      "line_count": 20
+    },
+    {
+      "type": "xml_tag",
+      "name": "pre_research",
+      "start_line": 79,
+      "end_line": 165,
+      "line_count": 87
+    },
+    {
+      "type": "xml_tag",
+      "name": "research_needs",
+      "start_line": 167,
+      "end_line": 175,
+      "line_count": 9
+    },
+    {
+      "type": "xml_tag",
+      "name": "research_spikes",
+      "start_line": 177,
+      "end_line": 185,
+      "line_count": 9
+    },
+    {
+      "type": "header",
+      "name": "Session 0: Measurement Prerequisites",
+      "start_line": 188,
+      "end_line": 217,
+      "line_count": 30
+    },
+    {
+      "type": "xml_tag",
+      "name": "plans",
+      "start_line": 218,
+      "end_line": 363,
+      "line_count": 146,
+      "sub_sections": [
+        {
+          "name": "PLAN-01",
+          "start_line": 221,
+          "end_line": 238,
+          "line_count": 18
+        },
+        {
+          "name": "PLAN-02",
+          "start_line": 239,
+          "end_line": 339,
+          "line_count": 101
+        },
+        {
+          "name": "PLAN-05",
+          "start_line": 340,
+          "end_line": 363,
+          "line_count": 24
+        }
+      ]
+    },
+    {
+      "type": "xml_tag",
+      "name": "gaps_summary",
+      "start_line": 365,
+      "end_line": 375,
+      "line_count": 11
+    },
+    {
+      "type": "xml_tag",
+      "name": "novelty_map",
+      "start_line": 377,
+      "end_line": 392,
+      "line_count": 16
+    },
+    {
+      "type": "header",
+      "name": "Exit Artifact Manifest",
+      "start_line": 395,
+      "end_line": 453,
+      "line_count": 59
+    },
+    {
+      "type": "xml_tag",
+      "name": "decisions",
+      "start_line": 454,
+      "end_line": 547,
+      "line_count": 94
+    },
+    {
+      "type": "xml_tag",
+      "name": "deferred",
+      "start_line": 549,
+      "end_line": 580,
+      "line_count": 32
+    }
+  ],
+  "status": "improved",
+  "stale": false
+}

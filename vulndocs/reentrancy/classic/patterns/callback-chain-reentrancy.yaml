@@ -1,0 +1,16 @@
+id: callback-chain-reentrancy
+vulndoc: reentrancy/classic
+name: Callback Chain Reentrancy
+description: Cross-contract external calls before state commit.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: callback_chain_surface
+    op: eq
+    value: true
+  - property: calls_external_contract
+    op: eq
+    value: true

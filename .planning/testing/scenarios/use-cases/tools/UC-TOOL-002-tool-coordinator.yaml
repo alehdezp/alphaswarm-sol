@@ -1,0 +1,66 @@
+id: UC-TOOL-002
+name: "Tool coordinator selects optimal tool combination"
+workflow: tool-run
+category: tools
+tier: mechanical
+
+input:
+  contract: "examples/damm-vuln-defi/src/selfie/"
+  command: "/vrs-tool-coordinator examples/damm-vuln-defi/src/selfie/"
+  context: >
+    The tool coordinator analyzes a multi-contract Foundry project and
+    recommends the optimal combination of analysis tools. For a DeFi project
+    with governance and flash loans, it should recommend Slither for static
+    analysis and potentially Aderyn for Solidity-specific patterns, while
+    noting that Mythril symbolic execution may be too slow for the full
+    project but valuable for targeted functions.
+
+expected_behavior:
+  summary: |
+    The tool coordinator should analyze the project structure, identify the
+    contract types (DeFi, governance, flash loans), and recommend a tool
+    combination with rationale. The recommendation should consider tool
+    strengths, project characteristics, and time/resource constraints.
+  must_happen:
+    - "Analyze project structure and contract types"
+    - "Identify relevant tool capabilities for the project"
+    - "Recommend at least one static analysis tool"
+    - "Provide rationale for each tool recommendation"
+    - "Consider time/resource trade-offs in recommendations"
+  must_not_happen:
+    - "Recommend all tools without rationale"
+    - "Recommend tools that cannot handle the project type"
+    - "Provide recommendations without analyzing the project"
+    - "Crash on multi-contract project input"
+  expected_tools:
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 50
+  key_dimensions:
+    - name: project_analysis
+      description: "Did the coordinator analyze the project structure and contract types?"
+    - name: recommendation_quality
+      description: "Are tool recommendations relevant to the project characteristics?"
+    - name: rationale_quality
+      description: "Does each recommendation include a clear rationale?"
+    - name: trade_off_awareness
+      description: "Does the coordinator consider time/resource trade-offs?"
+  regression_signals:
+    - "No project analysis performed -> REGRESSION: coordinator skips analysis"
+    - "All tools recommended without differentiation -> REGRESSION: no selection logic"
+    - "Recommendations without rationale -> REGRESSION: recommendation quality degraded"
+
+links:
+  workflow_doc: "docs/reference/tools-overview.md"
+  related_scenarios:
+    - "UC-TOOL-001"
+    - "UC-TOOL-003"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Mechanical tier. Tests the coordinator's selection logic, not individual
+  tool execution. Lower priority because users can manually select tools.

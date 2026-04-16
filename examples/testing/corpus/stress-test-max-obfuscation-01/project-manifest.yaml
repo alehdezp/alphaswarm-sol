@@ -1,0 +1,27 @@
+name: "stress-test-max-obfuscation-01"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "vault"
+tier: 3
+adversarial_categories: ["A", "B", "C"]
+pattern_count: 10
+safe_pattern_count: 1
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/AdaptivePoolManager.sol"
+    - "contracts/periphery/PolicyOracle.sol"
+    - "contracts/libraries/ComputeEngine.sol"
+  safe:
+    - "contracts/core/AdaptivePoolManager_safe.sol"
+    - "contracts/periphery/PolicyOracle_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

@@ -1,0 +1,19 @@
+id: live-024
+vulndoc: dos/general
+name: Underflow or Overflow Reverts
+description: Arithmetic without unchecked guards (pre-0.8).
+scope: Function
+lens:
+- Liveness
+severity: low
+match:
+  all:
+  - property: uses_arithmetic
+    op: eq
+    value: true
+  - property: uses_unchecked_block
+    op: eq
+    value: false
+  - property: pre_08_arithmetic
+    op: eq
+    value: true

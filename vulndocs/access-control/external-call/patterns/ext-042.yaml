@@ -1,0 +1,16 @@
+id: ext-042
+vulndoc: access-control/external-call
+name: Collateral Pricing From Spot Reserves
+description: Collateral valuation uses pool reserves without TWAP or history.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: pool_reserves_used_for_collateral
+    op: eq
+    value: true
+  - property: has_twap_validation
+    op: eq
+    value: false

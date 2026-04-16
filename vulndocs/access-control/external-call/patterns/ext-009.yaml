@@ -1,0 +1,16 @@
+id: ext-009
+vulndoc: access-control/external-call
+name: Deadline Validation Missing
+description: Deadline parameter present without a timestamp validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_deadline_parameter
+    op: eq
+    value: true
+  - property: has_deadline_check
+    op: eq
+    value: false

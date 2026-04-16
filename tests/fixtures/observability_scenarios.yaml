@@ -1,0 +1,175 @@
+# Observability Integration Test Scenarios
+# These scenarios provide test data for integration tests validating
+# observability, governance, and reliability systems.
+
+# Scenario: Full pool execution with tracing
+full_pool_scenario:
+  pool_id: "test-pool-001"
+  scope:
+    files:
+      - "tests/contracts/ReentrancyClassic.sol"
+    patterns:
+      - "reentrancy-classic"
+  beads:
+    - bead_id: "VKG-001"
+      pattern: "reentrancy-classic"
+      function_name: "withdraw"
+      verdict: "vulnerable"
+      confidence: "LIKELY"
+      evidence_refs:
+        - "ev-001"
+        - "ev-002"
+  expected_spans:
+    - span_name: "pool.execute"
+      attributes:
+        pool_id: "test-pool-001"
+    - span_name: "agent.investigate"
+      attributes:
+        agent_type: "vrs-attacker"
+        bead_id: "VKG-001"
+    - span_name: "tool.slither"
+      attributes:
+        tool_name: "slither"
+
+# Scenario: Trace context propagation across handoffs
+handoff_scenario:
+  pool_id: "test-pool-002"
+  agents:
+    - agent_type: "vrs-attacker"
+      bead_id: "VKG-002"
+      outputs:
+        - trace_id: "trace_abc123"
+    - agent_type: "vrs-defender"
+      bead_id: "VKG-002"
+      inputs:
+        - trace_id: "trace_abc123"
+  expected_context_propagation: true
+
+# Scenario: Audit log captures verdict with trace ID
+audit_log_scenario:
+  pool_id: "test-pool-003"
+  trace_id: "trace_def456"
+  verdict:
+    bead_id: "VKG-003"
+    verdict: "vulnerable"
+    confidence: "CERTAIN"
+    evidence_refs:
+      - "ev-003"
+    agent_type: "vrs-attacker"
+  expected_audit_entry:
+    category: "verdict_assignment"
+    trace_id: "trace_def456"
+    pool_id: "test-pool-003"
+
+# Scenario: Evidence lineage chain complete
+lineage_scenario:
+  evidence_id: "ev-004"
+  lineage_chain:
+    - step_type: "origin"
+      source_type: "bskg"
+      source_id: "node_func_withdraw_123"
+      agent: null
+    - step_type: "extraction"
+      source_type: "bskg"
+      source_id: "node_func_withdraw_123"
+      agent: "vrs-attacker"
+    - step_type: "transformation"
+      source_type: "derived"
+      source_id: "ev-004"
+      agent: "vrs-verifier"
+      metadata:
+        transform_type: "confidence_upgrade"
+        from: "POSSIBLE"
+        to: "LIKELY"
+    - step_type: "verification"
+      source_type: "derived"
+      source_id: "ev-004"
+      agent: "vrs-verifier"
+
+# Scenario: Cost budget enforcement
+cost_budget_scenario:
+  pool_id: "test-pool-004"
+  policy:
+    max_cost_usd: 1.0
+    action_on_violation: "block"
+  agent_calls:
+    - agent_type: "vrs-attacker"
+      cost_usd: 0.6
+      expected_allowed: true
+    - agent_type: "vrs-defender"
+      cost_usd: 0.6
+      expected_allowed: false  # Would exceed budget
+
+# Scenario: Soft limit alerts but continues
+soft_limit_scenario:
+  pool_id: "test-pool-005"
+  policy:
+    max_cost_usd: 1.0
+    soft_limit_pct: 0.8
+    action_on_violation: "alert"
+  agent_calls:
+    - agent_type: "vrs-attacker"
+      cost_usd: 0.85
+      expected_allowed: true
+      expected_alert: true
+
+# Scenario: Tool access forbidden for agent
+tool_access_scenario:
+  pool_id: "test-pool-006"
+  policy:
+    agent_type: "vrs-attacker"
+    forbidden_tools:
+      - "mythril"
+      - "echidna"
+  tool_calls:
+    - tool_name: "slither"
+      expected_allowed: true
+    - tool_name: "mythril"
+      expected_allowed: false
+
+# Scenario: Evidence integrity rejects unsubstantiated confidence
+evidence_integrity_scenario:
+  pool_id: "test-pool-007"
+  policy:
+    min_evidence_count:
+      CERTAIN: 3
+      LIKELY: 2
+      POSSIBLE: 1
+  verdicts:
+    - verdict: "vulnerable"
+      confidence: "CERTAIN"
+      evidence_count: 1
+      expected_valid: false
+    - verdict: "vulnerable"
+      confidence: "LIKELY"
+      evidence_count: 2
+      expected_valid: true
+
+# Scenario: SLO detects real latency violation
+slo_latency_scenario:
+  slo_id: "pool_latency_p99"
+  pool_id: "test-pool-008"
+  target_ms: 5000
+  threshold_ms: 6000
+  actual_latency_ms: 7500
+  expected_violation: true
+
+# Scenario: SLO success rate calculation
+slo_success_rate_scenario:
+  slo_id: "pool_success_rate"
+  pool_id: "test-pool-009"
+  target_pct: 0.95
+  threshold_pct: 0.90
+  completed_beads: 18
+  failed_beads: 2
+  actual_success_rate: 0.90  # 18/20
+  expected_violation: false  # Exactly at threshold
+
+# Scenario: Chaos testing with fault injection
+chaos_scenario:
+  experiment_id: "chaos-001"
+  fault_type: "api_error"
+  fault_rate: 0.2  # 20% of calls fail
+  total_calls: 20
+  expected_failures: 4
+  expected_resilience_pct: 0.80  # 80% success despite faults

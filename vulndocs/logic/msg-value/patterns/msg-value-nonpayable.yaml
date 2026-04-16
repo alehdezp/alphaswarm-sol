@@ -1,0 +1,16 @@
+id: msg-value-nonpayable
+vulndoc: logic/msg-value
+name: msg.value Usage in Non-Payable Function
+description: Functions that use msg.value but are not payable.
+scope: Function
+lens:
+  - ValueMovement
+severity: medium
+match:
+  all:
+    - property: uses_msg_value
+      op: eq
+      value: true
+    - property: payable
+      op: eq
+      value: false

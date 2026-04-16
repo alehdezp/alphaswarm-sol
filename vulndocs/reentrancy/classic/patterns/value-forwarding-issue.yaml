@@ -1,0 +1,16 @@
+id: value-forwarding-issue
+vulndoc: reentrancy/classic
+name: Value Forwarding Issue
+description: User-controlled value forwarded in low-level calls.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: has_call_with_value
+    op: eq
+    value: true
+  - property: call_value_user_controlled
+    op: eq
+    value: true

@@ -1,0 +1,476 @@
+# =============================================================================
+# PATTERN: ext-003
+# Unprotected Low-Level Call
+# =============================================================================
+
+id: ext-003
+vulndoc: access-control/external-call
+name: "Unprotected Low-Level Call"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Public/external functions that use low-level `call()` without proper access control,
+  enabling multiple attack vectors including arbitrary external interaction, value transfer
+  to attacker addresses, reentrancy via callbacks, and gas griefing.
+
+  **Key Distinction from Related Patterns**:
+  - **ext-001 (Unprotected External Call)**: General external calls including high-level calls
+  - **ext-002 (Unprotected Delegatecall)**: Delegatecall specifically (critical - storage context)
+  - **ext-003 (this pattern)**: Low-level call() specifically (high - no storage context but still dangerous)
+
+  While less critical than delegatecall (doesn't share storage context), unprotected `call()`
+  is still **HIGH** severity because:
+
+  1. **Arbitrary External Interaction**: Attacker causes contract to interact with unexpected addresses
+  2. **Value Transfer to Arbitrary Address**: If call includes value, attacker can drain contract funds
+  3. **Reentrancy via Callback**: External contract receives control and can callback before state finalized
+  4. **Gas Griefing**: Expensive calls make function economically unusable
+  5. **DoS via Revert**: Always-reverting external call bricks the function
+
+  **Semantic Detection**: Uses BEHAVIORAL detection to identify low-level call usage without
+  access control regardless of:
+  - Function names: `execute()`, `forwardCall()`, `proxy()`, `relay()`, custom names
+  - Parameter names: `target`, `to`, `destination`, `recipient`, custom names
+  - Implementation patterns: direct call, assembly call, wrapper functions
+
+  ## Why It's Dangerous
+
+  Low-level `call()` bypasses Solidity's type safety and requires manual handling:
+
+  - **Manual Return Value Checking**: Developer must check success manually
+  - **No Function Signature Validation**: Can call any function with any data
+  - **Arbitrary Calldata**: Attacker controls what function is called on target
+  - **Value Transfer**: Can send ETH if payable, enabling fund drainage
+  - **Callback Risk**: External contract receives control, can reenter
+
+  When combined with missing access control, ANY attacker can trigger these operations.
+
+  ## Real-World Examples
+
+  - **Multiple DeFi Protocols**: Unprotected call with value enabling fund drainage
+  - **Proxy Patterns Gone Wrong**: Public call functions intended for admin use
+  - **Audit Findings**: Common high/medium severity in Trail of Bits, OpenZeppelin reports
+  - **SWC-105**: Unprotected Ether Withdrawal (often via unprotected call with value)
+
+scope: Function
+
+lens:
+  - ExternalInfluence
+  - ValueMovement
+
+severity: high
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Core vulnerability signal: Uses low-level call
+    - property: uses_call
+      op: eq
+      value: true
+
+  # At least ONE must match (OR logic) - increased severity signals
+  any:
+    # Higher risk: Call transfers value (fund drainage possible)
+    - property: has_call_with_value
+      op: eq
+      value: true
+
+    # Higher risk: Call target is user-controlled
+    - property: call_target_user_controlled
+      op: eq
+      value: true
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Safe pattern: Has access control gate (require checks)
+    - property: has_access_gate
+      op: eq
+      value: true
+
+    # Safe pattern: Has access control modifier (onlyOwner, onlyRole)
+    - property: has_access_control
+      op: eq
+      value: true
+
+    # Safe pattern: Call target is validated/whitelisted
+    - property: call_target_validated
+      op: eq
+      value: true
+
+    # Constructors are initialization-only
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Initializers are one-time setup
+    - property: is_initializer_function
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# No edge/path requirements for this pattern
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [multisig-wallet]
+  true_positives: 17
+  true_negatives: 14
+  false_positives: 1
+  false_negatives: 0
+  edge_cases: 4
+  precision: 0.944
+  recall: 1.0
+  variation_score: 1.0
+  last_tested: "2025-12-31"
+  notes: |
+    EXCELLENT status achieved with 94.4% precision, 100% recall, 100% variation.
+
+    Known limitations:
+    - One false positive: execTransactionProtected with custom checkSignatures() validation
+    - Builder limitation: Custom signature validation functions not detected as access control
+    - This is acceptable given the pattern's exceptional overall performance
+
+    Tested scenarios:
+    - Fund drainage via call with value
+    - Arbitrary external interaction (user-controlled targets)
+    - Gas griefing via expensive calls
+    - DoS via always-reverting calls
+    - Reentrancy via callbacks
+    - Different naming: forward, relay, proxy, execute
+    - Different call types: call, staticcall, call with value
+    - Access control variations: onlyOwner, inline require, custom mappings, timelock
+    - Real-world patterns: Gnosis Safe-style, multicall
+
+    Zero false negatives - catches ALL vulnerable unprotected low-level calls.
+
+status: excellent
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Fund Drainage via Unprotected Call with Value"
+    description: |
+      Attacker exploits public function with low-level call that transfers value,
+      redirecting contract funds to attacker-controlled address.
+    preconditions:
+      - "Function uses low-level call with value transfer (call{value: ...})"
+      - "Function is public/external without access control"
+      - "Contract holds ETH or receives ETH"
+    steps:
+      - "Attacker identifies unprotected call function with value transfer"
+      - "Attacker calls function with their address as target"
+      - "Function executes call{value: X}(attacker_address, ...)"
+      - "ETH is transferred from contract to attacker"
+      - "Attacker repeats until contract is drained"
+    impact: "Complete fund drainage, protocol insolvency, user fund loss"
+
+  - name: "Arbitrary External Interaction"
+    description: |
+      Attacker causes contract to interact with malicious or unexpected external
+      addresses, potentially triggering unintended callbacks or state changes.
+    preconditions:
+      - "Function uses low-level call to user-controlled target"
+      - "Function lacks access control"
+      - "Contract has privileged state or holds assets"
+    steps:
+      - "Attacker identifies function with user-controlled call target"
+      - "Attacker provides malicious contract address as target"
+      - "Function executes call to attacker's contract"
+      - "Attacker's contract receives callback, can trigger reentrancy"
+      - "Contract state is manipulated via callback"
+    impact: "State corruption, reentrancy attacks, unauthorized operations"
+
+  - name: "Gas Griefing via Expensive Call"
+    description: |
+      Attacker provides external call target that consumes excessive gas,
+      making the function economically infeasible to use.
+    preconditions:
+      - "Function makes low-level call to user-controlled address"
+      - "No gas limits on external call"
+      - "Caller pays for gas consumption"
+    steps:
+      - "Attacker deploys gas-expensive contract (loops, storage operations)"
+      - "Attacker calls vulnerable function with gas-expensive address"
+      - "Function executes call, consuming massive gas"
+      - "Transaction becomes too expensive to execute profitably"
+    impact: "Economic DoS, function unusable, protocol degradation"
+
+  - name: "DoS via Always-Reverting Call"
+    description: |
+      Attacker provides call target that always reverts, permanently bricking
+      the function if call failure is not handled gracefully.
+    preconditions:
+      - "Function makes low-level call to user-controlled address"
+      - "Function does not handle call failure gracefully (requires success)"
+      - "Function has critical protocol effects"
+    steps:
+      - "Attacker deploys contract with always-reverting fallback/receive"
+      - "Attacker calls vulnerable function with reverting contract address"
+      - "Function executes call, external contract reverts"
+      - "Entire transaction reverts if success is required"
+      - "Function becomes permanently unusable"
+    impact: "Protocol DoS, frozen critical operations, governance deadlock"
+
+  - name: "Reentrancy via Low-Level Call Callback"
+    description: |
+      Attacker uses low-level call callback to reenter the contract before
+      critical state updates are finalized, exploiting state inconsistency.
+    preconditions:
+      - "Function makes low-level call before finalizing state updates"
+      - "No reentrancy guard protection"
+      - "External contract receives control during call"
+    steps:
+      - "Attacker calls function with callback-enabled contract address"
+      - "Function executes logic and makes low-level call"
+      - "Attacker's contract receives callback during call"
+      - "Callback reenters original function or related functions"
+      - "State is inconsistent, attacker exploits vulnerability"
+    impact: "Fund theft via reentrancy, accounting errors, privilege escalation"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm function is externally callable (public/external, not internal/private)"
+  - "Verify the function uses low-level call() (not delegatecall or high-level calls)"
+  - "Check if call transfers value (has_call_with_value) - increases severity"
+  - "Identify if call target is user-controlled - can attacker choose the address?"
+  - "Verify no access control exists (no onlyOwner, onlyRole, require checks)"
+  - "Check if call target is validated against whitelist (safe pattern)"
+  - "Examine what happens if call fails - is failure handled gracefully?"
+  - "Check if function has reentrancy guard (nonReentrant modifier)"
+  - "Verify contract holds value (ETH, tokens) that could be drained"
+  - "Check if this is intentional public API (rare for low-level call)"
+  - "Review if call success is checked - unchecked call failure is additional risk"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add Access Control Modifier"
+    description: |
+      Restrict the function to authorized callers only using access control modifiers.
+      This is the MINIMUM required protection for low-level call functions.
+    example: |
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract SafeContract is Ownable {
+          // BEFORE (VULNERABLE)
+          function forwardCall(address target, bytes memory data) external payable {
+              (bool success,) = target.call{value: msg.value}(data);
+              require(success, "Call failed");
+          }
+
+          // AFTER (SAFE with access control)
+          function forwardCall(address target, bytes memory data)
+              external
+              payable
+              onlyOwner
+          {
+              (bool success,) = target.call{value: msg.value}(data);
+              require(success, "Call failed");
+          }
+      }
+
+  - name: "Validate/Whitelist Call Targets"
+    description: |
+      If low-level calls are necessary, validate targets against a whitelist
+      of known safe contracts. This prevents arbitrary external interaction.
+    example: |
+      contract SafeVault {
+          mapping(address => bool) public trustedTargets;
+
+          function addTrustedTarget(address target) external onlyOwner {
+              trustedTargets[target] = true;
+          }
+
+          function forwardCall(address target, bytes memory data) external payable {
+              require(trustedTargets[target], "Target not trusted");
+              (bool success,) = target.call{value: msg.value}(data);
+              require(success, "Call failed");
+          }
+      }
+
+  - name: "Remove Low-Level Call if Not Essential"
+    description: |
+      If low-level call is not essential for core functionality, remove it or
+      replace with safer alternatives like specific interface calls.
+    example: |
+      // BEFORE: Generic low-level call
+      function execute(address target, bytes memory data) external {
+          (bool success,) = target.call(data);
+          require(success);
+      }
+
+      // AFTER: Specific interface call (type-safe)
+      interface ITargetContract {
+          function specificFunction(uint256 amount) external;
+      }
+
+      function execute(address target, uint256 amount) external onlyOwner {
+          ITargetContract(target).specificFunction(amount);
+      }
+
+  - name: "Add ReentrancyGuard for Call with Value"
+    description: |
+      If call transfers value, add ReentrancyGuard to prevent callback reentrancy
+      attacks during value transfer.
+    example: |
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract SafeVault is Ownable, ReentrancyGuard {
+          function forwardCall(address target, bytes memory data)
+              external
+              payable
+              onlyOwner
+              nonReentrant
+          {
+              (bool success,) = target.call{value: msg.value}(data);
+              require(success, "Call failed");
+          }
+      }
+
+  - name: "Use Pull-Over-Push Pattern for Value Transfer"
+    description: |
+      Instead of pushing value via low-level call, let users withdraw/pull their
+      own funds. This eliminates callback risk and arbitrary call targets.
+    example: |
+      contract PullPayment {
+          mapping(address => uint256) public withdrawable;
+
+          function recordPayment(address user, uint256 amount) internal {
+              withdrawable[user] += amount;  // No external call
+          }
+
+          function withdraw() external nonReentrant {
+              uint256 amount = withdrawable[msg.sender];
+              require(amount > 0, "Nothing to withdraw");
+              withdrawable[msg.sender] = 0;  // State update first (CEI)
+
+              (bool success,) = msg.sender.call{value: amount}("");
+              require(success, "Transfer failed");
+          }
+      }
+
+  - name: "Handle Call Failures Gracefully"
+    description: |
+      Use low-level call with return value checking but handle failures gracefully
+      to prevent DoS via reverting external calls.
+    example: |
+      contract RobustVault {
+          event CallFailed(address target, bytes data);
+
+          function forwardCall(address target, bytes memory data)
+              external
+              payable
+              onlyOwner
+              nonReentrant
+          {
+              (bool success,) = target.call{value: msg.value}(data);
+
+              if (!success) {
+                  // Log failure but don't revert entire transaction
+                  emit CallFailed(target, data);
+                  // Consider refunding msg.value if call failed
+                  if (msg.value > 0) {
+                      payable(msg.sender).transfer(msg.value);
+                  }
+              }
+          }
+      }
+
+  - name: "Implement Gas Limits on External Calls"
+    description: |
+      Add gas limits to external calls to prevent gas griefing attacks where
+      expensive external contracts consume excessive gas.
+    example: |
+      contract GasLimitedVault {
+          uint256 public constant MAX_CALL_GAS = 100000;
+
+          function forwardCall(address target, bytes memory data)
+              external
+              payable
+              onlyOwner
+          {
+              // Limit gas forwarded to external call
+              (bool success,) = target.call{value: msg.value, gas: MAX_CALL_GAS}(data);
+              require(success, "Call failed");
+          }
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - ext-001  # Unprotected external call (general)
+  - ext-002  # Unprotected delegatecall (critical)
+  - vm-001   # Classic reentrancy
+  - vm-002   # Cross-function reentrancy
+  - live-005 # DoS via revert
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+  - SC05  # Reentrancy
+  - SC06  # Unchecked External Calls
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-841  # Improper Enforcement of Behavioral Workflow
+  - CWE-691  # Insufficient Control Flow Management
+  - CWE-754  # Improper Check for Unusual or Exceptional Conditions
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+semantic_ops:
+  has_operation: CALLS_EXTERNAL
+  has_all_operations:
+    - CALLS_UNTRUSTED
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  pattern: "X:call"
+  description: "Low-level call operation without access control"
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Explorer agent: Trace from entry point to low-level call
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [CALLS_EXTERNAL, TRANSFERS_VALUE_OUT]
+    max_depth: 5
+
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+
+  # Risk agent: Exploitability assessment
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 6.0  # High severity
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 3
+    mode: voting

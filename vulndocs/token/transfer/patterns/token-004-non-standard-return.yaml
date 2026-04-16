@@ -1,0 +1,387 @@
+# =============================================================================
+# PATTERN: token-004-non-standard-return
+# Non-Standard ERC20 Return Value (Semantic, Name-Agnostic)
+# =============================================================================
+
+id: token-004-non-standard-return
+vulndoc: token/transfer
+name: "Non-Standard ERC20 Return Value"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Functions that call ERC20 `transfer()` or `transferFrom()` methods WITHOUT
+  properly handling non-standard token return values. Some major tokens (USDT,
+  BNB, OMG) do not follow the ERC20 standard return convention, causing silent
+  failures when contracts assume all tokens return `bool`.
+
+  **Semantic Detection**: This pattern detects what the function DOES:
+  - Calls ERC20 transfer/transferFrom (uses_erc20_transfer = true OR uses_erc20_transfer_from = true)
+  - Writes balance state to update accounting (writes_balance_state = true)
+  - Does NOT properly guard return values (token_return_guarded = false)
+  - Does NOT use SafeERC20 library (uses_safe_erc20 = false)
+
+  This catches ANY token transfer function regardless of naming convention.
+
+  ## Why It's Dangerous
+
+  Some ERC20 tokens don't follow the standard return value convention:
+
+  **Standard ERC20**: `transfer()` and `transferFrom()` return `bool`
+  - Returns `true` on success
+  - Returns `false` or reverts on failure
+
+  **Non-Standard Tokens**:
+  - **USDT**: Returns nothing (void) - will revert on bool cast
+  - **BNB**: Returns nothing (void) for some methods
+  - **OMG (OmiseGo)**: Returns nothing (void)
+  - **Tether Gold**: Declares bool return but returns false even on success
+
+  **Consequences**:
+  1. **Transaction Reverts**: Contract compiled with Solidity >=0.4.22 will
+     revert when expecting bool but receiving void
+  2. **Silent Failures**: Transfers can fail without reverting, breaking
+     accounting invariants
+  3. **Stuck Tokens**: Tokens become unusable in the protocol (Uniswap v1 BNB)
+  4. **Balance Discrepancies**: Internal accounting shows transfer succeeded
+     when it actually failed
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external)
+  2. Function calls ERC20 transfer OR transferFrom
+  3. Function writes balance state (accounting implications)
+  4. Function does NOT guard token return values
+  5. Function does NOT use SafeERC20 library
+
+  **Implementation-Agnostic**: Works regardless of:
+  - Function names (deposit, withdraw, transfer, swap, etc.)
+  - Variable names (balance, shares, amount, value, etc.)
+  - Token parameter names (token, asset, underlying, etc.)
+
+  Safe patterns that are EXCLUDED:
+  - Uses SafeERC20 wrapper (safeTransfer, safeTransferFrom)
+  - Checks return value: `require(token.transfer(...), "Failed")`
+  - Has custom return value guards
+
+  ## Real-World Examples
+
+  - **Uniswap v1**: BNB tokens stuck due to inconsistent return values
+  - **Numerous DeFi protocols**: USDT integration failures
+  - **Multiple audit findings**: d-xo/weird-erc20 documents 100+ cases
+  - **Sherlock/Code4rena audits**: Recurring high/medium severity finding
+
+scope: Function
+
+lens:
+  - ValueMovement
+  - ExternalInfluence
+
+severity: medium
+
+# Pattern quality status (set by vrs-test-conductor agent)
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Must be externally callable
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Must write balance state (accounting update)
+      # This ensures the transfer has accounting implications
+      - property: writes_balance_state
+        op: eq
+        value: true
+
+    # At least ONE token transfer method must be used (OR logic)
+    any:
+      # Uses ERC20 transfer()
+      - property: uses_erc20_transfer
+        op: eq
+        value: true
+
+      # Uses ERC20 transferFrom()
+      - property: uses_erc20_transfer_from
+        op: eq
+        value: true
+
+    # NONE of these safe patterns can be present (NOT logic)
+    none:
+      # SafeERC20 library handles non-standard tokens
+      - property: uses_safe_erc20
+        op: eq
+        value: true
+
+      # Return value is properly checked/guarded
+      - property: token_return_guarded
+        op: eq
+        value: true
+
+      # View/pure functions don't modify state (no risk)
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: Silent Transfer Failure
+    description: |
+      Transfer fails but function continues execution, breaking accounting
+      invariants and allowing users to claim credit for tokens never received.
+    preconditions:
+      - "Contract uses direct ERC20 transfer/transferFrom calls"
+      - "No return value checking or SafeERC20 wrapper"
+      - "Non-standard token (USDT, BNB, OMG) used"
+    steps:
+      - "User calls deposit function with USDT"
+      - "Contract calls USDT.transferFrom(user, this, amount)"
+      - "USDT transfer returns void instead of bool"
+      - "Solidity >=0.4.22 expects bool, transaction reverts"
+      - "OR: Transfer fails silently, no revert, accounting broken"
+    impact: |
+      Transaction reverts preventing USDT usage, OR silent failure creates
+      balance discrepancies leading to insolvency
+
+  - name: Token Integration Failure
+    description: |
+      Protocol becomes incompatible with major tokens like USDT (largest
+      stablecoin by market cap), limiting adoption and TVL.
+    preconditions:
+      - "Contract expects standard ERC20 bool returns"
+      - "No SafeERC20 or manual return value handling"
+    steps:
+      - "Protocol attempts to integrate USDT"
+      - "All USDT transfers revert on bool cast"
+      - "USDT becomes unusable in protocol"
+    impact: |
+      Loss of TVL, user trust, and market share due to incompatibility with
+      major tokens
+
+  - name: Stuck Tokens (Uniswap v1 BNB Case)
+    description: |
+      Tokens become permanently stuck in contract due to inconsistent return
+      value behavior across different methods.
+    preconditions:
+      - "Token returns bool for some methods but not others"
+      - "Contract has different code paths for different methods"
+    steps:
+      - "Deposit succeeds (no bool expected)"
+      - "Withdrawal fails (bool expected but not returned)"
+      - "Tokens stuck in contract"
+    impact: |
+      Permanent loss of user funds, protocol reputation damage
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Verify the function calls ERC20 transfer/transferFrom directly (not via SafeERC20)"
+  - "Confirm the function writes balance/shares state (accounting implications)"
+  - "Check if return value is captured and validated (require(token.transfer(...)))"
+  - "Verify no SafeERC20 wrapper is used (safeTransfer/safeTransferFrom)"
+  - "Test with USDT on Ethereum mainnet (0xdAC17F958D2ee523a2206206994597C13D831ec7)"
+  - "Confirm transaction reverts or silently fails with USDT"
+
+# Recommended fixes
+fix_recommendations:
+  - name: Use OpenZeppelin SafeERC20 (Recommended)
+    description: |
+      Replace direct transfer/transferFrom calls with SafeERC20 wrappers that
+      handle both standard and non-standard tokens correctly.
+    example: |
+      // BEFORE (VULNERABLE):
+      function deposit(IERC20 token, uint256 amount) external {
+          token.transferFrom(msg.sender, address(this), amount);
+          balances[msg.sender] += amount;
+      }
+
+      // AFTER (SAFE):
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+      function deposit(IERC20 token, uint256 amount) external {
+          SafeERC20.safeTransferFrom(token, msg.sender, address(this), amount);
+          balances[msg.sender] += amount;
+      }
+
+  - name: Manual Return Value Check
+    description: |
+      Capture and validate the return value using require(). This works for
+      standard tokens but may still revert on void-return tokens.
+    example: |
+      // Captures return value but STILL reverts on USDT
+      function deposit(IERC20 token, uint256 amount) external {
+          require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+          balances[msg.sender] += amount;
+      }
+
+  - name: Low-Level Call with Return Data Check
+    description: |
+      Use low-level call to handle both bool and void returns. More complex
+      but maximum compatibility.
+    example: |
+      function deposit(IERC20 token, uint256 amount) external {
+          (bool success, bytes memory returndata) = address(token).call(
+              abi.encodeWithSelector(token.transferFrom.selector, msg.sender, address(this), amount)
+          );
+          require(success, "Transfer failed");
+          if (returndata.length > 0) {
+              require(abi.decode(returndata, (bool)), "Transfer returned false");
+          }
+          balances[msg.sender] += amount;
+      }
+
+  - name: Token Whitelist with Compliance Check
+    description: |
+      Only allow standard-compliant tokens through a whitelist. Prevents
+      non-standard token issues but limits protocol flexibility.
+    example: |
+      mapping(address => bool) public approvedTokens;
+
+      function deposit(IERC20 token, uint256 amount) external {
+          require(approvedTokens[address(token)], "Token not approved");
+          // Only standard-compliant tokens allowed
+          require(token.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+          balances[msg.sender] += amount;
+      }
+
+# Related patterns for cross-referencing
+related_patterns:
+  - token-001-unhandled-fee-on-transfer  # Also balance tracking issue
+  - ext-003-unchecked-external-call      # General unchecked return values
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC06  # Unchecked External Calls
+
+# CWE mapping
+cwe_mapping:
+  - CWE-252  # Unchecked Return Value
+  - CWE-252  # Maps to SWC-104 in Smart Contract Weakness Classification
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [token-vault]
+  true_positives: 9
+  false_positives: 1
+  false_negatives: 7
+  true_negatives: 14
+  edge_cases: 8
+  precision: 0.90
+  recall: 0.56
+  variation_score: 0.67
+  last_tested: "2025-12-31"
+  notes: |
+    STRENGTHS:
+    - Excellent precision (90%): Very low false-positive rate
+    - Detects most vulnerable patterns with transfer/transferFrom + balance writes
+    - Correctly excludes SafeERC20 usage
+    - Handles naming variations well (deposit/contribute/claim)
+
+    LIMITATIONS:
+    - Only detects when writing to "balance"-tagged state variables
+    - Misses functions writing to deposits, stakes, or share mappings
+    - False Positive: withdrawWithManualCheck() has manual return check but not detected by token_return_guarded
+    - Recall limited by narrow scope of writes_balance_state property
+
+    FALSE NEGATIVES (7):
+    - addFunds, fund: write to deposits (not tagged as balance)
+    - depositForShares, depositAssets, redeem: write to shares/userShares (tagged as shares, not balance)
+    - stake: writes to stakes (not tagged)
+    - withdrawDeposit: writes to deposits (not tagged)
+
+    FALSE POSITIVE (1):
+    - withdrawWithManualCheck: Has bool success = transfer(); require(success)
+      but token_return_guarded property doesn't detect this pattern
+
+    BUILDER DEPENDENCY:
+    - Relies on writes_balance_state which only triggers for "balance"-tagged variables
+    - token_return_guarded detection could be improved to catch more return check patterns
+
+    RECOMMENDATION FOR IMPROVEMENT:
+    - Consider using writes_state instead of writes_balance_state for broader coverage
+    - OR: Expand state variable tagging to include deposits, stakes, shares
+    - Improve token_return_guarded detection for bool + require patterns
+
+# =============================================================================
+# BUILDER PROPERTY DEPENDENCIES
+# =============================================================================
+#
+# This pattern relies on the following builder.py properties:
+#
+# uses_erc20_transfer (line 687):
+#   - Detects calls to ERC20 transfer() method
+#   - Set when "transfer" found in token_call_kinds
+#
+# uses_erc20_transfer_from (line 688):
+#   - Detects calls to ERC20 transferFrom() method
+#   - Set when "transferfrom" found in token_call_kinds
+#
+# uses_safe_erc20 (line 703):
+#   - Detects usage of SafeERC20 wrapper library
+#   - Set when any token_call_kind starts with "safe"
+#
+# token_return_guarded (line 705, 776-778):
+#   - Comprehensive return value guard detection
+#   - True if: checks_token_call_return OR uses_safe_erc20 OR custom_return_guard
+#   - Checks for require() on return value, try-catch, SafeERC20 usage
+#
+# writes_balance_state (line 1165):
+#   - Detects modifications to balance-tagged state variables
+#   - True when function writes to state with "balance" security tag
+#
+# visibility (standard Slither property):
+#   - Function visibility: public, external, internal, private
+#
+# state_mutability (standard Slither property):
+#   - Function state mutability: pure, view, nonpayable, payable
+#
+# =============================================================================
+# REFERENCES & RESEARCH
+# =============================================================================
+#
+# Weird ERC20 Tokens Repository:
+#   https://github.com/d-xo/weird-erc20
+#   Comprehensive documentation of non-standard token behaviors
+#
+# USDT Contract (Ethereum Mainnet):
+#   0xdAC17F958D2ee523a2206206994597C13D831ec7
+#   Major stablecoin with void return values
+#
+# OpenZeppelin SafeERC20:
+#   https://docs.openzeppelin.com/contracts/4.x/api/token/erc20#SafeERC20
+#   Industry-standard library for safe token interactions
+#
+# Smart Contract Weakness Classification:
+#   SWC-104: Unchecked Call Return Value
+#   https://swcregistry.io/docs/SWC-104/
+#
+# CWE-252: Unchecked Return Value
+#   https://cwe.mitre.org/data/definitions/252.html
+#
+# Security Audit References:
+#   - Code4rena: Multiple findings across 100+ audits
+#   - Sherlock: High/medium severity recurring issue
+#   - Trail of Bits: Documented in audit best practices
+#
+# Notable Incidents:
+#   - Uniswap v1: BNB tokens stuck due to inconsistent returns
+#   - Multiple DeFi protocols: USDT integration failures
+#   - Nibiru (2024): ERC20 transfer fails with non-compliant tokens
+#   - DODO (2025): Improper USDT transferFrom handling
+#
+# =============================================================================

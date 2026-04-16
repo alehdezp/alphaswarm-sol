@@ -1,0 +1,155 @@
+# Blur Exchange Ground Truth
+# Source: Multiple Audits (Spearbit, Code4rena)
+# URLs:
+# - https://code4rena.com/reports/2022-10-blur
+# - Spearbit audit (private report)
+
+project_name: blur-exchange
+project_type: nft_marketplace
+audit_source: Multiple (Spearbit, Code4rena)
+audit_date: "2022-10-15"
+audit_url: https://code4rena.com/reports/2022-10-blur
+code_url: https://github.com/blur-io/blur-exchange
+code_commit: main
+solidity_version: "^0.8.17"
+
+findings:
+  # High Severity
+  - id: C4-H01
+    title: Order signature replay across chains
+    category: signature
+    severity: high
+    location:
+      file: BlurExchange.sol
+      function: execute
+      line_start: 0
+      line_end: 0
+    description: "Order signatures don't include chainId, allowing replay on other EVM chains."
+    recommendation: "Include chainId in the order hash."
+    vkg_should_find: true
+
+  - id: C4-H02
+    title: ERC721 safeTransferFrom reentrancy in execute
+    category: reentrancy
+    severity: high
+    location:
+      file: BlurExchange.sol
+      function: _executeTokenTransfer
+      line_start: 0
+      line_end: 0
+    description: "NFT transfer callbacks can re-enter the exchange before state updates."
+    vkg_should_find: true
+
+  # Medium Severity
+  - id: C4-M01
+    title: Missing zero address validation on fee recipient
+    category: input_validation
+    severity: medium
+    location:
+      file: BlurExchange.sol
+      function: setFeeRecipient
+      line_start: 0
+      line_end: 0
+    description: "Fee recipient can be set to zero address, causing fees to be lost."
+    vkg_should_find: true
+
+  - id: C4-M02
+    title: Order cancellation front-running
+    category: mev_slippage
+    severity: medium
+    location:
+      file: BlurExchange.sol
+      function: cancelOrder
+      line_start: 0
+      line_end: 0
+    description: "Order cancellation can be front-run by executing the order first."
+    vkg_should_find: true
+
+  - id: C4-M03
+    title: ecrecover returns zero on invalid signature
+    category: signature
+    severity: medium
+    location:
+      file: BlurExchange.sol
+      function: _validateSignature
+      line_start: 0
+      line_end: 0
+    description: "Invalid signatures return zero address which may match unsigned orders."
+    vkg_should_find: true
+
+  - id: SPEAR-001
+    title: Admin can rug by changing execution delegate
+    category: access_control
+    severity: medium
+    location:
+      file: BlurExchange.sol
+      function: setExecutionDelegate
+      line_start: 0
+      line_end: 0
+    description: "Admin can swap execution delegate to steal approved tokens."
+    vkg_should_find: true
+
+  - id: SPEAR-002
+    title: Merkle proof collision for bulk orders
+    category: cryptographic
+    severity: medium
+    location:
+      file: BlurExchange.sol
+      function: _verifyProof
+      line_start: 0
+      line_end: 0
+    description: "Merkle proof implementation may be vulnerable to second-preimage attacks."
+    vkg_should_find: false  # Complex crypto - out of scope
+
+  # Low Severity
+  - id: C4-L01
+    title: Missing event emission on critical state changes
+    category: informational
+    severity: low
+    location:
+      file: BlurExchange.sol
+      function: setBlockRange
+      line_start: 0
+      line_end: 0
+    description: "Some admin functions don't emit events for off-chain tracking."
+    vkg_should_find: false  # Informational
+
+  - id: C4-L02
+    title: Unbounded loop in bulk cancel
+    category: dos
+    severity: low
+    location:
+      file: BlurExchange.sol
+      function: cancelOrders
+      line_start: 0
+      line_end: 0
+    description: "Bulk cancel can run out of gas with too many orders."
+    vkg_should_find: true
+
+  - id: SPEAR-003
+    title: Oracle price staleness in royalty calculation
+    category: oracle_manipulation
+    severity: low
+    location:
+      file: BlurExchange.sol
+      function: _calculateRoyalty
+      line_start: 0
+      line_end: 0
+    description: "Royalty calculations may use stale oracle prices."
+    vkg_should_find: true
+
+notes: |
+  Blur Exchange is an NFT marketplace with advanced features like:
+  - Bulk listing/buying
+  - Order book with merkle proofs
+  - MEV-resistant design attempts
+
+  The Code4rena audit found several high-severity issues.
+
+  Note: Line numbers are placeholder (0) as exact lines vary by commit.
+  File and function names should be sufficient for matching.
+
+  Out of scope:
+  - Economic attacks (wash trading detection)
+  - Complex cryptographic proofs
+  - Informational findings

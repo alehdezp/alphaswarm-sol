@@ -1,0 +1,30 @@
+# Scenario Manifest Template (List)
+# Each entry maps one test scenario to a workflow doc and evidence requirements.
+
+- id: "scenario-id"
+  tier: "skill|agent|workflow|e2e|tools|graph|golden"
+  doc: ".planning/testing/workflows/workflow-*.md"
+  workflow_ref: ".planning/testing/workflows/workflow-*.md"
+  context_ref: null
+  command: "/vrs-workflow-test /vrs-audit contracts/ --criteria <criteria>"
+  expected_markers:
+    - "alphaswarm"
+    - "build-kg"
+  min_duration_ms: 15000
+  min_lines: 100
+  requires_ground_truth: false
+  ground_truth_ref: null
+  behavior_model_ref: "econ-lend-001"  # required for Tier B/C economic scenarios
+  vql_bundle: "VQL-MIN-01..05"
+  tool_requirements: ["slither", "aderyn", "graph/vql"]
+  evidence_pack_required: true
+  min_markers: ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "TaskUpdate("]
+  artifacts:
+    - "manifest.json"
+    - "transcript.txt"
+    - "report.json"
+    - "environment.json"
+    - "ground_truth.json"
+  status: "ready|blocked"
+  blocked_reason: "why blocked (if status=blocked)"
+  notes: "why this scenario exists"

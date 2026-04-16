@@ -1,0 +1,1393 @@
+# Test Cases for oracle-l2-sequencer-grace-missing Pattern
+# Phase 7.2 Exemplar Test Pack - 50+ cases
+#
+# This file defines test cases covering:
+# - Vulnerable: Missing grace period after sequencer check
+# - Safe: Proper grace period enforcement
+# - Counterfactual: Guard inversion, ordering variations
+# - Helper-depth: Validation in helper functions
+# - L1/L2 split: Chain-conditional branches
+
+pattern_id: oracle-l2-sequencer-grace-missing
+version: "1.0.0"
+created: 2026-01-29
+
+# =============================================================================
+# VULNERABLE CASES (25 cases)
+# =============================================================================
+
+vulnerable_cases:
+
+  # --- Basic Missing Grace Period (10 cases) ---
+
+  - id: vuln-001
+    name: "Basic sequencer check without grace period"
+    description: "Checks answer == 0 but no startedAt comparison"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-002
+    name: "Sequencer check with immediate return"
+    description: "No validation after sequencer up confirmation"
+    severity: high
+    expected_match: true
+    code: |
+      function fetchOraclePrice() public view returns (uint256) {
+          (, int256 sequencerAnswer, , ,) = sequencerFeed.latestRoundData();
+          if (sequencerAnswer != 0) revert SequencerDown();
+
+          (, int256 oraclePrice, , ,) = chainlinkFeed.latestRoundData();
+          return uint256(oraclePrice);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-003
+    name: "Sequencer check in modifier without grace"
+    description: "Modifier checks uptime but not grace period"
+    severity: high
+    expected_match: true
+    code: |
+      modifier whenSequencerUp() {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer offline");
+          _;
+      }
+
+      function liquidate(address user) external whenSequencerUp {
+          uint256 price = getOraclePrice();
+          // liquidation logic
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-004
+    name: "Sequencer check with only status logging"
+    description: "Logs status but doesn't enforce grace period"
+    severity: high
+    expected_match: true
+    code: |
+      function getValidatedPrice() external returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          emit SequencerStatus(answer, startedAt);  // Only logs, no validation
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-005
+    name: "Sequencer check with zero grace period constant"
+    description: "GRACE_PERIOD = 0 makes check ineffective"
+    severity: high
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 0;  // Ineffective!
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Ineffective grace period
+      reads_oracle_price: true
+
+  - id: vuln-006
+    name: "Sequencer check in separate tx path"
+    description: "Grace period in one path but not critical path"
+    severity: high
+    expected_match: true
+    code: |
+      function checkSequencer() external view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > 1 hours, "Grace period");
+      }
+
+      function executeTrade() external {  // Missing grace period in this path
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          uint256 price = getOraclePrice();
+          // trade logic without grace period
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-007
+    name: "Inverted grace period check"
+    description: "require(timeSinceUp <= GRACE) instead of >"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // WRONG: Allows only during grace period, blocks after!
+          require(block.timestamp - startedAt <= 1 hours, "Too late");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Inverted check is not valid grace period
+      reads_oracle_price: true
+
+  - id: vuln-008
+    name: "Sequencer check with staleness only"
+    description: "Has staleness check but no grace period"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          (, int256 price, , uint256 updatedAt,) = priceFeed.latestRoundData();
+          require(block.timestamp - updatedAt < 1 hours, "Stale price");
+
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+      has_staleness_check: true
+
+  - id: vuln-009
+    name: "Sequencer check after oracle read"
+    description: "Wrong order: read oracle then check sequencer"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // No grace period even though sequencer checked
+
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-010
+    name: "Sequencer check with conditional bypass"
+    description: "Grace period bypassed for 'urgent' operations"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice(bool urgent) external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          if (!urgent) {
+              require(block.timestamp - startedAt > 1 hours, "Grace period");
+          }
+          // urgent=true bypasses grace period!
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Bypassable
+      reads_oracle_price: true
+
+  # --- Timing and Window Variants (5 cases) ---
+
+  - id: vuln-011
+    name: "Grace period too short (5 minutes)"
+    description: "5 minute grace period is insufficient"
+    severity: medium
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 5 minutes;  // Too short!
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true  # Has check but too short
+      grace_period_seconds: 300
+      reads_oracle_price: true
+    notes: "Pattern may need severity adjustment for short grace periods"
+
+  - id: vuln-012
+    name: "Grace period too short (15 minutes)"
+    description: "15 minute grace period may be insufficient for high volatility"
+    severity: medium
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 15 minutes;
+
+      function getCollateralValue() external view returns (uint256) {
+          _checkSequencer();
+          return _getOraclePrice() * collateralAmount;
+      }
+
+      function _checkSequencer() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      grace_period_seconds: 900
+      reads_oracle_price: true
+
+  - id: vuln-013
+    name: "Grace period comparison uses wrong timestamp"
+    description: "Uses updatedAt instead of startedAt"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, , uint256 updatedAt,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // WRONG: Uses updatedAt instead of startedAt!
+          require(block.timestamp - updatedAt > 1 hours, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Wrong timestamp comparison
+      reads_oracle_price: true
+
+  - id: vuln-014
+    name: "Grace period overflow possible"
+    description: "No SafeMath, startedAt > block.timestamp wraps"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // Potential underflow if startedAt > block.timestamp (shouldn't happen but...)
+          require(block.timestamp - startedAt > 1 hours, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+    notes: "Edge case for underflow, pattern may not catch"
+
+  - id: vuln-015
+    name: "Grace period uses block.number instead of timestamp"
+    description: "Compares block numbers, not timestamps"
+    severity: high
+    expected_match: true
+    code: |
+      uint256 constant GRACE_BLOCKS = 3600;  // ~1 hour in blocks
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // WRONG: Compares block to timestamp!
+          require(block.number - startedAt > GRACE_BLOCKS, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Wrong comparison unit
+      reads_oracle_price: true
+
+  # --- Critical Operations Without Grace (5 cases) ---
+
+  - id: vuln-016
+    name: "Liquidation without grace period"
+    description: "Critical liquidation uses stale oracle post-restart"
+    severity: critical
+    expected_match: true
+    code: |
+      function liquidate(address user) external {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          uint256 collateralValue = getUserCollateral(user) * getOraclePrice();
+          uint256 debt = getUserDebt(user);
+
+          require(collateralValue < debt * collateralRatio / 100, "Healthy position");
+          _executeLiquidation(user);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+      is_liquidation: true
+
+  - id: vuln-017
+    name: "Borrow function without grace period"
+    description: "Over-borrowing possible with stale collateral valuation"
+    severity: critical
+    expected_match: true
+    code: |
+      function borrow(uint256 amount) external {
+          _validateSequencer();
+
+          uint256 collateralValue = getCollateralValue(msg.sender);
+          uint256 maxBorrow = collateralValue * maxLTV / 100;
+
+          require(getUserDebt(msg.sender) + amount <= maxBorrow, "Exceeds limit");
+          _issueLoan(msg.sender, amount);
+      }
+
+      function _validateSequencer() internal view {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // No grace period!
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+      is_lending: true
+
+  - id: vuln-018
+    name: "Collateral withdrawal without grace"
+    description: "Can withdraw collateral at stale valuation"
+    severity: high
+    expected_match: true
+    code: |
+      function withdrawCollateral(uint256 amount) external {
+          require(!isSequencerDown(), "Sequencer down");
+
+          uint256 remainingCollateral = userCollateral[msg.sender] - amount;
+          uint256 remainingValue = remainingCollateral * getOraclePrice();
+
+          require(remainingValue >= getUserDebt(msg.sender) * minCollateralRatio / 100);
+          _withdraw(msg.sender, amount);
+      }
+
+      function isSequencerDown() internal view returns (bool) {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          return answer != 0;
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  - id: vuln-019
+    name: "Swap execution without grace period"
+    description: "DEX swap uses stale oracle for pricing"
+    severity: high
+    expected_match: true
+    code: |
+      function swap(address tokenIn, address tokenOut, uint256 amountIn) external {
+          checkSequencerStatus();
+
+          uint256 priceIn = getOraclePrice(tokenIn);
+          uint256 priceOut = getOraclePrice(tokenOut);
+
+          uint256 amountOut = amountIn * priceIn / priceOut;
+          _executeSwap(tokenIn, tokenOut, amountIn, amountOut);
+      }
+
+      function checkSequencerStatus() internal view {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer offline");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+      is_swap: true
+
+  - id: vuln-020
+    name: "Mint function without grace period"
+    description: "Synthetic minting uses stale collateral price"
+    severity: high
+    expected_match: true
+    code: |
+      function mintSynthetic(uint256 collateralAmount) external {
+          ensureSequencerUp();
+
+          uint256 collateralValue = collateralAmount * getCollateralPrice();
+          uint256 mintAmount = collateralValue * mintRatio / 100;
+
+          _lockCollateral(msg.sender, collateralAmount);
+          _mintSynthetic(msg.sender, mintAmount);
+      }
+
+      function ensureSequencerUp() internal view {
+          (, int256 status, , ,) = sequencerFeed.latestRoundData();
+          if (status != 0) revert("Sequencer down");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+
+  # --- Helper and Delegation Variants (5 cases) ---
+
+  - id: vuln-021
+    name: "Sequencer check in parent, no grace in child"
+    description: "Inheritance: parent checks, child doesn't add grace"
+    severity: high
+    expected_match: true
+    code: |
+      // Parent contract
+      contract OracleBase {
+          function _checkSequencer() internal view {
+              (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+              require(answer == 0, "Sequencer down");
+          }
+      }
+
+      // Child contract - doesn't add grace period
+      contract LendingPool is OracleBase {
+          function getPrice() external view returns (uint256) {
+              _checkSequencer();  // Parent check, no grace period
+              (, int256 price, , ,) = priceFeed.latestRoundData();
+              return uint256(price);
+          }
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+      uses_inheritance: true
+
+  - id: vuln-022
+    name: "Grace period in library not used"
+    description: "Library has grace check but caller doesn't use it"
+    severity: high
+    expected_match: true
+    code: |
+      library SequencerLib {
+          function checkWithGrace(address feed) internal view {
+              (, int256 answer, uint256 startedAt, ,) = AggregatorV3Interface(feed).latestRoundData();
+              require(answer == 0 && block.timestamp - startedAt > 1 hours);
+          }
+
+          function checkBasic(address feed) internal view {
+              (, int256 answer, , ,) = AggregatorV3Interface(feed).latestRoundData();
+              require(answer == 0);
+          }
+      }
+
+      contract Vault {
+          function getPrice() external view returns (uint256) {
+              SequencerLib.checkBasic(sequencerFeed);  // Wrong function!
+              return _getOraclePrice();
+          }
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      reads_oracle_price: true
+      uses_library: true
+
+  - id: vuln-023
+    name: "Optional grace period parameter default false"
+    description: "Grace check parameter defaults to disabled"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice(bool useGracePeriod) public view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          if (useGracePeriod) {
+              require(block.timestamp - startedAt > 1 hours, "Grace period");
+          }
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      // Most callers use default
+      function liquidate(address user) external {
+          uint256 price = getPrice(false);  // Explicitly bypassing!
+          // ...
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Default is bypassed
+      reads_oracle_price: true
+
+  - id: vuln-024
+    name: "Grace period in try/catch consumed silently"
+    description: "Grace period failure caught and ignored"
+    severity: high
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          try this._validateGracePeriod() {
+              // Grace period passed
+          } catch {
+              // Silently continue without grace period!
+          }
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _validateGracePeriod() external view {
+          (, , uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(block.timestamp - startedAt > 1 hours, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Caught and ignored
+      reads_oracle_price: true
+
+  - id: vuln-025
+    name: "Multiple oracle reads, only first has grace"
+    description: "First oracle has grace, second doesn't"
+    severity: high
+    expected_match: true
+    code: |
+      function getCollateralRatio() external view returns (uint256) {
+          _checkSequencerWithGrace();
+
+          uint256 collateralPrice = _getCollateralPrice();  // Has grace
+
+          // Second oracle read without checking again
+          uint256 debtPrice = _getDebtPrice();  // No additional grace check
+
+          return collateralPrice / debtPrice;
+      }
+
+      function _getDebtPrice() internal view returns (uint256) {
+          (, int256 answer, , ,) = sequencerFeed.latestRoundData();
+          require(answer == 0);  // Only status, no grace!
+          (, int256 price, , ,) = debtPriceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Second read lacks grace
+      reads_oracle_price: true
+
+# =============================================================================
+# SAFE CASES (15 cases)
+# =============================================================================
+
+safe_cases:
+
+  # --- Proper Grace Period Implementation (8 cases) ---
+
+  - id: safe-001
+    name: "Standard 1-hour grace period"
+    description: "Chainlink recommended grace period implementation"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      grace_period_seconds: 3600
+      reads_oracle_price: true
+
+  - id: safe-002
+    name: "Grace period with staleness check"
+    description: "Defense in depth: grace period + staleness"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+      uint256 constant STALENESS_THRESHOLD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          _checkSequencerUptime();
+
+          (, int256 price, , uint256 updatedAt,) = priceFeed.latestRoundData();
+          require(block.timestamp - updatedAt < STALENESS_THRESHOLD, "Stale price");
+
+          return uint256(price);
+      }
+
+      function _checkSequencerUptime() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      has_staleness_check: true
+      reads_oracle_price: true
+
+  - id: safe-003
+    name: "Grace period in modifier"
+    description: "Reusable modifier with full protection"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      modifier whenSequencerReady() {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period not elapsed");
+          _;
+      }
+
+      function liquidate(address user) external whenSequencerReady {
+          uint256 price = getOraclePrice();
+          _executeLiquidation(user, price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+
+  - id: safe-004
+    name: "Configurable grace period per asset"
+    description: "Different grace periods for different asset volatility"
+    expected_match: false
+    code: |
+      mapping(address => uint256) public assetGracePeriods;
+      uint256 constant DEFAULT_GRACE_PERIOD = 1 hours;
+
+      function getAssetPrice(address asset) external view returns (uint256) {
+          _checkSequencerWithGrace(asset);
+
+          (, int256 price, , ,) = assetFeeds[asset].latestRoundData();
+          return uint256(price);
+      }
+
+      function _checkSequencerWithGrace(address asset) internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          uint256 gracePeriod = assetGracePeriods[asset];
+          if (gracePeriod == 0) gracePeriod = DEFAULT_GRACE_PERIOD;
+
+          require(block.timestamp - startedAt > gracePeriod, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+      has_configurable_grace: true
+
+  - id: safe-005
+    name: "Grace period with circuit breaker"
+    description: "Automatic pause during grace period"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+      bool public paused;
+
+      function getPrice() external view returns (uint256) {
+          require(!paused, "Paused");
+          _validateSequencerAndGrace();
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _validateSequencerAndGrace() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      has_pause_mechanism: true
+      reads_oracle_price: true
+
+  - id: safe-006
+    name: "Grace period with events"
+    description: "Emits events for monitoring"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      event SequencerGracePeriod(uint256 timeRemaining);
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          uint256 timeSinceUp = block.timestamp - startedAt;
+          if (timeSinceUp <= GRACE_PERIOD) {
+              emit SequencerGracePeriod(GRACE_PERIOD - timeSinceUp);
+              revert("Grace period not elapsed");
+          }
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+
+  - id: safe-007
+    name: "2-hour grace period for high volatility"
+    description: "Extended grace period for volatile assets"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 2 hours;  // Extended for volatility
+
+      function getVolatileAssetPrice() external view returns (uint256) {
+          _validateSequencer();
+          (, int256 price, , ,) = volatilePriceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _validateSequencer() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      grace_period_seconds: 7200
+      reads_oracle_price: true
+
+  - id: safe-008
+    name: "Grace period with fallback oracle"
+    description: "Multi-oracle with grace period protection"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          _checkSequencerGrace();
+
+          // Try primary oracle
+          try primaryFeed.latestRoundData() returns (
+              uint80, int256 price, uint256, uint256 updatedAt, uint80
+          ) {
+              if (updatedAt > block.timestamp - 1 hours) {
+                  return uint256(price);
+              }
+          } catch {}
+
+          // Fallback
+          (, int256 price, , ,) = fallbackFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _checkSequencerGrace() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      has_fallback_oracle: true
+      reads_oracle_price: true
+
+  # --- L1/L2 Conditional (4 cases) ---
+
+  - id: safe-009
+    name: "L1 deployment (no sequencer needed)"
+    description: "L1 mainnet deployment without sequencer dependency"
+    expected_match: false
+    code: |
+      // L1 deployment - no sequencer feed needed
+      function getPrice() external view returns (uint256) {
+          (, int256 price, , uint256 updatedAt,) = priceFeed.latestRoundData();
+          require(block.timestamp - updatedAt < 1 hours, "Stale price");
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: false
+      has_grace_period_check: false  # Not needed for L1
+      is_l2_deployment: false
+      reads_oracle_price: true
+
+  - id: safe-010
+    name: "Conditional L2 check based on chain ID"
+    description: "Only enforces grace period on L2 chains"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          if (_isL2Chain()) {
+              _checkSequencerWithGrace();
+          }
+
+          (, int256 price, , uint256 updatedAt,) = priceFeed.latestRoundData();
+          require(block.timestamp - updatedAt < 1 hours, "Stale price");
+          return uint256(price);
+      }
+
+      function _isL2Chain() internal view returns (bool) {
+          return block.chainid == 42161 || block.chainid == 10 || block.chainid == 8453;
+      }
+
+      function _checkSequencerWithGrace() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+      has_chain_conditional: true
+
+  - id: safe-011
+    name: "Sequencer feed address(0) for L1"
+    description: "Constructor pattern for multi-chain deployment"
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      constructor(address _priceFeed, address _sequencerFeed) {
+          priceFeed = AggregatorV3Interface(_priceFeed);
+          if (_sequencerFeed != address(0)) {
+              sequencerUptimeFeed = AggregatorV3Interface(_sequencerFeed);
+          }
+      }
+
+      function getPrice() external view returns (uint256) {
+          if (address(sequencerUptimeFeed) != address(0)) {
+              (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+              require(answer == 0, "Sequencer down");
+              require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+          }
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+      has_conditional_sequencer: true
+
+  - id: safe-012
+    name: "Separate L1/L2 oracle adapters"
+    description: "Different implementations for L1 and L2"
+    expected_match: false
+    code: |
+      // L2OracleAdapter.sol
+      contract L2OracleAdapter {
+          uint256 constant GRACE_PERIOD = 1 hours;
+
+          function getPrice() external view returns (uint256) {
+              (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+              require(answer == 0, "Sequencer down");
+              require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+              (, int256 price, , ,) = priceFeed.latestRoundData();
+              return uint256(price);
+          }
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      reads_oracle_price: true
+      is_l2_adapter: true
+
+  # --- View/Pure Functions (3 cases) ---
+
+  - id: safe-013
+    name: "View function for display only"
+    description: "Oracle read for UI display, not transaction logic"
+    expected_match: false
+    code: |
+      function getCurrentPrice() external view returns (uint256) {
+          // View function - informational only
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      is_view: true
+      reads_oracle_price: true
+      has_sequencer_uptime_check: false
+    notes: "Pattern should exclude view functions"
+
+  - id: safe-014
+    name: "Pure calculation function"
+    description: "Pure function doesn't read oracle"
+    expected_match: false
+    code: |
+      function calculateCollateralRatio(uint256 collateral, uint256 debt) external pure returns (uint256) {
+          return collateral * 100 / debt;
+      }
+    properties:
+      is_pure: true
+      reads_oracle_price: false
+
+  - id: safe-015
+    name: "Internal helper without oracle read"
+    description: "Helper function that doesn't read oracle directly"
+    expected_match: false
+    code: |
+      function _validateCollateralRatio(uint256 collateral, uint256 debt, uint256 minRatio) internal pure {
+          require(collateral * 100 / debt >= minRatio, "Undercollateralized");
+      }
+    properties:
+      is_internal: true
+      reads_oracle_price: false
+
+# =============================================================================
+# COUNTERFACTUAL CASES (10 cases)
+# =============================================================================
+
+counterfactual_cases:
+
+  # --- Guard Inversion (3 cases) ---
+
+  - id: cf-001
+    name: "Inverted grace period check"
+    description: "Change > to <= makes check ineffective"
+    base_case: safe-001
+    mutation: "require(block.timestamp - startedAt > GRACE_PERIOD)"
+    mutated_to: "require(block.timestamp - startedAt <= GRACE_PERIOD)"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // INVERTED: <= instead of >
+          require(block.timestamp - startedAt <= GRACE_PERIOD, "Too late");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Inverted is not valid
+
+  - id: cf-002
+    name: "Inverted sequencer check"
+    description: "Change == 0 to != 0 inverts logic"
+    base_case: safe-001
+    mutation: "require(answer == 0)"
+    mutated_to: "require(answer != 0)"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          // INVERTED: != 0 means only works when sequencer is DOWN!
+          require(answer != 0, "Sequencer up");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: false  # Inverted is wrong
+      has_grace_period_check: true
+
+  - id: cf-003
+    name: "Remove grace period from safe contract"
+    description: "Delete grace period check from safe implementation"
+    base_case: safe-001
+    mutation: "require(block.timestamp - startedAt > GRACE_PERIOD, 'Grace period');"
+    mutated_to: "// grace period removed"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // REMOVED: Grace period check deleted
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+
+  # --- Order Mutation (3 cases) ---
+
+  - id: cf-004
+    name: "Swap sequencer and oracle read order"
+    description: "Read oracle before checking sequencer"
+    base_case: safe-001
+    mutation: "sequencer check -> oracle read"
+    mutated_to: "oracle read -> sequencer check"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          // WRONG ORDER: Read price first
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          return uint256(price);  // Already read with potentially stale data
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true  # But order is wrong
+
+  - id: cf-005
+    name: "Grace period after state modification"
+    description: "Check grace period after critical operation"
+    base_case: safe-001
+    mutation: "grace check -> critical op"
+    mutated_to: "critical op -> grace check"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function liquidate(address user) external {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          // WRONG ORDER: Execute first, check grace after
+          _executeLiquidation(user, getOraclePrice());
+
+          // Too late - already executed!
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true  # But order is wrong
+
+  - id: cf-006
+    name: "Grace period in post-execution hook"
+    description: "Grace period checked in cleanup, not guard"
+    base_case: safe-001
+    mutation: "pre-execution grace check"
+    mutated_to: "post-execution grace check"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      modifier checkGraceAfter() {
+          _;  // Execute first
+          (, , uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+      }
+
+      function getPrice() external view checkGraceAfter returns (uint256) {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);  // Returns before checkGraceAfter runs
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Post-execution doesn't protect
+
+  # --- Value Mutation (4 cases) ---
+
+  - id: cf-007
+    name: "Grace period reduced to 1 minute"
+    description: "Reduce grace period from 1 hour to 1 minute"
+    base_case: safe-001
+    mutation: "GRACE_PERIOD = 1 hours"
+    mutated_to: "GRACE_PERIOD = 1 minutes"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 minutes;  // Too short!
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      grace_period_seconds: 60
+    notes: "Very short grace period, likely insufficient"
+
+  - id: cf-008
+    name: "Grace period set to 0"
+    description: "Grace period constant set to zero"
+    base_case: safe-001
+    mutation: "GRACE_PERIOD = 1 hours"
+    mutated_to: "GRACE_PERIOD = 0"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 0;  // Effectively disabled!
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");  // Always true!
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Zero is effectively no check
+
+  - id: cf-009
+    name: "Wrong timestamp used (updatedAt)"
+    description: "Use updatedAt instead of startedAt"
+    base_case: safe-001
+    mutation: "block.timestamp - startedAt"
+    mutated_to: "block.timestamp - updatedAt"
+    expected_result: vulnerable
+    expected_match: true
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, , uint256 updatedAt,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // WRONG: Uses updatedAt, not startedAt
+          require(block.timestamp - updatedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false  # Wrong timestamp
+
+  - id: cf-010
+    name: "Add grace period to vulnerable contract"
+    description: "Add proper grace period to fix vulnerability"
+    base_case: vuln-001
+    mutation: "// no grace period"
+    mutated_to: "require(block.timestamp - startedAt > GRACE_PERIOD)"
+    expected_result: safe
+    expected_match: false
+    code: |
+      uint256 constant GRACE_PERIOD = 1 hours;
+
+      function getPrice() external view returns (uint256) {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // ADDED: Grace period check
+          require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+
+# =============================================================================
+# HELPER DEPTH VARIANTS (5 cases)
+# =============================================================================
+
+helper_depth_cases:
+
+  - id: helper-001
+    name: "Grace period in direct helper"
+    description: "One level of helper function delegation"
+    expected_match: false
+    code: |
+      function getPrice() external view returns (uint256) {
+          _validateSequencerWithGrace();
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _validateSequencerWithGrace() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > 1 hours, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      helper_depth: 1
+
+  - id: helper-002
+    name: "Grace period two levels deep"
+    description: "Two levels of helper delegation"
+    expected_match: false
+    code: |
+      function getPrice() external view returns (uint256) {
+          _checkOracle();
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _checkOracle() internal view {
+          _validateSequencer();
+      }
+
+      function _validateSequencer() internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(block.timestamp - startedAt > 1 hours, "Grace period");
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      helper_depth: 2
+
+  - id: helper-003
+    name: "Grace period in library"
+    description: "Grace period check delegated to library"
+    expected_match: false
+    code: |
+      library OracleLib {
+          function validateSequencerWithGrace(address feed) internal view {
+              (, int256 answer, uint256 startedAt, ,) = AggregatorV3Interface(feed).latestRoundData();
+              require(answer == 0, "Sequencer down");
+              require(block.timestamp - startedAt > 1 hours, "Grace period");
+          }
+      }
+
+      contract PriceReader {
+          function getPrice() external view returns (uint256) {
+              OracleLib.validateSequencerWithGrace(address(sequencerFeed));
+              (, int256 price, , ,) = priceFeed.latestRoundData();
+              return uint256(price);
+          }
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      uses_library: true
+
+  - id: helper-004
+    name: "Grace period in parent contract"
+    description: "Inherited protection from base contract"
+    expected_match: false
+    code: |
+      contract OracleBase {
+          uint256 constant GRACE_PERIOD = 1 hours;
+
+          function _checkSequencerGrace() internal view {
+              (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+              require(answer == 0, "Sequencer down");
+              require(block.timestamp - startedAt > GRACE_PERIOD, "Grace period");
+          }
+      }
+
+      contract LendingPool is OracleBase {
+          function getPrice() external view returns (uint256) {
+              _checkSequencerGrace();  // Inherited with grace period
+              (, int256 price, , ,) = priceFeed.latestRoundData();
+              return uint256(price);
+          }
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: true
+      uses_inheritance: true
+
+  - id: helper-005
+    name: "Grace period missing at helper depth 2"
+    description: "Deep helper missing grace period"
+    expected_match: true
+    code: |
+      function getPrice() external view returns (uint256) {
+          _checkOracle();
+          (, int256 price, , ,) = priceFeed.latestRoundData();
+          return uint256(price);
+      }
+
+      function _checkOracle() internal view {
+          _validateSequencer();  // Delegates but no grace
+      }
+
+      function _validateSequencer() internal view {
+          (, int256 answer, , ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          // No grace period at any level!
+      }
+    properties:
+      has_sequencer_uptime_check: true
+      has_grace_period_check: false
+      helper_depth: 2
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+
+summary:
+  total_cases: 55
+  vulnerable_cases: 25
+  safe_cases: 15
+  counterfactual_cases: 10
+  helper_depth_cases: 5
+
+  coverage:
+    basic_missing_grace: 10
+    timing_variants: 5
+    critical_operations: 5
+    helper_delegation: 5
+    proper_implementation: 8
+    l1_l2_conditional: 4
+    view_pure_functions: 3
+    guard_inversion: 3
+    order_mutation: 3
+    value_mutation: 4
+
+  expected_metrics:
+    precision_target: 0.90
+    recall_target: 0.85
+    variation_score_target: 0.80

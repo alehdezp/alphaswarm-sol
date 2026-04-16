@@ -1,0 +1,71 @@
+# Cross-Function Reentrancy - Subcategory Index
+
+id: cross-function
+name: Cross-Function Reentrancy
+parent_category: reentrancy
+
+description: |
+  Reentrancy affecting multiple functions that share state variables. An attacker
+  enters through one function that makes an external call, then re-enters through
+  a different function that reads or modifies the same state before it's updated.
+  This is harder to detect as the vulnerable pattern spans multiple entry points.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - vm-003
+
+relevant_properties:
+  - state_write_after_external_call
+  - has_reentrancy_guard
+  - shared_state_variables
+  - visibility
+  - external_call_sites
+
+graph_signals:
+  - property: state_write_after_external_call
+    expected: true
+    critical: true
+
+  - property: has_reentrancy_guard
+    expected: false
+    critical: true
+
+  - property: shared_state_variables
+    expected: ">1"
+    critical: true
+    description: Multiple functions accessing same state variable
+
+behavioral_signatures:
+  - "X:out->F:other->R:shared"  # External call, enter other function, read shared
+  - "F1:X:out->F2:W:bal"  # Function 1 external call, Function 2 writes balance
+
+operation_sequences:
+  vulnerable:
+    - "F1: R:bal -> X:out | F2: R:bal -> W:state"
+    - "F1: R:state -> X:call | F2: M:state"
+  safe:
+    - "F1: R:bal -> W:bal -> X:out"
+    - "GlobalLock on all state-modifying functions"
+
+false_positive_indicators:
+  - "Global reentrancy lock across all functions"
+  - "Functions do not share mutable state"
+  - "All functions are internal"
+
+related_exploits:
+  - cream-finance-hack
+  - gmx-v1-reentrancy  # $42M exploit, July 2025
+
+token_estimate: 450
+
+specific_exploits:
+  gmx-v1-reentrancy:
+    name: "GMX V1 Reentrancy + Circular Accounting Bug"
+    date: 2025-07-09
+    loss_usd: 42000000
+    chain: arbitrum
+    description: "Cross-function reentrancy combined with non-atomic state updates and circular accounting dependencies"
+    documentation_path: "specifics/gmx-v1-reentrancy/"

@@ -1,0 +1,25 @@
+id: logic-018
+vulndoc: logic/general
+name: Protocol Interaction Flaw
+description: External protocol calls without code validation.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 840
+match:
+  all:
+  - property: has_external_calls
+    op: eq
+    value: true
+  - property: call_target_user_controlled
+    op: eq
+    value: true
+  none:
+  - property: validates_contract_code
+    op: eq
+    value: true
+  - property: call_target_validated
+    op: eq
+    value: true

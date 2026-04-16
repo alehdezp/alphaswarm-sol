@@ -1,0 +1,13 @@
+id: auth-095
+vulndoc: access-control/general
+name: Weak Auth Using Balance Check
+description: Authentication relies on balance/balanceOf checks.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_gate_uses_balance_check
+    op: eq
+    value: true

@@ -1,0 +1,24 @@
+id: live-033
+vulndoc: dos/general
+name: Memory Exhaustion
+description: Memory allocation sized by user input.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: allocates_memory_array_from_input
+    op: eq
+    value: true
+  - property: has_amount_bounds
+    op: eq
+    value: false
+  - property: has_require_bounds
+    op: eq
+    value: false
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external

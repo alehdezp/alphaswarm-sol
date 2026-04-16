@@ -1,0 +1,73 @@
+id: UC-AUDIT-008
+name: "Audit large codebase within time budget"
+workflow: vrs-audit
+category: audit
+tier: mechanical
+
+input:
+  contract: "examples/damm-vuln-defi/"
+  command: "/vrs-audit examples/damm-vuln-defi/"
+  context: >
+    The full Damn Vulnerable DeFi project contains 18+ challenge directories
+    with dozens of Solidity contracts. This scenario tests the audit workflow's
+    ability to handle a large codebase: it must prioritize contracts, manage
+    its time budget, and produce findings ranked by severity rather than
+    attempting exhaustive analysis of every file.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build a graph for the full project, triage
+    contracts by risk indicators, focus analysis on the highest-risk areas,
+    and produce prioritized findings within a reasonable time budget. It must
+    not hang, run out of context, or produce an unranked dump of every
+    possible issue.
+  must_happen:
+    - "Build BSKG from the full project directory"
+    - "Triage or prioritize contracts by risk indicators"
+    - "Produce findings sorted or grouped by severity"
+    - "Complete analysis within a reasonable time budget"
+    - "Report covers multiple vulnerability categories"
+    - "Summary includes scope coverage (how many contracts analyzed)"
+  must_not_happen:
+    - "Hang or timeout without producing any output"
+    - "Run out of context window mid-analysis"
+    - "Produce an unranked list of hundreds of low-quality findings"
+    - "Analyze only the first contract and ignore the rest"
+    - "Crash on large input"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 50
+  key_dimensions:
+    - name: scope_management
+      description: "Did the workflow triage contracts and manage its analysis budget?"
+    - name: finding_prioritization
+      description: "Are findings ranked by severity with the most critical first?"
+    - name: completeness
+      description: "Does the report cover a reasonable fraction of the codebase?"
+    - name: time_management
+      description: "Did the workflow complete without hanging or running out of resources?"
+  regression_signals:
+    - "Workflow hangs or times out -> CRITICAL REGRESSION: large codebase handling broken"
+    - "Zero findings on a project with known vulnerabilities -> REGRESSION: detection broken at scale"
+    - "Only one contract analyzed -> REGRESSION: scope management broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "examples/damm-vuln-defi/"
+  related_scenarios:
+    - "UC-AUDIT-003"
+    - "UC-AUDIT-007"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Mechanical tier because this tests operational capability (scale handling)
+  rather than core reasoning. Lower threshold (50) because large-codebase
+  triage is an optimization problem, not a correctness gate.

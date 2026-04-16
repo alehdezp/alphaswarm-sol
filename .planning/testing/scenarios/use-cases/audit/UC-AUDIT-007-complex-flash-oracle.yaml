@@ -1,0 +1,80 @@
+id: UC-AUDIT-007
+name: "Detect complex flash loan plus governance manipulation"
+workflow: vrs-audit
+category: audit
+tier: important
+
+input:
+  contract: "examples/damm-vuln-defi/src/selfie/"
+  command: "/vrs-audit examples/damm-vuln-defi/src/selfie/"
+  context: >
+    The Selfie challenge from Damn Vulnerable DeFi involves a multi-step
+    attack: an attacker takes a flash loan from SelfiePool, uses the borrowed
+    tokens to gain governance voting power in SimpleGovernance, queues a
+    malicious action to drain the pool, waits for the timelock, and then
+    executes the drain. This requires cross-contract reasoning across
+    SelfiePool.sol, SimpleGovernance.sol, and DamnValuableVotes.sol.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build a multi-contract BSKG, detect the
+    flash-loan-to-governance attack path across SelfiePool and
+    SimpleGovernance, and produce a high-severity finding that describes the
+    multi-step exploit chain. The workflow must reason about cross-contract
+    interactions, not just single-function patterns.
+  must_happen:
+    - "Build BSKG from all contracts in the selfie directory"
+    - "Detect flash loan capability in SelfiePool"
+    - "Detect governance voting mechanism in SimpleGovernance"
+    - "Identify cross-contract attack path: flash loan -> voting power -> drain"
+    - "Produce at least one finding with severity high or critical"
+    - "Finding describes the multi-step exploit chain"
+    - "Finding references functions in both SelfiePool and SimpleGovernance"
+  must_not_happen:
+    - "Analyze only one contract and miss cross-contract interactions"
+    - "Miss the flash-loan-to-governance attack vector entirely"
+    - "Produce findings without cross-contract evidence"
+    - "Crash on multi-file input"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+      - "Write"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "flash-loan"
+    severity: "critical"
+
+evaluation:
+  pass_threshold: 55
+  key_dimensions:
+    - name: cross_contract_reasoning
+      description: "Did the workflow trace the attack path across multiple contracts?"
+    - name: graph_utilization
+      description: "Did the workflow use BSKG cross-contract edges, not just per-file analysis?"
+    - name: exploit_chain_quality
+      description: "Does the finding describe the full multi-step exploit (loan -> vote -> drain)?"
+    - name: evidence_quality
+      description: "Are cross-contract function references accurate?"
+  regression_signals:
+    - "No cross-contract findings -> CRITICAL REGRESSION: multi-contract reasoning broken"
+    - "Finding misses flash loan vector -> REGRESSION: flash loan detection incomplete"
+    - "Finding misses governance manipulation -> REGRESSION: governance analysis incomplete"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "examples/damm-vuln-defi/src/selfie/SelfiePool.sol"
+  related_scenarios:
+    - "UC-AUDIT-003"
+    - "UC-INV-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  This is the hardest audit scenario. Lower pass threshold (55) because
+  complex multi-step attacks are genuinely difficult. Success here is a
+  strong signal that the framework can reason about real DeFi exploits.

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vkg.dev/schemas/llm_response.json",
+  "title": "VKG LLM Response Schema",
+  "description": "Schema for validating LLM responses in vulnerability analysis",
+  "type": "object",
+  "required": ["verdict", "confidence", "reasoning", "evidence"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["VULNERABLE", "SAFE", "UNCERTAIN"],
+      "description": "The final verdict on the vulnerability"
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Confidence level (0-100) in the verdict"
+    },
+    "reasoning": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Explanation of why this verdict was reached"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specific code references supporting the verdict"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Optional recommendations for fixing the issue"
+    },
+    "related_cve": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^CVE-[0-9]{4}-[0-9]+$"
+      },
+      "description": "Related CVE identifiers if any"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,19 @@
+id: ext-006
+vulndoc: access-control/external-call
+name: Missing Zero Address Check
+description: Address input used for transfers without non-zero validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: accepts_address_parameter
+    op: eq
+    value: true
+  - property: address_parameter_used_for_transfer
+    op: eq
+    value: true
+  - property: validates_address_nonzero
+    op: eq
+    value: false

@@ -1,0 +1,15 @@
+id: logic-021
+vulndoc: logic/general
+name: Function Override Missing Super
+description: Overrides without calling parent implementation.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 710
+match:
+  all:
+  - property: override_missing_super
+    op: eq
+    value: true

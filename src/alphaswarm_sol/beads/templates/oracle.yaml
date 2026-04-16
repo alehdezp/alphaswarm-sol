@@ -1,0 +1,76 @@
+# Oracle Investigation Template
+vulnerability_class: oracle
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify oracle usage"
+    look_for: |
+      - Chainlink latestRoundData()
+      - Uniswap TWAP queries
+      - Custom price feeds
+      - getPrice(), getLatestPrice() patterns
+    evidence_needed: "Oracle interface and price source"
+
+  - step_number: 2
+    action: "Check for staleness validation"
+    look_for: |
+      - updatedAt timestamp check
+      - require(block.timestamp - updatedAt < MAX_DELAY)
+      - Heartbeat validation
+    evidence_needed: "Staleness check code and threshold value"
+    red_flag: "No staleness check found"
+    safe_if: "Staleness check with reasonable threshold (< 1 hour for most feeds)"
+
+  - step_number: 3
+    action: "Check for price sanity bounds"
+    look_for: |
+      - require(price > 0)
+      - require(price < MAX_PRICE)
+      - Circuit breaker on extreme values
+    evidence_needed: "Price validation code"
+    red_flag: "No validation that price is positive/reasonable"
+
+  - step_number: 4
+    action: "Check for L2-specific issues (if on L2)"
+    look_for: |
+      - Sequencer uptime check
+      - Grace period after sequencer restart
+      - L2 sequencer feed usage
+    evidence_needed: "L2 handling code"
+    red_flag: "On L2 without sequencer uptime check"
+    safe_if: "Sequencer uptime validated before using price"
+
+  - step_number: 5
+    action: "Assess manipulation resistance"
+    look_for: |
+      - Is this a spot price (manipulable)?
+      - Is TWAP used with sufficient window?
+      - Can attacker profit from price manipulation?
+    evidence_needed: "Price source analysis"
+
+questions_to_answer:
+  - "What oracle is being used?"
+  - "Is there a staleness check?"
+  - "Is the price validated (> 0, reasonable bounds)?"
+  - "If L2, is sequencer uptime checked?"
+  - "Can the price be manipulated for profit?"
+
+common_false_positives:
+  - "Oracle data is only used for display/logging"
+  - "Staleness check exists but in a different function"
+  - "Using trusted internal oracle with different validation"
+  - "Price has no financial impact in this context"
+
+key_indicators:
+  - "No staleness validation"
+  - "No price > 0 check"
+  - "Using spot price without manipulation protection"
+  - "L2 deployment without sequencer check"
+
+safe_patterns:
+  - "Full Chainlink validation (staleness, round, price > 0)"
+  - "TWAP with >= 30 minute window"
+  - "Multiple oracle fallback"
+  - "L2 sequencer uptime validation"

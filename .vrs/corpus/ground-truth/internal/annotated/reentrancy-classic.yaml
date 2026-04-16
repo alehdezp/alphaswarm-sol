@@ -1,0 +1,99 @@
+# Internal Annotated Contract: ReentrancyClassic
+# Phase: 07.3.1.6 IMP-B1 / IMP-K2
+# Purpose: Ground truth for internal test contracts
+
+contract:
+  id: "reentrancy-classic"
+  name: "ReentrancyClassic"
+  source_path: "tests/contracts/ReentrancyClassic.sol"
+  solidity_version: "^0.8.20"
+
+metadata:
+  annotation_date: "2026-02-04"
+  annotator: "AlphaSwarm.sol team"
+  trust_level: "medium"  # Internal annotation, not external audit
+  purpose: "Controlled test case for classic reentrancy detection"
+
+contract_summary:
+  description: |
+    Simple vulnerable contract demonstrating classic reentrancy pattern.
+    External call is made before state update, allowing attacker to
+    re-enter and drain the contract balance.
+
+  lines_of_code: 18
+  functions:
+    - name: "deposit"
+      visibility: "external"
+      state_mutability: "payable"
+      vulnerable: false
+
+    - name: "withdraw"
+      visibility: "external"
+      state_mutability: "nonpayable"
+      vulnerable: true
+
+findings:
+  - id: "INT-RC-001"
+    title: "Classic reentrancy in withdraw function"
+    severity: "high"
+    vulnerability_class: "reentrancy"
+    swc_id: "SWC-107"
+    cwe_id: "CWE-841"
+    ground_truth_verdict: "confirmed"
+
+    affected_functions:
+      - "withdraw"
+
+    vulnerable_code:
+      file: "tests/contracts/ReentrancyClassic.sol"
+      line_start: 12
+      line_end: 17
+      snippet: |
+        function withdraw(uint256 amount) external {
+            require(balances[msg.sender] >= amount, "insufficient");
+            (bool ok, ) = msg.sender.call{value: amount}("");
+            require(ok, "call failed");
+            balances[msg.sender] -= amount;
+        }
+
+    vulnerability_pattern:
+      description: "External call before state update (CEI violation)"
+      operations_sequence:
+        - op: "READS_USER_BALANCE"
+          location: "line 13"
+        - op: "TRANSFERS_VALUE_OUT"
+          location: "line 14"
+        - op: "WRITES_USER_BALANCE"
+          location: "line 16"
+
+    exploit_scenario:
+      preconditions:
+        - "Attacker has deposited ETH"
+        - "Contract has ETH balance from other users"
+      steps:
+        - "Attacker deploys malicious contract with fallback"
+        - "Attacker calls withdraw() from malicious contract"
+        - "Fallback re-enters withdraw() before balance update"
+        - "Repeat until contract drained"
+      postconditions:
+        - "Contract balance = 0"
+        - "Attacker extracted more than deposited"
+
+    fix_recommendation: |
+      Apply Checks-Effects-Interactions pattern:
+      1. Update balances[msg.sender] BEFORE external call
+      2. Or use ReentrancyGuard modifier
+
+    detection_expectations:
+      tier_a_detectable: true  # Graph can identify call-before-write
+      tier_b_detectable: true  # LLM can verify pattern
+      tier_c_detectable: true  # Economic analysis shows profit motive
+
+statistics:
+  total_findings: 1
+  by_severity:
+    high: 1
+    medium: 0
+    low: 0
+  by_class:
+    reentrancy: 1

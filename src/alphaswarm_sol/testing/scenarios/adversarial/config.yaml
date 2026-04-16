@@ -1,0 +1,227 @@
+name: "Adversarial Detection Challenge"
+category: adversarial
+description: |
+  Adversarial contracts designed to test detection robustness.
+  Includes false-positive traps and obfuscated vulnerabilities.
+
+  THIS IS THE HARDEST SCENARIO - used for stress testing.
+
+contracts:
+  # False positive traps - LOOK vulnerable but are SAFE
+  - path: corpus/adversarial/fake-reentrancy.sol
+    has_vulnerability: false
+    notes: "Looks like reentrancy but has hidden guard in base contract"
+    tags: ["false-positive-trap", "tricky"]
+
+  - path: corpus/adversarial/deceptive-external-call.sol
+    has_vulnerability: false
+    notes: "External call goes to trusted system contract"
+    tags: ["false-positive-trap"]
+
+  - path: corpus/adversarial/misleading-names.sol
+    has_vulnerability: false
+    notes: "Function named 'unsafeWithdraw' is actually safe"
+    tags: ["false-positive-trap", "naming"]
+
+  # Obfuscated vulnerabilities - ARE vulnerable but HARD to find
+  - path: corpus/adversarial/split-reentrancy.sol
+    has_vulnerability: true
+    expected_pattern: reentrancy-cross-function
+    expected_severity: critical
+    ground_truth:
+      - pattern: reentrancy-cross-function
+        severity: critical
+        location: "processQueue:50"
+        description: "Reentrancy split across 3 functions"
+    tags: ["obfuscated"]
+
+  - path: corpus/adversarial/assembly-overflow.sol
+    has_vulnerability: true
+    expected_pattern: integer-overflow
+    expected_severity: high
+    ground_truth:
+      - pattern: integer-overflow
+        severity: high
+        location: "_inlineAdd:30"
+        description: "Overflow in inline assembly block"
+    tags: ["obfuscated", "assembly"]
+
+  - path: corpus/adversarial/callback-reentrancy.sol
+    has_vulnerability: true
+    expected_pattern: reentrancy-callback
+    expected_severity: critical
+    ground_truth:
+      - pattern: reentrancy-callback
+        severity: critical
+        location: "onTokenReceived:60"
+        description: "Reentrancy via ERC callback"
+    tags: ["obfuscated", "callback"]
+
+# =============================================================================
+# Counterfactual Suites (Phase 7.2 - Plan 04/12)
+# =============================================================================
+# Near-miss variants generated via CounterfactualGenerator.
+# Each counterfactual differs by a single semantic edit.
+
+counterfactual_suites:
+  # Guard inversion - flip require() or modifier logic
+  - name: guard-inversion
+    path: .vrs/corpus/contracts/adversarial/counterfactual
+    type: guard_inversion
+    description: "Contracts with inverted guard conditions"
+    expected_ratio:
+      vulnerable: 0.8
+      safe: 0.2
+    metadata_glob: "cf-*-guard_inversion-*.yaml"
+    tags: ["counterfactual", "guard-bypass"]
+
+  # CEI order swap - create reentrancy by reordering
+  - name: cei-order-swap
+    path: .vrs/corpus/contracts/adversarial/counterfactual
+    type: cei_order_swap
+    description: "Contracts with swapped Check-Effect-Interaction order"
+    expected_ratio:
+      vulnerable: 0.9
+      safe: 0.1
+    metadata_glob: "cf-*-cei_order_swap-*.yaml"
+    tags: ["counterfactual", "reentrancy", "cei"]
+
+  # Grace period manipulation
+  - name: grace-period
+    path: .vrs/corpus/contracts/adversarial/counterfactual
+    type: grace_period
+    description: "Contracts with added/removed grace periods"
+    expected_ratio:
+      vulnerable: 0.5
+      safe: 0.5
+    metadata_glob: "cf-*-grace_period-*.yaml"
+    tags: ["counterfactual", "timing"]
+
+  # Helper depth - move checks into internal helpers
+  - name: helper-depth
+    path: .vrs/corpus/contracts/adversarial/counterfactual
+    type: helper_depth
+    description: "Contracts with checks moved into helper functions"
+    expected_ratio:
+      vulnerable: 0.7
+      safe: 0.3
+    metadata_glob: "cf-*-helper_depth-*.yaml"
+    tags: ["counterfactual", "obfuscation", "ast-morph"]
+
+  # Chain condition - add L1/L2 conditional checks
+  - name: chain-condition
+    path: .vrs/corpus/contracts/adversarial/counterfactual
+    type: chain_condition
+    description: "Contracts with chain-specific conditional checks"
+    expected_ratio:
+      vulnerable: 0.6
+      safe: 0.4
+    metadata_glob: "cf-*-chain_condition-*.yaml"
+    tags: ["counterfactual", "multichain"]
+
+  # Audit mirror - re-infect fixed contracts (deferred, requires manual curation)
+  - name: audit-mirror
+    path: .vrs/corpus/contracts/adversarial/counterfactual
+    type: audit_mirror
+    description: "Fixed contracts re-infected with minimal edits"
+    enabled: false
+    expected_ratio:
+      vulnerable: 1.0
+      safe: 0.0
+    metadata_glob: "cf-*-audit_mirror-*.yaml"
+    tags: ["counterfactual", "regression", "audit-mirror"]
+
+# =============================================================================
+# Hard-Negative Suites (Phase 7.2 - Plan 04/12)
+# =============================================================================
+# Safe contracts that look vulnerable but have proper guards.
+# Used to reduce false positives and improve precision.
+
+hard_negative_suites:
+  - name: hard-negatives-core
+    path: .vrs/corpus/contracts/safe
+    description: "Safe contracts resembling common vulnerability patterns"
+    contracts:
+      - name: HardNegative_ReentrancyWithGuard
+        vulnerability_class: reentrancy
+        safe_reason: "Has proper reentrancy guard via nonReentrant modifier"
+        tags: ["hard-negative", "reentrancy", "guarded"]
+
+      - name: HardNegative_OwnershipWithTimelock
+        vulnerability_class: access-control
+        safe_reason: "Ownership changes require timelock delay"
+        tags: ["hard-negative", "access-control", "timelock"]
+
+      - name: HardNegative_OracleWithStalenessCheck
+        vulnerability_class: oracle-manipulation
+        safe_reason: "Has staleness check before using oracle price"
+        tags: ["hard-negative", "oracle", "staleness"]
+
+      - name: HardNegative_FlashLoanWithCooldown
+        vulnerability_class: flash-loan
+        safe_reason: "Has cooldown period between flash loan operations"
+        tags: ["hard-negative", "flash-loan", "cooldown"]
+
+      - name: HardNegative_DelegateCallWithWhitelist
+        vulnerability_class: delegatecall
+        safe_reason: "Only whitelisted addresses can be delegatecall targets"
+        tags: ["hard-negative", "delegatecall", "whitelist"]
+
+      - name: HardNegative_ExternalCallWithCEI
+        vulnerability_class: reentrancy
+        safe_reason: "Follows CEI pattern - state updated before external call"
+        tags: ["hard-negative", "reentrancy", "cei-safe"]
+
+      - name: HardNegative_HelperCallWithInlinedCheck
+        vulnerability_class: access-control
+        safe_reason: "Check inlined from helper function, still present"
+        tags: ["hard-negative", "access-control", "inlined"]
+
+      - name: HardNegative_L2SequencerWithGrace
+        vulnerability_class: oracle-manipulation
+        safe_reason: "Checks L2 sequencer status with grace period"
+        tags: ["hard-negative", "oracle", "l2", "sequencer"]
+
+    expected_metrics:
+      total_safe: 8
+      false_positive_rate_target: 0.0
+    tags: ["hard-negative", "fp-reduction"]
+
+prompt_template: |
+  You are auditing {contract_path} for a security firm.
+
+  This is a BLIND audit - you don't know what vulnerabilities to expect.
+  Analyze thoroughly and report ALL potential issues.
+
+  Be careful: some patterns may look suspicious but are actually safe.
+  Verify each finding before reporting.
+
+  Return findings with pattern, severity, location, confidence, reasoning.
+
+allowed_tools:
+  - "Bash(uv run alphaswarm build-kg*)"
+  - "Bash(uv run alphaswarm query*)"
+  - "Read"
+  - "Glob"
+  - "Grep"
+
+json_schema:
+  type: object
+  properties:
+    has_vulnerability:
+      type: boolean
+    findings:
+      type: array
+    reasoning:
+      type: string
+  required: [has_vulnerability, findings, reasoning]
+
+timeout_seconds: 180
+difficulty: expert
+
+isolation:
+  exclude_vulndocs: true
+  blind_prompt: true
+  shuffle_corpus: true
+
+tags: ["adversarial", "stress-test", "counterfactual", "hard-negative"]

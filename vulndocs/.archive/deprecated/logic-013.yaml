@@ -1,0 +1,19 @@
+id: logic-013
+vulndoc: logic/general
+name: Pool Invariant Violation
+description: Pool state modified without invariant checks.
+scope: Function
+lens:
+- LogicState
+severity: high
+cwe:
+- 682
+match:
+  all:
+  - property: writes_pool_state
+    op: eq
+    value: true
+  none:
+  - property: has_invariant_check
+    op: eq
+    value: true

@@ -1,0 +1,29 @@
+# mev Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: mev
+name: Mev
+description: 'Vulnerability subcategories for mev domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: backrunning
+  name: Backrunning
+  path: backrunning/
+- id: frontrunning
+  name: Frontrunning
+  path: frontrunning/
+- id: protection
+  name: Protection
+  path: protection/
+- id: sandwich
+  name: Sandwich Attack
+  path: sandwich/
+- id: slippage
+  name: Slippage Exploitation
+  path: slippage/
+statistics:
+  subcategory_count: 5
+  last_updated: '2026-02-18'

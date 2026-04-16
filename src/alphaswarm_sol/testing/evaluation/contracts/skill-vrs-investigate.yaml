@@ -1,0 +1,65 @@
+workflow_id: skill-vrs-investigate
+category: skill
+grader_type: hybrid
+rule_refs:
+- GRAPH-FIRST
+- EVIDENCE-QUALITY
+- EXEC-INTEGRITY
+reasoning_dimensions:
+- graph_utilization
+- evidence_quality
+- investigation_depth
+- hypothesis_testing
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: bskg_query_issued
+  description: Investigation used BSKG queries
+  expected_behavior: Tool sequence contains Bash with alphaswarm query
+  grader_type: code
+- id: graph_first_compliance
+  description: BSKG queries precede manual code reading
+  expected_behavior: First Bash(alphaswarm) call occurs before first Read call
+  grader_type: code
+- id: evidence_packet_produced
+  description: Investigation produced an evidence packet
+  expected_behavior: Response includes code locations, graph refs, and reasoning chain
+  grader_type: model
+- id: session_completed
+  description: Investigation session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+evidence_requirements:
+- type: graph_nodes
+  description: Graph nodes explored during investigation
+- type: code_locations
+  description: Specific source code references
+hooks:
+- SessionStart
+- Stop
+- PreCompact
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Skill queries BSKG for relevant patterns before reading source
+  code. Skill forms explicit hypotheses based on graph query results. Skill systematically
+  tests hypotheses by querying for confirming and disconfirming evidence. Skill follows
+  cross-function data flow through graph relationships. Skill produces an evidence
+  packet with graph node IDs, code locations, and reasoning chain. Skill performs
+  self-critique by evaluating hypothesis confidence against evidence strength.
+active_dimensions:
+- graph_utilization
+- evidence_quality
+- investigation_depth
+- hypothesis_testing
+- hypothesis_formation
+- conclusion_support
+- reasoning_depth
+- rubric_coverage

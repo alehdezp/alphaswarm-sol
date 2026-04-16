@@ -1,0 +1,22 @@
+# Replay Attacks - Subcategory Index
+
+id: replay
+name: Replay Attacks
+parent_category: crypto
+
+description: |
+  Signatures reusable across chains, contracts, or after nonce reset
+  due to missing domain separation.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - crypto-004
+
+relevant_properties:
+  - uses_chainid
+  - uses_nonce
+
+token_estimate: 400

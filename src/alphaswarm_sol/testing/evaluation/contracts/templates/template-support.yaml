@@ -1,0 +1,23 @@
+_template: support
+category: skill
+grader_type: code
+rule_refs:
+- EXEC-INTEGRITY
+reasoning_dimensions:
+- task_completion
+evaluation_config:
+  run_gvs: false
+  run_reasoning: false
+  debrief: false
+  depth: shallow
+capability_checks:
+- id: task_completed
+  description: The support task completed without errors
+  expected_behavior: No error in response, expected output produced
+  grader_type: code
+evidence_requirements: []
+hooks:
+- Stop
+- SessionEnd
+status: active
+coverage_axes: []

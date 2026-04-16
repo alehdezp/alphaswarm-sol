@@ -1,0 +1,49 @@
+# DVDeFi Challenge: Free Rider
+# Vulnerability: msg.value reuse in loop
+
+id: dvd-free-rider
+name: Free Rider
+version: "4"
+difficulty: 4
+category: Reentrancy
+
+source_path: examples/damm-vuln-defi/src/free-rider
+
+vulnerability:
+  type: msg-value-loop-reuse
+  description: |
+    The buyMany function uses msg.value in a loop without decrementing,
+    allowing purchase of multiple NFTs for the price of one.
+  cwe: CWE-691
+  severity: critical
+
+expected_detections:
+  - pattern: msg-value-loop-reuse
+    contract: FreeRiderNFTMarketplace
+    function: buyMany
+    property: uses_msg_value_in_loop
+    confidence: high
+
+  - pattern: msg-value-single-use
+    contract: FreeRiderNFTMarketplace
+    function: _buyOne
+    property: uses_msg_value
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - FreeRiderNFTMarketplace.buyMany
+    - FreeRiderNFTMarketplace._buyOne
+  safe:
+    - FreeRiderNFTMarketplace.offerMany
+
+false_positive_exclusions:
+  - description: "offerMany doesn't use msg.value"
+    reason: Listing function, not purchase
+
+verification:
+  exploit_summary: "Flash loan ETH, buy 6 NFTs for price of 1, profit from bounty"
+  fix_summary: "Track total spent in loop, validate msg.value >= total"
+
+status: detected
+detection_date: "2026-01-06"

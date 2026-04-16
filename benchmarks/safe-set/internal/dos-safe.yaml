@@ -1,0 +1,32 @@
+# DoS Safe Reference Implementation
+id: safe-dos
+name: DosSafe
+category: internal_safe
+source: tests/contracts/safe/DosSafe.sol
+solidity_version: "0.8.x"
+
+contract_info:
+  description: |
+    Reference implementation demonstrating DoS resistance:
+    - Bounded loops
+    - No strict equality checks on balances
+    - Pull payment pattern
+  security_features:
+    - Bounded iterations
+    - Pull payment pattern
+    - Gas-efficient loops
+  safe_since: 2025-12
+  review_status: internal
+
+expected_findings: []
+
+false_positive_categories:
+  - dos-*
+  - unbounded-loop
+  - strict-equality
+
+notes: |
+  This contract demonstrates correct DoS prevention patterns.
+  Any DoS finding is a false positive.
+
+status: validated

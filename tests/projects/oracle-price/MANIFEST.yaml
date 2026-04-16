@@ -1,0 +1,260 @@
+# =============================================================================
+# TEST PROJECT MANIFEST - Oracle Price Feed
+# =============================================================================
+
+project: oracle-price
+description: |
+  Oracle and price feed test scenarios for external influence patterns.
+  Contains Chainlink integration, TWAP, staleness checks, and manipulation vectors.
+max_files: 30
+current_files: 5
+
+patterns:
+  oracle-001:
+    files: [OracleStalenessPatterns.sol]
+    functions:
+      vulnerable: []  # This is a SAFE pattern - no vulnerable functions
+      safe:
+        - getPriceWithStalenessCheck
+        - getPriceWithRoundCheck
+        - getPriceWithCompleteChecks
+        - getPriceWithMaxAge
+        - getPriceWithConfigurableThreshold
+        - _getPriceWithStalenessCheck
+        - getPriceWithSequencerCheck
+        - getAveragePriceWithChecks
+        - viewPriceWithStaleness
+        - getPriceVariation2
+        - getPriceVariation3
+        - getPriceVariation4
+        - getPriceOnlyRoundIdCheck  # FP - but roundId IS a staleness indicator
+      unsafe:
+        - getPriceUnchecked
+        - getPriceOnlyAnswerCheck
+        - getPriceWithUnrelatedChecks
+        - getPriceWithIfRevert  # FN - limitation: if-revert not detected
+        - getPriceWithCustomError  # FN - limitation: custom error not detected
+    last_updated: "2025-12-31"
+    notes: |
+      Tests SAFE PATTERN detection - identifies oracle reads WITH staleness checks.
+      Known limitations: only detects require() patterns, not if-revert or custom errors.
+
+  oracle-003:
+    files: [OracleStalenessPatterns.sol]
+    functions:
+      vulnerable:
+        - liquidateUser
+        - borrow
+        - updateStoredPrice
+        - swapAtOraclePrice
+        - calculateFees
+        - getPriceEmitsEvent
+        - getPriceStoresTimestamp
+      safe:
+        - liquidateUserSafe
+        - borrowSafe
+        - getPriceWithStalenessCheck
+        - getPriceWithRoundCheck
+        - getPriceWithCompleteChecks
+        - _getPriceWithStalenessCheck
+        - getPriceWithSequencerCheck
+        - getAveragePriceWithChecks
+        - getPriceOnlyRoundIdCheck
+      excluded:
+        - getPriceUnchecked  # View function - excluded by design
+        - getPriceOnlyAnswerCheck  # View function - excluded by design
+        - viewPriceWithStaleness  # View function - excluded by design
+    last_updated: "2025-12-31"
+    notes: |
+      Tests VULNERABILITY PATTERN detection - identifies non-view oracle reads WITHOUT staleness checks.
+      Perfect scores: precision=1.0, recall=1.0, variation=1.0 - EXCELLENT rating.
+      View functions are intentionally excluded as they don't execute exploitable transactions.
+
+  oracle-004:
+    files: [L2OracleSequencerPatterns.sol]
+    functions:
+      vulnerable:
+        - liquidateUser  # No sequencer check
+        - borrow  # No sequencer check
+        - swapAtOraclePrice  # No sequencer check
+        - getCollateralValue  # No sequencer check
+        - mintAgainstCollateral  # Has staleness check but missing sequencer check
+        - updateStoredPrice  # Internal state-changing without sequencer check
+        - calculateLoanValue  # No sequencer check
+        - setCollateralRatio  # Variation: different naming context
+      safe:
+        - swapWithInlineSequencerCheck  # Inline sequencer + grace period check
+        - getPriceWithSequencerCheck  # Comprehensive L2 checks
+        - getPriceMultiChain  # Conditional L2 check for multi-chain
+        - getPriceStatusCheckOnly  # Has sequencer status check (no grace period)
+      false_positives:
+        - liquidateUserSafe  # Calls _checkSequencerUptime() helper (limitation)
+        - borrowSafe  # Calls _checkSequencerUptime() helper (limitation)
+        - mintWithL2Validation  # Calls _validateL2SequencerStatus() helper (limitation)
+        - borrowWithReorderedChecks  # Calls _ensureSequencerHealthy() helper (limitation)
+      excluded:
+        - viewOraclePrice  # View function - excluded by pattern
+        - calculatePriceImpact  # Pure function - excluded by pattern
+    last_updated: "2025-12-31"
+    notes: |
+      Tests L2-SPECIFIC VULNERABILITY PATTERN - identifies oracle reads WITHOUT sequencer uptime checks.
+      Rating: READY (precision=0.70, recall=0.88, variation=0.75)
+
+      Known Limitation: has_sequencer_uptime_check only detects INLINE checks, not checks
+      delegated to internal helper functions. This causes false positives for functions
+      that properly delegate sequencer validation to helpers.
+
+      Pattern is production-ready with manual review to filter helper delegation patterns.
+
+  oracle-005:
+    files: [TWAPWindowPatterns.sol]
+    functions:
+      vulnerable:
+        - getTWAPPriceHardcoded  # Hardcoded 30-minute window
+        - getTWAPShortWindow  # Hardcoded 10-minute window (CRITICAL)
+        - getUniswapV2TWAP  # Uniswap V2 hardcoded window
+        - liquidateWithHardcodedTWAP  # Critical operation with hardcoded window
+        - borrowAgainstCollateral  # Borrow with hardcoded window
+        - swapAtTWAPPrice  # Swap with hardcoded window (MEV-sensitive)
+        - getPriceFromTWAPOracle  # Verbose naming with hardcoded window
+        - _getTWAPInternal  # Internal but state-changing
+        - getPrice  # Generic naming with hardcoded window
+        - getCollateralValue  # Context-specific naming with hardcoded window
+      safe:
+        - getTWAPPriceConfigurable  # Has twapWindow parameter
+        - getTWAPWithSecondsAgo  # Has secondsAgo parameter
+        - getTWAPWithPeriod  # Has period parameter
+        - getTWAPWithWindowParam  # Has twapWindow parameter
+        - consultWithInterval  # Has interval parameter
+        - liquidateWithConfigurableTWAP  # Liquidation with window parameter
+        - getPriceWithDuration  # Has duration parameter (view function)
+        - viewTWAPHardcoded  # View function (excluded by pattern)
+        - calculateTWAPDelta  # Pure function (excluded by pattern)
+        - getMultiWindowTWAP  # Multi-window with parameters
+        - updateStoredPriceManual  # No TWAP read at all
+      false_positives:
+        - getTWAPFromStorageWindow  # Storage-based window (governance-controlled)
+      false_negatives:
+        - consultTWAP  # Uniswap V2 consult (builder limitation: missing READS_ORACLE)
+    last_updated: "2025-12-31"
+    notes: |
+      Tests VULNERABILITY PATTERN detection - identifies TWAP oracle reads WITHOUT configurable window parameters.
+      Rating: READY (precision=0.91, recall=0.91, variation=0.80)
+
+      Known Limitations:
+      1. Storage-based windows flagged as vulnerable (cannot distinguish from constants)
+      2. Uniswap V2 cumulative price patterns not detected (builder limitation)
+
+      Pattern excels at Uniswap V3 observe() patterns and multiple parameter name variants.
+
+  oracle-006:
+    files: [L2OracleFreshnessComplete.sol]
+    functions:
+      safe:  # SAFE PATTERN - functions WITH BOTH staleness AND sequencer checks
+        - getPriceProductionGrade
+        - getPriceInlineChecks
+        - borrowSafe
+        - getCollateralValueComplete
+        - updateStoredPriceSafe
+        - getPriceMultiChain
+        - getPriceReorderedChecks
+        - viewPriceWithBothChecks
+        - _getPricePrivate
+        - getPriceVariation2  # Hardcoded thresholds
+        - getPriceVariation3  # Alternative operators
+        - getPriceVariation4  # Compact checks
+      incomplete:  # INCOMPLETE - missing one or both checks
+        - getPriceOnlyStalenessCheck  # Missing sequencer
+        - getPriceOnlySequencerCheck  # Missing staleness
+        - getPriceUnchecked  # No checks at all
+        - liquidateUserNoSequencer  # Missing sequencer
+        - borrowNoStaleness  # Missing staleness
+        - getPriceFromStorage  # No oracle read
+        - getPriceViaHelpers  # Checks delegated to helpers
+        - _getPriceWithStalenessCheck  # Only staleness
+        - _checkSequencerUptime  # Only sequencer
+      false_positives:
+        - getPriceSequencerStatusOnly  # Sequencer status but missing grace period (partial protection)
+        - getPricePartialStaleness  # updatedAt check but missing answeredInRound (partial staleness)
+      false_negatives:
+        - liquidateUserSafe  # HAS both checks but uses abbreviated names (upAt, rId, ansRound)
+        - swapWithCompleteValidation  # HAS both checks but abbreviated names
+        - getAveragePriceWithFullValidation  # HAS both checks but abbreviated names
+        - getPriceVariation1  # HAS both checks but uses 'ts' instead of 'updatedAt'
+    last_updated: "2025-12-31"
+    notes: |
+      Tests SAFE PATTERN detection - identifies oracle reads WITH BOTH staleness AND sequencer checks.
+      Rating: READY (precision=0.86, recall=0.75, variation=0.75)
+
+      Known Limitations:
+      1. Abbreviated variable names not detected (ts, rId, ansRound vs updatedAt, roundId, answeredInRound)
+      2. Partial checks may be flagged as complete (sequencer status without grace period, partial staleness)
+      3. Helper delegation not detected (checks in separate internal functions)
+
+      Pattern excels at standard implementations matching Chainlink documentation.
+      Production-ready for identifying best-practice L2 oracle integration.
+
+  oracle-007:
+    files: [L2OraclePartialProtection.sol]
+    functions:
+      vulnerable:  # VULNERABLE: Staleness check present, sequencer check MISSING
+        - liquidateUser
+        - borrow
+        - swapAtOraclePrice
+        - getCollateralValue
+        - updateStoredPrice
+        - calculateLoanValue
+        - setPriceBasedFee
+        - updateCollateralRatio
+        - getPriceHardcodedThreshold
+        - getPriceAltOperator
+        - getPriceDoubleCheck
+        - getPriceCompactCheck
+      safe:  # SAFE: Both checks OR no checks (other patterns)
+        - liquidateUserSafe  # Has BOTH checks (oracle-006) - FALSE POSITIVE (helper delegation)
+        - borrowUnchecked  # No checks at all (oracle-003)
+        - swapWithCompleteChecks  # Inline both checks (oracle-006)
+        - calculateValueUnsafe  # Only answer check (oracle-003)
+        - getPriceProductionGrade  # Production-grade checks (oracle-006)
+      excluded:
+        - viewPriceWithStaleness  # View function (is_view = true)
+        - calculatePriceImpact  # Pure function
+        - _getPriceView  # Internal view
+        - _updatePricePrivate  # Private visibility
+        - _getPriceWithStalenessCheck  # Internal view helper
+        - _getStalenessCheckedPrice  # Private view helper
+        - _fetchFreshPrice  # Internal view helper
+      false_positives:
+        - liquidateUserSafe  # Calls _checkSequencerUptime() helper (delegation not detected)
+      false_negatives:
+        - getPriceWithAge  # Age variable pattern not detected by has_staleness_check
+    last_updated: "2025-12-31"
+    notes: |
+      Tests PARTIAL PROTECTION PATTERN - identifies functions WITH staleness check BUT WITHOUT sequencer check on L2.
+      Rating: READY (precision=0.89, recall=1.00, variation=1.00)
+
+      Known Limitations:
+      1. Helper delegation: has_sequencer_uptime_check only detects INLINE checks, not checks
+         delegated to internal helpers (_checkSequencerUptime). Causes 1 false positive.
+      2. Age variable: has_staleness_check doesn't detect intermediate age variables.
+      3. Private functions: Excluded from pattern (reduced attack surface).
+      4. View helpers: Internal/private view functions excluded (no exploitable state changes).
+
+      Pattern excels at detecting incomplete L2 oracle protection across varied staleness check patterns.
+      Production-ready with manual review for helper delegation patterns.
+
+notes: |
+  Oracle scenarios for testing:
+  - Chainlink price feed integration
+  - TWAP oracle patterns
+  - Staleness checks (updatedAt validation)
+  - Sequencer uptime checks (L2)
+  - Single oracle vs aggregation
+  - Oracle manipulation via flash loans
+
+  Recommended test contract structure:
+  - PriceOracle.sol: Basic Chainlink integration
+  - PriceOracleSafe.sol: With staleness and sequencer checks
+  - TWAPOracle.sol: Time-weighted average price
+  - OracleAggregator.sol: Multi-oracle patterns
+  - PriceSensitiveLogic.sol: Functions using oracle data

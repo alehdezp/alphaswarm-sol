@@ -1,0 +1,24 @@
+id: has-user-input-writes-state-no-gate
+vulndoc: access-control/unprotected-functions
+name: User Input State Write Without Access Gate
+description: Functions with user inputs that write state without access gates.
+scope: Function
+lens:
+  - Authority
+  - ExternalInfluence
+severity: high
+match:
+  all:
+    - property: has_user_input
+      op: eq
+      value: true
+    - property: writes_state
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false
+  none:
+    - property: is_constructor
+      op: eq
+      value: true

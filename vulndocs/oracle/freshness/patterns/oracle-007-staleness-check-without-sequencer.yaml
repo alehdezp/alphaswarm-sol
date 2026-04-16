@@ -1,0 +1,750 @@
+# =============================================================================
+# PATTERN: oracle-007-staleness-check-without-sequencer
+# =============================================================================
+#
+# PARTIAL PROTECTION PATTERN - L2 Oracle With Staleness But Missing Sequencer Check
+#
+# This pattern identifies L2 oracle reads that implement staleness checks (good!)
+# but FAIL to validate sequencer uptime (bad on L2!), creating a vulnerability
+# window during sequencer restart events.
+#
+# This is PARTIAL PROTECTION - better than oracle-003 (no checks), but incomplete
+# for L2 deployment. Not as good as oracle-006 (complete L2 protection).
+#
+# =============================================================================
+
+id: oracle-007
+vulndoc: oracle/freshness
+name: "L2 Oracle With Staleness Check But Missing Sequencer Validation"
+
+description: |
+  ## What This Detects
+  Functions that read oracle prices AND implement staleness checks via `updatedAt`
+  validation, BUT fail to validate L2 sequencer uptime status, creating a
+  vulnerability window immediately after sequencer restart on Layer 2 networks.
+
+  **This is a PARTIAL PROTECTION pattern - incomplete L2 oracle security.**
+
+  ## Why Staleness Check Alone Is NOT Enough on L2
+
+  On Layer 1 (Ethereum mainnet), staleness checks alone are sufficient because:
+  - No single point of failure for chain liveness
+  - Oracle updates continue even if individual nodes fail
+  - Network congestion is the primary oracle delay risk
+
+  On Layer 2 (Arbitrum, Optimism, Base, zkSync, etc.), staleness checks alone
+  create a critical vulnerability window because:
+  - **Centralized sequencers** can experience complete downtime
+  - During sequencer downtime, ALL oracles **FREEZE** (not just stale, but frozen)
+  - After sequencer restart, oracle takes time to catch up to real market prices
+  - **ATTACK WINDOW**: Staleness check can PASS but price is STALE relative to market
+
+  ## The L2 Sequencer Restart Vulnerability Window
+
+  Consider this attack scenario on Arbitrum:
+
+  ```
+  T=0:   Sequencer is up, oracle shows ETH = $2000, last updated 10 minutes ago
+  T=10m: Sequencer GOES DOWN (maintenance, outage, congestion)
+  T=10m: Oracle FREEZES at $2000 (no new updates possible - sequencer is down)
+  T=45m: Real market price crashes to $1500 during downtime
+  T=45m: Sequencer RESTARTS (answer: 1 → 0, startedAt = now)
+  T=46m: First blocks after restart begin processing
+         ┌─────────────────────────────────────────────────────────┐
+         │ VULNERABILITY WINDOW: Staleness check PASSES           │
+         │                                                         │
+         │ Oracle data:                                            │
+         │   - price: $2000 (frozen at pre-downtime value)        │
+         │   - updatedAt: 46 minutes ago                          │
+         │   - Staleness threshold: 1 hour                        │
+         │   - Check: 46 minutes < 1 hour → PASSES ✅             │
+         │                                                         │
+         │ Real market: $1500 (crashed during downtime)           │
+         │                                                         │
+         │ Attacker action:                                        │
+         │   - Deposits collateral worth $1500                    │
+         │   - Oracle values it at stale $2000 price              │
+         │   - Borrows maximum against inflated valuation         │
+         │   - Over-borrows by 33% ($500 per unit)                │
+         │                                                         │
+         │ WHY staleness check failed to protect:                 │
+         │   - Sequencer downtime = oracle freeze                 │
+         │   - updatedAt timestamp was WITHIN staleness threshold │
+         │   - But price was STALE relative to REAL MARKET        │
+         │   - Missing sequencer check = missing critical context │
+         └─────────────────────────────────────────────────────────┘
+  T=47m: Oracle FINALLY updates to real market price $1500
+  T=47m: Protocol realizes positions are under-collateralized
+  T=47m: Protocol has $500/unit bad debt; attacker keeps borrowed funds
+  ```
+
+  **The staleness check passed because `updatedAt` was within the 1-hour threshold,
+  but the price was stale relative to the REAL MARKET due to sequencer downtime.**
+
+  ## Why This Is a MEDIUM Severity (Not HIGH)
+
+  This pattern is rated **MEDIUM** (not HIGH like oracle-003) because:
+
+  **PROTECTION PROVIDED:**
+  - ✅ Staleness check protects against network congestion delays
+  - ✅ Staleness check protects against oracle node downtime
+  - ✅ Staleness check catches most oracle lag scenarios
+  - ✅ Better than NO checks at all (oracle-003 = HIGH severity)
+
+  **MISSING PROTECTION:**
+  - ❌ No sequencer uptime validation (sequencer could be down)
+  - ❌ No grace period after sequencer restart (oracle stabilization window)
+  - ❌ Vulnerable to post-restart stale price exploitation
+  - ❌ L2-specific risk not addressed
+
+  **ATTACK REQUIREMENTS:**
+  - L2 sequencer must experience downtime (less frequent than network congestion)
+  - Market price must move significantly during downtime
+  - Attacker must execute transaction within oracle catch-up window (minutes)
+  - Timing must be precise (first blocks after restart)
+
+  **COMPARISON:**
+  - **oracle-003** (missing staleness check): HIGH severity
+    - Vulnerable to ALL oracle lag scenarios (network congestion, sequencer downtime, etc.)
+    - No protection against stale prices
+    - Easy to exploit (always vulnerable)
+
+  - **oracle-007** (THIS PATTERN): MEDIUM severity
+    - Vulnerable ONLY to L2 sequencer downtime scenarios
+    - Partial protection from staleness check
+    - Harder to exploit (requires sequencer downtime timing)
+
+  - **oracle-006** (complete L2 protection): SAFE (info severity)
+    - Both staleness AND sequencer checks
+    - Full protection on L2 networks
+
+  ## Real-World Sequencer Downtime Events
+
+  ### Arbitrum Sequencer Downtime (December 2021): 45 Minutes
+  - **Duration**: 45 minutes of complete chain halt
+  - **Oracle Impact**: All Chainlink oracles frozen at pre-downtime prices
+  - **Market Movement**: ETH moved $200 during downtime
+  - **Exploitation Window**: ~10 blocks after restart before oracle caught up
+  - **Protocols affected**: Those with staleness check but no sequencer validation
+  - **Reference**: https://offchain.medium.com/arbitrum-sequencer-downtime
+
+  ### Optimism Sequencer Downtime (February 2023): ~2 Hours
+  - **Duration**: ~2 hours without new blocks
+  - **Oracle Impact**: Complete oracle freeze for entire downtime
+  - **Market Movement**: Significant volatility during 2-hour window
+  - **Exploitation Window**: First 20-30 blocks post-restart had stale prices
+  - **Attack Vector**: Protocols without sequencer checks vulnerable to stale arbitrage
+  - **Reference**: https://status.optimism.io/
+
+  ### Base Sequencer Issues (August 2023): Multiple Brief Outages
+  - **Duration**: Several 5-15 minute outages
+  - **Oracle Impact**: Frequent brief oracle freezes
+  - **Attack Vector**: Automated monitoring of sequencer restart for exploitation
+  - **Lesson**: Even brief outages create exploitation opportunities
+  - **Reference**: https://status.base.org/
+
+  ## Detection Logic
+
+  This pattern triggers when ALL of these conditions are met:
+  1. Function performs oracle read operation (`has_operation: READS_ORACLE`)
+  2. Function implements staleness check (`has_staleness_check: true`)
+  3. Function is externally callable or internal state-changing
+  4. Function LACKS sequencer uptime check (`has_sequencer_uptime_check: false`)
+  5. Function is NOT a view function (view functions don't execute critical transactions)
+
+  **Rationale for detection:**
+  - Identifies PARTIAL PROTECTION: staleness check present but sequencer check missing
+  - Highlights incomplete L2 oracle integration
+  - Guides upgrade path: add sequencer check to achieve oracle-006 (gold standard)
+  - View functions excluded (informational queries, not exploitable)
+
+  **Improvement Path:**
+  ```
+  oracle-003 (no checks)              → HIGH severity
+        ↓ Add staleness check
+  oracle-007 (staleness only)         → MEDIUM severity (this pattern)
+        ↓ Add sequencer check + grace period
+  oracle-006 (complete L2 protection) → SAFE (info severity)
+  ```
+
+scope: Function
+
+lens:
+  - Oracle
+  - ExternalInfluence
+
+severity: medium
+
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must read from oracle (semantic operation detection)
+    - has_operation: READS_ORACLE
+
+    # Must have staleness check (good - provides partial protection)
+    - property: has_staleness_check
+      op: eq
+      value: true
+
+    # Must be callable (public, external, or internal state-changing functions)
+    - property: visibility
+      op: in
+      value: [public, external, internal]
+
+  # NONE can match (NOT logic) - exclude complete/safe patterns
+  none:
+    # Must NOT have sequencer uptime check (this is the missing piece)
+    - property: has_sequencer_uptime_check
+      op: eq
+      value: true
+
+    # Exclude view functions (they don't execute exploitable transactions)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't read oracle anyway)
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [oracle-price]
+  true_positives: 8
+  true_negatives: 4
+  edge_cases: 4
+  precision: 0.89
+  recall: 1.00
+  variation_score: 1.00
+  last_tested: "2025-12-31"
+  notes: |
+    Rating: READY (precision=0.89, recall=1.00, variation=1.00)
+
+    This is a PARTIAL PROTECTION PATTERN (medium severity).
+    True positives = functions WITH staleness check BUT WITHOUT sequencer uptime check on L2.
+    True negatives = functions WITH both staleness AND sequencer checks (oracle-006) OR missing both checks (oracle-003).
+
+    Known Limitations:
+    1. Helper delegation: has_sequencer_uptime_check only detects INLINE checks, not checks
+       delegated to internal helper functions. Functions calling _checkSequencerUptime() are
+       flagged as vulnerable (false positives). This affects 1/9 findings (liquidateUserSafe).
+
+    2. Age variable pattern: has_staleness_check doesn't detect intermediate age variables:
+       uint256 age = block.timestamp - updatedAt; require(age <= threshold)
+       Only direct comparisons are detected. Encourages standard patterns.
+
+    3. Private functions: Excluded from pattern (visibility: [public, external, internal]).
+       Private functions have reduced attack surface as they're only callable within the contract.
+
+    4. View helpers: Internal/private view functions excluded (is_view condition).
+       View functions don't execute exploitable state changes in transactions.
+
+    Production Use:
+    - Pattern is ready for production audits with manual review
+    - Review flagged functions to identify helper delegation patterns
+    - Confirm deployment target is L2 (Arbitrum, Optimism, Base, etc.)
+    - L1 deployments don't need sequencer checks (expected false positives)
+
+    Test Coverage:
+    - 8 true positives: Various staleness check patterns without sequencer validation
+    - 4 true negatives: Complete L2 checks, no checks, inline both checks
+    - 1 false positive: liquidateUserSafe (helper delegation limitation)
+    - 4 variations: Hardcoded thresholds, alternative operators, double checks, compact checks
+    - 4 edge cases: View functions, pure functions, private functions, conditional checks
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Post-Sequencer-Restart Stale Price Exploitation"
+    description: |
+      Attacker monitors L2 sequencer uptime feed, waits for sequencer restart,
+      and executes transactions in first blocks with stale oracle prices that
+      pass staleness check but don't reflect real market prices.
+    preconditions:
+      - Protocol deployed on L2 (Arbitrum, Optimism, Base, zkSync, etc.)
+      - Staleness check implemented (provides partial protection)
+      - L2 sequencer experiences downtime event
+      - No sequencer uptime check or grace period validation
+      - Market price moves during sequencer downtime
+    steps:
+      - Monitor Chainlink L2 Sequencer Uptime Feed for downtime events
+      - L2 sequencer goes down (answer = 1); oracle freezes at pre-downtime price
+      - Real market price moves significantly during downtime (e.g., $2000 → $1500)
+      - Oracle frozen at $2000; last updated before downtime started
+      - Sequencer restarts (answer = 0); blocks resume processing
+      - Attacker executes transaction in FIRST blocks after restart
+      - Oracle data: price=$2000, updatedAt=46min ago, threshold=1h
+      - Staleness check: 46min < 1h → PASSES ✅ (within threshold)
+      - Real market price is $1500; oracle shows stale $2000
+      - Attacker borrows max against inflated $2000 collateral valuation
+      - Over-borrows by 33% ($500 per unit) relative to real $1500 value
+      - Oracle updates to $1500 after several blocks; attacker keeps borrowed funds
+      - Protocol has $500/unit bad debt
+    impact: "Stale price exploitation during L2 sequencer restart window; protocol bad debt"
+    cvss: 6.5
+    l2_specific: true
+    why_staleness_check_failed: "Sequencer downtime freezes oracle; updatedAt within threshold but price stale relative to market"
+
+  - name: "Liquidation Avoidance During Sequencer Downtime"
+    description: |
+      User exploits sequencer downtime to avoid liquidation by depositing when
+      oracle shows stale high prices that pass staleness check.
+    preconditions:
+      - User position is near liquidation threshold
+      - L2 sequencer experiences downtime
+      - Real market price drops during downtime
+      - Oracle frozen at higher pre-downtime price
+      - Staleness check present but no sequencer validation
+    steps:
+      - User position approaching liquidation at real market price
+      - Sequencer goes down; oracle freezes at high pre-downtime price
+      - Real market crashes during downtime; position should be liquidated
+      - Sequencer restarts; user deposits additional collateral
+      - Oracle shows stale high price (within staleness threshold)
+      - Staleness check passes; position appears healthy at stale price
+      - User avoids liquidation that should have occurred
+      - Oracle updates to real low price; position already saved
+      - Protocol loses liquidation penalty and faces bad debt risk
+    impact: "Liquidation avoidance using stale prices during sequencer restart"
+    cvss: 5.8
+    l2_specific: true
+
+  - name: "Arbitrage Between Stale Oracle and Real Market (L2 Restart)"
+    description: |
+      Attacker arbitrages price difference between stale L2 oracle (passing
+      staleness check) and real market prices on DEXes immediately after restart.
+    preconditions:
+      - L2 sequencer downtime causes oracle freeze
+      - Market price moves during downtime
+      - Staleness check present (updatedAt within threshold)
+      - No sequencer uptime validation
+      - Real-time DEX prices available (Uniswap, etc.)
+    steps:
+      - Monitor sequencer uptime feed for restart events
+      - Sequencer down; oracle frozen at $2000 (pre-downtime)
+      - Real market moves to $1800 during downtime
+      - Sequencer restarts; DEX prices immediately reflect $1800
+      - Oracle shows stale $2000 (updatedAt within staleness threshold)
+      - Staleness check passes (46min < 1h threshold)
+      - Attacker mints/borrows at protocol using $2000 oracle price
+      - Immediately sells on DEX at real $1800 market price
+      - Repeats arbitrage until oracle updates to $1800
+      - Profit: $200 per unit arbitrage during catch-up window
+    impact: "Protocol value extraction via oracle-DEX arbitrage during L2 restart"
+    cvss: 6.2
+    l2_specific: true
+
+verification_steps:
+  - "Identify oracle read operation in function (Chainlink latestRoundData, getPrice, etc.)"
+  - "VERIFY: Staleness check is present (this pattern requires it):"
+  - "  - Look for: require(block.timestamp - updatedAt <= THRESHOLD)"
+  - "  - Look for: require(updatedAt != 0)"
+  - "  - Look for: staleness validation in internal helper functions"
+  - "If NO staleness check found, this pattern should NOT match (use oracle-003 instead)"
+  - "VERIFY: Sequencer uptime check is MISSING (this is the vulnerability):"
+  - "  - Look for: AggregatorV3Interface sequencerUptimeFeed"
+  - "  - Look for: require(answer == 0) // sequencer up check"
+  - "  - Look for: block.timestamp - startedAt > GRACE_PERIOD"
+  - "  - Check internal helper functions for delegated sequencer validation"
+  - "If sequencer check IS present, this pattern should NOT match (use oracle-006 instead)"
+  - "Determine deployment context:"
+  - "  - L2 deployment (Arbitrum, Optimism, Base, etc.) → TRUE POSITIVE (medium severity)"
+  - "  - L1 deployment (Ethereum mainnet) → FALSE POSITIVE (sequencer check not needed)"
+  - "  - Multi-chain deployment → Review L2-specific deployment paths"
+  - "Assess oracle usage criticality:"
+  - "  - CRITICAL: Liquidations, borrowing, collateral valuation → Upgrade to HIGH severity"
+  - "  - MEDIUM: Swap pricing, minting, redemptions → Keep MEDIUM severity"
+  - "  - LOW: Fee calculations, rewards → Downgrade to LOW severity"
+  - "Check deployment documentation:"
+  - "  - Does protocol mention L2 deployment?"
+  - "  - Are there L2-specific deployment scripts?"
+  - "  - Does audit report address L2 sequencer risks?"
+  - "Recommend upgrade path:"
+  - "  - Add sequencer uptime check with 1-hour grace period"
+  - "  - Reference Chainlink L2 Sequencer Uptime Feed for target network"
+  - "  - Achieve oracle-006 (gold standard L2 oracle integration)"
+
+fix_recommendations:
+  - name: "Add L2 Sequencer Uptime Check (Upgrade to oracle-006)"
+    description: |
+      You already have staleness check (good!). Now add L2 sequencer uptime
+      validation with grace period to achieve production-grade L2 oracle security.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+      contract UpgradeToCompleteL2Protection {
+          AggregatorV3Interface public priceFeed;
+          AggregatorV3Interface public sequencerUptimeFeed; // ADD THIS
+
+          uint256 public constant GRACE_PERIOD_TIME = 1 hours; // ADD THIS
+          uint256 public stalenessThreshold = 1 hours; // ALREADY HAVE
+
+          // Chainlink L2 Sequencer Uptime Feed addresses:
+          // Arbitrum One: 0xFdB631F5EE196F0ed6FAa767959853A9F217697D
+          // Optimism:     0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389
+          // Base:         0xBCF85224fc0756B9Fa45aA7892530B47e10b6433
+
+          constructor(
+              address _priceFeed,
+              address _sequencerUptimeFeed // ADD THIS PARAMETER
+          ) {
+              priceFeed = AggregatorV3Interface(_priceFeed);
+              sequencerUptimeFeed = AggregatorV3Interface(_sequencerUptimeFeed); // ADD THIS
+          }
+
+          function getPrice() public view returns (uint256) {
+              // ─────────────────────────────────────────────────────────
+              // ADD THIS: L2 Sequencer Uptime Check (THE FIX)
+              // ─────────────────────────────────────────────────────────
+              (
+                  /*uint80 roundId*/,
+                  int256 answer,
+                  uint256 startedAt,
+                  /*uint256 updatedAt*/,
+                  /*uint80 answeredInRound*/
+              ) = sequencerUptimeFeed.latestRoundData();
+
+              // Check sequencer is up (0 = up, 1 = down)
+              require(answer == 0, "Sequencer: down");
+
+              // Grace period: Wait 1 hour after restart before accepting prices
+              require(
+                  block.timestamp - startedAt > GRACE_PERIOD_TIME,
+                  "Sequencer: grace period"
+              );
+
+              // ─────────────────────────────────────────────────────────
+              // EXISTING: Staleness check (already implemented - good!)
+              // ─────────────────────────────────────────────────────────
+              (
+                  uint80 roundId,
+                  int256 price,
+                  /*uint256 startedAt*/,
+                  uint256 updatedAt,
+                  uint80 answeredInRound
+              ) = priceFeed.latestRoundData();
+
+              require(updatedAt != 0, "Oracle: incomplete round");
+              require(answer > 0, "Oracle: invalid price");
+              require(
+                  block.timestamp - updatedAt <= stalenessThreshold,
+                  "Oracle: stale price"
+              );
+              require(answeredInRound >= roundId, "Oracle: stale round");
+
+              return uint256(price);
+          }
+      }
+
+      // RESULT: Now matches oracle-006 (production-grade L2 oracle integration)
+      // ✅ Staleness check (protects against network congestion)
+      // ✅ Sequencer check (protects against sequencer downtime)
+      // ✅ Grace period (protects against post-restart stale prices)
+      // ✅ Complete L2 protection
+
+  - name: "Conditional Sequencer Check for Multi-Chain Deployment"
+    description: |
+      If deploying on both L1 and L2, use conditional sequencer check that
+      activates only on L2 networks.
+    example: |
+      // SPDX-License-Identifier: MIT
+      pragma solidity ^0.8.0;
+
+      import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+      contract MultiChainOracleWithConditionalSequencer {
+          AggregatorV3Interface public priceFeed;
+          AggregatorV3Interface public sequencerUptimeFeed; // address(0) for L1
+
+          uint256 public constant GRACE_PERIOD_TIME = 1 hours;
+          uint256 public stalenessThreshold = 1 hours;
+
+          constructor(
+              address _priceFeed,
+              address _sequencerUptimeFeed // Pass address(0) for L1 deployments
+          ) {
+              priceFeed = AggregatorV3Interface(_priceFeed);
+              if (_sequencerUptimeFeed != address(0)) {
+                  sequencerUptimeFeed = AggregatorV3Interface(_sequencerUptimeFeed);
+              }
+          }
+
+          function getPrice() public view returns (uint256) {
+              // L2 DEPLOYMENT: Check sequencer uptime
+              if (address(sequencerUptimeFeed) != address(0)) {
+                  _checkSequencerUptime();
+              }
+              // L1 DEPLOYMENT: Skip sequencer check (not applicable)
+
+              // BOTH L1 + L2: Staleness check (already implemented)
+              (
+                  uint80 roundId,
+                  int256 answer,
+                  ,
+                  uint256 updatedAt,
+                  uint80 answeredInRound
+              ) = priceFeed.latestRoundData();
+
+              require(updatedAt != 0, "Incomplete round");
+              require(answer > 0, "Invalid price");
+              require(
+                  block.timestamp - updatedAt <= stalenessThreshold,
+                  "Stale price"
+              );
+              require(answeredInRound >= roundId, "Stale round");
+
+              return uint256(answer);
+          }
+
+          function _checkSequencerUptime() internal view {
+              (
+                  ,
+                  int256 answer,
+                  uint256 startedAt,
+                  ,
+              ) = sequencerUptimeFeed.latestRoundData();
+
+              require(answer == 0, "Sequencer: down");
+              require(
+                  block.timestamp - startedAt > GRACE_PERIOD_TIME,
+                  "Sequencer: grace period"
+              );
+          }
+      }
+
+  - name: "Why Grace Period Matters (Don't Skip This!)"
+    description: |
+      Just checking sequencer.answer == 0 is NOT enough. You MUST implement
+      grace period validation to prevent exploitation during oracle stabilization.
+    example: |
+      # ❌ INSUFFICIENT - Sequencer check without grace period
+      function getPrice() public view returns (uint256) {
+          (, int256 answer, , , ) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer: down"); // NOT ENOUGH!
+
+          // Oracle could still be stale even if sequencer is up
+          // Need grace period to allow oracle to catch up to market
+      }
+
+      # ✅ CORRECT - Sequencer check WITH grace period
+      function getPrice() public view returns (uint256) {
+          (
+              ,
+              int256 answer,
+              uint256 startedAt,
+              ,
+          ) = sequencerUptimeFeed.latestRoundData();
+
+          require(answer == 0, "Sequencer: down");
+
+          // CRITICAL: Grace period validation
+          require(
+              block.timestamp - startedAt > GRACE_PERIOD_TIME,
+              "Sequencer: grace period"
+          );
+
+          // Now safe to fetch oracle data
+      }
+
+      # Why Grace Period Is Critical:
+      # - Sequencer restart (answer: 1 → 0) happens INSTANTLY
+      # - Oracle updates to real market prices take TIME (minutes to blocks)
+      # - Without grace period: Accept stale prices immediately after restart
+      # - With grace period: Wait 1 hour for oracle to stabilize
+      # - Chainlink recommends 1-hour grace period
+      # - GMX V2, Gains Network, Perp Protocol all use grace period
+
+  - name: "Upgrade Path Summary"
+    description: |
+      Current state vs. target state and improvement path.
+    example: |
+      # CURRENT STATE (oracle-007 - PARTIAL PROTECTION):
+      ✅ Staleness check implemented (good!)
+      ❌ Missing sequencer uptime check (L2 vulnerability)
+      ❌ Missing grace period validation (post-restart window)
+      📊 Severity: MEDIUM
+      🎯 Protection: Partial (network congestion only)
+
+      # IMPROVEMENT PATH:
+      Step 1: Add sequencerUptimeFeed parameter to constructor
+      Step 2: Implement _checkSequencerUptime() internal function
+      Step 3: Call sequencer check BEFORE fetching oracle data
+      Step 4: Add 1-hour grace period validation (Chainlink recommended)
+      Step 5: Test with sequencer downtime scenarios
+      Step 6: Update deployment scripts with sequencer feed addresses
+
+      # TARGET STATE (oracle-006 - PRODUCTION-GRADE):
+      ✅ Staleness check implemented
+      ✅ Sequencer uptime check implemented
+      ✅ Grace period validation implemented
+      ✅ Defense in depth (multiple layers)
+      📊 Severity: SAFE (info)
+      🎯 Protection: Complete L2 security
+
+      # DEPLOYMENT CHECKLIST:
+      ☑ Constructor accepts sequencerUptimeFeed parameter
+      ☑ Sequencer check executes before oracle read
+      ☑ Grace period is 1 hour (GRACE_PERIOD_TIME = 1 hours)
+      ☑ Staleness check still present (don't remove it!)
+      ☑ Events emitted for monitoring
+      ☑ Unit tests cover sequencer downtime + restart scenarios
+      ☑ Fork tests simulate real Arbitrum/Optimism sequencer events
+      ☑ Deployment scripts use correct sequencer feed addresses:
+          - Arbitrum One: 0xFdB631F5EE196F0ed6FAa767959853A9F217697D
+          - Optimism:     0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389
+          - Base:         0xBCF85224fc0756B9Fa45aA7892530B47e10b6433
+          - Metis:        0x8484Ef722627bf18ca5Ae6BcF031c23E6e922B30
+
+related_patterns:
+  - oracle-003  # Missing staleness check (worse - no protection)
+  - oracle-004  # Missing sequencer check (similar L2 vulnerability)
+  - oracle-006  # Complete L2 protection (target - gold standard)
+  - oracle-001  # Oracle with staleness check (safe on L1, partial on L2)
+
+owasp_mapping:
+  - SC02  # Oracle Manipulation
+  - SC04  # Input Validation
+
+cwe_mapping:
+  - CWE-345  # Insufficient Verification of Data Authenticity
+  - CWE-20   # Improper Input Validation
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations
+semantic_ops:
+  has_operation: READS_ORACLE
+  # Note: Pattern requires staleness check present but sequencer check missing
+
+# Behavioral Signature
+behavioral_signature:
+  pattern: "R:orc→V:stale(?!.*U:seq)"
+  description: "Oracle read → staleness validation BUT NO sequencer uptime check (partial L2 protection)"
+  matches_exploits:
+    - arbitrum-sequencer-downtime-2021-partial-protection
+    - optimism-sequencer-downtime-2023-partial-protection
+
+# Tier A/B Matching
+tier_match:
+  tier_a:
+    all:
+      - has_operation: READS_ORACLE
+      - property: has_staleness_check
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external, internal]
+    none:
+      - property: has_sequencer_uptime_check
+        value: true
+      - property: is_view
+        value: true
+  tier_b:
+    any: []
+  aggregation:
+    mode: tier_a_only  # Purely deterministic pattern
+
+# Multi-Agent Verification Hints
+verification_agents:
+  pattern:
+    require_all_conditions: true
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [READS_ORACLE]
+    max_depth: 3
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 5.5  # Medium exploitability - requires sequencer downtime
+    l2_deployment_required: true
+  consensus:
+    min_agents_agree: 2
+    mode: voting
+
+# =============================================================================
+# ADDITIONAL METADATA
+# =============================================================================
+
+# Pattern Classification
+pattern_type: partial_protection
+quality_indicator: false  # Incomplete L2 security validation
+l2_specific: true  # Only relevant for L2 deployments
+improvement_target: oracle-006  # Upgrade path to gold standard
+
+# Auditor Guidance
+auditor_notes: |
+  This pattern identifies PARTIAL PROTECTION for L2 oracle integration. When this pattern matches:
+
+  ⚠️ PARTIAL PROTECTION DETECTED: Function has staleness check but missing sequencer validation
+  ✅ GOOD: Staleness check protects against network congestion oracle lag
+  ❌ MISSING: L2 sequencer uptime check and grace period validation
+  🎯 UPGRADE PATH: Add sequencer check to achieve oracle-006 (production-grade)
+
+  IMMEDIATE FOLLOW-UP ACTIONS:
+  1. Verify deployment target:
+     - L2 (Arbitrum, Optimism, Base, etc.) → TRUE POSITIVE (medium severity)
+     - L1 (Ethereum mainnet) → FALSE POSITIVE (sequencer check not needed)
+  2. Confirm staleness check is present and correct
+  3. Identify why sequencer check is missing (oversight vs. intentional)
+  4. Assess oracle usage criticality (liquidations, borrowing, collateral)
+  5. Recommend adding sequencer uptime check with 1-hour grace period
+  6. Provide upgrade path to oracle-006 (gold standard)
+
+  SEVERITY ASSESSMENT:
+  - MEDIUM (base): Partial protection, L2-specific vulnerability window
+  - Upgrade to HIGH: If oracle used for liquidations or critical collateral valuation
+  - Downgrade to LOW: If oracle used only for informational/display purposes
+  - N/A: L1 deployments (not vulnerable to sequencer issues)
+
+  COMPARISON WITH OTHER PATTERNS:
+  - oracle-003 (no checks): HIGH severity - worse than this
+  - oracle-007 (this pattern): MEDIUM severity - partial protection
+  - oracle-006 (complete): SAFE - target upgrade path
+
+# Partial Protection Analysis
+partial_protection_analysis:
+  has_staleness_check: true
+  has_sequencer_uptime_check: false
+  has_grace_period: false
+  protection_level: "partial"
+  vulnerable_to:
+    - L2 sequencer downtime events
+    - Post-sequencer-restart stale price window
+    - Oracle freeze during sequencer outage
+  protected_from:
+    - Network congestion oracle lag (staleness check catches this)
+    - Oracle node downtime (staleness check catches this)
+    - Heartbeat interval exploitation (staleness check catches this)
+
+# L2 Sequencer Downtime Risk
+l2_sequencer_risk:
+  frequency: "Rare (hours to days between events)"
+  impact: "High (large price divergence during multi-hour downtime)"
+  exploitability: "Medium (requires precise timing at sequencer restart)"
+  detection: "Easy (Chainlink sequencer uptime feed publicly monitors events)"
+  mitigation: "Add sequencer uptime check with grace period"
+
+# Improvement Metrics
+improvement_metrics:
+  current_protection: 60%  # Staleness check provides partial protection
+  target_protection: 95%   # Add sequencer check to reach oracle-006
+  effort_to_fix: "Low - Add sequencer check function and constructor parameter"
+  risk_to_fix: "Low - Pure additive change, no logic removal"
+  testing_required: "Medium - Test sequencer downtime + restart scenarios"

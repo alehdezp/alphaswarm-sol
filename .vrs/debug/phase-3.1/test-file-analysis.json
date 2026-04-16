@@ -1,0 +1,32 @@
+{
+  "baseline_test_count": 10801,
+  "analysis_date": "2026-02-11T17:55:53Z",
+  "files_to_delete": [],
+  "files_to_edit": [],
+  "files_to_keep": [
+    "tests/test_skills_package.py",
+    "tests/e2e/test_workflow_infrastructure.py"
+  ],
+  "already_deleted_by_3_1_01": [
+    "tests/test_component_runner.py",
+    "tests/test_flexible_integration.py",
+    "tests/test_parallel_runner.py",
+    "tests/test_self_improving_runner.py",
+    "tests/test_session_state.py"
+  ],
+  "justification": {
+    "tests/test_component_runner.py": "Already deleted in 3.1-01 (imported from deleted flexible/component_runner.py)",
+    "tests/test_flexible_integration.py": "Already deleted in 3.1-01 (imported from deleted flexible/)",
+    "tests/test_parallel_runner.py": "Already deleted in 3.1-01 (imported from deleted flexible/parallel_runner.py)",
+    "tests/test_self_improving_runner.py": "Already deleted in 3.1-01 (imported from deleted workflow/self_improving_runner.py)",
+    "tests/test_session_state.py": "Already deleted in 3.1-01 (imported from deleted flexible/session_state.py)",
+    "tests/e2e/test_workflow_infrastructure.py": "LIVE_TEST - All imports reference living modules (WorkflowEvaluator, EvalStatus, EvalCriteria, EvalError, EvalResult from alphaswarm_sol.testing.workflow). Verified imports resolve successfully.",
+    "tests/test_skills_package.py": "LIVE_TEST - Tests skill loading, no deleted module imports"
+  },
+  "conftest_analysis": {
+    "tests/conftest.py": "CLEAN - Imports only from alphaswarm_sol.agents.runtime.base (living module). No deleted module references.",
+    "tests/e2e/conftest.py": "DOES_NOT_EXIST - No e2e-level conftest"
+  },
+  "grep_for_deleted_module_imports": "Zero matches for imports from: tmux, flexible, full_testing, master_orchestrator, proof_tokens, evidence_pack, failure_catalog, supervision_loop",
+  "summary": "5 of 6 candidate dead test files were already deleted in plan 3.1-01. The remaining candidate (test_workflow_infrastructure.py) is a LIVE_TEST that imports only from living modules. Zero test files need deletion. No conftest files need editing."
+}

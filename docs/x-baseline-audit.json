@@ -1,0 +1,6526 @@
+{
+  "summary": {
+    "total_patterns": 534,
+    "name_dependent_patterns": 266,
+    "name_independent_patterns": 268,
+    "name_dependency_percentage": 49.8
+  },
+  "by_dependency_type": {
+    "label_regex": 18,
+    "modifier_name": 1,
+    "hardcoded_name": 263
+  },
+  "by_lens": {
+    "Authority": {
+      "total": 135,
+      "name_dependent": 81
+    },
+    "Ordering": {
+      "total": 11,
+      "name_dependent": 10
+    },
+    "Upgradeability": {
+      "total": 28,
+      "name_dependent": 21
+    },
+    "Liveness": {
+      "total": 39,
+      "name_dependent": 9
+    },
+    "ValueMovement": {
+      "total": 102,
+      "name_dependent": 40
+    },
+    "ExternalInfluence": {
+      "total": 114,
+      "name_dependent": 61
+    },
+    "Arithmetic": {
+      "total": 24,
+      "name_dependent": 6
+    },
+    "LogicState": {
+      "total": 26,
+      "name_dependent": 7
+    },
+    "Oracle": {
+      "total": 8,
+      "name_dependent": 7
+    },
+    "DoS": {
+      "total": 12,
+      "name_dependent": 0
+    },
+    "Crypto": {
+      "total": 12,
+      "name_dependent": 7
+    },
+    "Token": {
+      "total": 7,
+      "name_dependent": 6
+    },
+    "Invariant": {
+      "total": 1,
+      "name_dependent": 0
+    },
+    "Reentrancy": {
+      "total": 1,
+      "name_dependent": 1
+    },
+    "Semgrep": {
+      "total": 58,
+      "name_dependent": 23
+    },
+    "Security": {
+      "total": 45,
+      "name_dependent": 22
+    },
+    "Performance": {
+      "total": 13,
+      "name_dependent": 1
+    },
+    "Augmented": {
+      "total": 3,
+      "name_dependent": 0
+    }
+  },
+  "by_severity": {
+    "critical": {
+      "total": 39,
+      "name_dependent": 24
+    },
+    "high": {
+      "total": 264,
+      "name_dependent": 151
+    },
+    "medium": {
+      "total": 200,
+      "name_dependent": 81
+    },
+    "low": {
+      "total": 26,
+      "name_dependent": 5
+    },
+    "info": {
+      "total": 5,
+      "name_dependent": 5
+    }
+  },
+  "name_dependent_patterns": [
+    {
+      "id": "auth-001",
+      "name": "Unprotected State Writer",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-003",
+      "name": "Missing Signature Validation",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-004",
+      "name": "Signature Replay Vulnerability",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-005",
+      "name": "Centralization Single Point of Failure",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-006",
+      "name": "Unprotected Initializer",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-008",
+      "name": "Missing Timelock",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-012",
+      "name": "Unprotected Admin Function",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)^(set|update|configure|change|modify|pause|unpause|upgrade|migrate|grant|revoke)"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "pause|unpause|halt|freeze|unfreeze"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "auth-014",
+      "name": "Missing Privilege Revocation",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-015",
+      "name": "Default Admin Missing",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-017",
+      "name": "Missing Authentication",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-022",
+      "name": "Dangerous Admin Function",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        }
+      ]
+    },
+    {
+      "id": "auth-023",
+      "name": "RBAC Without Timelock",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-024",
+      "name": "Signature Missing ChainId",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-025",
+      "name": "Signature Missing Domain Separator",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-026",
+      "name": "Signature Missing Deadline",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-027",
+      "name": "Signature Malleability Risk",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-031",
+      "name": "Upgrade Without Timelock",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-032",
+      "name": "Timelock Bypass via Emergency Path",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-033",
+      "name": "Upgrade Timelock Missing Check",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-034",
+      "name": "Timelock Delay Zero",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-046",
+      "name": "Governance Vote Without Snapshot",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-047",
+      "name": "Multisig Threshold Change Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "auth-048",
+      "name": "Multisig Signer Change Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "auth-049",
+      "name": "Emergency Delegatecall Bypass",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-051",
+      "name": "Timelock Admin Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-054",
+      "name": "Time-Based Access Without Auth",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-058",
+      "name": "Role Grant Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-059",
+      "name": "Role Revoke Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-062",
+      "name": "Reinitializer Without Guard",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)^reinit"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-064",
+      "name": "Payable Fallback Without Access Gate",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-068",
+      "name": "Timelock Parameter Missing Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-070",
+      "name": "Upgrade Without Access Control",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-071",
+      "name": "Oracle Update Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "auth-072",
+      "name": "Governance Quorum Without Snapshot",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-073",
+      "name": "Governance Execute Without Timelock Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-074",
+      "name": "Multisig Threshold Change Without Validation",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "auth-075",
+      "name": "Multisig Signer Change Without Validation",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "auth-076",
+      "name": "Governance Execute Without Quorum Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-077",
+      "name": "Governance Execute Without Vote Period Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-078",
+      "name": "Multisig Execute Without Nonce",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)execute|submit|confirm"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-082",
+      "name": "tx.origin in Fallback/Receive",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-083",
+      "name": "Default Admin Address Zero",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-084",
+      "name": "Owner Uninitialized",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-085",
+      "name": "Owner Uninitialized With Privileged Ops",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-091",
+      "name": "Timelock Admin Without Timelock Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-092",
+      "name": "Multisig Execute Nonce Not Updated",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)execute|submit|confirm"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-093",
+      "name": "Governance Vote Flashloan Risk",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-094",
+      "name": "Multisig Signer Change Without Signature Validation",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-095",
+      "name": "Weak Auth Using Balance Check",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "auth-096",
+      "name": "Multisig Threshold Change Without Multisig Approval",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-097",
+      "name": "Multisig Signer Change Without Multisig Approval",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-098",
+      "name": "Multisig Execute Without Signature Validation",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)execute|submit|confirm"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-099",
+      "name": "Multisig Signer Removal Without Minimum Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "auth-100",
+      "name": "Multisig Threshold Without Owner Count Check",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "auth-101",
+      "name": "Weak Auth Using Contract Address",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-103",
+      "name": "Role Grant Without Events",
+      "severity": "low",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "auth-104",
+      "name": "Mixed tx.origin and msg.sender Auth",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-106",
+      "name": "Access Gate Without Sender Source",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "auth-108",
+      "name": "Unprotected Pause/Unpause",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)\\b(pause|unpause|setpause|setpaused|halt|freeze|unfreeze|emergencystop)\\b"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "pause|unpause|halt|freeze|unfreeze"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-109",
+      "name": "Unprotected List Management",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(whitelist|blacklist|allowlist|denylist|guardian|validator)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "whitelist|blacklist|allowlist|denylist"
+        }
+      ]
+    },
+    {
+      "id": "auth-110",
+      "name": "Unprotected Governance Parameter Update",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(quorum|voting|threshold|timelock|delay|votingperiod|executiondelay)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "auth-111",
+      "name": "Unprotected Reward/Emission/Vesting Update",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(reward|emission|vesting)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        }
+      ]
+    },
+    {
+      "id": "auth-112",
+      "name": "Unprotected Cross-Chain Configuration",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(bridge|crosschain|xchain|relayer|messaging|endpoint|adapter|router)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "auth-114",
+      "name": "Unprotected Fee/Rate/Threshold Update",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(fee|slippage|liquidation|collateral|interest|rate|factor|limit|cap|threshold)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "auth-115",
+      "name": "Unprotected Emergency/Rescue Operations",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(emergency|rescue|recover|force|sweep|drain|withdrawall)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "auth-116",
+      "name": "Unprotected Merkle Root Update",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))merkle(?:$|[^a-z0-9]|(?=[A-Z]))"
+        }
+      ]
+    },
+    {
+      "id": "auth-117",
+      "name": "Unprotected Oracle/Price Feed Update",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(oracle|pricefeed|price_feed)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "auth-118",
+      "name": "Unprotected Fee Recipient Update",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)(?:^|[^a-z0-9]|(?<=[a-z]))(recipient|beneficiary|treasury|fee_receiver|feerecipient)(?:$|[^a-z0-9]|(?=[A-Z]))"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        }
+      ]
+    },
+    {
+      "id": "auth-119",
+      "name": "Implementation Initializer Without Proxy Guard",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-120",
+      "name": "Unprotected Fallback/Receive",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "auth-044",
+      "name": "Governance Without Timelock",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "price-sensitive-frontrun",
+      "name": "Price-Sensitive Front-Running",
+      "severity": "high",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "amm-sandwich-vulnerability",
+      "name": "AMM Sandwich Vulnerability",
+      "severity": "high",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "missing-slippage-protection",
+      "name": "Missing Slippage Protection",
+      "severity": "high",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "unprotected-initializer",
+      "name": "Unprotected Initializer",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)^(initialize|init|setup|__init__)"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "storage-collision",
+      "name": "Storage Layout Collision",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "uups-upgrade-authorization",
+      "name": "UUPS Upgrade Authorization Missing",
+      "severity": "high",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "uups-upgrade-missing-onlyproxy",
+      "name": "UUPS Upgrade Missing onlyProxy",
+      "severity": "info",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-001",
+      "name": "Unprotected Initializer",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "(?i)^(initialize|init|setup|__init__)"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-002",
+      "name": "Implementation Not Disabled",
+      "severity": "high",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-003",
+      "name": "Storage Slot Collision",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-004",
+      "name": "Missing Storage Gaps",
+      "severity": "medium",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-006",
+      "name": "UUPS Upgrade Unprotected",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-007",
+      "name": "Implementation Destructible",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "upg-008",
+      "name": "Upgrade Missing Timelock",
+      "severity": "medium",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "upg-009",
+      "name": "Beacon Upgrade Unprotected",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "live-003",
+      "name": "Push Payment Griefing",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "live-004",
+      "name": "Auction Griefing",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "live-009",
+      "name": "Economic DoS via Fees",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "live-011",
+      "name": "Missing Emergency Recovery",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "pause|unpause|halt|freeze|unfreeze"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "live-028",
+      "name": "Economic Barrier DoS",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "live-029",
+      "name": "Liquidity DoS",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "live-031",
+      "name": "Pause Mechanism Issues",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "pause|unpause|halt|freeze|unfreeze"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "live-038",
+      "name": "Broken Recovery Mechanisms",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "live-039",
+      "name": "Admin Recovery Risks",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-eth-transfer-reentrancy",
+      "name": "ETH Transfer Reentrancy",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-balance-update-after-transfer",
+      "name": "Balance Update After Transfer",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-token-callback-reentrancy",
+      "name": "Token Callback Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-unchecked-erc20-transfer",
+      "name": "Unchecked ERC20 Transfer",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-arbitrary-delegatecall",
+      "name": "Arbitrary Delegatecall",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-approval-race",
+      "name": "Token Approval Race",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-fee-on-transfer",
+      "name": "Fee-on-Transfer Accounting Gap",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-balance-vs-accounting",
+      "name": "Balance vs Internal Accounting",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-share-inflation",
+      "name": "First Depositor Share Inflation",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-supply-accounting",
+      "name": "Supply Accounting Gap",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-withdrawal-without-balance-check",
+      "name": "Withdrawal Without Balance Check",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "value-movement-deposit-without-checks",
+      "name": "Deposit Without Safety Checks",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "vm-002",
+      "name": "ETH Transfer Reentrancy",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "vm-005",
+      "name": "ERC Token Callback Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "vm-007",
+      "name": "Unchecked ERC20 Transfer",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "vm-009",
+      "name": "Approval Race Condition",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "vm-010",
+      "name": "First Depositor Share Inflation",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "vm-012",
+      "name": "Balance vs Internal Accounting",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "arith-001",
+      "name": "Unchecked Arithmetic",
+      "severity": "high",
+      "lens": [
+        "Arithmetic"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "arith-006",
+      "name": "Fee Precision Loss",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "arith-007",
+      "name": "Token Decimal Mismatch",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "arith-015",
+      "name": "Address to Uint Conversion",
+      "severity": "low",
+      "lens": [
+        "Arithmetic"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "arith-017",
+      "name": "Price * Amount Overflow",
+      "severity": "high",
+      "lens": [
+        "Arithmetic"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "arith-020",
+      "name": "Fee Accumulation Overflow",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "logic-002",
+      "name": "Balance Invariant Violation",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "logic-003",
+      "name": "Missing Balance Check",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "logic-008",
+      "name": "Uninitialized Storage",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "logic-012",
+      "name": "Collateral Invariant Violation",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "logic-013",
+      "name": "Pool Invariant Violation",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        }
+      ]
+    },
+    {
+      "id": "logic-024",
+      "name": "Contract vs EOA Assumption",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "logic-025",
+      "name": "Boolean Default Issues",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "ext-001",
+      "name": "Spot Price Manipulation",
+      "severity": "critical",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-002",
+      "name": "Stale Oracle Data",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-003",
+      "name": "Chainlink Incomplete Validation",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-004",
+      "name": "Flash Loan Price Attack",
+      "severity": "critical",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "ext-005",
+      "name": "L2 Sequencer Uptime Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-006",
+      "name": "Missing Zero Address Check",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "ext-011",
+      "name": "Merkle Proof Leaf Collision",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "ext-012",
+      "name": "Single Source Oracle",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-014",
+      "name": "Oracle Aggregation Missing Sanity Checks",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-016",
+      "name": "Oracle Feed Not Upgradeable",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-017",
+      "name": "Cross-Chain Oracle Missing Validation",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-018",
+      "name": "Contract Address Not Verified",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "ext-019",
+      "name": "Self Address Not Rejected",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "ext-024",
+      "name": "Oracle Update Without Access Control",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-025",
+      "name": "Oracle Answer Not Positive",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-027",
+      "name": "Oracle Update Missing Rate Limit",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-028",
+      "name": "Oracle Update Missing Timelock",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-029",
+      "name": "Oracle Update Missing Deviation Check",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-030",
+      "name": "Oracle Update Missing Signature Check",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-031",
+      "name": "Oracle Update Missing Sequencing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-033",
+      "name": "Flash Loan Collateralization Attack",
+      "severity": "critical",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "ext-034",
+      "name": "L2 Finality Not Considered",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-035",
+      "name": "Cross-Chain Replay Protection Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-040",
+      "name": "Chainlink Decimals Hardcoded",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-041",
+      "name": "Reserve Price In Swap Without TWAP",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        }
+      ]
+    },
+    {
+      "id": "ext-042",
+      "name": "Collateral Pricing From Spot Reserves",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        }
+      ]
+    },
+    {
+      "id": "ext-044",
+      "name": "Oracle Staleness Threshold Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-045",
+      "name": "Governance Vote Without Snapshot",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "ext-046",
+      "name": "Flash Loan Governance Without Snapshot",
+      "severity": "critical",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "ext-047",
+      "name": "Balance-Based Rewards Without Snapshot",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "ext-048",
+      "name": "Chainlink UpdatedAt Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "set[A-Z]|update[A-Z]|configure|change|modify"
+        }
+      ]
+    },
+    {
+      "id": "ext-049",
+      "name": "Liquidation Spot Reserves Without TWAP",
+      "severity": "critical",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        }
+      ]
+    },
+    {
+      "id": "ext-050",
+      "name": "Liquidation Oracle Without Staleness Check",
+      "severity": "critical",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-051",
+      "name": "Multi-Source Oracle Without Staleness Checks",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-052",
+      "name": "Multi-Source Oracle Without Decimals Normalization",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-054",
+      "name": "TWAP Price Bounds Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-055",
+      "name": "Cross-Chain Consistency Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-056",
+      "name": "Bridge Finality Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-058",
+      "name": "L2 Timestamp Manipulation Risk",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-060",
+      "name": "Oracle Aggregation Min Sources Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-061",
+      "name": "Oracle Aggregation Per-Source Staleness Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-062",
+      "name": "Oracle Aggregation Time Alignment Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-063",
+      "name": "Oracle Aggregation Weighted Reliability Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-064",
+      "name": "Oracle Update Missing Timestamp Check",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-066",
+      "name": "Oracle Aggregation Circuit Breaker Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-067",
+      "name": "Oracle Aggregation Fallback Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-068",
+      "name": "Oracle Aggregation Min Agreement Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-069",
+      "name": "Oracle Source Health Check Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-070",
+      "name": "Bridge Source Chain Validation Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-073",
+      "name": "Oracle Update Frequency Alignment Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-074",
+      "name": "Bridge Message Ordering Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-078",
+      "name": "Sequencer Grace Period Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-079",
+      "name": "Oracle Update Without Multisig Guard",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "ext-080",
+      "name": "Collateral Oracle Staleness Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "ext-081",
+      "name": "Cross-Chain Oracle Freshness Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "reentrancy-basic",
+      "name": "Reentrancy Risk (External Call + State Write)",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence",
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "modifier_name",
+          "detail": "nonReentrant"
+        }
+      ]
+    },
+    {
+      "id": "upgrade-without-guard",
+      "name": "Upgrade Function Without Access Gate",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "oracle-update-missing-deviation-check",
+      "name": "Oracle Update Missing Deviation Check",
+      "severity": "medium",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "mev-missing-slippage-parameter",
+      "name": "MEV Risk (Missing Slippage Parameter)",
+      "severity": "medium",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "mev-risk-high",
+      "name": "MEV Risk High",
+      "severity": "high",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "mev-missing-deadline-parameter",
+      "name": "MEV Risk (Missing Deadline Parameter)",
+      "severity": "medium",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "proxy-uninitialized-implementation",
+      "name": "Uninitialized Implementation Contract",
+      "severity": "critical",
+      "lens": [
+        "Authority",
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "token-approval-race-condition",
+      "name": "ERC20 Approval Race Condition",
+      "severity": "medium",
+      "lens": [
+        "Token"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "proxy-storage-collision-risk",
+      "name": "Proxy Storage Collision Risk",
+      "severity": "high",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "oracle-update-missing-rate-limit",
+      "name": "Oracle Update Missing Rate Limit",
+      "severity": "medium",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "crypto-missing-v-check",
+      "name": "Missing V Parameter Validation",
+      "severity": "low",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "mev-missing-slippage-check",
+      "name": "MEV Risk (Missing Slippage Check)",
+      "severity": "medium",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "token-infinite-approval",
+      "name": "Infinite Token Approval",
+      "severity": "medium",
+      "lens": [
+        "Token",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "initializer-no-gate",
+      "name": "Initializer Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "public-external-withdraw-no-gate",
+      "name": "Withdraw-like Function Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "label_regex",
+          "detail": "withdraw|transfer|redeem"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "proxy-reinitializer-missing",
+      "name": "Missing Versioned Reinitializer",
+      "severity": "high",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "oracle-freshness-l2-complete",
+      "name": "Oracle Freshness Checks (L2 Complete)",
+      "severity": "info",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "crypto-zero-address-check",
+      "name": "Missing Zero Address Validation in Signature Verification",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "oracle-freshness-missing-staleness",
+      "name": "Oracle Freshness Warning (Missing Staleness Checks)",
+      "severity": "medium",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "token-non-standard-return",
+      "name": "Token Call Assumes Return Value",
+      "severity": "medium",
+      "lens": [
+        "Token"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "proxy-upgrade-no-timelock",
+      "name": "Upgrade Function Without Timelock",
+      "severity": "high",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "oracle-update-missing-signature-check",
+      "name": "Oracle Update Missing Signature Check",
+      "severity": "high",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "oracle-update-missing-sequence-check",
+      "name": "Oracle Update Missing Sequence Check",
+      "severity": "medium",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "crypto-signature-malleability",
+      "name": "ECDSA Signature Malleability - Missing S Value Check",
+      "severity": "medium",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "upgrade-missing-storage-gap",
+      "name": "Upgradeable Contract Missing Storage Gap",
+      "severity": "medium",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "crypto-signature-replay",
+      "name": "Signature Replay Vulnerability - Missing Nonce",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "token-fee-on-transfer-unhandled",
+      "name": "Fee-on-Transfer Token Not Handled",
+      "severity": "high",
+      "lens": [
+        "Token"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "proxy-constructor-in-logic",
+      "name": "Constructor in Upgradeable Implementation",
+      "severity": "high",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "crypto-missing-chainid",
+      "name": "Cross-Chain Signature Replay - Missing Chain ID",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "msg-sender-authorization-no-gate",
+      "name": "msg.sender Usage Without Access Gate",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "governance-vote-without-snapshot",
+      "name": "Governance Vote Without Snapshot",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "vote|proposal|quorum|timelock|execute|submit|confirm"
+        }
+      ]
+    },
+    {
+      "id": "eth-transfer-reentrancy",
+      "name": "ETH Transfer Reentrancy",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "balance-update-after-transfer",
+      "name": "Balance Update After Transfer",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "defi-protocol-reentrancy",
+      "name": "DeFi Protocol Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "read-only-oracle-reentrancy",
+      "name": "Read-Only Oracle Exploitation",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "read-only-balance-share-reentrancy",
+      "name": "Read-Only Balance/Share Exploitation",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "erc777-hook-reentrancy",
+      "name": "ERC777 Hook Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "erc721-callback-reentrancy",
+      "name": "ERC721 Callback Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "erc1155-callback-reentrancy",
+      "name": "ERC1155 Callback Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "erc4626-vault-reentrancy",
+      "name": "ERC4626 Vault Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "unchecked-return-value",
+      "name": "Unchecked Return Value",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "arbitrary-delegatecall-target",
+      "name": "Arbitrary Delegatecall Target",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "erc20-transfer-issue",
+      "name": "ERC20 Transfer Return Issue",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "token-approval-race",
+      "name": "Token Approval Race",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "fee-on-transfer-handling",
+      "name": "Fee-on-Transfer Handling Gap",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "balance-vs-accounting",
+      "name": "Balance vs Internal Accounting",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "share-calculation-issue",
+      "name": "Share Calculation Issue",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "supply-accounting-issue",
+      "name": "Supply Accounting Issue",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "withdrawal-without-balance-check",
+      "name": "Withdrawal Without Balance Check",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "deposit-without-checks",
+      "name": "Deposit Without Safety Checks",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "mev-risk-rollup",
+      "name": "MEV Risk Rollup",
+      "severity": "info",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "crypto-signature-incomplete",
+      "name": "Incomplete Signature Validation",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "payable-fallback-receive",
+      "name": "Payable Fallback/Receive Without Gate",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "mev-risk-summary",
+      "name": "MEV Risk Summary",
+      "severity": "medium",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "oracle-freshness-complete",
+      "name": "Oracle Freshness Checks Present",
+      "severity": "info",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "token-erc777-reentrancy",
+      "name": "ERC777 Token Reentrancy Risk",
+      "severity": "high",
+      "lens": [
+        "Token",
+        "Reentrancy"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "oracle-freshness-missing-sequencer",
+      "name": "Oracle Freshness Warning (Missing Sequencer Check)",
+      "severity": "medium",
+      "lens": [
+        "Oracle"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "proxy-upgrade-surface",
+      "name": "Proxy Upgrade Surface Detected",
+      "severity": "info",
+      "lens": [
+        "Upgradeability"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "upgrade|migrate|initialize|reinit"
+        }
+      ]
+    },
+    {
+      "id": "token-unchecked-return",
+      "name": "Token Transfer Return Not Checked",
+      "severity": "high",
+      "lens": [
+        "Token"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "merkle-leaf-without-domain-separation",
+      "name": "Merkle Leaf Without Domain Separation",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "mev-risk-medium",
+      "name": "MEV Risk Medium",
+      "severity": "medium",
+      "lens": [
+        "Ordering"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "oracle-staleness-missing-sequencer-check",
+      "name": "Oracle Freshness Risk (Missing Sequencer Check)",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-bad-transferfrom-access-control",
+      "name": "bad-transferfrom-access-control",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-balancer-readonly-reentrancy-getpooltokens",
+      "name": "balancer-readonly-reentrancy-getpooltokens",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "treasury|vault|pool|reserve"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-balancer-readonly-reentrancy-getrate",
+      "name": "balancer-readonly-reentrancy-getrate",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-basic-oracle-manipulation",
+      "name": "basic-oracle-manipulation",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-compound-sweeptoken-not-restricted",
+      "name": "compound-sweeptoken-not-restricted",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-delegatecall-to-arbitrary-address",
+      "name": "delegatecall-to-arbitrary-address",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "grant|revoke|add[A-Z]|remove[A-Z]"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-erc20-public-burn",
+      "name": "erc20-public-burn",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-erc20-public-transfer",
+      "name": "erc20-public-transfer",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-erc721-arbitrary-transferfrom",
+      "name": "erc721-arbitrary-transferfrom",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-exact-balance-check",
+      "name": "exact-balance-check",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-gearbox-tokens-path-confusion",
+      "name": "gearbox-tokens-path-confusion",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-keeper-network-oracle-manipulation",
+      "name": "keeper-network-oracle-manipulation",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-no-slippage-check",
+      "name": "no-slippage-check",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-openzeppelin-ecdsa-recover-malleable",
+      "name": "openzeppelin-ecdsa-recover-malleable",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "emergency|rescue|recover|force|sweep|drain"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-oracle-price-update-not-restricted",
+      "name": "oracle-price-update-not-restricted",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-oracle-uses-curve-spot-price",
+      "name": "oracle-uses-curve-spot-price",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-public-transfer-fees-supporting-tax-tokens",
+      "name": "public-transfer-fees-supporting-tax-tokens",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "fee|slippage|liquidation|collateral|interest|rate"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "balance|allowance|approve|token"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-sense-missing-oracle-access-control",
+      "name": "sense-missing-oracle-access-control",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "oracle|price|feed|bridge|relayer|router"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-tecra-coin-burnfrom-bug",
+      "name": "tecra-coin-burnfrom-bug",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-uniswap-callback-not-protected",
+      "name": "uniswap-callback-not-protected",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-uniswap-v4-callback-not-protected",
+      "name": "uniswap-v4-callback-not-protected",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-security-unrestricted-transferownership",
+      "name": "unrestricted-transferownership",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "owner|admin|authority|controller|manager|supervisor"
+        },
+        {
+          "type": "hardcoded_name",
+          "detail": "withdraw|transfer|deposit|redeem|claim|stake|unstake"
+        }
+      ]
+    },
+    {
+      "id": "semgrep-performance-non-optimal-variables-swap",
+      "name": "non-optimal-variables-swap",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ],
+      "dependencies": [
+        {
+          "type": "hardcoded_name",
+          "detail": "mint|burn|swap|send|receive"
+        }
+      ]
+    }
+  ],
+  "name_independent_patterns": [
+    {
+      "id": "auth-002",
+      "name": "tx.origin Authentication",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-007",
+      "name": "Privilege Escalation Path",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-009",
+      "name": "Bypassable Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-010",
+      "name": "Cross-Contract Auth Confusion",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-011",
+      "name": "Unprotected Value Transfer",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-013",
+      "name": "Inconsistent Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-016",
+      "name": "Dangerous Admin Function",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-018",
+      "name": "Weak Time-Based Authentication",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-019",
+      "name": "Callback Without Authorization",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-020",
+      "name": "Time-Based Privileged Access",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-021",
+      "name": "Multisig Threshold One",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-028",
+      "name": "Delegatecall Target Unvalidated",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-029",
+      "name": "Callback Without Authorization",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-030",
+      "name": "Multicall Auth Bypass",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-045",
+      "name": "Public Wrapper Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-050",
+      "name": "Multicall Batching Without Guard",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-052",
+      "name": "Delegatecall Context Sensitive Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-053",
+      "name": "Public tx.origin Usage",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-055",
+      "name": "Delegatecall Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-056",
+      "name": "Low-Level Call Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-057",
+      "name": "Weak Authentication Source Without Gate",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-060",
+      "name": "Role Modification Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-061",
+      "name": "Selfdestruct Without Access Control",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-063",
+      "name": "Public Payable Without Access Gate",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-065",
+      "name": "External Call Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-066",
+      "name": "User Input State Write Without Access Control",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-067",
+      "name": "Access Gate Uses tx.origin",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-069",
+      "name": "Multisig Threshold Zero",
+      "severity": "critical",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-079",
+      "name": "Weak Auth Using Extcodesize",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-080",
+      "name": "Weak Auth Using Extcodehash",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-081",
+      "name": "Weak Auth Using Gasleft",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-086",
+      "name": "Access Gate Uses Block Timestamp",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-087",
+      "name": "Access Gate Uses Block Number",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-088",
+      "name": "Access Gate Uses Blockhash",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-089",
+      "name": "Access Gate Uses ChainId",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-090",
+      "name": "Access Gate Uses Msg.value",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-102",
+      "name": "Weak Auth Using Hash Compare",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-105",
+      "name": "Access Gate Uses If-Return",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-107",
+      "name": "Context-Dependent Auth With External Calls",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-113",
+      "name": "Privileged External Call Without Reentrancy Guard",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-042",
+      "name": "Weak Authentication Source",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "auth-043",
+      "name": "Time-Based Access Control",
+      "severity": "medium",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "upg-005",
+      "name": "Function Selector Clash",
+      "severity": "medium",
+      "lens": [
+        "Upgradeability"
+      ]
+    },
+    {
+      "id": "upg-010",
+      "name": "Diamond Storage Collision",
+      "severity": "high",
+      "lens": [
+        "Upgradeability"
+      ]
+    },
+    {
+      "id": "live-001",
+      "name": "Unbounded Loop DoS",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-002",
+      "name": "Block Gas Limit Exhaustion",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-005",
+      "name": "Division by Zero",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-006",
+      "name": "Array Out of Bounds",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-007",
+      "name": "Assert Gas Consumption",
+      "severity": "low",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-008",
+      "name": "Storage Growth DoS",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-010",
+      "name": "Permanent Fund Lock",
+      "severity": "critical",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-012",
+      "name": "External Call Cascade Failure",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-013",
+      "name": "Nested Loop Complexity",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-014",
+      "name": "Dynamic Gas Consumption",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-015",
+      "name": "Transaction Size Attacks",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-016",
+      "name": "Batch Operation Limits",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-017",
+      "name": "Unbounded Array Operations",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-018",
+      "name": "Unbounded Mapping Iterations",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-019",
+      "name": "Unbounded String or Bytes Operations",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-020",
+      "name": "Callback Griefing",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-021",
+      "name": "State Manipulation Griefing",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-022",
+      "name": "External Call Dependency",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-023",
+      "name": "External Call Gas Forwarding",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-024",
+      "name": "Underflow or Overflow Reverts",
+      "severity": "low",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-025",
+      "name": "Storage Slot Exhaustion",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-026",
+      "name": "Storage Cost Attacks",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-027",
+      "name": "Storage Cleanup Failures",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-030",
+      "name": "State Transition Blocking",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-032",
+      "name": "Deadline and Expiration DoS",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-033",
+      "name": "Memory Exhaustion",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-034",
+      "name": "Calldata or Stack Exhaustion",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-035",
+      "name": "Event Log Exhaustion",
+      "severity": "low",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-036",
+      "name": "Conditional Unlock Failures",
+      "severity": "high",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "live-037",
+      "name": "Time Lock Issues",
+      "severity": "medium",
+      "lens": [
+        "Liveness"
+      ]
+    },
+    {
+      "id": "value-movement-classic-reentrancy",
+      "name": "Classic Reentrancy - State After External Call",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-loop-reentrancy",
+      "name": "Loop Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-cross-function-reentrancy",
+      "name": "Cross-Function Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-cross-function-reentrancy-read",
+      "name": "Cross-Function Reentrancy Reader",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-cross-contract-reentrancy",
+      "name": "Cross-Contract Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-inheritance-reentrancy",
+      "name": "Inheritance Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-composition-reentrancy",
+      "name": "Composition Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-protocol-reentrancy",
+      "name": "Protocol Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-callback-chain-reentrancy",
+      "name": "Callback Chain Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-callback-chain-path",
+      "name": "Callback Chain Path Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-callback-entrypoint-reentrancy",
+      "name": "Callback Entrypoint Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-callback-chain-strict",
+      "name": "Callback Chain Reentrancy (Strict)",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-read-only-reentrancy",
+      "name": "Read-Only Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-callback-reentrancy",
+      "name": "Callback Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-unchecked-low-level-call",
+      "name": "Unchecked Low-Level Call",
+      "severity": "high",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-gas-stipend",
+      "name": "Gas Stipend Call Risk",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-returndata-decode",
+      "name": "Unsafe Return Data Decode",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-arbitrary-call-target",
+      "name": "Arbitrary Call Target",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "value-movement-arbitrary-calldata",
+      "name": "Arbitrary Calldata Forwarding",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-value-forwarding",
+      "name": "User-Controlled Value Forwarding",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-delegatecall-storage-collision",
+      "name": "Delegatecall Storage Collision Risk",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-delegatecall-context",
+      "name": "Delegatecall Context Confusion",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-flash-loan-callback",
+      "name": "Flash Loan Callback Safety",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-movement-flash-loan-sensitive-operation",
+      "name": "Flash Loan Sensitive Operation",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-001",
+      "name": "Classic Reentrancy - State Before External",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-003",
+      "name": "Cross-Function Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-013",
+      "name": "Cross-Function Reentrancy Reader",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-004",
+      "name": "Read-Only Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-014",
+      "name": "Callback Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-015",
+      "name": "Inheritance Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-016",
+      "name": "Composition Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-017",
+      "name": "Protocol Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-018",
+      "name": "Callback Chain Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-020",
+      "name": "Callback Chain Path Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-019",
+      "name": "Callback Entrypoint Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-021",
+      "name": "Callback Chain Reentrancy (Strict)",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-006",
+      "name": "Unchecked Low-Level Call",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-008",
+      "name": "Arbitrary Delegatecall",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "vm-011",
+      "name": "Flash Loan Price Manipulation",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "arith-002",
+      "name": "Division Before Multiplication",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-003",
+      "name": "Unsafe Narrowing Cast",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-004",
+      "name": "Division by Zero Risk",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-005",
+      "name": "Share Inflation Attack",
+      "severity": "high",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-008",
+      "name": "Multiplication Overflow",
+      "severity": "high",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-009",
+      "name": "Rounding Exploitation",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-010",
+      "name": "Percentage Overflow",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-011",
+      "name": "Pre-0.8 Overflow/Underflow",
+      "severity": "high",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-012",
+      "name": "Loop Counter Overflow",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-013",
+      "name": "Truncation in Financial Calculations",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-014",
+      "name": "Signed/Unsigned Conversion",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-016",
+      "name": "Division Precision Loss",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-018",
+      "name": "Basis Points Precision Loss",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-019",
+      "name": "Ratio Calculation Issue",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-021",
+      "name": "Timestamp Arithmetic",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-022",
+      "name": "Duration Calculation Issue",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "arith-023",
+      "name": "Decimal Scaling Issue",
+      "severity": "medium",
+      "lens": [
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "logic-001",
+      "name": "Invalid State Transition",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-004",
+      "name": "Double Counting Error",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-005",
+      "name": "Variable Shadowing",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-006",
+      "name": "Unprotected Selfdestruct",
+      "severity": "critical",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-007",
+      "name": "extcodesize Bypass",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-009",
+      "name": "Missing Event Emission",
+      "severity": "low",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-010",
+      "name": "Incomplete State Cleanup",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-011",
+      "name": "State Race Condition",
+      "severity": "high",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-014",
+      "name": "Missing Return Value Check",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-015",
+      "name": "Missing Boundary Checks",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-016",
+      "name": "Ordering & Sequencing Flaw",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-017",
+      "name": "Conditional Logic Flaw",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-018",
+      "name": "Protocol Interaction Flaw",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-019",
+      "name": "Missing Accounting Updates",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-020",
+      "name": "Rounding Accumulation",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-021",
+      "name": "Function Override Missing Super",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-022",
+      "name": "Diamond Inheritance Conflict",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-023",
+      "name": "Forced Ether via Selfdestruct",
+      "severity": "medium",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "logic-026",
+      "name": "Incorrect Event Parameters",
+      "severity": "low",
+      "lens": [
+        "LogicState"
+      ]
+    },
+    {
+      "id": "ext-007",
+      "name": "Missing Amount Bounds",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-008",
+      "name": "Array Length Manipulation",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-009",
+      "name": "Deadline Validation Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-010",
+      "name": "Unsafe ABI Decode",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-013",
+      "name": "TWAP Window Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-015",
+      "name": "Chainlink Decimals Not Queried",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-020",
+      "name": "Zero Amount Not Rejected",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-021",
+      "name": "Array Index Not Validated",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-022",
+      "name": "Array Length Mismatch",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-023",
+      "name": "External Data Integrity Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-026",
+      "name": "TWAP Observation Coverage Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-032",
+      "name": "Chainlink StartedAt Not Validated",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-036",
+      "name": "Amount Precision Guard Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-037",
+      "name": "Duration Bounds Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-038",
+      "name": "Calldata Slice Without Length Check",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-039",
+      "name": "TWAP Window Minimum Not Enforced",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-043",
+      "name": "Chainlink Round Completeness Missing",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-053",
+      "name": "TWAP Timestamp Validation Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-057",
+      "name": "TWAP Precision Guard Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-059",
+      "name": "Amount Division Without Nonzero Check",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-065",
+      "name": "Array Loop Without Bounds",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-071",
+      "name": "TWAP Gap Handling Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-072",
+      "name": "TWAP Volatility Window Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-075",
+      "name": "Deadline Future Check Missing",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-076",
+      "name": "Deadline Min Buffer Missing",
+      "severity": "low",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "ext-077",
+      "name": "Deadline Max Bound Missing",
+      "severity": "low",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "state-write-after-call",
+      "name": "External Call With State Writes",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence",
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "weak-access-control",
+      "name": "Weak Access Control on State Writes",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "delegatecall-no-gate",
+      "name": "Delegatecall Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ]
+    },
+    {
+      "id": "dos-array-return-unbounded",
+      "name": "Unbounded Array Return",
+      "severity": "medium",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "oracle-twap-missing-window",
+      "name": "Oracle TWAP Risk (Missing Window)",
+      "severity": "medium",
+      "lens": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "abi-decode-without-length-check",
+      "name": "ABI Decode Without Length Check",
+      "severity": "medium",
+      "lens": [
+        "Crypto"
+      ]
+    },
+    {
+      "id": "proxy-delegatecall-untrusted",
+      "name": "Delegatecall to Untrusted Address",
+      "severity": "critical",
+      "lens": [
+        "Authority",
+        "Upgradeability"
+      ]
+    },
+    {
+      "id": "twap-missing-window",
+      "name": "TWAP Risk (Missing Window Parameter)",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "attacker-controlled-write-heuristic",
+      "name": "Attacker-Controlled Input (Heuristic)",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "msg-value-nonpayable",
+      "name": "msg.value Usage in Non-Payable Function",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "mev-missing-deadline-check",
+      "name": "MEV Risk (Missing Deadline Check)",
+      "severity": "medium",
+      "lens": [
+        "Ordering"
+      ]
+    },
+    {
+      "id": "crypto-permit-incomplete",
+      "name": "Incomplete EIP-2612 Permit Implementation",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ]
+    },
+    {
+      "id": "dos-strict-equality",
+      "name": "DoS via Strict Equality (Gridlock)",
+      "severity": "medium",
+      "lens": [
+        "DoS",
+        "Arithmetic"
+      ]
+    },
+    {
+      "id": "attacker-controlled-write",
+      "name": "Attacker-Controlled Input Reaches State Write",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence",
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "dos-revert-failed-call",
+      "name": "DoS with Unexpected Revert",
+      "severity": "high",
+      "lens": [
+        "DoS",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "proxy-selfdestruct-in-logic",
+      "name": "Selfdestruct in Implementation Contract",
+      "severity": "critical",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ]
+    },
+    {
+      "id": "dos-transfer-in-loop",
+      "name": "Transfer/Send in Loop",
+      "severity": "medium",
+      "lens": [
+        "DoS",
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "amount-division-without-precision-guard",
+      "name": "Amount Division Without Precision Guard",
+      "severity": "medium",
+      "lens": [
+        "Token"
+      ]
+    },
+    {
+      "id": "tx-origin-auth",
+      "name": "tx.origin Authentication Usage",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "array-length-mismatch",
+      "name": "Array Length Mismatch Check Missing",
+      "severity": "medium",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "calldata-slice-without-length-check",
+      "name": "Calldata Slice Without Length Check",
+      "severity": "medium",
+      "lens": [
+        "Crypto"
+      ]
+    },
+    {
+      "id": "delegatecall-public",
+      "name": "Public Delegatecall Usage",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence",
+        "Upgradeability"
+      ]
+    },
+    {
+      "id": "dos-user-controlled-batch",
+      "name": "User-Controlled Batch Without Limit",
+      "severity": "high",
+      "lens": [
+        "DoS",
+        "Authority"
+      ]
+    },
+    {
+      "id": "tx-origin-public",
+      "name": "Public tx.origin Usage",
+      "severity": "high",
+      "lens": [
+        "Authority"
+      ]
+    },
+    {
+      "id": "crypto-missing-deadline",
+      "name": "Missing Deadline Check in Permit Function",
+      "severity": "medium",
+      "lens": [
+        "Crypto"
+      ]
+    },
+    {
+      "id": "public-payable-no-gate",
+      "name": "Public Payable Without Access Gate",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement",
+        "Authority"
+      ]
+    },
+    {
+      "id": "dos-unbounded-loop",
+      "name": "Unbounded Loop",
+      "severity": "medium",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "invariant-touch-without-check",
+      "name": "Invariant Touched Without Check",
+      "severity": "medium",
+      "lens": [
+        "Invariant"
+      ]
+    },
+    {
+      "id": "has-user-input-writes-state-no-gate",
+      "name": "User Input State Write Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "Authority",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "dataflow-input-taints-state",
+      "name": "Input Taints State (Dataflow Edge)",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "low-level-call-no-gate",
+      "name": "Low-Level Call Without Access Gate",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence",
+        "Authority"
+      ]
+    },
+    {
+      "id": "classic-reentrancy-state-before-external",
+      "name": "Classic Reentrancy - State Before External",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "loop-reentrancy",
+      "name": "Loop Reentrancy Surface",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "cross-function-reentrancy",
+      "name": "Cross-Function Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "cross-function-inheritance-reentrancy",
+      "name": "Cross-Function Reentrancy via Inheritance",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "cross-function-composition-reentrancy",
+      "name": "Cross-Function Reentrancy via Composition",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "protocol-level-reentrancy",
+      "name": "Protocol-Level Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "callback-chain-reentrancy",
+      "name": "Callback Chain Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "read-only-reentrancy",
+      "name": "Read-Only Reentrancy",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "gas-stipend-issue",
+      "name": "Gas Stipend Risk",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "call-return-data-handling",
+      "name": "Unsafe Call Return Data Handling",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "arbitrary-call-target",
+      "name": "Arbitrary Call Target",
+      "severity": "critical",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "arbitrary-calldata",
+      "name": "Arbitrary Calldata Forwarding",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "value-forwarding-issue",
+      "name": "Value Forwarding Issue",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "delegatecall-storage-collision",
+      "name": "Delegatecall Storage Collision",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "delegatecall-context-issue",
+      "name": "Delegatecall Context Confusion",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "flash-loan-callback-safety",
+      "name": "Flash Loan Callback Safety",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "flash-loan-protected-operations",
+      "name": "Flash Loan Protected Operations",
+      "severity": "high",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "array-length-missing-check",
+      "name": "Array Length Missing Check",
+      "severity": "medium",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "dos-unbounded-mass-operation",
+      "name": "Unbounded Mass Operation",
+      "severity": "high",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "proxy-selector-clash-risk",
+      "name": "Transparent Proxy Selector Clash Risk",
+      "severity": "medium",
+      "lens": [
+        "Upgradeability",
+        "Authority"
+      ]
+    },
+    {
+      "id": "array-index-without-check",
+      "name": "Array Index Without Bounds Check",
+      "severity": "low",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "crypto-missing-domain-separator",
+      "name": "Cross-Contract Signature Replay - Missing Domain Separator",
+      "severity": "high",
+      "lens": [
+        "Crypto"
+      ]
+    },
+    {
+      "id": "low-level-call-public",
+      "name": "Public Low-Level Call Usage",
+      "severity": "medium",
+      "lens": [
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "dos-unbounded-deletion",
+      "name": "Unbounded Deletion Loop",
+      "severity": "high",
+      "lens": [
+        "DoS"
+      ]
+    },
+    {
+      "id": "dos-external-call-in-loop",
+      "name": "External Call Inside Loop",
+      "severity": "medium",
+      "lens": [
+        "DoS",
+        "ExternalInfluence"
+      ]
+    },
+    {
+      "id": "public-payable-writes-state",
+      "name": "Public Payable State Mutation",
+      "severity": "medium",
+      "lens": [
+        "ValueMovement"
+      ]
+    },
+    {
+      "id": "external-call-public-no-gate",
+      "name": "External Call Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "ExternalInfluence",
+        "Authority"
+      ]
+    },
+    {
+      "id": "semgrep-security-accessible-selfdestruct",
+      "name": "accessible-selfdestruct",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-arbitrary-low-level-call",
+      "name": "arbitrary-low-level-call",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-basic-arithmetic-underflow",
+      "name": "basic-arithmetic-underflow",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-compound-borrowfresh-reentrancy",
+      "name": "compound-borrowfresh-reentrancy",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-compound-precision-loss",
+      "name": "compound-precision-loss",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-curve-readonly-reentrancy",
+      "name": "curve-readonly-reentrancy",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-encode-packed-collision",
+      "name": "encode-packed-collision",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-erc677-reentrancy",
+      "name": "erc677-reentrancy",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-erc721-reentrancy",
+      "name": "erc721-reentrancy",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-erc777-reentrancy",
+      "name": "erc777-reentrancy",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-incorrect-use-of-blockhash",
+      "name": "incorrect-use-of-blockhash",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-missing-assignment",
+      "name": "missing-assignment",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-msg-value-multicall",
+      "name": "msg-value-multicall",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-no-bidi-characters",
+      "name": "no-bidi-characters",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-olympus-dao-staking-incorrect-call-order",
+      "name": "olympus-dao-staking-incorrect-call-order",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-proxy-storage-collision",
+      "name": "proxy-storage-collision",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-redacted-cartel-custom-approval-bug",
+      "name": "redacted-cartel-custom-approval-bug",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-rigoblock-missing-access-control",
+      "name": "rigoblock-missing-access-control",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-superfluid-ctx-injection",
+      "name": "superfluid-ctx-injection",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-security-thirdweb-vulnerability",
+      "name": "thirdweb-vulnerability",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security"
+      ]
+    },
+    {
+      "id": "semgrep-performance-array-length-outside-loop",
+      "name": "array-length-outside-loop",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-inefficient-state-variable-increment",
+      "name": "inefficient-state-variable-increment",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-init-variables-with-default-value",
+      "name": "init-variables-with-default-value",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-non-payable-constructor",
+      "name": "non-payable-constructor",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-state-variable-read-in-a-loop",
+      "name": "state-variable-read-in-a-loop",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-unnecessary-checked-arithmetic-in-loop",
+      "name": "unnecessary-checked-arithmetic-in-loop",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-use-custom-error-not-require",
+      "name": "use-custom-error-not-require",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-use-multiple-require",
+      "name": "use-multiple-require",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-use-nested-if",
+      "name": "use-nested-if",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-use-prefix-decrement-not-postfix",
+      "name": "use-prefix-decrement-not-postfix",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-use-prefix-increment-not-postfix",
+      "name": "use-prefix-increment-not-postfix",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-performance-use-short-revert-string",
+      "name": "use-short-revert-string",
+      "severity": "low",
+      "lens": [
+        "Semgrep",
+        "Performance"
+      ]
+    },
+    {
+      "id": "semgrep-security-unguarded",
+      "name": "Semgrep Security Finding Without Access Gate",
+      "severity": "high",
+      "lens": [
+        "Semgrep",
+        "Security",
+        "Augmented"
+      ]
+    },
+    {
+      "id": "semgrep-security-multi-findings",
+      "name": "Multiple Semgrep Security Findings",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security",
+        "Augmented"
+      ]
+    },
+    {
+      "id": "semgrep-security-high-severity",
+      "name": "High Severity Semgrep Findings",
+      "severity": "medium",
+      "lens": [
+        "Semgrep",
+        "Security",
+        "Augmented"
+      ]
+    }
+  ]
+}

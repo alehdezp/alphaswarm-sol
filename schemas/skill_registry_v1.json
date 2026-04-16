@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://alphaswarm.sol/schemas/skill_registry_v1.json",
+  "title": "Skill Registry Schema v1",
+  "description": "Schema for skill registry entries tracking versions, status, and deprecation metadata",
+  "type": "object",
+  "required": ["version", "skills"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Registry schema version",
+      "pattern": "^v1(\\.\\d+)?$"
+    },
+    "skills": {
+      "type": "array",
+      "description": "Array of registered skills",
+      "items": {
+        "$ref": "#/definitions/SkillEntry"
+      }
+    }
+  },
+  "definitions": {
+    "SkillEntry": {
+      "type": "object",
+      "required": ["id", "name", "version", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique skill identifier (kebab-case)",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable skill name"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "deprecated", "experimental", "sunset"],
+          "description": "Lifecycle status"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "orchestration",
+            "investigation",
+            "validation",
+            "discovery",
+            "pattern-development",
+            "tool-integration",
+            "context",
+            "development",
+            "legacy"
+          ],
+          "description": "Skill category for organization"
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "shipped": {
+              "type": ["string", "null"],
+              "description": "Path to shipped skill file (null if dev-only)"
+            },
+            "dev": {
+              "type": ["string", "null"],
+              "description": "Path to dev skill file (null if shipped-only)"
+            }
+          }
+        },
+        "replaces": {
+          "type": ["string", "null"],
+          "description": "Skill ID that this replaces (if any)"
+        },
+        "deprecated_by": {
+          "type": ["string", "null"],
+          "description": "Skill ID that deprecates this skill"
+        },
+        "sunset_date": {
+          "type": ["string", "null"],
+          "description": "ISO 8601 date when skill will be removed",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "migration_notes": {
+          "type": ["string", "null"],
+          "description": "Migration guidance for deprecated skills"
+        },
+        "description": {
+          "type": "string",
+          "description": "One-line skill description"
+        }
+      }
+    }
+  }
+}

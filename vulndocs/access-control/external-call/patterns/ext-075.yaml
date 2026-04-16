@@ -1,0 +1,16 @@
+id: ext-075
+vulndoc: access-control/external-call
+name: Deadline Future Check Missing
+description: Deadline parameters without future timestamp validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_deadline_parameter
+    op: eq
+    value: true
+  - property: has_deadline_future_check
+    op: eq
+    value: false

@@ -1,0 +1,25 @@
+workflow_id: agent-vrs-context-packer
+category: agent
+grader_type: code
+rule_refs:
+- EXEC-INTEGRITY
+reasoning_dimensions: []
+evaluation_config:
+  run_gvs: false
+  run_reasoning: false
+  debrief: false
+  depth: shallow
+capability_checks:
+- id: session_completed
+  description: Workflow session completed without errors
+  expected_behavior: session_completed is true
+  grader_type: code
+evidence_requirements: []
+hooks:
+- SessionStart
+- Stop
+- SessionEnd
+status: stub
+coverage_axes: []
+metadata:
+  tier: standard

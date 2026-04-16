@@ -1,0 +1,26 @@
+id: arith-001
+vulndoc: arithmetic/general
+name: Unchecked Arithmetic
+description: Unchecked arithmetic with user input or balance impact.
+scope: Function
+lens:
+- Arithmetic
+severity: high
+cwe:
+- 190
+- 191
+match:
+  all:
+  - property: has_unchecked_block
+    op: eq
+    value: true
+  - property: unchecked_contains_arithmetic
+    op: eq
+    value: true
+  any:
+  - property: unchecked_operand_from_user
+    op: eq
+    value: true
+  - property: unchecked_affects_balance
+    op: eq
+    value: true

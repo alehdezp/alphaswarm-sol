@@ -1,0 +1,334 @@
+# Clipper DEX Single-Asset Withdrawal Invariant Bypass - Specific Vulnerability
+# Discovered via Task 17.3a: Solodit/Exploit DB Crawl (2024-2026)
+
+id: clipper-single-asset-bypass
+name: Clipper DEX Single-Asset Withdrawal Invariant Bypass
+parent_category: logic
+parent_subcategory: invariant-violation
+
+description: |
+  Invariant bypass vulnerability in Clipper DEX where the single-asset deposit
+  and withdrawal feature (which bundles a swap with deposit/withdrawal) did not
+  implement the same invariant validation checks as regular swap operations.
+
+  The attacker exploited this by:
+  1. Requesting deposit signatures without executing
+  2. Performing a swap to artificially inflate pool token value
+  3. Requesting withdrawal signatures based on inflated value
+  4. Bundling deposit + withdrawal in single transaction for profit
+
+  Key insight: Combined operations (swap + deposit/withdrawal) bypassed
+  validations designed for individual operations.
+
+severity: high
+exploit_severity: high
+confidence_score: 0.94
+
+# Related VKG Properties for Detection
+detection:
+  graph_signals:
+    - property: has_multiple_operation_modes
+      expected: true
+      critical: true
+      description: "Function supports different operation types (swap, deposit, withdraw)"
+      confidence: 0.85
+
+    - property: validates_pool_invariant
+      expected: false
+      critical: true
+      description: "Missing invariant validation for combined operations"
+      confidence: 0.90
+
+    - property: state_write_without_validation
+      expected: true
+      critical: true
+      description: "Pool state modified without k-value or invariant check"
+      confidence: 0.88
+
+    - property: visibility
+      expected:
+        - public
+        - external
+      critical: true
+      description: "Function publicly callable"
+      confidence: 0.95
+
+    - property: has_bundled_operations
+      expected: true
+      critical: true
+      description: "Operation bundles swap with deposit/withdrawal"
+      confidence: 0.90
+
+    - property: relies_on_signature_validation
+      expected: true
+      critical: false
+      description: "Uses off-chain signatures for authorization"
+      confidence: 0.80
+
+  semantic_operations:
+    - READS_POOL_STATE
+    - WRITES_POOL_STATE
+    - PERFORMS_SWAP
+    - TRANSFERS_VALUE_OUT
+    - VALIDATES_SIGNATURE
+
+  behavioral_signatures:
+    - vulnerable: "R:pool->X:swap->W:pool{!invariant_check}"
+      description: "Read pool, perform swap, write pool without invariant validation"
+
+    - vulnerable: "V:sig->R:pool->W:pool{skip_checks}"
+      description: "Validate signature, read pool, write pool skipping standard checks"
+
+  operation_sequences:
+    vulnerable:
+      - "REQUEST_DEPOSIT_SIG -> EXECUTE_SWAP -> REQUEST_WITHDRAW_SIG -> BUNDLE_EXECUTE"
+      - "W:pool{single_asset} -> !V:k_value -> profit"
+
+    safe:
+      - "R:pool -> X:swap -> V:invariant -> W:pool"
+      - "W:pool{any_mode} -> V:k_value{before_after} -> COMMIT"
+
+  false_positive_indicators:
+    - "Consistent invariant validation across all operation modes"
+    - "k-value or constant-product check before and after operations"
+    - "Rate limiting on operation frequency"
+    - "On-chain validation matching off-chain logic"
+    - "Circuit breakers for abnormal pool balance changes"
+
+# Attack Mechanism Details
+attack_mechanism:
+  preconditions:
+    - "Single-asset deposit/withdrawal feature enabled"
+    - "Low-liquidity pools (low TVL, low k-value)"
+    - "Ability to request signatures without immediate execution"
+    - "Access to pools on Optimism and Base networks"
+
+  attack_steps:
+    - step: 1
+      phase: "Signature Collection - Deposits"
+      description: |
+        Request multiple deposit signatures without executing them.
+        These signatures are based on current pool state.
+      operations:
+        - "Request deposit signature for Pool A"
+        - "Request deposit signature for Pool B"
+        - "Store signatures for later use"
+
+    - step: 2
+      phase: "Pool State Manipulation"
+      description: |
+        Execute a swap with extra ETH to artificially inflate
+        the value of pool tokens. Low-TVL pools are especially
+        susceptible to manipulation.
+      operations:
+        - "Execute swap with extra ETH input"
+        - "Pool token value increases due to ETH injection"
+        - "Pool imbalance created"
+
+    - step: 3
+      phase: "Signature Collection - Withdrawals"
+      description: |
+        Request withdrawal signatures based on the NEW pool state
+        (inflated values). These signatures expect larger returns.
+      operations:
+        - "Request withdrawal signature (based on inflated value)"
+        - "Expected return > original deposit value"
+
+    - step: 4
+      phase: "Bundle and Execute"
+      description: |
+        Bundle the deposit (old signature) and withdrawal (new signature)
+        into a single transaction. Deposit at old rates, withdraw at
+        inflated rates.
+      operations:
+        - "Bundle: deposit(old_sig) + withdraw(new_sig)"
+        - "Execute in single transaction"
+        - "Deposit: X tokens at pre-manipulation rates"
+        - "Withdraw: X+ tokens at post-manipulation rates"
+        - "Profit: difference in token values"
+
+    - step: 5
+      phase: "Repeat Across Pools"
+      description: |
+        Repeat attack on multiple low-liquidity pools on Optimism
+        and Base networks.
+      operations:
+        - "Attack Pool 1 (Optimism)"
+        - "Attack Pool 2 (Base)"
+        - "Total extracted: ~$457,878"
+
+  exploitation_difficulty: "medium"
+  exploitation_notes: |
+    The attack exploited a gap between off-chain validation (API signatures)
+    and on-chain validation (invariant checks). Key factors:
+
+    1. Single-asset operations bundled swap + deposit/withdraw
+    2. Standard swap protections not applied to bundled operations
+    3. Low-liquidity pools amplified manipulation effects
+    4. Signatures could be collected and used across state changes
+
+    A recent database upgrade introduced an unexpected interaction with
+    circuit-breaker logic, further weakening protections.
+
+# Real-World Exploits
+exploits:
+  - id: clipper-dec-2024
+    name: "Clipper DEX Single-Asset Withdrawal Exploit"
+    date: "2024-12-01"
+    loss_usd: 457878
+    protocol: "Clipper"
+    chain: "optimism, base"
+    category: logic
+    subcategory: invariant-violation
+    description: |
+      Attacker exploited the single-asset deposit/withdrawal feature
+      on Clipper DEX by manipulating pool state between signature
+      requests. The attack targeted low-liquidity pools on Optimism
+      and Base networks, extracting approximately $458K.
+    attack_flow: |
+      1. Request deposit signatures (stored, not executed)
+      2. Execute swap with extra ETH to inflate pool token value
+      3. Request withdrawal signatures (based on inflated value)
+      4. Bundle deposit + withdrawal in single transaction
+      5. Profit from value differential
+      6. Repeat on multiple pools across Optimism and Base
+    postmortem_url: "https://blog.clipper.exchange/clipper-dec-24-exploit-post-mortem/"
+    vulnerable_code_url: "Clipper single-asset deposit/withdrawal contracts"
+    pattern_ids:
+      - logic-004
+
+# Remediation Guidance
+fixes:
+  root_cause:
+    description: |
+      The root cause was inconsistent validation between operation modes:
+      1. Regular swaps had invariant validation
+      2. Single-asset deposit/withdrawal (bundled swap) skipped these checks
+      3. Off-chain signature validation didn't account for state changes
+
+  recommended:
+    - fix_id: "consistent-invariant-checks"
+      name: "Apply Invariant Checks to All Operations"
+      priority: critical
+      description: |
+        Ensure invariant validation (k-value, constant product) is applied
+        consistently across ALL operation modes, including bundled operations.
+      code_pattern: |
+        // VULNERABLE - Skip checks on single-asset operations
+        function singleAssetWithdraw(...) external {
+            _executeSwap(...);
+            _executeWithdraw(...);
+            // No invariant check!
+        }
+
+        // SAFE - Consistent validation
+        function singleAssetWithdraw(...) external {
+            uint k_before = _calculateK();
+            _executeSwap(...);
+            _executeWithdraw(...);
+            uint k_after = _calculateK();
+            require(k_after >= k_before * 99 / 100, "K value violation");
+        }
+      effectiveness: "Very High - Prevents invariant bypass"
+
+    - fix_id: "on-chain-state-validation"
+      name: "Validate State at Execution Time"
+      priority: critical
+      description: |
+        Signatures should include state commitments that are validated
+        at execution time. Reject signatures if state has changed.
+      code_pattern: |
+        // VULNERABLE - Signature doesn't commit to state
+        struct DepositSig {
+            uint amount;
+            uint deadline;
+            bytes signature;
+        }
+
+        // SAFE - Signature commits to current state
+        struct DepositSig {
+            uint amount;
+            uint deadline;
+            uint expectedPoolState;  // Hash of pool balances at sig time
+            bytes signature;
+        }
+
+        function deposit(DepositSig calldata sig) external {
+            require(
+                keccak256(abi.encode(poolBalances)) == sig.expectedPoolState,
+                "Pool state changed since signature"
+            );
+            // ... proceed
+        }
+      effectiveness: "High - Prevents state manipulation between sig and execution"
+
+    - fix_id: "atomic-operations"
+      name: "Require Atomic Signature Use"
+      priority: high
+      description: |
+        Signatures should be used atomically - no collecting multiple
+        signatures across state changes.
+      code_pattern: |
+        // SAFE - Nonce-based signature freshness
+        mapping(address => uint) public sigNonces;
+
+        function validateSig(bytes calldata sig, uint nonce) internal {
+            require(nonce == sigNonces[msg.sender]++, "Invalid nonce");
+            // ... validate signature
+        }
+      effectiveness: "High - Prevents signature collection attacks"
+
+    - fix_id: "minimum-liquidity-threshold"
+      name: "Enforce Minimum Liquidity Threshold"
+      priority: medium
+      description: |
+        Disable vulnerable features on low-liquidity pools where
+        manipulation is easier.
+      code_pattern: |
+        // SAFE - Minimum liquidity check
+        function singleAssetWithdraw(...) external {
+            require(totalLiquidity >= MIN_LIQUIDITY, "Pool too small");
+            // ... proceed
+        }
+      effectiveness: "Medium - Reduces attack surface on vulnerable pools"
+
+# References and Sources
+references:
+  - title: "Clipper Dec 24 Exploit Post-Mortem"
+    url: "https://blog.clipper.exchange/clipper-dec-24-exploit-post-mortem/"
+    source: "Clipper Team"
+    date: "2024-12-05"
+    type: "official_disclosure"
+
+  - title: "Clipper DEX Says Recent $450K Hack Wasn't Caused by Private Key Leak"
+    url: "https://cointelegraph.com/news/clipper-dex-clarifies-hack-not-private-key-leak"
+    source: "Cointelegraph"
+    date: "2024-12-02"
+    type: "news_coverage"
+
+  - title: "Clipper Exchange Asset Deposit/Withdrawal Manipulation"
+    url: "https://quadrigainitiative.com/casestudy/clipperexchangeassetdepositwithdrawalmanipulation.php"
+    source: "Quadriga Initiative"
+    date: "2024-11"
+    type: "case_study"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "knowledge-aggregation-worker"
+  source: "Task 17.3a Solodit Crawl"
+  token_estimate: 1800
+  context_cache_key: "clipper-single-asset-bypass-v1"
+
+  key_learnings:
+    - "Bundled operations must inherit ALL validations from components"
+    - "Off-chain signatures should commit to on-chain state"
+    - "Low-liquidity pools amplify manipulation attacks"
+    - "Inconsistent validation across operation modes creates gaps"
+
+  novel_aspects:
+    - "Signature collection across state changes"
+    - "Bundled operation bypassing component validations"
+    - "Off-chain/on-chain validation mismatch"

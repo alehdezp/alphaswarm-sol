@@ -1,0 +1,16 @@
+id: unchecked-return-value
+vulndoc: reentrancy/classic
+name: Unchecked Return Value
+description: Low-level call or token transfer without return checks.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  any:
+  - property: checks_low_level_call_success
+    op: eq
+    value: false
+  - property: token_return_guarded
+    op: eq
+    value: false

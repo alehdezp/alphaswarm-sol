@@ -1,0 +1,38 @@
+{
+  "workflow_id": "agent-vrs-attacker",
+  "category": "agent",
+  "rule_refs": ["EXEC-INTEGRITY", "EVIDENCE-CHAIN", "GROUND-TRUTH"],
+  "capability_checks": [
+    {
+      "id": "identifies-attack-vectors",
+      "description": "Attacker agent identifies at least one attack vector from the knowledge graph",
+      "expected_behavior": "Transcript shows BSKG queries targeting access control, reentrancy, or value transfer patterns before proposing attack vectors",
+      "grader_type": "code"
+    },
+    {
+      "id": "constructs-exploit-path",
+      "description": "Attacker constructs a concrete exploit path with ordered function call sequence",
+      "expected_behavior": "Output contains an exploit_path or attack_sequence with at least 2 steps referencing contract functions",
+      "grader_type": "code"
+    },
+    {
+      "id": "cites-graph-evidence",
+      "description": "Every attack vector references specific graph node IDs as evidence",
+      "expected_behavior": "Each attack vector in output has non-empty graph_node_ids[] linking to BSKG nodes",
+      "grader_type": "code"
+    },
+    {
+      "id": "assesses-economic-impact",
+      "description": "Attacker evaluates the economic impact or severity of each identified vulnerability",
+      "expected_behavior": "Findings include severity classification and reasoning about financial impact",
+      "grader_type": "model"
+    }
+  ],
+  "reasoning_dimensions": ["graph_utilization", "evidence_quality", "attack_creativity"],
+  "evidence_requirements": [
+    {"type": "transcript", "description": "Attacker agent session transcript"},
+    {"type": "graph_nodes", "description": "BSKG node IDs referenced in attack vectors"},
+    {"type": "code_locations", "description": "Contract function locations in exploit paths"}
+  ],
+  "grader_type": "hybrid"
+}

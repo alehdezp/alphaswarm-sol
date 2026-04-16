@@ -1,0 +1,151 @@
+site_name: AlphaSwarm.sol
+site_description: Behavioral vulnerability detection for Solidity smart contracts
+site_author: AlphaSwarm Team
+site_url: https://alphaswarm.dev
+
+repo_name: truevkg/alphaswarm
+repo_url: https://github.com/truevkg/alphaswarm
+
+theme:
+  name: material
+  language: en
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: truevkg
+      repo: alphaswarm
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/truevkg/alphaswarm
+  generator: false
+  version:
+    provider: mike
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Core:
+      - Claude Code Architecture: claude-code-architecture.md
+      - Philosophy: PHILOSOPHY.md
+      - System Architecture: architecture.md
+      - Limitations: LIMITATIONS.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - First Audit: getting-started/first-audit.md
+  - User Guide:
+      - Queries: guides/queries.md
+      - Patterns: guides/patterns.md
+      - Beads: guides/beads.md
+      - Skills: guides/skills.md
+      - Testing: guides/testing.md
+      - VulnDocs: guides/vulndocs.md
+  - Workflows:
+      - Workflow Index: workflows/README.md
+      - Audit Entrypoint: workflows/workflow-audit.md
+      - Graph Build: workflows/workflow-graph.md
+      - Context: workflows/workflow-context.md
+      - Tools: workflows/workflow-tools.md
+      - Tasks: workflows/workflow-tasks.md
+      - Verify: workflows/workflow-verify.md
+      - Beads: workflows/workflow-beads.md
+      - Progress: workflows/workflow-progress.md
+      - Install: workflows/workflow-install.md
+      - VulnDocs: workflows/workflow-vulndocs.md
+      - Playbooks: workflows/PLAYBOOKS.md
+  - Reference:
+      - CLI Reference: reference/cli.md
+      - Claude Code Orchestration: reference/claude-code-orchestration.md
+      - Agents: reference/agents.md
+      - Tools Overview: reference/tools-overview.md
+      - Tool Adapters: reference/tools-adapters.md
+      - Properties: reference/properties.md
+      - Operations: reference/operations.md
+      - Graph-First Template: reference/graph-first-template.md
+      - Testing Framework: reference/testing-framework.md
+      - Skill Schema v2: reference/skill-schema-v2.md
+      - Settings/State Schema: reference/settings-state-schema.md
+      - Graph Usage Metrics: reference/graph-usage-metrics.md
+      - Graph Integrity: reference/graph-integrity.md
+      - VQL Library: reference/vql-library.md
+      - Workflows Reference: reference/workflows.md
+  - Migration:
+      - Claude Code Workflow Migration: migrations/claude-code-workflow-migration.md
+  - Development:
+      - Docs Index: DOC-INDEX.md

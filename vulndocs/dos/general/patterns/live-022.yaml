@@ -1,0 +1,22 @@
+id: live-022
+vulndoc: dos/general
+name: External Call Dependency
+description: Critical operations depend on unchecked external call success.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: has_low_level_calls
+    op: eq
+    value: true
+  - property: checks_low_level_call_success
+    op: eq
+    value: false
+  - property: has_try_catch
+    op: eq
+    value: false
+  - property: state_write_after_external_call
+    op: eq
+    value: true

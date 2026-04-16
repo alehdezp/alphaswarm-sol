@@ -1,0 +1,15 @@
+id: logic-019
+vulndoc: logic/general
+name: Missing Accounting Updates
+description: Value transfers without accounting updates.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: accounting_update_missing
+    op: eq
+    value: true

@@ -1,0 +1,16 @@
+id: oracle-update-missing-rate-limit
+vulndoc: oracle/freshness
+name: Oracle Update Missing Rate Limit
+description: Oracle update functions without rate limiting can be spammed or manipulated.
+scope: Function
+lens:
+  - Oracle
+severity: medium
+match:
+  all:
+    - property: oracle_update_function
+      op: eq
+      value: true
+    - property: has_oracle_update_rate_limit
+      op: eq
+      value: false

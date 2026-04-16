@@ -1,0 +1,19 @@
+id: logic-009
+vulndoc: logic/general
+name: Missing Event Emission
+description: State changes without event emission.
+scope: Function
+lens:
+- LogicState
+severity: low
+cwe:
+- 778
+match:
+  all:
+  - property: writes_state
+    op: eq
+    value: true
+  none:
+  - property: emits_event
+    op: eq
+    value: true

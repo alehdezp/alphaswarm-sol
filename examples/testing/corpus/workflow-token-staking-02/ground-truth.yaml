@@ -1,0 +1,103 @@
+project:
+  name: workflow-token-staking-02
+  theme: staking
+  tier: 1
+  adversarial_categories: []
+  description: Multi-pool staking system for workflow pipeline testing
+findings:
+- pattern_id: balance-update-after-transfer
+  contract: StakeEngine
+  function: unstake
+  line_range: 51-67
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: payout} at line 60'
+  - Notice info.amount -= amount at line 63 occurs AFTER external call
+  - No nonReentrant modifier on unstake
+  - 'Conclude: reentrancy allows repeated unstake draining pool'
+- pattern_id: auth-003
+  contract: StakeEngine
+  function: togglePause
+  line_range: 78-80
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify togglePause modifies paused state
+  - No access control modifier present
+  - Anyone can pause/unpause the staking contract
+  - 'Conclude: missing access control on critical admin function'
+- pattern_id: auth-004
+  contract: StakeEngine
+  function: setRewardRate
+  line_range: 83-85
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setRewardRate changes rewardRate used for all reward calculations
+  - No modifier or msg.sender check
+  - Attacker can set astronomically high reward rate and drain pool
+  - 'Conclude: missing access control on economic-critical parameter'
+- pattern_id: balance-update-after-transfer
+  contract: StakeEngine
+  function: emergencyWithdraw
+  line_range: 89-98
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount} at line 93'
+  - Notice info.amount = 0 at line 95 occurs AFTER call
+  - No reentrancy guard on emergencyWithdraw
+  - 'Conclude: reentrancy in emergency withdrawal'
+- pattern_id: ac-002
+  contract: StakeRouter
+  function: addPool
+  line_range: 17-20
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify addPool pushes new pool to pools array
+  - No governance modifier applied
+  - Attacker can add malicious pool to steal multiStake funds
+  - 'Conclude: missing access control on pool registration'
+- pattern_id: precision-loss-rounding
+  contract: RewardCalc
+  function: pendingReward
+  line_range: 9-15
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify division by 1e18 in reward calculation
+  - Small stakes with short durations can round to zero rewards
+  - No minimum stake or minimum duration enforcement
+  - 'Conclude: precision loss can cause reward theft for small stakers'
+- pattern_id: classic-reentrancy-state-before-external
+  contract: StakeEngine
+  function: emergencyWithdraw
+  line_range: 89-98
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify emergencyWithdraw reads info.amount into local variable, then sends ETH via msg.sender.call{value: amount}
+  - State updates (info.amount = 0, info.rewardDebt = 0, totalStaked -= amount) all occur AFTER the external call
+  - Attacker contract re-enters emergencyWithdraw from receive — info.amount is still non-zero
+  - Each re-entrant call sends the full staked amount again before the balance is zeroed
+  - 'Conclude: reentrancy in emergencyWithdraw allows attacker to drain totalStaked repeatedly'
+- pattern_id: dos-strict-equality
+  contract: StakeEngine
+  function: stake
+  line_range: 30-43
+  severity: low
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify stake function checks require(!paused) and require(msg.value > 0)
+  - Notice paused is a public bool toggled by togglePause which has no access control
+  - An attacker can call togglePause to set paused = true, causing all stake calls to revert
+  - The strict boolean equality check (paused must be false) creates a single point of DoS
+  - 'Conclude: unprotected togglePause enables DoS — attacker pauses staking at will via strict equality on paused flag'
+safe_patterns: []
+summary:
+  total_findings: 8
+  total_safe_patterns: 0
+  difficulty: easy
+  notes: Vanilla staking project for workflow pipeline testing

@@ -1,0 +1,296 @@
+# Yala Bridge LayerZero Exploit - Specifics Index
+# September 2025, $7.64M Loss
+
+id: yala-layerzero
+name: Yala Bridge LayerZero Exploit
+parent_category: bridge-compromise
+parent_subcategory: bridge-compromise
+
+date: 2025-09
+loss_usd: 7640000
+protocol: Yala Bridge
+chain: Ethereum, Arbitrum (cross-chain)
+severity: critical
+
+description: |
+  The Yala Bridge suffered a critical vulnerability in its LayerZero integration that
+  allowed attackers to bypass message validation and replay cross-chain messages. The
+  vulnerability enabled unauthorized token minting or balance manipulation across chains,
+  resulting in $7.64M in losses. The attack exploited insufficient validation of LayerZero
+  messages and weak nonce tracking in the bridge's token movement mechanism.
+
+# Attack mechanism overview
+attack_mechanism:
+  vector: "Cross-chain message replay and insufficient validation"
+  severity: critical
+  impact:
+    - Unauthorized token transfers across chains
+    - Potential total loss of bridged assets
+    - Bridge contract compromise
+  root_cause:
+    - Inadequate validation of LayerZero message parameters
+    - Missing or weak nonce tracking
+    - Insufficient signature verification
+    - No source chain validation
+
+# VKG detection properties
+graph_signals:
+  - property: has_external_calls
+    expected: true
+    critical: true
+    description: Makes calls to LayerZero endpoint contract
+    confidence: 0.95
+
+  - property: calls_untrusted
+    expected: true
+    critical: true
+    description: Calls untrusted external contracts
+    confidence: 0.90
+
+  - property: reads_external_value
+    expected: true
+    critical: true
+    description: Reads values from LayerZero messages
+    confidence: 0.92
+
+  - property: validates_input
+    expected: false
+    critical: true
+    description: Missing validation of message data
+    confidence: 0.88
+
+  - property: has_access_gate
+    expected: false
+    critical: true
+    description: No proper access control on minting/burning
+    confidence: 0.85
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    description: Writes critical state (token balances, supply)
+    confidence: 0.93
+
+  - property: uses_weak_nonce
+    expected: true
+    critical: true
+    description: Weak or missing nonce tracking
+    confidence: 0.82
+
+# Semantic operations relevant to detection
+semantic_operations:
+  - CALLS_EXTERNAL           # Calls LayerZero or bridge contracts
+  - CALLS_UNTRUSTED          # Calls untrusted contract during relay
+  - READS_EXTERNAL_VALUE     # Reads cross-chain message data
+  - VALIDATES_INPUT          # Should validate but doesn't
+  - MODIFIES_CRITICAL_STATE  # Mints/burns tokens or transfers
+  - TRANSFERS_VALUE_OUT      # Bridge asset movement
+  - CHECKS_PERMISSION        # Should check but doesn't
+
+# Behavioral signature patterns
+behavioral_signatures:
+  vulnerable:
+    - "R:ext->X:bridge->W:bal"   # Read external message, call bridge, write balance
+    - "R:msg->W:supply"           # Read message, write token supply (no validation)
+    - "X:lz->W:bal"               # Call LayerZero, write balance
+    - "R:nonce->X:unk->W:crit"    # Read weak nonce, call untrusted, write critical
+  safe:
+    - "V:sig->V:nonce->X:lz->W:bal"  # Validate signature, check nonce, call, write
+    - "V:src->V:msg->C:perm->W:bal"  # Verify source, validate message, check perms, write
+
+# Operation sequence detection
+operation_sequences:
+  vulnerable:
+    - "READS_EXTERNAL_VALUE -> CALLS_EXTERNAL -> WRITES_PRIVILEGED_STATE"
+    - "READS_EXTERNAL_VALUE -> CALLS_UNTRUSTED -> TRANSFERS_VALUE_OUT"
+    - "READS_EXTERNAL_VALUE -> MODIFIES_CRITICAL_STATE"  # No validation between
+  safe:
+    - "VALIDATES_INPUT -> CHECKS_PERMISSION -> READS_EXTERNAL_VALUE -> VALIDATES_INPUT -> MODIFIES_CRITICAL_STATE"
+    - "CHECKS_PERMISSION -> READS_EXTERNAL_VALUE -> VALIDATES_INPUT -> TRANSFERS_VALUE_OUT"
+
+# Real-world exploit references
+exploits:
+  - name: "Yala Bridge LayerZero Compromise"
+    date: "2025-09"
+    loss_usd: 7640000
+    protocol: "Yala Bridge"
+    chains: ["Ethereum", "Arbitrum"]
+    description: |
+      Attackers exploited insufficient validation in Yala Bridge's LayerZero integration.
+      By crafting malicious cross-chain messages with replay protection bypassed,
+      attackers were able to mint unlimited tokens or move assets without authorization.
+    attack_steps:
+      - "Identify LayerZero message format and structure"
+      - "Craft messages with bypassed nonce tracking"
+      - "Send messages through LayerZero endpoint without proper validation"
+      - "Bridge contract executes message without verifying authenticity"
+      - "Attacker mints or transfers assets across chains"
+      - "Drain bridge liquidity pools"
+    solodit_id: "yala-layerzero-2025-09"
+    postmortem_url: "https://rekt.news/yala-bridge-layerzero-exploit/"
+    tx_analysis: |
+      Multiple transactions showed pattern of:
+      1. Crafted cross-chain message with fake signatures
+      2. Message relayed through LayerZero without validation
+      3. Bridge contract executing mint/transfer without permission check
+      4. Assets moved across chains without collateral backing
+
+# False positive indicators - patterns that suggest this is NOT the vulnerability
+false_positive_indicators:
+  - "Proper cryptographic signature verification (ECDSA/BLS) of LayerZero messages"
+  - "Nonce or sequence number validated before processing"
+  - "Source chain identifier verified and whitelisted"
+  - "Message payload structure strictly validated (bounds checking)"
+  - "Access control modifiers on minting/burning functions"
+  - "Rate limiting on cross-chain operations"
+  - "Multi-signature approval required for critical operations"
+  - "LayerZero trusted execution environment used properly"
+  - "Proper error handling that reverts invalid operations"
+  - "Function not directly accessible from LayerZero endpoint"
+  - "Reentrancy guards on critical state modifications"
+
+# Remediation guidance
+fixes:
+  recommended:
+    - title: "Implement Proper Message Signature Verification"
+      description: |
+        Verify cryptographic signatures on all LayerZero messages before processing.
+        Use ECDSA or BLS signatures with proper recovery and validation.
+      priority: critical
+      code_pattern: |
+        // SAFE: Verify message signature
+        function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+        ) external {
+          // Verify message authenticity
+          require(verifySignature(_payload, _nonce, _srcChainId), "Invalid signature");
+
+          // Process message only after verification
+          _processMessage(_payload);
+        }
+
+    - title: "Add Nonce Tracking and Replay Protection"
+      description: |
+        Implement proper nonce tracking to prevent message replay attacks.
+        Reject any message with a nonce that has already been processed.
+      priority: critical
+      code_pattern: |
+        // SAFE: Nonce tracking
+        mapping(uint16 => uint64) public lastNonce;
+
+        function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+        ) external {
+          // Check nonce to prevent replay
+          require(_nonce > lastNonce[_srcChainId], "Nonce already processed");
+          lastNonce[_srcChainId] = _nonce;
+
+          // Now safe to process
+          _processMessage(_payload);
+        }
+
+    - title: "Validate Source Chain and Address"
+      description: |
+        Always verify that messages come from trusted source chains and addresses.
+        Maintain a whitelist of authorized endpoints.
+      priority: critical
+      code_pattern: |
+        // SAFE: Source validation
+        mapping(uint16 => bytes) public trustedRemotes;
+
+        function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+        ) external {
+          // Verify source chain and address
+          require(keccak256(_srcAddress) == keccak256(trustedRemotes[_srcChainId]), "Untrusted source");
+          require(_nonce > lastNonce[_srcChainId], "Replay attack");
+
+          lastNonce[_srcChainId] = _nonce;
+          _processMessage(_payload);
+        }
+
+    - title: "Add Input Validation for Message Payload"
+      description: |
+        Strictly validate all fields in the message payload.
+        Check bounds, ranges, and format before processing.
+      priority: high
+      code_pattern: |
+        // SAFE: Strict payload validation
+        function _processMessage(bytes calldata _payload) internal {
+          (uint256 amount, address recipient) = abi.decode(_payload, (uint256, address));
+
+          // Validate inputs
+          require(amount > 0 && amount <= MAX_AMOUNT, "Invalid amount");
+          require(recipient != address(0), "Invalid recipient");
+
+          // Now safe to process
+          _executeTransfer(recipient, amount);
+        }
+
+    - title: "Implement Access Control on Critical Operations"
+      description: |
+        Add proper access control to minting, burning, and bridge operations.
+        Only authorized endpoints should be able to modify state.
+      priority: high
+      code_pattern: |
+        // SAFE: Access control
+        address public authorizedLzEndpoint;
+
+        modifier onlyAuthorizedLz() {
+          require(msg.sender == authorizedLzEndpoint, "Unauthorized");
+          _;
+        }
+
+        function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+        ) external onlyAuthorizedLz {
+          // Process message
+        }
+
+# Related patterns and vulnerabilities
+related_patterns:
+  - pattern_id: "cc-001"
+    name: "Cross-Chain Message Validation Failure"
+
+  - pattern_id: "cc-002"
+    name: "Cross-Chain Replay Attack"
+
+  - pattern_id: "cc-003"
+    name: "Bridge Contract Privilege Escalation"
+
+# Testing and verification guidance
+testing:
+  unit_tests:
+    - "Verify signature rejection with invalid signatures"
+    - "Verify nonce rejection for replayed messages"
+    - "Verify source chain validation rejects untrusted chains"
+    - "Verify payload validation catches invalid inputs"
+    - "Verify access control prevents unauthorized calls"
+
+  integration_tests:
+    - "Cross-chain message flow with valid signature"
+    - "Message relay with multiple chains"
+    - "Nonce increment and sequence validation"
+    - "Signature verification with key rotation"
+
+# Token estimate for this specifics document
+token_estimate: 1200
+
+# External references
+external_references:
+  rekt: "https://rekt.news/yala-bridge-layerzero-exploit/"
+  solodit: "https://solodit.xyz"
+  layerzero_docs: "https://docs.layerzero.network"
+  layerzero_security: "https://docs.layerzero.network/v2/developers/security"

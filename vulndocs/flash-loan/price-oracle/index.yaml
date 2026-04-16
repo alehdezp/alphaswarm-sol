@@ -1,0 +1,23 @@
+# Price Oracle Manipulation - Subcategory Index
+
+id: price-oracle
+name: Price Oracle Manipulation
+parent_category: flash-loan
+
+description: |
+  Flash loan funded attacks on spot price oracles, manipulating AMM
+  reserves to distort prices used by victim protocols.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - fl-003
+
+relevant_properties:
+  - reads_oracle_price
+  - has_staleness_check
+  - oracle_type
+
+token_estimate: 400

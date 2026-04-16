@@ -1,0 +1,81 @@
+id: UC-ATK-001
+name: "Attacker agent finds reentrancy via hypothesis-query-evidence-exploit"
+workflow: vrs-attacker
+category: agents
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-audit tests/contracts/ReentrancyClassic.sol --agent attacker"
+  context: >
+    ReentrancyClassic.sol has a textbook reentrancy. This scenario tests the
+    attacker agent's reasoning chain: it should form a hypothesis (possible
+    reentrancy), query the graph to confirm (CEI violation), gather evidence
+    (code locations), and construct an exploit path (call sequence).
+
+expected_behavior:
+  summary: |
+    The attacker agent must follow the graph-first reasoning protocol:
+    1. Hypothesis: "This contract may have reentrancy due to external calls"
+    2. Graph query: Find TRANSFERS_VALUE_OUT before WRITES_USER_BALANCE
+    3. Evidence: Extract specific function, line numbers, call sequence
+    4. Exploit path: Describe the re-entrant call chain step by step
+    The agent must NOT skip steps or jump to conclusions without graph evidence.
+  must_happen:
+    - "Agent forms an explicit hypothesis about potential reentrancy"
+    - "Agent queries BSKG for TRANSFERS_VALUE_OUT and WRITES_USER_BALANCE ordering"
+    - "Agent identifies the CEI violation from graph query results"
+    - "Agent extracts specific code location (function name, line number)"
+    - "Agent constructs a step-by-step exploit path"
+    - "Agent produces a finding with severity >= high"
+    - "Agent's reasoning chain is traceable: hypothesis -> query -> evidence -> conclusion"
+  must_not_happen:
+    - "Agent skips graph queries and reads code directly"
+    - "Agent concludes 'reentrancy' without citing graph evidence"
+    - "Agent produces finding without an exploit path"
+    - "Agent hallucinates functions or line numbers not in the contract"
+    - "Agent fails to find the vulnerability"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "reentrancy"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: graph_first_compliance
+      description: "Did the agent use BSKG queries BEFORE reading code or drawing conclusions?"
+    - name: reasoning_chain_quality
+      description: "Is the hypothesis -> query -> evidence -> conclusion chain complete and traceable?"
+    - name: exploit_path_quality
+      description: "Does the exploit path describe a concrete, step-by-step attack sequence?"
+    - name: evidence_quality
+      description: "Are code locations accurate (real functions and line numbers)?"
+  regression_signals:
+    - "Agent reads code before querying graph -> CRITICAL REGRESSION: graph-first violation"
+    - "No exploit path in finding -> REGRESSION: reasoning chain incomplete"
+    - "Finding count drops to 0 -> CRITICAL REGRESSION: attacker agent detection broken"
+    - "Hallucinated code references -> REGRESSION: evidence quality degraded"
+
+links:
+  workflow_doc: "docs/reference/graph-first-template.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-AUDIT-001"
+    - "UC-ATK-002"
+    - "UC-VER-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Tests the attacker agent in isolation. The reasoning chain quality is more
+  important here than just finding the vulnerability. A higher pass threshold
+  (65) reflects that agent-level reasoning must be more disciplined.

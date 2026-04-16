@@ -1,0 +1,115 @@
+project:
+  name: workflow-governance-03
+  theme: governance
+  tier: 1
+  adversarial_categories: []
+  description: Governance system with voting and proposal execution for workflow testing
+findings:
+- pattern_id: governance-flash-loan
+  contract: GovernorAlpha
+  function: castVote
+  line_range: 56-69
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify castVote does not check p.hasVoted[msg.sender]
+  - User can call castVote multiple times with same voting power
+  - Flash-borrowed governance tokens could vote repeatedly
+  - 'Conclude: double-voting vulnerability enables vote manipulation'
+- pattern_id: auth-001
+  contract: GovernorAlpha
+  function: setGuardian
+  line_range: 88-90
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setGuardian changes the guardian address
+  - No modifier or msg.sender check present
+  - Guardian has power to cancel proposals and mint voting tokens
+  - 'Conclude: anyone can seize guardian role'
+- pattern_id: state-machine-violation
+  contract: GovernorAlpha
+  function: cancel
+  line_range: 102-107
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify cancel sets state to Defeated
+  - No check that p.state != Executed
+  - Already-executed proposals can be marked Defeated, corrupting state
+  - 'Conclude: state machine violation allows re-canceling executed proposals'
+- pattern_id: governance-001
+  contract: GovernorAlpha
+  function: execute
+  line_range: 73-85
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify execute calls target.call(p.callData) immediately after voting ends
+  - No timelock delay between vote end and execution
+  - Minority stakeholders have no exit window before governance actions
+  - 'Conclude: missing timelock on proposal execution'
+- pattern_id: dos-unbounded-loop
+  contract: VoteAggregator
+  function: batchVote
+  line_range: 17-29
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify for loop over proposalIds array with no upper bound
+  - Each iteration makes an external call to governor
+  - Unbounded array can exceed block gas limit
+  - 'Conclude: DoS via unbounded batch vote operations'
+- pattern_id: balance-update-after-transfer
+  contract: VoteAggregator
+  function: withdrawDelegation
+  line_range: 37-43
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount}'
+  - Notice delegatedPower[msg.sender] = 0 occurs AFTER call
+  - No reentrancy guard
+  - 'Conclude: reentrancy in withdrawal allows draining delegation pool'
+- pattern_id: mev-001
+  contract: GovernorAlpha
+  function: castVote
+  line_range: 56-69
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify castVote reads votingPower[msg.sender] as weight and adds it to forVotes or againstVotes
+  - votingPower is transferable via delegate() — no snapshot at proposal creation time
+  - MEV searcher can observe pending castVote transactions in the mempool
+  - Searcher front-runs by acquiring voting power (flash loan or delegate), votes, then back-runs to return tokens
+  - 'Conclude: vote weight based on current balance without snapshots enables MEV vote manipulation'
+- pattern_id: dos-transfer-in-loop
+  contract: VoteAggregator
+  function: batchVote
+  line_range: 17-29
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify batchVote loops over proposalIds array calling governor.call for each vote
+  - Each iteration encodes castVote(uint256,bool) and makes an external call to governor
+  - The call result is checked with require(ok, "Vote failed") — one failure reverts all
+  - If any single proposal is no longer Active or voting has ended, the entire batch reverts
+  - 'Conclude: external call inside loop with strict require causes batch-wide DoS on any single vote failure'
+- pattern_id: mev-missing-deadline-parameter
+  contract: GovernorAlpha
+  function: execute
+  line_range: 73-85
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify execute calls p.target.call(p.callData) with no deadline or expiry parameter
+  - Execution is valid any time after p.endTime with no upper bound — transaction can sit in mempool indefinitely
+  - MEV searcher can hold the execute transaction and submit it at a strategically advantageous time
+  - No mechanism to invalidate stale execution — proposal remains executable regardless of elapsed time
+  - 'Conclude: missing execution deadline allows MEV actors to time proposal execution for maximum extractable value'
+safe_patterns: []
+summary:
+  total_findings: 9
+  total_safe_patterns: 0
+  difficulty: easy
+  notes: Vanilla governance project for workflow pipeline testing

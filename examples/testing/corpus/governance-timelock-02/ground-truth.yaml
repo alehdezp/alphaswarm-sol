@@ -1,0 +1,125 @@
+project:
+  name: governance-timelock-02
+  theme: governance
+  tier: 2
+  adversarial_categories:
+  - A
+  - B
+  description: 'Two-contract governance system with timelock + proposal lifecycle.
+    Category A+B: state machine violations + cross-contract trust.'
+findings:
+- pattern_id: state-machine-violation
+  contract: TimelockController
+  function: executeOperation
+  line_range: 47-58
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  - B3-state-machine
+  expected_reasoning_chain:
+  - Identify executeOperation checks scheduledOps[opId] > 0
+  - After execution, scheduledOps[opId] is NOT cleared
+  - Same operation can be executed multiple times
+  - 'Conclude: re-execution vulnerability due to missing state cleanup'
+- pattern_id: state-machine-violation
+  contract: TimelockController
+  function: scheduleOperation
+  line_range: 28-39
+  severity: high
+  adversarial_techniques:
+  - B3-state-machine
+  expected_reasoning_chain:
+  - Identify scheduleOperation creates opId from target, data, timestamp
+  - No check whether opId was already executed
+  - Previously executed operations can be rescheduled
+  - 'Conclude: state machine allows rescheduling executed operations'
+- pattern_id: auth-001
+  contract: TimelockController
+  function: addExecutor
+  line_range: 67-69
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify addExecutor grants executor role
+  - No access control modifier
+  - Anyone can add themselves as executor
+  - 'Conclude: missing access control on executor role assignment'
+- pattern_id: auth-002
+  contract: TimelockController
+  function: setMinDelay
+  line_range: 78-80
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify setMinDelay changes minimum timelock delay
+  - No access control
+  - Attacker sets delay to 0, bypassing governance timelock
+  - 'Conclude: missing access control on delay parameter'
+- pattern_id: auth-003
+  contract: TimelockController
+  function: transferCouncil
+  line_range: 83-85
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify transferCouncil changes council address
+  - No access control
+  - Council controls scheduling and cancellation
+  - 'Conclude: anyone can seize council role'
+- pattern_id: state-machine-violation
+  contract: ProposalRegistry
+  function: advanceToReview
+  line_range: 49-53
+  severity: high
+  adversarial_techniques:
+  - B3-state-machine
+  expected_reasoning_chain:
+  - Identify advanceToReview sets phase to Review
+  - No check that current phase is Draft
+  - Can advance Executed or Rejected proposals back to Review
+  - 'Conclude: state machine violation allows phase regression'
+- pattern_id: auth-004
+  contract: ProposalRegistry
+  function: markExecuted
+  line_range: 68-72
+  severity: high
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify markExecuted changes proposal phase to Executed
+  - No access control restricting callers to timelock contract
+  - Anyone can mark proposals as executed without timelock
+  - 'Conclude: bypass governance by directly marking proposals executed'
+- pattern_id: state-machine-violation
+  contract: ProposalRegistry
+  function: rejectProposal
+  line_range: 75-80
+  severity: medium
+  adversarial_techniques:
+  - B3-state-machine
+  expected_reasoning_chain:
+  - Identify rejectProposal sets phase to Rejected
+  - No check that p.phase != Phase.Executed
+  - Can reject already-executed proposals (state corruption)
+  - 'Conclude: state machine allows rejecting executed proposals'
+- pattern_id: proxy-upgrade-no-timelock
+  contract: TimelockController
+  function: setMinDelay
+  line_range: 78-80
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify setMinDelay at line 83 directly writes newDelay to minDelay state variable with no access control
+  - Notice minDelay is the core governance safety parameter — scheduleOperation requires delay >= minDelay at line 32
+  - Recognize anyone can set minDelay to 0, then scheduleOperation with delay=0, and executeOperation immediately — completely bypassing the timelock
+  - 'Conclude: unprotected setMinDelay allows instant bypass of entire governance timelock by setting delay to zero'
+safe_patterns: []
+summary:
+  total_findings: 9
+  total_safe_patterns: 0
+  difficulty: hard
+  notes: Category A+B with heavy state machine violations (B3) across two-contract
+    governance system

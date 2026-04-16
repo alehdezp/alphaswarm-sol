@@ -1,0 +1,39 @@
+workflow_id: agent-vrs-finding-merger
+category: agent
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- evidence_quality
+- reasoning_depth
+- conclusion_support
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: session_completed
+  description: Agent session completed
+  expected_behavior: session_completed is true
+  grader_type: code
+- id: dedup_rationale
+  description: 'TODO: validate against real run - Deduplication rationale provided'
+  expected_behavior: Response explains why findings were merged or kept separate
+  grader_type: model
+evidence_requirements:
+- type: graph_nodes
+  description: Graph evidence in output
+hooks:
+- SessionStart
+- Stop
+- PreCompact
+- TeammateIdle
+- TaskCompleted
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: important
+  model_tier: sonnet

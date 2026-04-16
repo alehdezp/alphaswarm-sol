@@ -1,0 +1,16 @@
+id: ext-064
+vulndoc: access-control/external-call
+name: Oracle Update Missing Timestamp Check
+description: Oracle update without timestamp or freshness validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: has_oracle_update_timestamp_check
+    op: eq
+    value: false

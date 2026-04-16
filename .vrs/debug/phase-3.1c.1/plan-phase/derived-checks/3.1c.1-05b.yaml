@@ -1,0 +1,115 @@
+plan_id: 3.1c.1-05b
+title: Testing Mandate Rollout
+phase: 3.1c.1-cli-graph-isolation-hardening
+phase_type: FRAMEWORK
+generated: 2026-03-01
+
+checks:
+  - id: CHK-01
+    question: "Do near-term phase CONTEXT.md files have Testing Gate sections with correct phase types?"
+    evidence_sources:
+      - "grep '### Testing Gate' .planning/phases/3.1c.2-*/3.1c.2-CONTEXT.md"
+      - "grep '### Testing Gate' .planning/phases/3.1f-*/3.1f-CONTEXT.md"
+      - "grep 'EVALUATION+FRAMEWORK' .planning/phases/3.1c.2-*/3.1c.2-CONTEXT.md"
+      - "grep 'CODE+EVALUATION' .planning/phases/3.1f-*/3.1f-CONTEXT.md"
+    baseline_derivation: "Phase types derived from PHASE-TYPE-TAXONOMY.md definitions and phase domain analysis"
+    success_rule: "Both files contain '### Testing Gate' with correct phase types"
+    anti_hardcode_assertion: "Phase types are derived from taxonomy analysis of each phase's domain, not pre-determined"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-02
+    question: "Does ROADMAP.md contain Phase Authoring Requirements section referencing taxonomy and template?"
+    evidence_sources:
+      - "grep 'Phase Authoring Requirements' .planning/ROADMAP.md"
+      - "grep 'PHASE-TYPE-TAXONOMY.md' .planning/ROADMAP.md"
+      - "grep 'TESTING-GATE-TEMPLATE.md' .planning/ROADMAP.md"
+    baseline_derivation: "Paths are canonical locations from Plan 05a outputs"
+    success_rule: "Section exists and references both files by correct paths"
+    anti_hardcode_assertion: "Referenced paths are the actual Plan 05a output locations, verified to exist"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-03
+    question: "Does PLAN-PHASE-GOVERNANCE.md have Testing Gate Compliance section with enforcement language?"
+    evidence_sources:
+      - "grep 'Testing Gate Compliance' .planning/testing/PLAN-PHASE-GOVERNANCE.md"
+      - "grep 'fail the governance check' .planning/testing/PLAN-PHASE-GOVERNANCE.md"
+    baseline_derivation: "Enforcement language derived from existing governance contract patterns in the file"
+    success_rule: "Section exists with mandatory language and PHASE-TYPE-TAXONOMY.md reference"
+    anti_hardcode_assertion: "Enforcement mechanism mirrors existing governance patterns, not invented"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-04
+    question: "Is 3.1c.1-CONTEXT.md retroactively annotated as CODE+FRAMEWORK with union of requirements?"
+    evidence_sources:
+      - "grep 'CODE+FRAMEWORK' .planning/phases/3.1c.1-*/3.1c.1-CONTEXT.md"
+      - "grep 'AgentExecutionValidator' .planning/phases/3.1c.1-*/3.1c.1-CONTEXT.md"
+      - "grep 'Snapshot-before/after' .planning/phases/3.1c.1-*/3.1c.1-CONTEXT.md"
+    baseline_derivation: "Requirements union derived from PHASE-TYPE-TAXONOMY.md CODE + FRAMEWORK sections"
+    success_rule: "Testing Gate section declares CODE+FRAMEWORK with both CODE and FRAMEWORK requirements listed"
+    anti_hardcode_assertion: "Requirement list is the union of taxonomy definitions, not manually curated"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-05
+    question: "Do both downstream phases reference Snapshot Protocol with actionable mechanical instructions?"
+    evidence_sources:
+      - "grep 'Snapshot Protocol' .planning/phases/3.1c.2-*/3.1c.2-CONTEXT.md"
+      - "grep 'Snapshot Protocol' .planning/phases/3.1f-*/3.1f-CONTEXT.md"
+      - "grep 'jj log' .planning/phases/3.1c.2-*/3.1c.2-CONTEXT.md"
+      - "grep 'jj log' .planning/phases/3.1f-*/3.1f-CONTEXT.md"
+    baseline_derivation: "Mechanical instructions derived from Plan 05a Snapshot Protocol definition"
+    success_rule: "Both files contain 'Snapshot Protocol' AND jj change ID recording commands"
+    anti_hardcode_assertion: "Commands are the exact mechanical protocol from Plan 05a, not simplified summaries"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-06
+    question: "Were any CONTEXT.md files created for phases 4+?"
+    evidence_sources:
+      - "find .planning/phases/ -path '*/4*/*CONTEXT*'"
+      - "find .planning/phases/ -path '*/5*/*CONTEXT*'"
+      - "find .planning/phases/ -path '*/6*/*CONTEXT*'"
+      - "find .planning/phases/ -path '*/7*/*CONTEXT*'"
+      - "find .planning/phases/ -path '*/8*/*CONTEXT*'"
+    baseline_derivation: "CONTEXT.md decision mandates no pre-created files for undefined phases"
+    success_rule: "All find commands return empty results"
+    anti_hardcode_assertion: "This is a negative check — absence of files, not presence of content"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-07
+    question: "Do all cross-references in governance docs resolve to existing files?"
+    evidence_sources:
+      - "test -f .planning/testing/rules/canonical/PHASE-TYPE-TAXONOMY.md"
+      - "test -f .planning/testing/templates/TESTING-GATE-TEMPLATE.md"
+      - "grep 'Phase-type taxonomy' .planning/testing/rules/canonical/TESTING-FRAMEWORK.md"
+    baseline_derivation: "Files are Plan 05a outputs; cross-references must resolve"
+    success_rule: "All referenced files exist and TESTING-FRAMEWORK.md contains taxonomy reference"
+    anti_hardcode_assertion: "File existence is verified at execution time, not assumed"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-08
+    question: "Are PLAN-PHASE-GOVERNANCE.md changes purely additive (no existing content modified)?"
+    evidence_sources:
+      - "git diff .planning/testing/PLAN-PHASE-GOVERNANCE.md"
+    baseline_derivation: "Task 3 done criteria require existing content unchanged"
+    success_rule: "Diff shows only additions at end of file, zero deletions or modifications"
+    anti_hardcode_assertion: "Verified via actual git diff, not assumed from implementation approach"
+    requires_research: false
+    result: PASS
+
+  - id: CHK-09
+    question: "Are Testing Gate requirements phase-type-specific (not generic)?"
+    evidence_sources:
+      - "grep 'dual-Opus' .planning/phases/3.1c.2-*/3.1c.2-CONTEXT.md"
+      - "grep 'AgentExecutionValidator' .planning/phases/3.1f-*/3.1f-CONTEXT.md"
+      - "grep 'fabrication checks' .planning/phases/3.1c.2-*/3.1c.2-CONTEXT.md"
+    baseline_derivation: "Phase-type-specific terminology from PHASE-TYPE-TAXONOMY.md"
+    success_rule: "Gates use taxonomy-specific terms (dual-Opus, AgentExecutionValidator, snapshot diff) not generic language"
+    anti_hardcode_assertion: "Terms are taxonomy definitions, verified to appear in PHASE-TYPE-TAXONOMY.md"
+    requires_research: false
+    result: PASS

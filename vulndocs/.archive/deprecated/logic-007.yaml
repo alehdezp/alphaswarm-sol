@@ -1,0 +1,18 @@
+id: logic-007
+vulndoc: logic/general
+name: extcodesize Bypass
+description: extcodesize checks in constructor context.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 749
+match:
+  all:
+  - property: uses_extcodesize
+    op: eq
+    value: true
+  - property: extcodesize_in_constructor
+    op: eq
+    value: true

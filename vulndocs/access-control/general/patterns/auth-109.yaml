@@ -1,0 +1,48 @@
+id: auth-109
+vulndoc: access-control/general
+name: Unprotected List Management
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `auth-005-unprotected-list-management` instead.
+
+
+  Location: `patterns/semantic/authority/auth-005-unprotected-list-management.yaml`
+
+
+  The semantic pattern uses `manages_access_list` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Whitelist/blacklist/guardian/validator changes without access
+  control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: auth-005-unprotected-list-management
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(whitelist|blacklist|allowlist|denylist|guardian|validator)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

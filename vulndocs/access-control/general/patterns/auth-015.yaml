@@ -1,0 +1,16 @@
+id: auth-015
+vulndoc: access-control/general
+name: Default Admin Missing
+description: Role grants without default admin role configuration.
+scope: Contract
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: has_role_grant
+    op: eq
+    value: true
+  - property: has_default_admin_role
+    op: eq
+    value: false

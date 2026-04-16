@@ -1,0 +1,20 @@
+id: erc20-transfer-issue
+vulndoc: reentrancy/classic
+name: ERC20 Transfer Return Issue
+description: ERC20 transfer/transferFrom without return guard.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: token_return_guarded
+    op: eq
+    value: false
+  any:
+  - property: uses_erc20_transfer
+    op: eq
+    value: true
+  - property: uses_erc20_transfer_from
+    op: eq
+    value: true

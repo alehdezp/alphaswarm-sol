@@ -1,0 +1,108 @@
+# Ground Truth: Access Control Labels
+# Manually verified labels for test contracts
+# Used for precision measurement
+
+contract: tests/contracts/AuthorityLens.sol
+contract_dir: tests/contracts/
+
+functions:
+  # UnprotectedStateWriter contract
+  - function_id: "UnprotectedStateWriter.setOwner"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "Function has no access control modifier or require check"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Writes to owner state variable"
+
+  - function_id: "UnprotectedStateWriter.setOwnerProtected"
+    labels:
+      - label_id: access_control.owner_only
+        confidence: high
+        reasoning: "Has onlyOwner modifier"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Writes to owner state variable"
+
+  # TxOriginAuth contract
+  - function_id: "TxOriginAuth.privileged"
+    labels:
+      - label_id: access_control.owner_only
+        confidence: medium
+        reasoning: "Uses tx.origin == owner check (weak access control)"
+
+  # UnprotectedValueTransfer contract
+  - function_id: "UnprotectedValueTransfer.sweep"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "No access control on value transfer"
+      - label_id: value_handling.transfers_value_out
+        confidence: high
+        reasoning: "Transfers contract balance via transfer()"
+      - label_id: external_interaction.calls_untrusted
+        confidence: medium
+        reasoning: "Calls user-provided payable address"
+
+  # PrivilegeEscalation contract
+  - function_id: "PrivilegeEscalation.grantSelf"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "Anyone can grant themselves a role"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Writes to roles mapping"
+
+  - function_id: "PrivilegeEscalation.grantSelfProtected"
+    labels:
+      - label_id: access_control.owner_only
+        confidence: high
+        reasoning: "Protected by onlyOwner modifier"
+      - label_id: state_mutation.writes_critical
+        confidence: high
+        reasoning: "Writes to roles mapping"
+
+  # TimeLockedWithdraw contract
+  - function_id: "TimeLockedWithdraw.withdraw"
+    labels:
+      - label_id: access_control.no_restriction
+        confidence: high
+        reasoning: "No address-based access control"
+      - label_id: temporal.enforces_timelock
+        confidence: high
+        reasoning: "Requires block.timestamp >= unlockTime"
+      - label_id: value_handling.transfers_value_out
+        confidence: high
+        reasoning: "Transfers contract balance"
+
+  # DangerousAdminFunction contract
+  - function_id: "DangerousAdminFunction.emergencyWithdraw"
+    labels:
+      - label_id: access_control.owner_only
+        confidence: high
+        reasoning: "Protected by onlyOwner modifier"
+      - label_id: value_handling.transfers_value_out
+        confidence: high
+        reasoning: "Transfers tokens to arbitrary address"
+      - label_id: external_interaction.calls_untrusted
+        confidence: medium
+        reasoning: "Calls user-provided token address"
+
+# Expected findings for detection testing
+expected_findings:
+  - pattern_id: authority-missing-guard
+    function_id: "UnprotectedStateWriter.setOwner"
+    should_match: true
+    reason: "No access control on owner modification"
+
+  - pattern_id: authority-missing-guard
+    function_id: "UnprotectedValueTransfer.sweep"
+    should_match: true
+    reason: "No access control on value transfer"
+
+  - pattern_id: policy-mismatch-unauthorized-transfer
+    function_id: "UnprotectedValueTransfer.sweep"
+    should_match: true
+    reason: "Unrestricted value transfer"

@@ -1,0 +1,21 @@
+id: crypto-missing-v-check
+vulndoc: crypto/signature
+name: Missing V Parameter Validation
+description: |
+  Detects signature verification without v-value validation.
+  The v parameter should be restricted to 27 or 28 for canonical ECDSA signatures.
+  While ecrecover accepts other values, proper validation ensures signature canonicality.
+  Reference: EIP-2 specifies v should be 27 or 28 for standard signatures.
+  Impact: Non-canonical signatures may indicate implementation issues or manipulation attempts.
+scope: Function
+lens:
+  - Crypto
+severity: low
+match:
+  all:
+    - property: uses_ecrecover
+      op: eq
+      value: true
+    - property: checks_sig_v
+      op: eq
+      value: false

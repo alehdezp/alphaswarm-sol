@@ -1,0 +1,16 @@
+id: ext-057
+vulndoc: access-control/external-call
+name: TWAP Precision Guard Missing
+description: TWAP usage without explicit precision or scaling guards.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_twap
+    op: eq
+    value: true
+  - property: has_precision_guard
+    op: eq
+    value: false

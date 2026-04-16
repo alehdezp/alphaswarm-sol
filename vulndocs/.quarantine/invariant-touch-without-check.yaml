@@ -1,0 +1,13 @@
+id: invariant-touch-without-check
+vulndoc: logic/invariants
+name: Invariant Touched Without Check
+description: Function touches state covered by an invariant but lacks a guard/assert on the invariant variables.
+scope: Function
+lens:
+  - Invariant
+severity: medium
+match:
+  all:
+    - property: touches_invariant_unchecked
+      op: eq
+      value: true

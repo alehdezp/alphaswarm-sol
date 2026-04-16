@@ -1,0 +1,15 @@
+id: arith-010
+vulndoc: arithmetic/general
+name: Percentage Overflow
+description: Percentage calculations without bounds checks.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 190
+match:
+  all:
+  - property: percentage_overflow_risk
+    op: eq
+    value: true

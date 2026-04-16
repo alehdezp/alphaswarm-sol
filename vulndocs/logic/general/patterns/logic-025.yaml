@@ -1,0 +1,15 @@
+id: logic-025
+vulndoc: logic/general
+name: Boolean Default Issues
+description: Uninitialized boolean defaults.
+scope: Contract
+lens:
+- LogicState
+severity: medium
+cwe:
+- 665
+match:
+  all:
+  - property: has_uninitialized_boolean
+    op: eq
+    value: true

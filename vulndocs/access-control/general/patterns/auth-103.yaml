@@ -1,0 +1,16 @@
+id: auth-103
+vulndoc: access-control/general
+name: Role Grant Without Events
+description: Role grants without event emission.
+scope: Contract
+lens:
+- Authority
+severity: low
+match:
+  all:
+  - property: has_role_grant
+    op: eq
+    value: true
+  - property: has_role_events
+    op: eq
+    value: false

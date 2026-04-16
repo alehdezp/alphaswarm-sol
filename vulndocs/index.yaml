@@ -1,0 +1,183 @@
+# VulnDocs - Unified Vulnerability Knowledge Base
+# Top-level manifest for LLM context engineering
+
+schema_version: "1.0"
+name: VulnDocs
+description: |
+  Unified vulnerability knowledge base for Solidity smart contract security.
+  Provides structured documentation, detection patterns, and verification guidance
+  for LLM-driven security analysis using BSKG graph queries.
+
+# Navigation guide for LLM agents
+navigation:
+  structure: |
+    vulndocs/
+      index.yaml          <- You are here (start)
+      .meta/              <- Templates and instructions
+        templates/        <- YAML/MD templates for new content
+        instructions/     <- How-to guides for writing vulndocs
+      {category}/         <- Category folder (e.g., reentrancy/)
+        index.yaml        <- Category metadata
+        {subcategory}/    <- Vulnerability folder (e.g., classic/)
+          index.yaml      <- Vulnerability metadata (REQUIRED)
+          core-pattern.md <- Main documentation
+          detection.md    <- Detection guidance
+          verification.md <- Verification steps
+          exploits.md     <- Real-world exploits
+          patterns/       <- Detection patterns
+            *.yaml        <- Individual pattern files
+          provenance.yaml <- Source tracking (optional)
+
+  how_to_use:
+    - Start here (index.yaml) to discover categories
+    - Navigate to category/index.yaml for subcategory list
+    - Read subcategory/index.yaml for vulnerability overview
+    - Use patterns/ for detection logic (Tier A/B/C)
+    - Check .meta/instructions/ for authoring guidance
+
+# All 18 vulnerability categories (alphabetical)
+# Each category has its own index.yaml with subcategory listings
+categories:
+  - id: access-control
+    name: Access Control
+    description: Authorization, permission, and privilege vulnerabilities
+    subcategory_count: 11
+    status: migrated
+
+  - id: account-abstraction
+    name: Account Abstraction
+    description: ERC-4337 and smart account vulnerabilities
+    subcategory_count: 5
+    status: migrated
+
+  - id: arithmetic
+    name: Arithmetic
+    description: Integer overflow, underflow, and precision issues
+    subcategory_count: 2
+    status: migrated
+
+  - id: cross-chain
+    name: Cross-Chain
+    description: Bridge, L2, and multi-chain vulnerabilities
+    subcategory_count: 5
+    status: migrated
+
+  - id: crypto
+    name: Cryptography
+    description: Signature, hash, and cryptographic vulnerabilities
+    subcategory_count: 6
+    status: migrated
+
+  - id: dos
+    name: Denial of Service
+    description: Gas griefing, unbounded loops, and DoS attacks
+    subcategory_count: 4
+    status: migrated
+
+  - id: flash-loan
+    name: Flash Loan
+    description: Flash loan attack vectors and exploits
+    subcategory_count: 3
+    status: migrated
+
+  - id: governance
+    name: Governance
+    description: DAO, voting, and governance vulnerabilities
+    subcategory_count: 4
+    status: migrated
+
+  - id: logic
+    name: Logic
+    description: Business logic and state machine vulnerabilities
+    subcategory_count: 14
+    status: migrated
+
+  - id: mev
+    name: MEV
+    description: Front-running, sandwich attacks, and MEV extraction
+    subcategory_count: 4
+    status: migrated
+
+  - id: oracle
+    name: Oracle
+    description: Price oracle and external data vulnerabilities
+    subcategory_count: 4
+    status: migrated
+
+  - id: precision-loss
+    name: Precision Loss
+    description: Rounding errors and decimal precision issues
+    subcategory_count: 1
+    status: migrated
+
+  - id: reentrancy
+    name: Reentrancy
+    description: Classic and cross-function reentrancy attacks
+    subcategory_count: 7
+    status: migrated
+
+  - id: restaking
+    name: Restaking
+    description: EigenLayer and restaking protocol vulnerabilities
+    subcategory_count: 6
+    status: migrated
+
+  - id: token
+    name: Token
+    description: ERC-20/721/1155 and token standard vulnerabilities
+    subcategory_count: 4
+    status: migrated
+
+  - id: upgrade
+    name: Upgrade
+    description: Proxy, UUPS, and upgradeability vulnerabilities
+    subcategory_count: 4
+    status: migrated
+
+  - id: vault
+    name: Vault
+    description: ERC-4626 and vault implementation vulnerabilities
+    subcategory_count: 4
+    status: migrated
+
+  - id: zk-rollup
+    name: ZK Rollup
+    description: Zero-knowledge proof and rollup vulnerabilities
+    subcategory_count: 4
+    status: migrated
+
+# Statistics (updated from Plan 03 migration)
+statistics:
+  total_categories: 18
+  total_subcategories: 124   # Expanded with new pattern categories
+  total_patterns: 556        # Co-located from patterns/ directory
+  core_pattern_docs: 17      # Subcategories with core-pattern.md
+  index_yaml_files: 75       # Subcategories with index.yaml
+  last_updated: "2026-01-23"
+  migration_sources:
+    - "knowledge/vulndocs/categories/"
+    - "patterns/core/"
+    - "patterns/semantic/"
+    - "patterns/label_patterns/"
+    - "patterns/investigation/"
+    - "patterns/semgrep/"
+    - "patterns/*-lens.yaml"
+
+# Quick reference for common queries
+quick_reference:
+  high_severity:
+    - reentrancy/classic
+    - access-control/unprotected-functions
+    - oracle/price-manipulation
+  most_common:
+    - reentrancy/*
+    - access-control/*
+    - arithmetic/*
+  emerging:
+    - account-abstraction/*
+    - restaking/*
+    - zk-rollup/*
+
+# Metadata
+created: "2026-01-23"
+updated: "2026-01-23"

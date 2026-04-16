@@ -1,0 +1,11 @@
+version: 1
+suite_id: gauntlet-reentrancy
+cases:
+  - id: RE-01
+    contract_path: tests/contracts/reentrancy/Vault_01.sol  # TODO: add fixture
+    expected_vulnerable: true
+    ground_truth_id: RE-01
+  - id: RE-02
+    contract_path: tests/contracts/reentrancy/Vault_02.sol  # TODO: add fixture
+    expected_vulnerable: false
+    ground_truth_id: RE-02

@@ -1,0 +1,16 @@
+id: abi-decode-without-length-check
+vulndoc: logic/array-handling
+name: ABI Decode Without Length Check
+description: ABI decode on calldata without length checks can enable short address or malformed input attacks.
+scope: Function
+lens:
+  - Crypto
+severity: medium
+match:
+  all:
+    - property: uses_abi_decode
+      op: eq
+      value: true
+    - property: has_abi_decode_guard
+      op: eq
+      value: false

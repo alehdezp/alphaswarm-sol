@@ -1,0 +1,16 @@
+id: live-006
+vulndoc: dos/general
+name: Array Out of Bounds
+description: Array access without index validation.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_array_parameter
+    op: eq
+    value: true
+  - property: has_array_index_check
+    op: eq
+    value: false

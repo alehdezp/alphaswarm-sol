@@ -1,0 +1,415 @@
+# Execution Sequence: I-05 End-to-End Pipeline Validation
+# Purpose: Validate complete pipeline from fresh environment to final report
+
+name: "End-to-End Pipeline Validation Execution"
+version: "1.0"
+created: "2026-02-04"
+validation: "I-05"
+depends_on:
+  - "IMP-B1"  # Ground truth available
+  - "IMP-B2"  # Templates defined
+  - "IMP-J2"  # Execution sequence format
+
+# Session Configuration
+session:
+  label: "vrs-demo-e2e-pipeline-{timestamp}"
+  description: "Full pipeline: fresh env -> install -> audit -> report"
+
+# Test Target
+target:
+  contract: "tests/contracts/CrossFunctionReentrancy.sol"
+  ground_truth:
+    file: ".vrs/corpus/ground-truth/CrossFunctionReentrancy.yaml"
+    expected_vulns: 1
+    vuln_type: "reentrancy"
+    severity: "HIGH"
+
+# Pipeline Stages
+stages:
+  - name: "FRESH_ENV"
+    description: "Clean environment setup"
+    markers:
+      start: "[E2E_STAGE_FRESH_ENV_START]"
+      complete: "[E2E_STAGE_FRESH_ENV_COMPLETE]"
+
+  - name: "INSTALL"
+    description: "Tool installation verification"
+    markers:
+      start: "[E2E_STAGE_INSTALL_START]"
+      complete: "[E2E_STAGE_INSTALL_COMPLETE]"
+
+  - name: "PREFLIGHT"
+    description: "Pre-flight checks"
+    markers:
+      start: "[PREFLIGHT_START]"
+      complete: "[PREFLIGHT_PASS]"
+
+  - name: "GRAPH_BUILD"
+    description: "Knowledge graph construction"
+    markers:
+      start: "[GRAPH_BUILD_START]"
+      complete: "[GRAPH_BUILD_SUCCESS]"
+
+  - name: "CONTEXT"
+    description: "Context pack loading"
+    markers:
+      start: "[CONTEXT_START]"
+      complete: "[CONTEXT_READY]"
+
+  - name: "DETECTION"
+    description: "Vulnerability detection"
+    markers:
+      start: "[DETECTION_START]"
+      complete: "[DETECTION_COMPLETE]"
+
+  - name: "DEBATE"
+    description: "Multi-agent debate (if enabled)"
+    markers:
+      start: "SubagentStart("
+      complete: "[DEBATE_VERDICT]"
+    optional: true
+
+  - name: "REPORT"
+    description: "Report generation"
+    markers:
+      start: "[REPORT_START]"
+      complete: "[REPORT_GENERATED]"
+
+# Execution Sequence
+sequence:
+  pre_run_setup:
+    description: "Prepare fresh environment before claude-code-agent-teams session"
+    commands:
+      - step: 0a
+        description: "Backup existing .vrs if present"
+        command: "[ -d .vrs ] && mv .vrs .vrs.backup.{timestamp} || true"
+        local: true
+
+      - step: 0b
+        description: "Ensure ground truth exists"
+        command: "test -f {ground_truth_file}"
+        local: true
+        fail_action: "ABORT - Ground truth required for E2E validation"
+
+  main_sequence:
+    commands:
+      - step: 1
+        description: "Launch isolated shell"
+        command: "claude-code-controller launch zsh"
+        capture: "pane_id"
+        timeout: 10
+
+      - step: 2
+        description: "Navigate to project"
+        command: "claude-code-controller send 'cd {project_dir}' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 3
+        description: "Verify fresh environment (no .vrs)"
+        command: "claude-code-controller send 'ls -la .vrs 2>&1 || echo \"[E2E_STAGE_FRESH_ENV_COMPLETE] No existing state\"' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+        expected_output: "[E2E_STAGE_FRESH_ENV_COMPLETE]"
+
+      - step: 4
+        description: "Verify alphaswarm installation"
+        command: "claude-code-controller send 'which alphaswarm && alphaswarm --version && echo \"[E2E_STAGE_INSTALL_COMPLETE]\"' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+        expected_output: "[E2E_STAGE_INSTALL_COMPLETE]"
+        fail_action: "Run 'uv tool install -e .' first"
+
+      - step: 5
+        description: "Verify target contract exists"
+        command: "claude-code-controller send 'test -f {contract} && echo \"Contract verified: {contract}\"' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 6
+        description: "Launch Claude Code"
+        command: "claude-code-controller send 'claude' --pane={pane_id}"
+        wait: "idle --idle-time=15.0 --timeout=30"
+
+      - step: 7
+        description: "Execute full audit via skill"
+        command: "claude-code-controller send '/vrs-audit {contract}' --pane={pane_id}"
+        wait: "idle --idle-time=60.0 --timeout=600"
+        notes: |
+          This triggers the full pipeline:
+          - Preflight checks
+          - Graph build
+          - Context loading
+          - Detection
+          - Optional: Multi-agent debate
+          - Report generation
+
+      - step: 8
+        description: "Capture full transcript"
+        command: "claude-code-controller capture --pane={pane_id}"
+        output: ".vrs/testing/runs/e2e-{timestamp}/transcript.txt"
+
+      - step: 9
+        description: "Copy report artifacts"
+        commands:
+          - "claude-code-controller send 'mkdir -p .vrs/testing/runs/e2e-{timestamp}' --pane={pane_id}"
+          - "claude-code-controller send 'cp .vrs/reports/latest.json .vrs/testing/runs/e2e-{timestamp}/report.json' --pane={pane_id}"
+          - "claude-code-controller send 'cp -r .vrs/state .vrs/testing/runs/e2e-{timestamp}/state/' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+
+      - step: 10
+        description: "Extract pipeline timing"
+        command: "claude-code-controller send 'cat .vrs/state/pipeline-timing.json > .vrs/testing/runs/e2e-{timestamp}/timing.json 2>/dev/null || echo \"No timing file\"' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 11
+        description: "Exit Claude Code"
+        command: "claude-code-controller send '/exit' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+
+      - step: 12
+        description: "Cleanup session"
+        command: "claude-code-controller kill --pane={pane_id}"
+
+# Validation Protocol
+validation:
+  script: "scripts/validate_e2e_pipeline.py"
+
+  stage_validation:
+    description: "Verify each stage marker appeared in correct order"
+    required_stages:
+      - "FRESH_ENV"
+      - "INSTALL"
+      - "PREFLIGHT"
+      - "GRAPH_BUILD"
+      - "DETECTION"
+      - "REPORT"
+    optional_stages:
+      - "CONTEXT"
+      - "DEBATE"
+
+    sequence_check:
+      description: "Stages must appear in order"
+      order:
+        - "[E2E_STAGE_FRESH_ENV"
+        - "[E2E_STAGE_INSTALL"
+        - "[PREFLIGHT_"
+        - "[GRAPH_BUILD_"
+        - "[DETECTION_"
+        - "[REPORT_"
+
+  report_validation:
+    description: "Validate final report structure and content"
+    checks:
+      - name: "report_exists"
+        check: "file_exists('.vrs/testing/runs/e2e-{timestamp}/report.json')"
+        required: true
+
+      - name: "report_valid_json"
+        check: "json_parse(report.json) succeeds"
+        required: true
+
+      - name: "report_non_empty"
+        check: "$.findings | length > 0"
+        required: true
+
+      - name: "findings_have_evidence"
+        check: "$.findings[*].evidence exists for each finding"
+        required: true
+
+      - name: "evidence_has_graph_nodes"
+        check: "$.findings[*].evidence.graph_nodes | length > 0"
+        required: true
+
+      - name: "evidence_has_code_locations"
+        check: "$.findings[*].evidence.code_locations | length > 0"
+        required: true
+
+      - name: "findings_have_severity"
+        check: "$.findings[*].severity in [LOW, MEDIUM, HIGH, CRITICAL]"
+        required: true
+
+  ground_truth_comparison:
+    description: "Compare findings to ground truth"
+    checks:
+      - name: "true_positive_exists"
+        check: "at least 1 finding matches ground_truth vulnerability"
+        required: true
+
+      - name: "precision_minimum"
+        check: "true_positives / total_findings >= 0.50"
+        threshold: 0.50
+        required: true
+
+      - name: "recall_check"
+        check: "true_positives / ground_truth_vulns"
+        threshold: 0.50
+        required: false
+        notes: "Desirable but not blocking for E2E"
+
+  timing_validation:
+    description: "Validate pipeline completed in reasonable time"
+    checks:
+      - name: "min_duration"
+        check: "total_duration_ms >= 60000"
+        reason: "Real audit takes at least 60 seconds"
+
+      - name: "max_duration"
+        check: "total_duration_ms <= 600000"
+        reason: "Should complete within 10 minutes"
+
+      - name: "stage_timing_present"
+        check: "each stage has start/end timestamp"
+        required: false
+
+# Success Criteria
+success_criteria:
+  - name: "Pipeline completes"
+    check: "[REPORT_GENERATED] marker found"
+    required: true
+
+  - name: "Report exists and valid"
+    check: "report.json exists and parses"
+    required: true
+
+  - name: "At least 1 finding"
+    check: "$.findings | length >= 1"
+    required: true
+
+  - name: "Finding has evidence chain"
+    check: "finding.evidence.graph_nodes AND finding.evidence.code_locations"
+    required: true
+
+  - name: "True positive detected"
+    check: "at least 1 finding matches ground truth"
+    required: true
+
+  - name: "Precision >= 50%"
+    check: "TP / (TP + FP) >= 0.50"
+    threshold: 0.50
+    required: true
+
+  - name: "Duration 60-600 seconds"
+    check: "60000 <= duration_ms <= 600000"
+    required: true
+
+  - name: "No fabricated evidence"
+    check: "graph_nodes trace to actual graph, code_locations exist in source"
+    required: true
+
+# Evidence Requirements
+evidence:
+  required_files:
+    - "e2e-{timestamp}/transcript.txt"
+    - "e2e-{timestamp}/report.json"
+    - "e2e-{timestamp}/validation.json"
+
+  optional_files:
+    - "e2e-{timestamp}/state/"
+    - "e2e-{timestamp}/timing.json"
+
+  validation_output:
+    path: "e2e-{timestamp}/validation.json"
+    format: |
+      {
+        "pipeline": {
+          "stages_found": ["FRESH_ENV", "INSTALL", ...],
+          "stages_missing": [],
+          "sequence_valid": true|false,
+          "total_duration_ms": N
+        },
+        "report": {
+          "exists": true|false,
+          "valid_json": true|false,
+          "finding_count": N,
+          "findings_with_evidence": N,
+          "evidence_depth_avg": N.NN
+        },
+        "ground_truth_comparison": {
+          "true_positives": N,
+          "false_positives": N,
+          "false_negatives": N,
+          "precision": N.NN,
+          "recall": N.NN
+        },
+        "evidence_integrity": {
+          "graph_nodes_valid": true|false,
+          "code_locations_valid": true|false,
+          "fabrication_detected": false
+        },
+        "verdict": "PASS|FAIL",
+        "failure_reasons": []
+      }
+
+# Anti-Fabrication
+anti_fabrication:
+  transcript:
+    min_lines: 200
+    min_duration_ms: 60000
+    max_duration_ms: 600000
+    required_tool_markers:
+      - "alphaswarm"
+    required_stage_markers:
+      - "[PREFLIGHT_"
+      - "[GRAPH_BUILD_"
+      - "[REPORT_"
+
+  report:
+    forbidden_patterns:
+      - "100%"
+      - "perfect"
+      - "all vulnerabilities found"
+    realistic_ranges:
+      finding_count: [1, 20]
+      precision: [0.3, 0.95]
+
+  evidence:
+    graph_node_validation:
+      description: "Graph node IDs must exist in actual graph"
+      check: "query graph for each cited node ID"
+      fail_on_missing: true
+
+    code_location_validation:
+      description: "Code locations must exist in source files"
+      check: "verify file:line:column exists"
+      fail_on_missing: true
+
+# Error Recovery
+error_recovery:
+  on_preflight_fail:
+    action: "Check tool installation, re-run with verbose logging"
+    retry: true
+    max_retries: 1
+
+  on_graph_build_fail:
+    action: "Check contract syntax, verify Slither available"
+    retry: true
+    max_retries: 1
+
+  on_detection_fail:
+    action: "Check pattern library, verify VulnDocs loaded"
+    retry: false
+    escalation: "Review detection configuration"
+
+  on_report_generation_fail:
+    action: "Check template availability, verify state preserved"
+    retry: true
+    max_retries: 1
+
+  on_timeout:
+    action: "Capture partial transcript, document timeout point"
+    retry: false
+    verdict: "FAIL - Timeout"
+    escalation: "Performance investigation required"
+
+# Post-Run Cleanup
+cleanup:
+  on_success:
+    - "Archive run artifacts to .vrs/testing/archive/"
+    - "Update .vrs/testing/runs/MANIFEST.json with result"
+
+  on_failure:
+    - "Preserve all artifacts for debugging"
+    - "Create .vrs/testing/runs/e2e-{timestamp}/FAILURE-NOTES.md"
+    - "Update .vrs/testing/runs/MANIFEST.json with failure"
+
+  restore_backup:
+    condition: "if .vrs.backup.{timestamp} exists"
+    action: "mv .vrs.backup.{timestamp} .vrs"
+    notes: "Restore original state after E2E test"

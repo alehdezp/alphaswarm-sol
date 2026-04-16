@@ -1,0 +1,458 @@
+# Skill Tool Policies - Role-based Tool Gating
+#
+# This file defines which tools are allowed for each agent role.
+# Guardrails enforce these policies before skill execution.
+#
+# Schema: schemas/skill_tool_policy_v1.json
+
+version: "1.0"
+updated: "2026-01-29"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ROLE DEFINITIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+roles:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ATTACKER - Exploit construction and vulnerability discovery
+  # ─────────────────────────────────────────────────────────────────────────────
+  attacker:
+    description: "Constructs exploit paths and discovers attack vectors"
+    model_tier: opus
+    allowed_tools:
+      - Read              # Read graph files, contract source
+      - Glob              # Find contract files
+      - Grep              # Search for patterns in code
+      - Bash(uv run alphaswarm query*)        # Query BSKG
+      - Bash(uv run alphaswarm build-kg*)     # Build knowledge graph
+      - Bash(uv run alphaswarm context show*) # View protocol context
+
+    data_access:
+      allowed_paths:
+        - "**/*.sol"       # Solidity contracts
+        - "**/*.json"      # Graph files
+        - "**/*.toon"      # TOON graph files
+        - ".vrs/**"        # Graph cache
+        - "vulndocs/**"    # Vulnerability knowledge
+        - "context/**"     # Protocol context packs
+      forbidden_paths:
+        - "**/.env"        # Environment variables
+        - "**/secrets/**"  # Secrets directory
+        - "**/*key*"       # Key files
+        - "**/*credential*" # Credential files
+
+    constraints:
+      max_file_reads: 50          # Prevent unbounded file access
+      require_graph_first: true   # Must query BSKG before conclusions
+      evidence_required: true     # All claims need evidence
+      token_budget: 8000          # Higher budget for deep analysis
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # DEFENDER - Guard discovery and mitigation construction
+  # ─────────────────────────────────────────────────────────────────────────────
+  defender:
+    description: "Finds guards and constructs mitigations"
+    model_tier: sonnet
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run alphaswarm query*)
+      - Bash(uv run alphaswarm build-kg*)
+      - Bash(uv run alphaswarm context show*)
+
+    data_access:
+      allowed_paths:
+        - "**/*.sol"
+        - "**/*.json"
+        - "**/*.toon"
+        - ".vrs/**"
+        - "vulndocs/**"
+        - "context/**"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+        - "**/*key*"
+        - "**/*credential*"
+
+    constraints:
+      max_file_reads: 40
+      require_graph_first: true
+      evidence_required: true
+      token_budget: 6000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # VERIFIER - Evidence cross-checking and verdict synthesis
+  # ─────────────────────────────────────────────────────────────────────────────
+  verifier:
+    description: "Cross-checks evidence and synthesizes verdicts"
+    model_tier: opus
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run alphaswarm query*)
+      - Bash(uv run alphaswarm build-kg*)
+
+    data_access:
+      allowed_paths:
+        - "**/*.sol"
+        - "**/*.json"
+        - "**/*.toon"
+        - ".vrs/**"
+        - "vulndocs/**"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+        - "**/*key*"
+        - "**/*credential*"
+
+    constraints:
+      max_file_reads: 30          # Focused on evidence validation
+      require_graph_first: true
+      evidence_required: true
+      token_budget: 8000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # AUDITOR - Quality assessment and skill validation
+  # ─────────────────────────────────────────────────────────────────────────────
+  auditor:
+    description: "Assesses skill quality, cost, and guardrails"
+    model_tier: sonnet
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run pytest*)      # Run tests
+      - Bash(python scripts/validate_skill_schema.py*)  # Validate schemas
+
+    data_access:
+      allowed_paths:
+        - "**/*.md"        # Skills and documentation
+        - "**/*.json"      # Schemas
+        - "**/*.yaml"      # Configs and patterns
+        - "**/*.py"        # Python code
+        - "tests/**"       # Test files
+        - ".claude/**"     # Claude skills
+        - "src/**"         # Source code
+        - "docs/**"        # Documentation
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+
+    constraints:
+      max_file_reads: 100         # Needs broader access for audits
+      require_graph_first: false  # Not graph-dependent
+      evidence_required: true
+      token_budget: 6000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # RESEARCHER - Vulnerability discovery and knowledge synthesis
+  # ─────────────────────────────────────────────────────────────────────────────
+  researcher:
+    description: "Discovers vulnerabilities and synthesizes knowledge"
+    model_tier: sonnet
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run alphaswarm vulndocs*)     # VulnDocs operations
+      - Bash(uv run alphaswarm query*)
+      - mcp__exa-search__web_search_exa       # Deep web research (MCP tool)
+
+    data_access:
+      allowed_paths:
+        - "vulndocs/**"
+        - "**/*.md"
+        - "**/*.yaml"
+        - "**/*.json"
+        - "docs/**"
+        - "examples/**"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+
+    constraints:
+      max_file_reads: 80
+      require_graph_first: false  # Research may precede graph analysis
+      evidence_required: true
+      token_budget: 6000
+      max_web_searches: 10        # Limit Exa API usage
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # TRIAGE - Initial assessment and routing
+  # ─────────────────────────────────────────────────────────────────────────────
+  triage:
+    description: "Initial vulnerability assessment and routing decisions"
+    model_tier: haiku
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run alphaswarm query*)
+
+    data_access:
+      allowed_paths:
+        - "**/*.sol"
+        - "**/*.json"
+        - "**/*.toon"
+        - ".vrs/**"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+
+    constraints:
+      max_file_reads: 20          # Fast, focused reads
+      require_graph_first: true
+      evidence_required: false    # Initial triage may be preliminary
+      token_budget: 3000          # Cost-efficient
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ORCHESTRATOR - Pool management and workflow coordination
+  # ─────────────────────────────────────────────────────────────────────────────
+  orchestrator:
+    description: "Manages pools and coordinates multi-agent workflows"
+    model_tier: sonnet
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run alphaswarm orchestrate*)  # Pool operations
+      - Bash(uv run alphaswarm query*)
+      - Bash(uv run alphaswarm context*)
+
+    data_access:
+      allowed_paths:
+        - "**/*.sol"
+        - "**/*.json"
+        - "**/*.toon"
+        - ".vrs/**"
+        - "context/**"
+        - "vulndocs/**"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+
+    constraints:
+      max_file_reads: 60
+      require_graph_first: false  # Orchestration logic may not need graph
+      evidence_required: false    # Workflow decisions, not claims
+      token_budget: 5000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # ARCHITECT - Skill and subagent design
+  # ─────────────────────────────────────────────────────────────────────────────
+  architect:
+    description: "Designs production-ready skills and subagents"
+    model_tier: sonnet
+    allowed_tools:
+      - Read
+      - Write             # Can create skill files
+      - Edit              # Can modify skill files
+      - Glob
+      - Grep
+      - Bash(python scripts/validate_skill_schema.py*)
+
+    data_access:
+      allowed_paths:
+        - ".claude/**"     # Can write skills
+        - "src/alphaswarm_sol/skills/**"
+        - "schemas/**"
+        - "docs/**"
+        - "**/*.md"
+        - "**/*.json"
+        - "**/*.yaml"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+        - "src/alphaswarm_sol/kg/builder_legacy.py"  # Protected file
+        - "src/alphaswarm_sol/beads/executor.py"     # Protected file
+
+    constraints:
+      max_file_reads: 100
+      max_file_writes: 20
+      require_graph_first: false
+      evidence_required: false    # Design decisions, not claims
+      token_budget: 6000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # CURATOR - Knowledge base management and corpus validation
+  # ─────────────────────────────────────────────────────────────────────────────
+  curator:
+    description: "Manages VulnDocs corpus and validates ground truth"
+    model_tier: sonnet
+    allowed_tools:
+      - Read
+      - Write             # Can update VulnDocs
+      - Edit              # Can modify VulnDocs
+      - Glob
+      - Grep
+      - Bash(uv run alphaswarm vulndocs validate*)
+      - Bash(uv run alphaswarm vulndocs info*)
+      - Bash(uv run pytest tests/*)  # Run validation tests
+
+    data_access:
+      allowed_paths:
+        - "vulndocs/**"
+        - "tests/**"
+        - "examples/**"
+        - "**/*.md"
+        - "**/*.yaml"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+
+    constraints:
+      max_file_reads: 150         # Broad corpus access
+      max_file_writes: 50
+      require_graph_first: false
+      evidence_required: true
+      token_budget: 6000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # TESTER - Pattern and validation testing
+  # ─────────────────────────────────────────────────────────────────────────────
+  tester:
+    description: "Tests patterns and validation logic"
+    model_tier: haiku
+    allowed_tools:
+      - Read
+      - Glob
+      - Grep
+      - Bash(uv run pytest*)
+      - Bash(uv run alphaswarm query*)
+      - Bash(uv run alphaswarm build-kg*)
+
+    data_access:
+      allowed_paths:
+        - "tests/**"
+        - "**/*.sol"
+        - "**/*.py"
+        - "**/*.json"
+        - "**/*.toon"
+        - ".vrs/**"
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+
+    constraints:
+      max_file_reads: 80
+      require_graph_first: false
+      evidence_required: false    # Test results, not claims
+      token_budget: 4000
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # FULL-TESTING ORCHESTRATOR - E2E validation pipeline
+  # ─────────────────────────────────────────────────────────────────────────────
+  full-testing-orchestrator:
+    description: "Master orchestrator for E2E validation pipeline"
+    model_tier: opus
+    allowed_tools:
+      # Standard tools for orchestration
+      - Read                        # Read transcripts, evidence packs, contracts
+      - Write                       # Write evidence packs, manifests
+      - Glob                        # Find files
+      - Grep                        # Search content
+
+      # VRS tool runners
+      - Bash(uv run alphaswarm build-kg*)
+      - Bash(uv run alphaswarm query*)
+      - Bash(uv run alphaswarm vulndocs*)
+      - Bash(uv run alphaswarm orchestrate*)
+      - Bash(uv run alphaswarm context*)
+      - Bash(uv run alphaswarm tools*)
+
+      # Git worktree management
+      - Bash(git worktree*)
+      - Bash(git status*)
+
+    data_access:
+      allowed_paths:
+        - "**/*.sol"                # Solidity contracts
+        - "**/*.json"               # Graph files, manifests
+        - "**/*.toon"               # TOON graph files
+        - "**/*.yaml"               # Config files
+        - "**/*.txt"                # Transcripts
+        - ".vrs/**"                 # VRS artifacts
+        - "evidence/**"             # Evidence packs
+        - "evidence-pack-*/**"      # Evidence pack directories
+        - "/tmp/alphaswarm-test-*/**"  # Worktrees
+        - "tests/**"                # Test files
+        - "vulndocs/**"             # Vulnerability knowledge
+        - "context/**"              # Protocol context packs
+        - ".planning/**"            # Planning docs (read-only for ground truth)
+      forbidden_paths:
+        - "**/.env"
+        - "**/secrets/**"
+        - "**/*key*"
+        - "**/*credential*"
+
+    constraints:
+      max_file_reads: 200           # Broad access for evidence collection
+      max_file_writes: 100          # Write evidence packs, transcripts
+      require_graph_first: false    # Orchestration logic, not investigation
+      evidence_required: true       # Must produce evidence pack
+      token_budget: 8000            # Higher budget for multi-suite orchestration
+      require_debug_mode: true      # HARD: Must emit debug records
+
+    guardrails:
+      debug_enforcement:
+        mode: hard                  # Fail if debug records missing
+        error_code: E101            # "Debug mode required but not enabled"
+      evidence_pack_required:
+        mode: hard                  # Fail if evidence pack incomplete
+        error_code: E010            # "Evidence pack incomplete"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ESCALATION RULES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+escalation:
+  # When to require guardrail validation before expensive model usage
+  require_guardrail_validation:
+    - condition: "token_budget > 6000"
+      validator: "triage"
+      message: "High token budget requires triage validation"
+
+    - condition: "model_tier == opus"
+      validator: "triage"
+      message: "Opus-tier execution requires triage approval"
+
+    - condition: "max_file_reads > 50"
+      validator: "auditor"
+      message: "Broad file access requires auditor review"
+
+  # When to block execution entirely
+  block_execution:
+    - condition: "forbidden_path_access"
+      message: "Attempted access to forbidden path (secrets, env vars, etc.)"
+
+    - condition: "tool_not_in_allowed_list"
+      message: "Tool not allowed for this role"
+
+    - condition: "evidence_required && !evidence_provided"
+      message: "Evidence required but not provided for this role"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# POLICY METADATA
+# ═══════════════════════════════════════════════════════════════════════════════
+
+metadata:
+  schema_version: "1.0"
+  created: "2026-01-29"
+  updated: "2026-01-30"
+  phase: "07.3.1.5-full-testing-orchestrator"
+  plan: "01"
+  purpose: "Role-based tool gating and guardrail policies for skills and subagents"
+
+  roles_defined: 11
+  enforcement_points:
+    - "Skill frontmatter validation (scripts/validate_skill_schema.py)"
+    - "Guardrail policy loader (src/alphaswarm_sol/skills/guardrails.py)"
+    - "Orchestration layer (src/alphaswarm_sol/orchestration/)"
+
+  notes:
+    - "Policies prevent unsafe tool usage and enforce data boundaries per role"
+    - "Escalation rules require cheap model validation before expensive runs"
+    - "Evidence requirements enforced at contract level for verification roles"
+    - "Protected files (builder_legacy.py, executor.py) cannot be modified"

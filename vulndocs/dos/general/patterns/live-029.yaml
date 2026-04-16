@@ -1,0 +1,23 @@
+id: live-029
+vulndoc: dos/general
+name: Liquidity DoS
+description: Liquidity-sensitive operations without safeguards.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_external_calls
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  any:
+  - property: pool_reserves_used_for_collateral
+    op: eq
+    value: true
+  - property: balance_used_for_rewards
+    op: eq
+    value: true

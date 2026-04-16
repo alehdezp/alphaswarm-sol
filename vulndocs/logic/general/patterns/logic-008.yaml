@@ -1,0 +1,15 @@
+id: logic-008
+vulndoc: logic/general
+name: Uninitialized Storage
+description: Contract has uninitialized storage variables.
+scope: Contract
+lens:
+- LogicState
+severity: high
+cwe:
+- 665
+match:
+  all:
+  - property: has_uninitialized_storage
+    op: eq
+    value: true

@@ -1,0 +1,22 @@
+# Keeper Network Oracle Manipulation
+id: smartbugs-keeper-network-oracle-manipulation
+name: Keeper Network Oracle Manipulation
+category: oracle
+source: examples/semgrep-smart-contracts/solidity/security/keeper-network-oracle-manipulation.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: oracle-manipulation
+  description: Keeper network oracles vulnerable to manipulation via flash loans
+  severity: high
+  cwe: CWE-20
+
+expected_detections:
+  - pattern: oracle-001
+    confidence: medium
+
+vkg_pattern_mapping:
+  primary: oracle-001
+  secondary: [oracle-keeper]
+
+status: pending

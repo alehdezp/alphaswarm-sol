@@ -1,0 +1,42 @@
+id: policy-mismatch-unauthorized-transfer
+vulndoc: access-control/policy
+name: Unauthorized Value Transfer
+description: 'Function transfers value without access control, but should be restricted.
+
+  The function has value_handling labels but missing access_control labels.
+
+
+  Risk: Unauthorized users can drain funds from the contract.
+
+  '
+severity: high
+scope: Function
+lens:
+- AccessControl
+- ValueTransfer
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - property: sends_eth
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: value_handling.transfers_value_out
+      min_confidence: medium
+    - type: missing_label
+      value: access_control.owner_only
+    - type: missing_label
+      value: access_control.role_based
+    none:
+    - type: has_label
+      value: access_control.no_restriction
+required_labels:
+- value_handling.transfers_value_out

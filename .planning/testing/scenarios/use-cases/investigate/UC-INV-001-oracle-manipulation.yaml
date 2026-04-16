@@ -1,0 +1,78 @@
+id: UC-INV-001
+name: "Investigate known oracle manipulation vulnerability"
+workflow: vrs-investigate
+category: investigate
+tier: core
+
+input:
+  contract: "tests/contracts/OracleNoStaleness.sol"
+  command: "/vrs-investigate tests/contracts/OracleNoStaleness.sol --hypothesis oracle-manipulation"
+  context: >
+    OracleNoStaleness.sol reads a Chainlink oracle price feed without checking
+    the staleness of the returned data (no updatedAt timestamp validation).
+    This allows stale or manipulated prices to be used in protocol logic. The
+    investigator receives a hypothesis about oracle manipulation and must trace
+    the evidence chain through the graph to confirm or deny it.
+
+expected_behavior:
+  summary: |
+    The investigation workflow should build a BSKG, trace the oracle read
+    path through the graph, identify the missing staleness check, and produce
+    an evidence chain linking the READS_EXTERNAL_VALUE operation to the lack
+    of timestamp validation. The investigation must follow graph-first
+    reasoning and produce a structured evidence packet.
+  must_happen:
+    - "Build BSKG from OracleNoStaleness.sol"
+    - "Query graph for READS_EXTERNAL_VALUE or READS_ORACLE operations"
+    - "Trace data flow from oracle read to usage in protocol logic"
+    - "Identify missing staleness/timestamp validation"
+    - "Produce structured evidence chain with graph node references"
+    - "Conclude with confirmed vulnerability and severity assessment"
+    - "Evidence packet includes specific code locations"
+  must_not_happen:
+    - "Skip graph queries and jump to code reading"
+    - "Conclude without citing graph evidence"
+    - "Miss the staleness check absence"
+    - "Hallucinate oracle features not present in the contract"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "oracle"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 65
+  key_dimensions:
+    - name: evidence_chain_completeness
+      description: "Does the evidence chain trace from oracle read through to protocol impact?"
+    - name: graph_first_compliance
+      description: "Did the investigator use BSKG queries before drawing conclusions?"
+    - name: hypothesis_testing
+      description: "Was the oracle manipulation hypothesis systematically confirmed with evidence?"
+    - name: finding_specificity
+      description: "Does the finding name the exact missing check (staleness) with code location?"
+  regression_signals:
+    - "Investigation skips graph queries -> CRITICAL REGRESSION: graph-first violated"
+    - "Missing staleness check not identified -> REGRESSION: oracle pattern detection broken"
+    - "Evidence chain has gaps -> REGRESSION: investigation depth degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/OracleNoStaleness.sol"
+  related_scenarios:
+    - "UC-AUDIT-005"
+    - "UC-INV-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Core tier because investigation is a primary workflow. Tests the
+  hypothesis-driven evidence chain that distinguishes investigation from
+  simple audit.

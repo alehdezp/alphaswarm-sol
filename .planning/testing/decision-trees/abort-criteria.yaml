@@ -1,0 +1,327 @@
+# Abort Criteria for Existential Tests
+# Purpose: Define explicit halt conditions for existential validations
+# Reference: IMP-J3 in IMPROVEMENT-ROADMAP.md
+
+name: "Abort Criteria Specification"
+version: "1.0"
+created: "2026-02-04"
+category: "IMP-J3"
+
+# Overview
+# This file centralizes abort criteria for all existential validations.
+# Existential tests validate core architectural decisions:
+# - Does the knowledge graph add value? (IMP-G1)
+# - Does multi-agent debate improve outcomes? (IMP-H1)
+# - Does behavioral detection outperform name-based? (IMP-I1)
+#
+# If these fail, the project's core architecture is questionable.
+
+# =============================================================================
+# Per-Validation Abort Criteria
+# =============================================================================
+
+abort_criteria:
+  # IMP-G1: Graph Ablation Study
+  IMP-G1_graph_ablation:
+    description: "Validates that knowledge graph improves agent reasoning"
+    max_iterations: 3
+    decision_tree: ".planning/testing/decision-trees/IMP-G1-graph-ablation.yaml"
+
+    abort_conditions:
+      - id: "G1-ABORT-01"
+        condition: "Three consecutive runs show finding_delta < 0.05"
+        check_expression: "all(r['finding_delta'] < 0.05 for r in last_n_runs(3))"
+        action: "ABORT"
+        reason: "Graph not providing value"
+        escalation: "Architecture review within 48h"
+        severity: "critical"
+
+      - id: "G1-ABORT-02"
+        condition: "Graph queries fail on >50% of test contracts"
+        check_expression: "graph_query_failure_rate > 0.50"
+        action: "ABORT"
+        reason: "Graph implementation broken"
+        escalation: "Debug graph builder before continuing"
+        severity: "critical"
+
+      - id: "G1-ABORT-03"
+        condition: "L4 verdict (GRAPH_NOT_VALUABLE) on any iteration"
+        check_expression: "any(r['verdict'] == 'GRAPH_NOT_VALUABLE' for r in all_runs)"
+        action: "ABORT"
+        reason: "No improvement detected"
+        escalation: "Immediate architecture review"
+        severity: "critical"
+
+    continue_conditions:
+      - id: "G1-CONTINUE-01"
+        condition: "finding_delta > 0.05 but < 0.20"
+        check_expression: "0.05 < latest_run['finding_delta'] < 0.20"
+        action: "ITERATE"
+        instruction: "Try different query patterns"
+        max_attempts: 2
+
+    success_conditions:
+      - id: "G1-SUCCESS-01"
+        condition: "L1 verdict (GRAPH_ESSENTIAL) achieved"
+        check_expression: "latest_run['verdict'] == 'GRAPH_ESSENTIAL'"
+
+  # IMP-H1: Multi-Agent Comparison
+  IMP-H1_multi_agent:
+    description: "Validates that multi-agent debate improves outcomes vs single-agent"
+    max_iterations: 3
+    decision_tree: ".planning/testing/decision-trees/IMP-H1-multi-agent.yaml"
+
+    abort_conditions:
+      - id: "H1-ABORT-01"
+        condition: "Multi-agent false_negatives >= single_agent false_negatives"
+        check_expression: "multi_fn >= single_fn"
+        action: "ABORT"
+        reason: "Debate not catching more bugs"
+        escalation: "Consider single-agent architecture"
+        severity: "critical"
+
+      - id: "H1-ABORT-02"
+        condition: "Multi-agent cost > 5x single-agent with quality < 1.2x"
+        check_expression: "cost_ratio > 5.0 and quality_improvement < 1.2"
+        action: "ABORT"
+        reason: "Cost not justified"
+        escalation: "Document trade-off, consider hybrid"
+        severity: "high"
+
+      - id: "H1-ABORT-03"
+        condition: "Synthesis absent for all debates"
+        check_expression: "all(not r['synthesis_present'] for r in all_runs)"
+        action: "ABORT"
+        reason: "Debate is performative, not substantive"
+        escalation: "Improve agent prompts"
+        severity: "high"
+
+      - id: "H1-ABORT-04"
+        condition: "L4 verdict (MULTI_AGENT_NOT_VALUABLE) on any iteration"
+        check_expression: "any(r['verdict'] == 'MULTI_AGENT_NOT_VALUABLE' for r in all_runs)"
+        action: "ABORT"
+        reason: "No improvement detected"
+        escalation: "Immediate architecture review"
+        severity: "critical"
+
+    continue_conditions:
+      - id: "H1-CONTINUE-01"
+        condition: "Multi-agent better on 1/3 contracts but not 2/3"
+        check_expression: "contracts_improved == 1 and total_contracts == 3"
+        action: "ITERATE"
+        instruction: "Analyze why debate helps some contracts"
+        max_attempts: 2
+
+    success_conditions:
+      - id: "H1-SUCCESS-01"
+        condition: "L1 verdict (MULTI_AGENT_ESSENTIAL) achieved"
+        check_expression: "latest_run['verdict'] == 'MULTI_AGENT_ESSENTIAL'"
+
+  # IMP-I1: Behavioral Detection
+  IMP-I1_behavioral_detection:
+    description: "Validates that behavioral detection outperforms name-based detection"
+    max_iterations: 3
+    decision_tree: ".planning/testing/decision-trees/IMP-I1-behavioral.yaml"
+
+    abort_conditions:
+      - id: "I1-ABORT-01"
+        condition: "Behavioral detection catches same or fewer vulns than name-based"
+        check_expression: "behavioral_detections <= name_based_detections"
+        action: "ABORT"
+        reason: "Behavioral detection not advantageous"
+        escalation: "Reconsider detection philosophy"
+        severity: "critical"
+
+      - id: "I1-ABORT-02"
+        condition: "Behavioral false_positive_rate > 2x name-based"
+        check_expression: "behavioral_fp_rate > 2 * name_based_fp_rate"
+        action: "ABORT"
+        reason: "Too noisy to be useful"
+        escalation: "Refine semantic operation definitions"
+        severity: "high"
+
+      - id: "I1-ABORT-03"
+        condition: "L4 verdict (BEHAVIORAL_NOT_VALUABLE) on any iteration"
+        check_expression: "any(r['verdict'] == 'BEHAVIORAL_NOT_VALUABLE' for r in all_runs)"
+        action: "ABORT"
+        reason: "No advantage detected"
+        escalation: "Immediate review"
+        severity: "critical"
+
+    continue_conditions:
+      - id: "I1-CONTINUE-01"
+        condition: "Behavioral catches 1 extra vuln but misses 1 other"
+        check_expression: "behavioral_advantage == 1 and behavioral_misses == 1"
+        action: "ITERATE"
+        instruction: "Analyze edge cases"
+        max_attempts: 2
+
+    success_conditions:
+      - id: "I1-SUCCESS-01"
+        condition: "L1 verdict (BEHAVIORAL_ESSENTIAL) achieved"
+        check_expression: "latest_run['verdict'] == 'BEHAVIORAL_ESSENTIAL'"
+
+# =============================================================================
+# Global Abort Criteria
+# =============================================================================
+
+global_abort:
+  description: "System-level abort when multiple existential validations fail"
+
+  conditions:
+    - id: "GLOBAL-ABORT-01"
+      condition: "Any two existential validations fail"
+      check_expression: "sum(v['status'] == 'ABORT' for v in existential_validations.values()) >= 2"
+      action: "HALT PHASE"
+      escalation:
+        - "Document all failures in STATE.md"
+        - "Schedule architecture review within 24h"
+        - "Prepare redesign proposals"
+        - "Do NOT proceed to GA validation"
+      severity: "critical"
+
+    - id: "GLOBAL-ABORT-02"
+      condition: "All three existential validations fail"
+      check_expression: "all(v['status'] == 'ABORT' for v in existential_validations.values())"
+      action: "PROJECT ARCHITECTURE INVALID"
+      escalation:
+        - "HALT all development immediately"
+        - "Document complete failure analysis"
+        - "Consider project pivot or termination"
+        - "Schedule emergency stakeholder review"
+      severity: "fatal"
+
+# =============================================================================
+# Escalation Paths
+# =============================================================================
+
+escalation_paths:
+  architecture_review:
+    timeline: "48h"
+    participants:
+      - "Project lead"
+      - "Core contributors"
+    deliverables:
+      - "Failure analysis document"
+      - "Root cause identification"
+      - "Redesign proposals (minimum 2 alternatives)"
+    decision_required: "Continue/Pivot/Abandon"
+
+  immediate_review:
+    timeline: "24h"
+    participants:
+      - "Project lead"
+    deliverables:
+      - "Quick failure analysis"
+      - "Blocker identification"
+    decision_required: "Fix/Escalate"
+
+  emergency_review:
+    timeline: "Immediate"
+    participants:
+      - "All stakeholders"
+    deliverables:
+      - "Go/No-Go decision"
+    decision_required: "Continue/Terminate"
+
+# =============================================================================
+# Iteration Tracking Schema
+# =============================================================================
+
+iteration_tracking:
+  storage_path: ".vrs/testing/existential/iterations.yaml"
+
+  entry_schema:
+    iteration_id: "string"  # e.g., "IMP-G1-iter-001"
+    validation_id: "string"  # e.g., "IMP-G1_graph_ablation"
+    timestamp: "ISO8601"
+    metrics: "object"  # Validation-specific metrics
+    verdict: "string"  # L1/L2/L3/L4 verdict
+    status: "enum"  # PASS | ITERATE | ABORT
+    notes: "string"  # Optional human notes
+
+  aggregation:
+    last_n_runs:
+      description: "Get last N runs for a validation"
+      default_n: 3
+
+    all_runs:
+      description: "Get all runs for a validation"
+
+# =============================================================================
+# Wave Gate Integration
+# =============================================================================
+
+wave_gate:
+  description: "How abort criteria integrate with wave execution"
+
+  wave_5_gate:
+    name: "Existential Validations"
+    validations_required:
+      - "IMP-G1_graph_ablation"
+      - "IMP-H1_multi_agent"
+      - "IMP-I1_behavioral_detection"
+
+    pass_criteria: "All validations reach L1 or L2 verdict"
+    abort_criteria: "Any validation reaches ABORT status"
+
+    on_pass:
+      - "Proceed to Wave 6 (Validations I-01 to I-07)"
+      - "Document success evidence in STATE.md"
+
+    on_abort:
+      - "Execute global_abort escalation"
+      - "Do NOT proceed to Wave 6"
+      - "Block GA release"
+
+# =============================================================================
+# CLI Integration
+# =============================================================================
+
+cli_integration:
+  script: "scripts/check_wave_gate.py"
+
+  commands:
+    check_abort:
+      description: "Check if any abort condition is met"
+      usage: "python scripts/check_wave_gate.py --check-abort --validation IMP-G1"
+      returns:
+        abort: "bool"
+        reason: "string or null"
+        escalation: "string or null"
+
+    check_wave:
+      description: "Check if wave gate can be passed"
+      usage: "python scripts/check_wave_gate.py --check-wave --wave 5"
+      returns:
+        pass: "bool"
+        blocking_validations: "list"
+        recommendations: "list"
+
+    record_iteration:
+      description: "Record a validation iteration result"
+      usage: "python scripts/check_wave_gate.py --record-iteration --validation IMP-G1 --metrics-file results.yaml"
+
+# =============================================================================
+# Evidence Requirements
+# =============================================================================
+
+evidence_requirements:
+  per_validation:
+    - "Transcript of test run"
+    - "Metrics computed programmatically"
+    - "Comparison against ground truth"
+    - "Iteration history"
+
+  per_abort:
+    - "All iteration evidence"
+    - "Specific abort condition triggered"
+    - "Escalation actions taken"
+    - "Decision outcome documented"
+
+  storage:
+    base_path: ".vrs/testing/existential/"
+    structure:
+      - "{validation_id}/iterations/"
+      - "{validation_id}/aborts/"
+      - "{validation_id}/evidence/"

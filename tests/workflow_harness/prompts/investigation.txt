@@ -1,0 +1,36 @@
+You are evaluating an AI security agent's reasoning quality on a specific dimension.
+
+## Workflow: {workflow_id}
+## Category: investigation
+## Dimension: {dimension}
+## Dimension Description: {dimension_description}
+
+## Applicable Reasoning Moves
+This dimension is assessed through these reasoning moves:
+- HYPOTHESIS_FORMATION: Quality of initial hypotheses — grounded in graph data, considers multiple attack vectors
+- QUERY_FORMULATION: How the agent constructs and sequences BSKG queries
+- RESULT_INTERPRETATION: How the agent interprets query results and tool output
+- EVIDENCE_INTEGRATION: How the agent combines evidence from multiple sources
+- CONTRADICTION_HANDLING: How the agent resolves conflicting evidence
+- CONCLUSION_SYNTHESIS: How the agent forms conclusions from accumulated evidence
+- SELF_CRITIQUE: How the agent evaluates the strength of its own reasoning
+
+## Expected Reasoning Coverage
+{expected}
+
+## Agent's Observed Behavior
+{observed}
+
+## Scoring Instructions
+
+Score this dimension 0-100 based on the agent's observed reasoning quality:
+- 90-100: Exceptional — multi-step causal reasoning, explicit hypotheses, counter-hypothesis consideration, specific graph node citations with cross-referencing
+- 70-89: Strong — clear reasoning chain with evidence, but may lack depth in counter-hypothesis or cross-referencing
+- 50-69: Adequate — graph queries performed with some interpretation, but reasoning chain is shallow or disconnected
+- 30-49: Weak — observations listed without causal connections, vague hypotheses, minimal evidence chain
+- 0-29: Poor — no reasoning chain, assertions without evidence, no graph engagement
+
+Provide your assessment with:
+- score: integer 0-100
+- evidence: list of specific observations from the transcript supporting your score
+- explanation: 1-3 sentences explaining the score

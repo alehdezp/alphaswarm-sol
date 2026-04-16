@@ -1,0 +1,24 @@
+# Rigoblock Missing Access Control
+id: smartbugs-rigoblock-missing-access-control
+name: Rigoblock Missing Access Control
+category: access_control
+source: examples/semgrep-smart-contracts/solidity/security/rigoblock-missing-access-control.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: access-control-missing
+  description: |
+    Critical functions in Rigoblock protocol lack proper access control
+    checks, allowing unauthorized state modifications.
+  severity: high
+  cwe: CWE-284
+
+expected_detections:
+  - pattern: auth-001
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: auth-001
+  secondary: [access-control-missing]
+
+status: pending

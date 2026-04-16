@@ -1,0 +1,107 @@
+{
+  "id": "VKG-GT-002",
+  "vulnerability_class": "reentrancy",
+  "pattern_id": "vm-001",
+  "severity": "critical",
+  "confidence": 0.85,
+  "status": "pending",
+  "vulnerable_code": {
+    "source": "function withdraw(uint256 amount) external nonReentrant {\n    require(balances[msg.sender] >= amount, \"Insufficient balance\");\n    (bool success, ) = msg.sender.call{value: amount}(\"\");\n    require(success, \"Transfer failed\");\n    balances[msg.sender] -= amount;\n}",
+    "file_path": "/contracts/SafeVault.sol",
+    "start_line": 45,
+    "end_line": 51,
+    "function_name": "withdraw",
+    "contract_name": "SafeVault"
+  },
+  "related_code": [
+    {
+      "source": "modifier nonReentrant() {\n    require(!_locked, \"Reentrancy\");\n    _locked = true;\n    _;\n    _locked = false;\n}",
+      "file_path": "/contracts/SafeVault.sol",
+      "start_line": 15,
+      "end_line": 21,
+      "function_name": "nonReentrant",
+      "contract_name": "SafeVault"
+    }
+  ],
+  "full_contract": null,
+  "inheritance_chain": ["Ownable", "ReentrancyGuard"],
+  "pattern_context": {
+    "pattern_name": "Classic Reentrancy",
+    "pattern_description": "Detects external calls before state updates - violates CEI pattern",
+    "why_flagged": "External call on line 47 occurs BEFORE state update on line 49. Pattern flagged due to state_write_after_external_call property.",
+    "matched_properties": ["state_write_after_external_call", "external_call_with_value"],
+    "evidence_lines": [47, 49]
+  },
+  "investigation_guide": {
+    "steps": [
+      {
+        "step_number": 1,
+        "action": "Identify the external call",
+        "look_for": "msg.sender.call{value: amount} on line 47",
+        "evidence_needed": "External call with value transfer found",
+        "red_flag": "Call transfers ETH to msg.sender",
+        "safe_if": null
+      },
+      {
+        "step_number": 2,
+        "action": "Check state update ordering",
+        "look_for": "When is balances[msg.sender] modified?",
+        "evidence_needed": "State update occurs AFTER external call",
+        "red_flag": "Balance update on line 49 happens after call on line 47",
+        "safe_if": "Balance updated before external call"
+      },
+      {
+        "step_number": 3,
+        "action": "Check for reentrancy guards",
+        "look_for": "nonReentrant modifier or similar lock",
+        "evidence_needed": "Check if function has protection",
+        "red_flag": "No reentrancy protection",
+        "safe_if": "Has nonReentrant modifier - FOUND on line 45"
+      },
+      {
+        "step_number": 4,
+        "action": "Verify nonReentrant implementation",
+        "look_for": "Check the nonReentrant modifier code",
+        "evidence_needed": "Proper lock mechanism",
+        "red_flag": "Broken implementation",
+        "safe_if": "Uses _locked bool with proper check-set-reset pattern - VERIFIED"
+      }
+    ],
+    "questions_to_answer": [
+      "Is there an external call before the state update?",
+      "Is there any reentrancy protection?",
+      "Is the reentrancy protection correctly implemented?",
+      "Does the modifier cover all entry points?"
+    ],
+    "common_false_positives": ["Has nonReentrant modifier", "Read-only reentrancy", "Trusted recipient"],
+    "key_indicators": ["External call BEFORE state update", "No reentrancy guard", "User-controlled call target"],
+    "safe_patterns": ["CEI pattern (checks-effects-interactions)", "nonReentrant modifier", "Pull payment pattern"]
+  },
+  "test_context": {
+    "scaffold_code": "// Test would fail - function is protected",
+    "attack_scenario": "Reentrancy attempt would fail because nonReentrant modifier prevents re-entry",
+    "setup_requirements": ["Deploy SafeVault", "Attempt reentrancy attack"],
+    "expected_outcome": "Attack fails with 'Reentrancy' revert"
+  },
+  "similar_exploits": [
+    {
+      "id": "exploit-dao-2016",
+      "name": "The DAO Hack",
+      "date": "2016-06-17",
+      "loss": "$60M",
+      "category": "reentrancy",
+      "url": "https://www.gemini.com/cryptopedia/the-dao-hack-makerdao",
+      "summary": "Classic reentrancy attack - but this code is protected unlike The DAO"
+    }
+  ],
+  "fix_recommendations": [
+    "Code is already protected with nonReentrant modifier",
+    "Could additionally apply CEI pattern for defense-in-depth",
+    "Current implementation is secure"
+  ],
+  "notes": [],
+  "verdict": null,
+  "created_at": "2026-01-08T00:00:00",
+  "updated_at": "2026-01-08T00:00:00",
+  "context_hash": "gt002def"
+}

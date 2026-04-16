@@ -1,0 +1,76 @@
+"""
+Workflow Testing Infrastructure for VRS.
+
+This module provides infrastructure for real-world workflow testing using
+Claude Code CLI automation.
+
+Components:
+- WorkflowEvaluator: Evaluate workflow transcripts against criteria
+- ImprovementLoop: Process errors and manage improvement backlog
+
+Usage:
+    from alphaswarm_sol.testing.workflow import (
+        WorkflowEvaluator,
+        ImprovementLoop,
+        EvalStatus,
+        EvalCriteria,
+        EvalResult,
+        Improvement,
+    )
+
+    # Evaluate result
+    criteria = EvalCriteria(expected_patterns=["PASS", "Complete"])
+    evaluator = WorkflowEvaluator()
+    eval_result = evaluator.evaluate(transcript, criteria)
+
+    # Process improvements
+    loop = ImprovementLoop()
+    loop.process_eval_result(eval_result, plan_id="07.3-01")
+"""
+
+from alphaswarm_sol.testing.workflow.workflow_evaluator import (
+    EvalStatus,
+    EvalCriteria,
+    EvalError,
+    EvalResult,
+    WorkflowEvaluator,
+)
+
+from alphaswarm_sol.testing.workflow.improvement_loop import (
+    Improvement,
+    ImprovementCategory,
+    ImprovementComplexity,
+    ImprovementLoopConfig,
+    ImprovementLoop,
+)
+
+from alphaswarm_sol.testing.workflow.self_improving_runner import (
+    SelfImprovingRunner,
+    TestResult,
+    DetectedIssue,
+    IssueCategory,
+    FixResult,
+    run_self_improving_smoke_test,
+)
+
+__all__ = [
+    # WorkflowEvaluator
+    "EvalStatus",
+    "EvalCriteria",
+    "EvalError",
+    "EvalResult",
+    "WorkflowEvaluator",
+    # ImprovementLoop
+    "Improvement",
+    "ImprovementCategory",
+    "ImprovementComplexity",
+    "ImprovementLoopConfig",
+    "ImprovementLoop",
+    # SelfImprovingRunner
+    "SelfImprovingRunner",
+    "TestResult",
+    "DetectedIssue",
+    "IssueCategory",
+    "FixResult",
+    "run_self_improving_smoke_test",
+]

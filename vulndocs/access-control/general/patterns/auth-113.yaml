@@ -1,0 +1,22 @@
+id: auth-113
+vulndoc: access-control/general
+name: Privileged External Call Without Reentrancy Guard
+description: Privileged external calls without reentrancy protection.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: is_privileged_operation
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: true
+  - property: has_external_calls
+    op: eq
+    value: true
+  - property: has_reentrancy_guard
+    op: eq
+    value: false

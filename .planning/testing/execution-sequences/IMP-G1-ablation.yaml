@@ -1,0 +1,222 @@
+# Execution Sequence: IMP-G1 Graph Ablation Study
+# Purpose: Concrete claude-code-controller commands for graph ablation validation
+
+name: "Graph Ablation Study Execution"
+version: "1.0"
+created: "2026-02-04"
+decision_tree: ".planning/testing/decision-trees/IMP-G1-graph-ablation.yaml"
+
+# Session Configuration
+session:
+  control:
+    label: "vrs-demo-ablation-control-{timestamp}"
+    description: "Audit WITHOUT graph access"
+  test:
+    label: "vrs-demo-ablation-test-{timestamp}"
+    description: "Audit WITH full graph access"
+
+# Test Targets
+targets:
+  - contract: "tests/contracts/CrossFunctionReentrancy.sol"
+    ground_truth: "1 reentrancy vulnerability"
+  - contract: "tests/contracts/semantic-test-set/AuthBypass.sol"
+    ground_truth: "2 access control vulnerabilities"
+  - contract: "tests/fixtures/dvd/side-entrance/"
+    ground_truth: "3 vulnerabilities (economic)"
+
+# Execution Sequences
+sequences:
+  control_run:
+    description: "Run audit without graph access"
+    pre_conditions:
+      - "Target contract exists"
+      - "alphaswarm CLI installed"
+      - "No existing .vrs/ state from previous runs"
+
+    commands:
+      - step: 1
+        description: "Launch isolated shell"
+        command: "claude-code-controller launch zsh"
+        capture: "pane_id"
+        timeout: 10
+
+      - step: 2
+        description: "Navigate to project"
+        command: "claude-code-controller send 'cd {project_dir}' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 3
+        description: "Clean previous state"
+        command: "claude-code-controller send 'rm -rf .vrs/state .vrs/reports' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 4
+        description: "Launch Claude Code"
+        command: "claude-code-controller send 'claude' --pane={pane_id}"
+        wait: "idle --idle-time=15.0 --timeout=30"
+
+      - step: 5
+        description: "Execute control audit (no graph)"
+        command: "claude-code-controller send '/vrs-audit {contract} --no-graph' --pane={pane_id}"
+        wait: "idle --idle-time=30.0 --timeout=600"
+        notes: |
+          If --no-graph flag not implemented, use:
+          '/vrs-audit {contract} --settings .vrs/settings-no-graph.yaml'
+
+      - step: 6
+        description: "Capture transcript"
+        command: "claude-code-controller capture --pane={pane_id}"
+        output: ".vrs/testing/runs/ablation-control-{timestamp}/transcript.txt"
+
+      - step: 7
+        description: "Save report"
+        command: "claude-code-controller send 'cp .vrs/reports/latest.json .vrs/testing/runs/ablation-control-{timestamp}/report.json' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 8
+        description: "Exit Claude Code"
+        command: "claude-code-controller send '/exit' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+
+      - step: 9
+        description: "Cleanup session"
+        command: "claude-code-controller kill --pane={pane_id}"
+
+    post_conditions:
+      - "transcript.txt exists with >= 100 lines"
+      - "report.json exists and is valid JSON"
+      - "No graph query markers in transcript"
+
+    metrics_to_extract:
+      - name: "finding_count"
+        source: "report.json"
+        path: "$.findings | length"
+      - name: "evidence_depth"
+        source: "report.json"
+        path: "$.findings[*].evidence.graph_nodes | length"
+      - name: "duration_ms"
+        source: "report.json"
+        path: "$.metadata.duration_ms"
+
+  test_run:
+    description: "Run audit with full graph access"
+    pre_conditions:
+      - "Target contract exists"
+      - "alphaswarm CLI installed"
+      - "No existing .vrs/ state from previous runs"
+
+    commands:
+      - step: 1
+        description: "Launch isolated shell"
+        command: "claude-code-controller launch zsh"
+        capture: "pane_id"
+        timeout: 10
+
+      - step: 2
+        description: "Navigate to project"
+        command: "claude-code-controller send 'cd {project_dir}' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 3
+        description: "Clean previous state"
+        command: "claude-code-controller send 'rm -rf .vrs/state .vrs/reports' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 4
+        description: "Launch Claude Code"
+        command: "claude-code-controller send 'claude' --pane={pane_id}"
+        wait: "idle --idle-time=15.0 --timeout=30"
+
+      - step: 5
+        description: "Execute test audit (with graph)"
+        command: "claude-code-controller send '/vrs-audit {contract}' --pane={pane_id}"
+        wait: "idle --idle-time=30.0 --timeout=600"
+
+      - step: 6
+        description: "Capture transcript"
+        command: "claude-code-controller capture --pane={pane_id}"
+        output: ".vrs/testing/runs/ablation-test-{timestamp}/transcript.txt"
+
+      - step: 7
+        description: "Save report"
+        command: "claude-code-controller send 'cp .vrs/reports/latest.json .vrs/testing/runs/ablation-test-{timestamp}/report.json' --pane={pane_id}"
+        wait: "idle --idle-time=2.0"
+
+      - step: 8
+        description: "Exit Claude Code"
+        command: "claude-code-controller send '/exit' --pane={pane_id}"
+        wait: "idle --idle-time=5.0"
+
+      - step: 9
+        description: "Cleanup session"
+        command: "claude-code-controller kill --pane={pane_id}"
+
+    post_conditions:
+      - "transcript.txt exists with >= 150 lines"
+      - "report.json exists and is valid JSON"
+      - "[VQL_QUERY ...] markers present in transcript"
+      - "Graph node IDs present in findings"
+
+    metrics_to_extract:
+      - name: "finding_count"
+        source: "report.json"
+        path: "$.findings | length"
+      - name: "evidence_depth"
+        source: "report.json"
+        path: "$.findings[*].evidence.graph_nodes | length"
+      - name: "graph_queries"
+        source: "transcript.txt"
+        pattern: "\\[VQL_QUERY"
+        count: true
+      - name: "duration_ms"
+        source: "report.json"
+        path: "$.metadata.duration_ms"
+
+# Comparison Protocol
+comparison:
+  script: "scripts/compare_ablation_runs.py"
+
+  inputs:
+    - control: ".vrs/testing/runs/ablation-control-{timestamp}/"
+    - test: ".vrs/testing/runs/ablation-test-{timestamp}/"
+
+  computations:
+    finding_delta: "(test.finding_count - control.finding_count) / max(control.finding_count, 1)"
+    evidence_delta: "(test.evidence_depth - control.evidence_depth) / max(control.evidence_depth, 1)"
+    graph_usage: "test.graph_queries / max(test.finding_count, 1)"
+
+  output:
+    path: ".vrs/testing/runs/ablation-comparison-{timestamp}/results.json"
+    format: |
+      {
+        "control": { "findings": N, "evidence_depth": N },
+        "test": { "findings": N, "evidence_depth": N, "graph_queries": N },
+        "metrics": {
+          "finding_delta": N.NN,
+          "evidence_delta": N.NN,
+          "graph_usage": N.NN
+        },
+        "verdict": "L1|L2|L3|L4",
+        "recommendation": "..."
+      }
+
+# Evidence Requirements
+evidence:
+  required_files:
+    - "ablation-control-{timestamp}/transcript.txt"
+    - "ablation-control-{timestamp}/report.json"
+    - "ablation-test-{timestamp}/transcript.txt"
+    - "ablation-test-{timestamp}/report.json"
+    - "ablation-comparison-{timestamp}/results.json"
+
+  validation_checks:
+    - "Both runs used same contract"
+    - "Both runs completed successfully"
+    - "Transcript line counts meet minimums"
+    - "Duration within expected range"
+    - "Metrics are realistic (not perfect)"
+
+  anti_fabrication:
+    - "Transcripts have natural variance"
+    - "Timestamps are different"
+    - "Evidence depths vary per finding"

@@ -1,0 +1,13 @@
+id: auth-009
+vulndoc: access-control/general
+name: Bypassable Access Control
+description: Access control bypassable via callback or delegatecall surface.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: bypassable_access_control
+    op: eq
+    value: true

@@ -1,0 +1,22 @@
+# Selfdestruct in Implementation - Subcategory Index
+
+id: selfdestruct
+name: Selfdestruct in Implementation
+parent_category: upgrade
+
+description: |
+  Implementation contracts containing selfdestruct that can be called
+  directly, destroying the implementation and bricking all proxies.
+
+severity_range:
+  - critical
+  - critical
+
+patterns:
+  - upg-003
+
+relevant_properties:
+  - uses_selfdestruct
+  - is_implementation
+
+token_estimate: 400

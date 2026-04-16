@@ -1,0 +1,17 @@
+id: storage-collision
+vulndoc: upgrade/general
+name: Storage Layout Collision
+description: Upgradeable contracts with storage layout change risk.
+scope: Contract
+lens:
+- Upgradeability
+severity: critical
+match:
+  all:
+  - property: semgrep_like_rules
+    op: contains_any
+    value:
+    - proxy-storage-collision
+  - property: upgradeable_without_storage_gap
+    op: eq
+    value: true

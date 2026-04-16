@@ -1,0 +1,22 @@
+# Collateral Drain - Subcategory Index
+
+id: collateral-drain
+name: Collateral Drain
+parent_category: flash-loan
+
+description: |
+  Flash loan attacks that manipulate collateral valuations to drain
+  lending pools by inflating collateral value or deflating debt value.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - fl-001
+
+relevant_properties:
+  - reads_oracle_price
+  - has_staleness_check
+
+token_estimate: 400

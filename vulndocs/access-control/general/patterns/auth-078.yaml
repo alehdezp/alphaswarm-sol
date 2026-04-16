@@ -1,0 +1,40 @@
+id: auth-078
+vulndoc: access-control/general
+name: Multisig Execute Without Nonce
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `multisig-001-execution-without-nonce` instead.
+
+
+  Location: `patterns/semantic/multisig/multisig-001-execution-without-nonce.yaml`
+
+
+  The semantic pattern uses `executes_multisig_operation` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Multisig execution without nonce tracking.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: medium
+status: deprecated
+deprecated_in_favor_of: multisig-001-execution-without-nonce
+match:
+  all:
+  - property: contract_has_multisig
+    op: eq
+    value: true
+  - property: label
+    op: regex
+    value: (?i)execute|submit|confirm
+  - property: has_nonce_parameter
+    op: eq
+    value: false

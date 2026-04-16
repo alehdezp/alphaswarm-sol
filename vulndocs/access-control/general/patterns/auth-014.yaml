@@ -1,0 +1,16 @@
+id: auth-014
+vulndoc: access-control/general
+name: Missing Privilege Revocation
+description: Roles granted without revoke paths.
+scope: Contract
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: has_role_grant
+    op: eq
+    value: true
+  - property: has_role_revoke
+    op: eq
+    value: false

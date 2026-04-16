@@ -1,0 +1,15 @@
+id: logic-015
+vulndoc: logic/general
+name: Missing Boundary Checks
+description: Missing bounds checks on amount-like parameters.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 754
+match:
+  all:
+  - property: missing_amount_bounds
+    op: eq
+    value: true

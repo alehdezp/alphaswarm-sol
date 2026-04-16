@@ -1,0 +1,160 @@
+# Ground Truth: SmartBugs Reentrancy Suite
+#
+# Source: SmartBugs Curated Dataset (EXTERNAL ACADEMIC BENCHMARK)
+# URL: https://github.com/smartbugs/smartbugs-curated
+# Paper: "SmartBugs: A Framework to Analyze Solidity Smart Contracts"
+# arXiv: 1910.01601
+#
+# IMPORTANT: This ground truth comes from an EXTERNAL academic source, NOT from
+# our tool's output. SmartBugs provides labeled vulnerabilities confirmed by
+# security researchers.
+#
+# Dataset imported by: scripts/import_smartbugs.sh
+# Fixture prepared for: Phase 7.3 GA Validation
+
+source: smartbugs-curated
+source_url: https://github.com/smartbugs/smartbugs-curated
+paper: "SmartBugs: A Framework to Analyze Solidity Smart Contracts"
+arxiv: "1910.01601"
+category: reentrancy
+
+# Contracts with confirmed reentrancy vulnerabilities
+contracts:
+  - file: simple_dao.sol
+    vulnerabilities:
+      - id: SB-RE-001
+        type: reentrancy
+        function: withdraw
+        line: 12
+        severity: critical
+        description: "Classic reentrancy - external call before balance update"
+        pattern: "R:bal->X:out->W:bal"
+
+  - file: reentrancy_dao.sol
+    vulnerabilities:
+      - id: SB-RE-002
+        type: reentrancy
+        function: withdrawBalance
+        line: 15
+        severity: critical
+        description: "DAO-style reentrancy - state update after external call"
+        pattern: "R:bal->X:out->W:bal"
+
+  - file: reentrancy_simple.sol
+    vulnerabilities:
+      - id: SB-RE-003
+        type: reentrancy
+        function: withdrawFunds
+        line: 8
+        severity: critical
+        description: "Simple reentrancy - no CEI pattern"
+        pattern: "R:bal->X:out->W:bal"
+
+  - file: cross_contract.sol
+    vulnerabilities:
+      - id: SB-RE-004
+        type: cross-function-reentrancy
+        function: transfer
+        line: 20
+        severity: high
+        description: "Cross-function reentrancy - multiple function interaction"
+        pattern: "X:out->W:state (across functions)"
+
+  - file: etherstore.sol
+    vulnerabilities:
+      - id: SB-RE-005
+        type: reentrancy
+        function: withdrawFunds
+        line: 14
+        severity: critical
+        description: "EtherStore pattern - common vulnerable implementation"
+        pattern: "R:bal->X:out->W:bal"
+
+  - file: reentrance.sol
+    vulnerabilities:
+      - id: SB-RE-006
+        type: reentrancy
+        function: withdraw
+        line: 18
+        severity: critical
+        description: "Ethernaut Reentrance challenge pattern"
+        pattern: "R:bal->X:out->W:bal"
+
+  - file: spank_chain_payment.sol
+    vulnerabilities:
+      - id: SB-RE-007
+        type: reentrancy
+        function: closeChannel
+        line: 45
+        severity: critical
+        description: "Payment channel reentrancy - channel close vulnerable"
+        pattern: "R:state->X:out->W:state"
+
+  - file: modifier_reentrancy.sol
+    vulnerabilities:
+      - id: SB-RE-008
+        type: reentrancy
+        function: airDrop
+        line: 22
+        severity: high
+        description: "Modifier-based reentrancy - guard bypassed via modifier"
+        pattern: "modifier bypass->X:out->W:state"
+
+  - file: reentrancy_bonus.sol
+    vulnerabilities:
+      - id: SB-RE-009
+        type: reentrancy
+        function: getBonus
+        line: 10
+        severity: critical
+        description: "Bonus claim reentrancy - claim function vulnerable"
+        pattern: "R:bal->X:out->W:bal"
+
+  - file: reentrancy_insecure.sol
+    vulnerabilities:
+      - id: SB-RE-010
+        type: reentrancy
+        function: withdrawBalance
+        line: 11
+        severity: critical
+        description: "Insecure withdrawal - explicit insecure pattern"
+        pattern: "R:bal->X:out->W:bal"
+
+# Safe contracts (for false positive validation)
+# These contracts use proper patterns and should NOT be flagged
+safe_contracts:
+  - file: reentrancy_secure.sol
+    reason: "Uses CEI pattern (Checks-Effects-Interactions)"
+    expected_properties:
+      has_reentrancy_guard: false
+      follows_cei: true
+
+  - file: reentrancy_guarded.sol
+    reason: "Uses ReentrancyGuard modifier from OpenZeppelin"
+    expected_properties:
+      has_reentrancy_guard: true
+      follows_cei: true
+
+# Validation thresholds for this benchmark
+thresholds:
+  min_precision: 0.60
+  min_recall: 0.80
+  min_f1: 0.65
+  max_false_positives_on_safe: 0
+
+# Additional metadata
+total_vulnerabilities: 10
+total_safe_contracts: 2
+vulnerability_types:
+  - reentrancy
+  - cross-function-reentrancy
+severity_distribution:
+  critical: 8
+  high: 2
+
+# Reentrancy variants covered
+variants:
+  - classic: "External call before state update (The DAO pattern)"
+  - cross_function: "Reentrancy across multiple functions"
+  - modifier_bypass: "Reentrancy guard bypassed via modifier"
+  - payment_channel: "Payment channel close vulnerable"

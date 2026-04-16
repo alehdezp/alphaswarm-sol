@@ -1,0 +1,21 @@
+id: crypto-missing-deadline
+vulndoc: crypto/signature
+name: Missing Deadline Check in Permit Function
+description: |
+  Detects permit-like functions without deadline validation, enabling griefing and MEV attacks.
+  Without expiration checks, signatures remain valid indefinitely and can be executed at unfavorable times.
+  Real-world example: Uniswap Router requires deadline to prevent stale transaction execution.
+  Reference: EIP-2612 includes deadline parameter to protect users from market condition changes.
+  Impact: MEV bots can hold signatures and execute when most profitable for them, not the signer.
+scope: Function
+lens:
+  - Crypto
+severity: medium
+match:
+  all:
+    - property: is_permit_like
+      op: eq
+      value: true
+    - property: has_deadline_check
+      op: eq
+      value: false

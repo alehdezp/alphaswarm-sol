@@ -1,0 +1,44 @@
+id: policy-mismatch-mint-unrestricted
+vulndoc: access-control/policy
+name: Unrestricted Token Minting
+description: 'Function can mint tokens but lacks minter role check.
+
+  Token minting should be restricted to authorized minters.
+
+
+  Risk: Infinite token supply if anyone can mint, leading to
+
+  token value dilution and economic attack vectors.
+
+  '
+severity: critical
+scope: Function
+lens:
+- TokenSecurity
+- AccessControl
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    any:
+    - property: writes_supply_state
+      op: eq
+      value: true
+    - has_operation: MODIFIES_CRITICAL_STATE
+  tier_c:
+    all:
+    - type: has_label
+      value: value_handling.mints_tokens
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: access_control.minter_only
+    - type: has_label
+      value: access_control.role_based
+required_labels:
+- value_handling.mints_tokens

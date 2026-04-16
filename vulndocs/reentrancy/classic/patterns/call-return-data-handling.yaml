@@ -1,0 +1,23 @@
+id: call-return-data-handling
+vulndoc: reentrancy/classic
+name: Unsafe Call Return Data Handling
+description: Return data decoded without length checks or ABI decode guard.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  any:
+  - property: decodes_call_return
+    op: eq
+    value: true
+  - property: uses_abi_decode
+    op: eq
+    value: true
+  none:
+  - property: checks_returndata_length
+    op: eq
+    value: true
+  - property: has_abi_decode_guard
+    op: eq
+    value: true

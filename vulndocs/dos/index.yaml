@@ -1,0 +1,35 @@
+# dos Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: dos
+name: Dos
+description: 'Vulnerability subcategories for dos domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: block-gas-limit
+  name: Block Gas Limit DoS
+  path: block-gas-limit/
+- id: circuit-breaker
+  name: Circuit Breaker
+  path: circuit-breaker/
+- id: external-revert
+  name: External Revert DoS
+  path: external-revert/
+- id: general
+  name: General
+  path: general/
+- id: strict-equality
+  name: Strict Equality DoS
+  path: strict-equality/
+- id: unbounded
+  name: Unbounded
+  path: unbounded/
+- id: unbounded-loop
+  name: Unbounded Loop DoS
+  path: unbounded-loop/
+statistics:
+  subcategory_count: 7
+  last_updated: '2026-02-18'

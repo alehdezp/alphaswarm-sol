@@ -1,0 +1,87 @@
+{
+  "finding_id": "reentrancy-vault-001",
+  "vulnerability_type": "reentrancy-classic",
+  "severity": "HIGH",
+  "confidence": 0.90,
+  "attack_scenario": {
+    "title": "Reentrancy attack on withdraw function",
+    "description": "Attacker can recursively call withdraw before balance update to drain contract",
+    "preconditions": [
+      "Attacker has non-zero balance in contract",
+      "Attacker controls receiver contract with callback"
+    ],
+    "attack_steps": [
+      {
+        "step": 1,
+        "action": "Deploy malicious contract with fallback function",
+        "code_location": "Attack.sol:L15-L20"
+      },
+      {
+        "step": 2,
+        "action": "Call withdraw targeting malicious contract",
+        "code_location": "Vault.sol:L42"
+      },
+      {
+        "step": 3,
+        "action": "Fallback function triggers recursive withdraw call",
+        "code_location": "Attack.sol:L18"
+      },
+      {
+        "step": 4,
+        "action": "Repeat until contract drained or gas exhausted",
+        "code_location": "Vault.sol:L42-L43"
+      }
+    ],
+    "impact": "Complete loss of contract funds",
+    "poc_sketch": "contract Attack { receive() external payable { if (address(vault).balance > 0) vault.withdraw(); } }"
+  },
+  "evidence": [
+    {
+      "type": "semantic_operation",
+      "description": "External value transfer before state update",
+      "graph_node_id": "Vault.withdraw",
+      "code_location": "Vault.sol:L42",
+      "confidence": 0.95,
+      "property": "TRANSFERS_VALUE_OUT",
+      "value": true
+    },
+    {
+      "type": "operation_sequence",
+      "description": "CEI violation: R:bal→X:out→W:bal",
+      "graph_node_id": "Vault.withdraw",
+      "confidence": 0.90,
+      "property": "behavioral_signature",
+      "value": "READ_BALANCE,EXTERNAL_CALL,WRITE_BALANCE"
+    },
+    {
+      "type": "missing_guard",
+      "description": "No reentrancy protection on payable function",
+      "graph_node_id": "Vault.withdraw",
+      "code_location": "Vault.sol:L38",
+      "confidence": 0.85,
+      "property": "has_reentrancy_guard",
+      "value": false
+    }
+  ],
+  "graph_queries": [
+    {
+      "query": "FIND functions WHERE visibility IN [public, external] AND TRANSFERS_VALUE_OUT = true",
+      "rationale": "Locate all value transfer functions",
+      "results": ["Vault.withdraw", "Vault.emergencyWithdraw", "Vault.deposit"]
+    },
+    {
+      "query": "FIND functions WHERE operation_sequence CONTAINS [TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE]",
+      "rationale": "Find CEI violations",
+      "results": ["Vault.withdraw"]
+    }
+  ],
+  "assumptions": [
+    "Contract balance exceeds attacker's initial deposit",
+    "Gas limit allows multiple recursive calls",
+    "No external reentrancy guard in protocol"
+  ],
+  "limitations": [
+    "Cannot verify external contract behavior without full source",
+    "Actual gas cost may vary with state size"
+  ]
+}

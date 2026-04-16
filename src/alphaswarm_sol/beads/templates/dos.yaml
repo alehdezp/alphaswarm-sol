@@ -1,0 +1,78 @@
+# DoS Investigation Template
+vulnerability_class: dos
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify loop or iteration"
+    look_for: |
+      - for loops
+      - while loops
+      - Array iterations
+      - Mapping iterations (via auxiliary array)
+    evidence_needed: "Loop code and iteration count source"
+
+  - step_number: 2
+    action: "Check if loop bound is controlled"
+    look_for: |
+      - Is array length user-controlled?
+      - Is there a max iteration limit?
+      - Can users grow the array unboundedly?
+    evidence_needed: "Array growth mechanism and limits"
+    red_flag: "Users can grow array without limit"
+    safe_if: "Hardcoded max or admin-only array growth"
+
+  - step_number: 3
+    action: "Check for external calls in loop"
+    look_for: |
+      - .transfer() in loop
+      - .call() in loop
+      - External contract calls in loop
+    evidence_needed: "External call code within loop"
+    red_flag: "External call to user-provided addresses in loop"
+
+  - step_number: 4
+    action: "Check for gas griefing potential"
+    look_for: |
+      - Can one user block others?
+      - Is there fallback to handle failures?
+      - Are failures isolated?
+    evidence_needed: "Failure handling analysis"
+    red_flag: "Single revert blocks entire operation"
+    safe_if: "Try/catch or pull pattern isolates failures"
+
+  - step_number: 5
+    action: "Assess DoS impact"
+    look_for: |
+      - What functionality is blocked?
+      - How long would DoS last?
+      - Can it be recovered from?
+    evidence_needed: "Impact and recovery analysis"
+
+questions_to_answer:
+  - "Is there a loop in this function?"
+  - "What controls the number of iterations?"
+  - "Can an attacker make the loop very large?"
+  - "Are there external calls inside the loop?"
+  - "Can the function be made to revert permanently?"
+
+common_false_positives:
+  - "Array length is bounded by protocol design"
+  - "Only admin can add to array"
+  - "Loop has explicit max iterations"
+  - "External calls are to trusted contracts"
+  - "Function has explicit gas limit"
+
+key_indicators:
+  - "User-controlled array length"
+  - "No maximum iteration limit"
+  - "External calls in loop to untrusted addresses"
+  - "Revert on any iteration fails entire transaction"
+
+safe_patterns:
+  - "Bounded arrays with explicit max"
+  - "Pagination for large data sets"
+  - "Pull pattern instead of push"
+  - "Try/catch around external calls"
+  - "Gas limit per iteration"

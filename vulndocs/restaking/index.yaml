@@ -1,0 +1,27 @@
+# restaking Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: restaking
+name: Restaking
+description: |
+  Vulnerability subcategories for restaking domain.
+  See individual subcategories for detection patterns and documentation.
+
+subcategories:
+  - id: allocation-delay
+    name: Allocation Delay Exploitation
+    path: allocation-delay/
+  - id: avs-security
+    path: avs-security/
+  - id: eigenlayer-risks
+    path: eigenlayer-risks/
+  - id: operator-collusion
+    path: operator-collusion/
+  - id: slashing-exploits
+    path: slashing-exploits/
+  - id: withdrawal-delay
+    path: withdrawal-delay/
+
+statistics:
+  subcategory_count: 6
+  last_updated: "2026-01-23"

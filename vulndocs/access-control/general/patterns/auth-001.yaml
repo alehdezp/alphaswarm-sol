@@ -1,0 +1,33 @@
+id: auth-001
+vulndoc: access-control/general
+name: Unprotected State Writer
+description: Public/external state changes without access control.
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false
+  - property: has_access_modifier
+    op: eq
+    value: false
+  - property: has_require_msg_sender
+    op: eq
+    value: false
+  - property: has_only_owner
+    op: eq
+    value: false
+  - property: has_only_role
+    op: eq
+    value: false

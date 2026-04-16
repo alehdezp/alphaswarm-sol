@@ -1,0 +1,30 @@
+# L2 Transaction Sequencing - Subcategory Index
+# Tier 10 Finding: Arbitrum/L2 Security
+
+id: sequencing
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: L2 Transaction Sequencing Issues
+category: logic
+severity: high
+emerging: true
+protocols: ["arbitrum", "optimism", "l2"]
+
+description: |
+  Retryable transactions on L2s can execute out of order causing state
+  inconsistencies. Sequential operations may fail or produce wrong results.
+
+operations:
+  - RETRIES_EXECUTION
+  - MODIFIES_STATE
+  - READS_STATE
+
+behavioral_signature: "SUBMIT_TX -> RETRY(out_of_order) -> STATE_INCONSISTENCY"
+
+related_cwes:
+  - CWE-362  # Concurrent Execution Using Shared Resource
+  - CWE-662  # Improper Synchronization
+
+pattern_ids:
+  - l2-001

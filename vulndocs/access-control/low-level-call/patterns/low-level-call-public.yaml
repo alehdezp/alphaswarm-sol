@@ -1,0 +1,23 @@
+id: low-level-call-public
+vulndoc: access-control/low-level-call
+name: Public Low-Level Call Usage
+description: Public or external functions that use call/staticcall.
+scope: Function
+lens:
+  - ExternalInfluence
+severity: medium
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: uses_call
+      op: eq
+      value: true
+  none:
+    - property: has_access_gate
+      op: eq
+      value: true
+    - property: is_constructor
+      op: eq
+      value: true

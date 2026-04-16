@@ -1,0 +1,755 @@
+# Recovery-Path User Journey Definitions
+# Phase: 07.3.4 - User Journey Validation
+#
+# Encodes recovery workflows for resilience testing:
+# - stop/resume: Interrupt audit after graph build, resume from snapshot
+# - pivot: Switch from one vulnerability class to another mid-audit
+# - debug: Request debug mode and inspect evidence artifacts
+#
+# All journeys leverage worktree snapshots per 07.3.1.5-WORKTREE-SNAPSHOT-MATRIX.md
+# and produce evidence packs for validation.
+
+version: "1.0.0"
+updated: "2026-01-31"
+
+# ============================================================================
+# Recovery Journey Definitions
+# ============================================================================
+
+journeys:
+  # --------------------------------------------------------------------------
+  # Stop/Resume Journey: Interrupt after graph, resume from snapshot
+  # --------------------------------------------------------------------------
+  stop_resume_workflow:
+    id: stop_resume_workflow
+    name: "Stop and Resume Workflow"
+    description: |
+      Test the ability to stop an audit in progress after the knowledge graph
+      is built, save state via worktree snapshot, and resume later from that
+      snapshot without losing work.
+
+      This validates:
+      1. Graceful stop signal handling
+      2. Snapshot creation at post-graph stage
+      3. State persistence across sessions
+      4. Resume from snapshot integrity
+
+    persona: intermediate
+    category: recovery
+
+    # This journey tests snapshot/resume functionality
+    config:
+      snapshot_required: true
+      resume_from_stage: post-graph
+      requires_slither: true
+      requires_claude_code: true
+
+    # Pre-conditions for the journey
+    preconditions:
+      - check: "fresh_workspace"
+        description: "Clean /tmp/fresh-user-test/recovery-{timestamp}/ workspace"
+      - check: "alphaswarm_installed"
+        description: "alphaswarm available in PATH"
+      - check: "session_ready"
+        description: "Testing session ready with isolated environment"
+      - check: "contracts_available"
+        description: "Test contracts in workspace"
+
+    # Journey stages with expected outputs
+    stages:
+      - stage: start_audit
+        name: "Start Audit (to graph build)"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: SR1
+            action: "Start Claude Code in project directory"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "Claude Code session started"
+
+          - step_id: SR2
+            action: "Run '/vrs-audit contracts/' and wait for graph build"
+            expected_output:
+              contains: ["Building Knowledge Graph", "graph", "complete"]
+            success_indicator: "Graph build phase completes"
+
+        evidence_artifacts:
+          - name: "start_transcript"
+            path: "evidence/stages/start_audit/transcript.txt"
+          - name: "graph_artifact"
+            path: "evidence/stages/start_audit/graph.toon"
+
+      - stage: stop_signal
+        name: "Graceful Stop"
+        duration_limit_seconds: 30
+
+        steps:
+          - step_id: SR3
+            action: "Send interrupt signal (Ctrl+C or /stop)"
+            expected_output:
+              contains: ["stopping", "saving state", "snapshot"]
+            success_indicator: "Graceful shutdown message received"
+
+          - step_id: SR4
+            action: "Verify snapshot created"
+            expected_output:
+              file_exists: ".vrs/snapshots/post-graph.tar.gz"
+            success_indicator: "Snapshot file exists"
+
+        evidence_artifacts:
+          - name: "stop_transcript"
+            path: "evidence/stages/stop_signal/transcript.txt"
+          - name: "snapshot_manifest"
+            path: "evidence/stages/stop_signal/manifest.yaml"
+
+      - stage: session_end
+        name: "Session End"
+        duration_limit_seconds: 10
+
+        steps:
+          - step_id: SR5
+            action: "Exit Claude Code session"
+            expected_output:
+              description: "Session cleanly exited"
+            success_indicator: "No crash or error on exit"
+
+        evidence_artifacts:
+          - name: "session_end_transcript"
+            path: "evidence/stages/session_end/transcript.txt"
+
+      - stage: resume_session
+        name: "Resume from Snapshot"
+        duration_limit_seconds: 60
+
+        steps:
+          - step_id: SR6
+            action: "Start new Claude Code session"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "New session started"
+
+          - step_id: SR7
+            action: "Run '/vrs-audit --resume' or '/vrs-audit contracts/ --resume'"
+            expected_output:
+              contains: ["resume", "snapshot", "post-graph", "continuing"]
+            success_indicator: "Resume detected and snapshot loaded"
+
+        evidence_artifacts:
+          - name: "resume_transcript"
+            path: "evidence/stages/resume_session/transcript.txt"
+
+      - stage: verify_continuity
+        name: "Verify State Continuity"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: SR8
+            action: "Audit continues from post-graph stage"
+            expected_output:
+              contains: ["Pattern Matching", "Agent Investigation", "debate"]
+              not_contains: ["Building Knowledge Graph"]  # Should NOT rebuild
+            success_indicator: "Graph not rebuilt - resumed correctly"
+
+          - step_id: SR9
+            action: "Audit completes with report"
+            expected_output:
+              file_exists: ".vrs/reports/audit-report.md"
+            success_indicator: "Final report generated"
+
+        evidence_artifacts:
+          - name: "continuity_transcript"
+            path: "evidence/stages/verify_continuity/transcript.txt"
+          - name: "final_report"
+            path: "evidence/artifacts/audit-report.md"
+
+    # Expected outcomes for validation
+    expected_outcomes:
+      snapshot:
+        created: true
+        stage: "post-graph"
+        integrity_verified: true
+      resume:
+        detected_snapshot: true
+        skipped_stages: ["pre-graph", "post-graph"]
+        continued_from: "post-context"
+      report:
+        exists: true
+        findings_present: true
+      friction_points:
+        max_blockers: 0
+        max_confusions: 1
+
+    # Evidence pack specification
+    evidence_pack:
+      required:
+        - "evidence/transcript.txt"
+        - "evidence/timing.json"
+        - "evidence/outcome.json"
+        - "evidence/stages/stop_signal/manifest.yaml"
+      optional:
+        - "evidence/artifacts/"
+        - ".vrs/snapshots/"
+
+  # --------------------------------------------------------------------------
+  # Pivot Journey: Switch vulnerability class mid-audit
+  # --------------------------------------------------------------------------
+  pivot_vulnerability_class:
+    id: pivot_vulnerability_class
+    name: "Pivot Vulnerability Class"
+    description: |
+      Test the ability to pivot from investigating one vulnerability class
+      (e.g., reentrancy) to another (e.g., access control) mid-audit without
+      restarting the entire workflow.
+
+      This validates:
+      1. Partial results are preserved
+      2. Investigation state can be redirected
+      3. Multiple vulnerability types in single session
+      4. Final report aggregates both investigations
+
+    persona: power_user
+    category: recovery
+
+    config:
+      pivot_required: true
+      initial_focus: "reentrancy"
+      pivot_focus: "access-control"
+      requires_slither: true
+      requires_claude_code: true
+
+    preconditions:
+      - check: "fresh_workspace"
+        description: "Clean workspace"
+      - check: "alphaswarm_installed"
+        description: "alphaswarm available"
+      - check: "multi_vuln_contracts"
+        description: "Contracts with multiple vulnerability types"
+      - check: "session_ready"
+        description: "Testing session ready"
+
+    stages:
+      - stage: initial_investigation
+        name: "Initial Investigation (Reentrancy Focus)"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: PV1
+            action: "Start Claude Code"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "Session started"
+
+          - step_id: PV2
+            action: "Run '/vrs-investigate contracts/ --focus reentrancy'"
+            expected_output:
+              contains: ["reentrancy", "investigation", "specialist"]
+            success_indicator: "Reentrancy investigation started"
+
+          - step_id: PV3
+            action: "Wait for initial findings"
+            expected_output:
+              contains: ["finding", "reentrancy"]
+            success_indicator: "At least one reentrancy finding"
+
+        evidence_artifacts:
+          - name: "initial_transcript"
+            path: "evidence/stages/initial_investigation/transcript.txt"
+          - name: "reentrancy_findings"
+            path: "evidence/stages/initial_investigation/findings.json"
+
+      - stage: pivot_request
+        name: "Pivot Request"
+        duration_limit_seconds: 60
+
+        steps:
+          - step_id: PV4
+            action: "Request pivot: 'Now check access control instead'"
+            expected_output:
+              contains: ["pivot", "access control", "switching", "preserving"]
+            success_indicator: "Pivot acknowledged"
+
+          - step_id: PV5
+            action: "Verify previous findings preserved"
+            expected_output:
+              description: "Reentrancy findings not discarded"
+            success_indicator: "Previous findings retained in memory"
+
+        evidence_artifacts:
+          - name: "pivot_transcript"
+            path: "evidence/stages/pivot_request/transcript.txt"
+
+      - stage: pivoted_investigation
+        name: "Pivoted Investigation (Access Control Focus)"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: PV6
+            action: "Access control investigation runs"
+            expected_output:
+              contains: ["access", "control", "investigation", "specialist"]
+            success_indicator: "Access control specialist engaged"
+
+          - step_id: PV7
+            action: "Wait for access control findings"
+            expected_output:
+              contains: ["finding", "access"]
+            success_indicator: "At least one access control finding"
+
+        evidence_artifacts:
+          - name: "pivoted_transcript"
+            path: "evidence/stages/pivoted_investigation/transcript.txt"
+          - name: "access_findings"
+            path: "evidence/stages/pivoted_investigation/findings.json"
+
+      - stage: aggregated_report
+        name: "Aggregated Report"
+        duration_limit_seconds: 120
+
+        steps:
+          - step_id: PV8
+            action: "Request final report"
+            expected_output:
+              contains: ["generating report", "aggregating"]
+            success_indicator: "Report generation started"
+
+          - step_id: PV9
+            action: "Verify report includes both vulnerability types"
+            expected_output:
+              file_contains:
+                path: ".vrs/reports/audit-report.md"
+                patterns: ["reentrancy", "access control"]
+            success_indicator: "Report aggregates both investigation types"
+
+        evidence_artifacts:
+          - name: "report_transcript"
+            path: "evidence/stages/aggregated_report/transcript.txt"
+          - name: "final_report"
+            path: "evidence/artifacts/audit-report.md"
+
+    expected_outcomes:
+      findings:
+        minimum: 2
+        expected_categories: ["reentrancy", "access-control"]
+      pivot:
+        successful: true
+        previous_findings_preserved: true
+      report:
+        exists: true
+        includes_all_categories: true
+      friction_points:
+        max_blockers: 0
+        max_confusions: 1
+
+    evidence_pack:
+      required:
+        - "evidence/transcript.txt"
+        - "evidence/timing.json"
+        - "evidence/outcome.json"
+        - "evidence/stages/initial_investigation/findings.json"
+        - "evidence/stages/pivoted_investigation/findings.json"
+      optional:
+        - "evidence/artifacts/"
+
+  # --------------------------------------------------------------------------
+  # Debug Journey: Request debug mode and inspect evidence
+  # --------------------------------------------------------------------------
+  debug_mode_inspection:
+    id: debug_mode_inspection
+    name: "Debug Mode Inspection"
+    description: |
+      Test the ability to request debug mode mid-audit to inspect:
+      - Knowledge graph structure
+      - Pattern match evidence
+      - Agent reasoning chains
+      - Intermediate artifacts
+
+      This validates:
+      1. Debug mode is accessible and documented
+      2. Evidence artifacts are inspectable
+      3. Reasoning chains are transparent
+      4. User can verify agent decisions
+
+    persona: power_user
+    category: recovery
+
+    config:
+      debug_mode: true
+      verbose_output: true
+      requires_slither: true
+      requires_claude_code: true
+
+    preconditions:
+      - check: "fresh_workspace"
+        description: "Clean workspace"
+      - check: "alphaswarm_installed"
+        description: "alphaswarm available"
+      - check: "session_ready"
+        description: "Testing session ready"
+      - check: "contracts_available"
+        description: "Test contracts"
+
+    stages:
+      - stage: start_verbose_audit
+        name: "Start Audit with Verbose Output"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: DM1
+            action: "Start Claude Code"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "Session started"
+
+          - step_id: DM2
+            action: "Run '/vrs-audit contracts/ --verbose' or '/vrs-audit contracts/ -v'"
+            expected_output:
+              contains: ["audit", "verbose", "debug"]
+            success_indicator: "Verbose mode enabled"
+
+          - step_id: DM3
+            action: "Observe intermediate outputs"
+            expected_output:
+              contains: ["graph stats", "patterns matched", "agent:"]
+            success_indicator: "Intermediate outputs visible"
+
+        evidence_artifacts:
+          - name: "verbose_transcript"
+            path: "evidence/stages/start_verbose_audit/transcript.txt"
+
+      - stage: debug_request
+        name: "Request Debug Inspection"
+        duration_limit_seconds: 60
+
+        steps:
+          - step_id: DM4
+            action: "Request debug mode: 'Show me the graph for function X'"
+            expected_output:
+              contains: ["graph", "function", "properties", "operations"]
+            success_indicator: "Graph node details shown"
+
+          - step_id: DM5
+            action: "Request pattern evidence: 'Why did pattern P match?'"
+            expected_output:
+              contains: ["pattern", "matched because", "evidence", "code location"]
+            success_indicator: "Pattern match reasoning explained"
+
+        evidence_artifacts:
+          - name: "debug_transcript"
+            path: "evidence/stages/debug_request/transcript.txt"
+          - name: "graph_inspection"
+            path: "evidence/stages/debug_request/graph_node.json"
+
+      - stage: evidence_inspection
+        name: "Inspect Evidence Artifacts"
+        duration_limit_seconds: 120
+
+        steps:
+          - step_id: DM6
+            action: "Request: 'Show agent reasoning chain for finding F'"
+            expected_output:
+              contains: ["attacker", "defender", "verifier", "reasoning", "evidence"]
+            success_indicator: "Agent reasoning chain visible"
+
+          - step_id: DM7
+            action: "Verify evidence pack structure"
+            expected_output:
+              file_exists: ".vrs/debug/"
+            success_indicator: "Debug artifacts directory exists"
+
+          - step_id: DM8
+            action: "List evidence artifacts"
+            expected_output:
+              description: "Graph, patterns, agent outputs visible"
+            success_indicator: "Evidence artifacts accessible"
+
+        evidence_artifacts:
+          - name: "evidence_transcript"
+            path: "evidence/stages/evidence_inspection/transcript.txt"
+          - name: "reasoning_chain"
+            path: "evidence/stages/evidence_inspection/reasoning.json"
+
+      - stage: actionable_guidance
+        name: "Verify Actionable Guidance"
+        duration_limit_seconds: 60
+
+        steps:
+          - step_id: DM9
+            action: "Ask: 'How do I fix finding F?'"
+            expected_output:
+              contains: ["recommendation", "fix", "code example", "mitigation"]
+            success_indicator: "Actionable fix guidance provided"
+
+          - step_id: DM10
+            action: "Verify guidance references evidence"
+            expected_output:
+              description: "Fix guidance cites specific code locations"
+            success_indicator: "Guidance is evidence-backed"
+
+        evidence_artifacts:
+          - name: "guidance_transcript"
+            path: "evidence/stages/actionable_guidance/transcript.txt"
+
+    expected_outcomes:
+      debug:
+        mode_accessible: true
+        graph_inspectable: true
+        patterns_explainable: true
+        reasoning_visible: true
+      guidance:
+        fix_suggestions_present: true
+        evidence_linked: true
+      friction_points:
+        max_blockers: 0
+        max_confusions: 0  # Debug mode must be clear for power users
+
+    evidence_pack:
+      required:
+        - "evidence/transcript.txt"
+        - "evidence/timing.json"
+        - "evidence/outcome.json"
+        - "evidence/stages/debug_request/graph_node.json"
+      optional:
+        - "evidence/artifacts/"
+        - ".vrs/debug/"
+
+# ============================================================================
+# Failure Scenario Definitions
+# ============================================================================
+
+failure_scenarios:
+  # --------------------------------------------------------------------------
+  # Network Failure: Exa MCP unavailable
+  # --------------------------------------------------------------------------
+  network_failure_recovery:
+    id: network_failure_recovery
+    name: "Network Failure Recovery"
+    description: |
+      Test graceful degradation when network services (Exa MCP) are unavailable.
+      The audit should continue with reduced context but not crash.
+
+    category: failure_injection
+    injection_type: network
+
+    inject_at_stage: post-graph
+    inject_condition: "Block outbound HTTPS during context phase"
+
+    expected_behavior:
+      - "Warning message about reduced context"
+      - "Audit continues without Exa context"
+      - "Report notes limitation"
+      - "No crash or unhandled exception"
+
+    recovery_guidance:
+      - "Check network connectivity"
+      - "Verify Exa API key if applicable"
+      - "Retry with --offline flag for fully local operation"
+
+    evidence_artifacts:
+      - "evidence/failure/network_error.log"
+      - "evidence/failure/degraded_report.md"
+
+  # --------------------------------------------------------------------------
+  # Slither Failure: Parser error on malformed contract
+  # --------------------------------------------------------------------------
+  slither_failure_recovery:
+    id: slither_failure_recovery
+    name: "Slither Failure Recovery"
+    description: |
+      Test recovery when Slither fails to parse a contract (syntax error,
+      unsupported Solidity version, etc.).
+
+    category: failure_injection
+    injection_type: tool_failure
+
+    inject_at_stage: pre-graph
+    inject_condition: "Provide malformed Solidity contract"
+
+    expected_behavior:
+      - "Clear error message about parse failure"
+      - "Identify which contract failed"
+      - "Suggest fix (check syntax, Solidity version)"
+      - "Offer to continue with other contracts"
+
+    recovery_guidance:
+      - "Check Solidity version compatibility"
+      - "Validate contract syntax with solc"
+      - "Exclude problematic contract from audit scope"
+
+    evidence_artifacts:
+      - "evidence/failure/slither_error.log"
+      - "evidence/failure/suggested_fixes.txt"
+
+  # --------------------------------------------------------------------------
+  # Agent Timeout: Specialist takes too long
+  # --------------------------------------------------------------------------
+  agent_timeout_recovery:
+    id: agent_timeout_recovery
+    name: "Agent Timeout Recovery"
+    description: |
+      Test recovery when a specialist agent times out during investigation.
+
+    category: failure_injection
+    injection_type: timeout
+
+    inject_at_stage: post-agents
+    inject_condition: "Simulate agent timeout after 60s"
+
+    expected_behavior:
+      - "Timeout warning with agent name"
+      - "Partial results preserved"
+      - "Option to retry or skip agent"
+      - "Audit can continue with other agents"
+
+    recovery_guidance:
+      - "Retry agent with increased timeout"
+      - "Skip agent and continue with partial results"
+      - "Check for complex contract causing slow analysis"
+
+    evidence_artifacts:
+      - "evidence/failure/timeout.log"
+      - "evidence/failure/partial_results.json"
+
+# ============================================================================
+# Execution Configuration
+# ============================================================================
+
+execution:
+  # Recovery-specific settings
+  recovery:
+    # Snapshot stages per WORKTREE-SNAPSHOT-MATRIX.md
+    snapshot_stages:
+      - pre-graph
+      - post-graph
+      - post-context
+      - post-patterns
+      - post-agents
+      - post-debate
+      - post-report
+
+    # Resume detection
+    resume_detection:
+      check_for_snapshots: true
+      snapshot_location: ".vrs/snapshots/"
+      manifest_file: ".vrs/snapshots/manifest.yaml"
+
+  # Evidence collection settings
+  evidence:
+    capture_transcript: true
+    capture_timing: true
+    capture_artifacts: true
+    capture_debug_output: true  # Extra for debug journey
+    retention_hours: 48
+
+  # Gate enforcement
+  gates:
+    # G0: Preflight checks
+    g0_preflight:
+      required: true
+      checks:
+        - "workspace_clean"
+        - "dependencies_available"
+
+    # G1: Evidence quality gates
+    g1_evidence:
+      required: true
+      checks:
+        - "transcript_exists"
+        - "timing_valid"
+        - "no_mock_indicators"
+
+    # G2: Outcome gates
+    g2_outcomes:
+      required: true
+      checks:
+        - "journey_completed_or_graceful_failure"
+        - "recovery_artifacts_present"
+        - "actionable_guidance_present"
+
+# ============================================================================
+# Evidence Pack Template (Recovery-Specific)
+# ============================================================================
+
+evidence_pack_template:
+  structure:
+    - "evidence/"
+    - "evidence/transcript.txt"
+    - "evidence/timing.json"
+    - "evidence/outcome.json"
+    - "evidence/stages/"
+    - "evidence/stages/{stage}/transcript.txt"
+    - "evidence/stages/{stage}/timing.json"
+    - "evidence/artifacts/"
+    - "evidence/failure/"  # For failure scenarios
+    - "evidence/recovery/"  # For recovery actions
+
+  outcome_format:
+    journey_id: "string"
+    persona: "string"
+    category: "recovery | failure_injection"
+    status: "pass | fail | partial | recovered"
+    started_at: "ISO8601"
+    completed_at: "ISO8601"
+    total_duration_seconds: "number"
+    stages_passed: "number"
+    stages_failed: "number"
+    recovery_actions:
+      - action: "string"
+        triggered_at: "ISO8601"
+        success: "boolean"
+    friction_points: "array"
+    findings_count: "number"
+    report_path: "string"
+
+# ============================================================================
+# Validation Rules
+# ============================================================================
+
+validation:
+  # Required for all recovery journeys
+  required_artifacts:
+    - "evidence/transcript.txt"
+    - "evidence/timing.json"
+    - "evidence/outcome.json"
+
+  # Recovery-specific validation
+  recovery:
+    # Stop/Resume must produce snapshot
+    stop_resume:
+      must_create_snapshot: true
+      snapshot_must_restore: true
+      no_work_loss: true
+
+    # Pivot must preserve findings
+    pivot:
+      previous_findings_preserved: true
+      aggregated_report: true
+
+    # Debug must expose internals
+    debug:
+      graph_accessible: true
+      reasoning_visible: true
+      guidance_actionable: true
+
+  # Transcript validation
+  transcript:
+    must_not_contain:
+      - "MOCK"
+      - "SIMULATED"
+      - "SKIP"
+      - "DRY_RUN"
+    must_contain:
+      - "SESSION_START"
+      - "SESSION_END"
+
+  # Timing validation
+  timing:
+    duration_must_be_positive: true
+    no_zero_durations: true
+
+  # Outcome validation
+  outcome:
+    valid_statuses: ["pass", "fail", "partial", "recovered"]
+    # Blockers allowed in failure scenarios, not in recovery journeys
+    blockers_allowed_in_failure_scenarios: true
+    blockers_forbidden_in_recovery_journeys: true

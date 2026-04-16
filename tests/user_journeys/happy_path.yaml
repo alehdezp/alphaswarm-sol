@@ -1,0 +1,518 @@
+# Happy-Path User Journey Definitions
+# Phase: 07.3.4 - User Journey Validation
+#
+# Encodes the happy-path workflows for each persona:
+# - novice: install + /vrs-audit with minimal config
+# - intermediate: quick install + immediate audit + fix cycle
+# - power_user: benchmark-style audit against known vulnerabilities
+#
+# All journeys must run end-to-end from install to report generation.
+
+version: "1.0.0"
+updated: "2026-01-31"
+
+# ============================================================================
+# Journey Definitions
+# ============================================================================
+
+journeys:
+  # --------------------------------------------------------------------------
+  # Novice Happy Path: First-time user from install to audit report
+  # --------------------------------------------------------------------------
+  novice_happy_path:
+    id: novice_happy_path
+    name: "Novice User Happy Path"
+    description: |
+      A first-time user discovers AlphaSwarm, installs it, and runs their
+      first successful audit on a sample contract.
+
+    persona: novice
+
+    # Minimal config - user only needs CLI and contracts
+    config:
+      minimal: true
+      requires_slither: true  # Auto-installed if missing
+      requires_claude_code: true
+
+    # Pre-conditions for the journey
+    preconditions:
+      - check: "fresh_workspace"
+        description: "Clean /tmp/fresh-user-test/{persona}-{timestamp}/ workspace"
+      - check: "no_alphaswarm"
+        description: "alphaswarm not pre-installed"
+      - check: "uv_available"
+        description: "uv package manager accessible"
+      - check: "session_ready"
+        description: "Testing session ready with isolated environment"
+
+    # Journey stages with expected outputs
+    stages:
+      - stage: install
+        name: "Install AlphaSwarm"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: N1
+            action: "Run 'uv tool install alphaswarm-sol'"
+            expected_output:
+              contains: ["Installed", "alphaswarm"]
+              not_contains: ["error", "Error", "failed"]
+            success_indicator: "alphaswarm binary in PATH"
+
+          - step_id: N2
+            action: "Run 'alphaswarm --version'"
+            expected_output:
+              pattern: "alphaswarm-sol \\d+\\.\\d+\\.\\d+"
+            success_indicator: "Version string returned"
+
+        evidence_artifacts:
+          - name: "install_transcript"
+            path: "evidence/stages/install/transcript.txt"
+          - name: "install_timing"
+            path: "evidence/stages/install/timing.json"
+
+      - stage: verify
+        name: "Verify Installation"
+        duration_limit_seconds: 30
+
+        steps:
+          - step_id: N3
+            action: "Run 'alphaswarm --help'"
+            expected_output:
+              contains: ["build-kg", "query", "audit"]
+            success_indicator: "Help shows main commands"
+
+          - step_id: N4
+            action: "Run 'alphaswarm tools status'"
+            expected_output:
+              contains: ["slither"]
+            success_indicator: "Tool status shows available tools"
+
+        evidence_artifacts:
+          - name: "verify_transcript"
+            path: "evidence/stages/verify/transcript.txt"
+
+      - stage: audit
+        name: "Run First Audit"
+        duration_limit_seconds: 600
+
+        steps:
+          - step_id: N5
+            action: "Start Claude Code in project directory"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "Claude Code session started"
+
+          - step_id: N6
+            action: "Run '/vrs-audit contracts/'"
+            expected_output:
+              contains: ["audit", "report"]
+              not_contains: ["crash", "panic", "Traceback"]
+            success_indicator: "Audit completes without errors"
+
+        evidence_artifacts:
+          - name: "audit_transcript"
+            path: "evidence/stages/audit/transcript.txt"
+          - name: "audit_report"
+            path: "evidence/stages/audit/report.md"
+          - name: "audit_timing"
+            path: "evidence/stages/audit/timing.json"
+
+      - stage: report
+        name: "Report Generated"
+        duration_limit_seconds: 60
+
+        steps:
+          - step_id: N7
+            action: "Verify report file exists"
+            expected_output:
+              file_exists: ".vrs/reports/audit-report.md"
+            success_indicator: "Report file created"
+
+          - step_id: N8
+            action: "Report contains findings"
+            expected_output:
+              file_contains:
+                path: ".vrs/reports/audit-report.md"
+                patterns: ["vulnerability", "reentrancy"]
+            success_indicator: "Report includes expected findings"
+
+        evidence_artifacts:
+          - name: "final_report"
+            path: "evidence/artifacts/audit-report.md"
+
+    # Expected findings for validation
+    expected_outcomes:
+      findings:
+        minimum: 1
+        expected_patterns: ["reentrancy"]
+      report:
+        exists: true
+        format: "markdown"
+      friction_points:
+        max_blockers: 0  # P0 = no blockers allowed
+        max_confusions: 2  # P1 = some confusion acceptable
+
+    # Evidence pack specification
+    evidence_pack:
+      required:
+        - "evidence/transcript.txt"      # Full session transcript
+        - "evidence/timing.json"         # Timing per stage
+        - "evidence/outcome.json"        # Pass/fail summary
+      optional:
+        - "evidence/artifacts/"          # Generated files
+
+  # --------------------------------------------------------------------------
+  # Intermediate Happy Path: Developer auditing their own contracts
+  # --------------------------------------------------------------------------
+  intermediate_happy_path:
+    id: intermediate_happy_path
+    name: "Intermediate User Happy Path"
+    description: |
+      A Solidity developer installs AlphaSwarm and runs an audit on their
+      project, then fixes an issue and re-audits to confirm the fix.
+
+    persona: intermediate
+
+    config:
+      minimal: false
+      requires_slither: true
+      requires_foundry: true
+      requires_claude_code: true
+
+    preconditions:
+      - check: "fresh_workspace"
+        description: "Clean workspace"
+      - check: "foundry_project"
+        description: "Sample Foundry project available"
+      - check: "session_ready"
+        description: "Testing session ready"
+
+    stages:
+      - stage: install
+        name: "Quick Install"
+        duration_limit_seconds: 180
+
+        steps:
+          - step_id: I1
+            action: "Run 'uv tool install alphaswarm-sol'"
+            expected_output:
+              contains: ["Installed"]
+            success_indicator: "Installed in under 3 minutes"
+
+        evidence_artifacts:
+          - name: "install_transcript"
+            path: "evidence/stages/install/transcript.txt"
+
+      - stage: audit
+        name: "Initial Audit"
+        duration_limit_seconds: 600
+
+        steps:
+          - step_id: I2
+            action: "Start Claude Code"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "Session started"
+
+          - step_id: I3
+            action: "Run '/vrs-audit src/'"
+            expected_output:
+              contains: ["audit", "complete"]
+            success_indicator: "Audit runs on Foundry project"
+
+        evidence_artifacts:
+          - name: "initial_audit_transcript"
+            path: "evidence/stages/audit/initial_transcript.txt"
+          - name: "initial_report"
+            path: "evidence/stages/audit/initial_report.md"
+
+      - stage: understand
+        name: "Review Findings"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: I4
+            action: "Read audit report"
+            expected_output:
+              file_contains:
+                path: ".vrs/reports/audit-report.md"
+                patterns: ["file:", "line:", "severity:"]
+            success_indicator: "Findings include code locations"
+
+          - step_id: I5
+            action: "Check evidence quality"
+            expected_output:
+              file_contains:
+                path: ".vrs/reports/audit-report.md"
+                patterns: ["code snippet", "recommendation"]
+            success_indicator: "Evidence is actionable"
+
+        evidence_artifacts:
+          - name: "review_notes"
+            path: "evidence/stages/understand/notes.txt"
+
+      - stage: fix_and_reaudit
+        name: "Fix and Re-audit"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: I6
+            action: "Apply suggested fix"
+            expected_output:
+              description: "Code modified based on report"
+            success_indicator: "Contract updated"
+
+          - step_id: I7
+            action: "Run '/vrs-audit src/' again"
+            expected_output:
+              contains: ["audit", "complete"]
+            success_indicator: "Re-audit completes"
+
+          - step_id: I8
+            action: "Verify reduced findings"
+            expected_output:
+              description: "Fewer or resolved findings"
+            success_indicator: "Fix was effective"
+
+        evidence_artifacts:
+          - name: "fix_diff"
+            path: "evidence/stages/fix/changes.diff"
+          - name: "reaudit_report"
+            path: "evidence/stages/fix/reaudit_report.md"
+
+    expected_outcomes:
+      findings:
+        minimum: 1
+        expected_patterns: ["reentrancy", "access"]
+      report:
+        exists: true
+        has_code_locations: true
+      friction_points:
+        max_blockers: 0
+        max_confusions: 1
+
+  # --------------------------------------------------------------------------
+  # Power User Happy Path: Benchmarking against known vulnerabilities
+  # --------------------------------------------------------------------------
+  power_user_happy_path:
+    id: power_user_happy_path
+    name: "Power User Happy Path"
+    description: |
+      An experienced auditor installs AlphaSwarm and benchmarks it against
+      contracts with known vulnerabilities to evaluate detection capabilities.
+
+    persona: power_user
+
+    config:
+      minimal: false
+      requires_slither: true
+      requires_claude_code: true
+      benchmark_mode: true
+
+    preconditions:
+      - check: "fresh_workspace"
+        description: "Clean workspace"
+      - check: "known_vuln_contracts"
+        description: "Contracts with known CVEs available"
+      - check: "ground_truth"
+        description: "Ground truth file for comparison"
+      - check: "session_ready"
+        description: "Testing session ready"
+
+    stages:
+      - stage: setup
+        name: "Benchmark Setup"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: P1
+            action: "Install alphaswarm-sol"
+            expected_output:
+              contains: ["Installed"]
+            success_indicator: "Installed"
+
+          - step_id: P2
+            action: "Verify ground truth file"
+            expected_output:
+              file_exists: "ground_truth.yaml"
+            success_indicator: "Ground truth available"
+
+        evidence_artifacts:
+          - name: "setup_transcript"
+            path: "evidence/stages/setup/transcript.txt"
+
+      - stage: full_audit
+        name: "Full Audit Run"
+        duration_limit_seconds: 900
+
+        steps:
+          - step_id: P3
+            action: "Start Claude Code"
+            expected_output:
+              contains: ["Claude"]
+            success_indicator: "Session started"
+
+          - step_id: P4
+            action: "Run '/vrs-audit contracts/ --verbose'"
+            expected_output:
+              contains: ["audit", "complete"]
+            success_indicator: "Full audit completes"
+
+        evidence_artifacts:
+          - name: "audit_transcript"
+            path: "evidence/stages/audit/transcript.txt"
+          - name: "full_report"
+            path: "evidence/stages/audit/report.md"
+
+      - stage: compare
+        name: "Compare to Ground Truth"
+        duration_limit_seconds: 300
+
+        steps:
+          - step_id: P5
+            action: "Extract findings from report"
+            expected_output:
+              description: "Machine-readable findings extracted"
+            success_indicator: "Findings extracted"
+
+          - step_id: P6
+            action: "Compare to ground_truth.yaml"
+            expected_output:
+              description: "Compute precision/recall"
+            success_indicator: "Metrics computed"
+
+          - step_id: P7
+            action: "Document missed vulnerabilities"
+            expected_output:
+              description: "False negatives identified"
+            success_indicator: "Gaps documented"
+
+        evidence_artifacts:
+          - name: "comparison_results"
+            path: "evidence/stages/compare/metrics.json"
+          - name: "gap_analysis"
+            path: "evidence/stages/compare/gaps.md"
+
+    expected_outcomes:
+      findings:
+        minimum: 3  # Known CVEs should be found
+        expected_patterns: ["reentrancy", "access", "oracle"]
+      metrics:
+        precision_min: 0.7
+        recall_min: 0.5
+      report:
+        exists: true
+        machine_readable: true
+      friction_points:
+        max_blockers: 0
+        max_confusions: 0  # Power users expect clean workflows
+
+# ============================================================================
+# Journey Execution Configuration
+# ============================================================================
+
+execution:
+  # Evidence collection settings
+  evidence:
+    capture_transcript: true
+    capture_timing: true
+    capture_artifacts: true
+    retention_hours: 48
+
+  # Gate enforcement
+  gates:
+    # G0: Preflight checks
+    g0_preflight:
+      required: true
+      checks:
+        - "workspace_clean"
+        - "dependencies_available"
+
+    # G1: Evidence quality gates
+    g1_evidence:
+      required: true
+      checks:
+        - "transcript_exists"
+        - "timing_valid"
+        - "no_mock_indicators"
+
+    # G2: Outcome gates
+    g2_outcomes:
+      required: true
+      checks:
+        - "journey_completed"
+        - "expected_outputs_present"
+        - "no_blockers"
+
+# ============================================================================
+# Evidence Pack Template
+# ============================================================================
+
+evidence_pack_template:
+  structure:
+    - "evidence/"
+    - "evidence/transcript.txt"
+    - "evidence/timing.json"
+    - "evidence/outcome.json"
+    - "evidence/stages/"
+    - "evidence/stages/{stage}/transcript.txt"
+    - "evidence/stages/{stage}/timing.json"
+    - "evidence/artifacts/"
+
+  timing_format:
+    stage: "string"
+    start_time: "ISO8601"
+    end_time: "ISO8601"
+    duration_seconds: "number"
+    steps:
+      - step_id: "string"
+        start_time: "ISO8601"
+        end_time: "ISO8601"
+        duration_ms: "number"
+        success: "boolean"
+
+  outcome_format:
+    journey_id: "string"
+    persona: "string"
+    status: "pass | fail | partial"
+    started_at: "ISO8601"
+    completed_at: "ISO8601"
+    total_duration_seconds: "number"
+    stages_passed: "number"
+    stages_failed: "number"
+    friction_points: "array"
+    findings_count: "number"
+    report_path: "string"
+
+# ============================================================================
+# Validation Rules
+# ============================================================================
+
+validation:
+  # Required for all journeys
+  required_artifacts:
+    - "evidence/transcript.txt"
+    - "evidence/timing.json"
+    - "evidence/outcome.json"
+
+  # Transcript validation
+  transcript:
+    must_not_contain:
+      - "MOCK"
+      - "SIMULATED"
+      - "SKIP"
+      - "DRY_RUN"
+    must_contain:
+      - "SESSION_START"
+      - "SESSION_END"
+
+  # Timing validation
+  timing:
+    duration_must_be_positive: true
+    no_zero_durations: true
+
+  # Outcome validation
+  outcome:
+    valid_statuses: ["pass", "fail", "partial"]
+    blockers_allowed: false  # For happy path

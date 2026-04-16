@@ -1,0 +1,15 @@
+id: logic-005
+vulndoc: logic/general
+name: Variable Shadowing
+description: Contract variables shadow inherited or state variables.
+scope: Contract
+lens:
+- LogicState
+severity: medium
+cwe:
+- 710
+match:
+  all:
+  - property: shadows_parent_variable
+    op: eq
+    value: true

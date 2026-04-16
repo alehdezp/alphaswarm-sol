@@ -1,0 +1,15 @@
+id: arith-005
+vulndoc: arithmetic/general
+name: Share Inflation Attack
+description: Share/supply calculations without precision safeguards.
+scope: Function
+lens:
+- Arithmetic
+severity: high
+cwe:
+- 682
+match:
+  all:
+  - property: share_inflation_risk
+    op: eq
+    value: true

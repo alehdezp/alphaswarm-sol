@@ -1,0 +1,19 @@
+id: upg-004
+vulndoc: upgrade/general
+name: Missing Storage Gaps
+description: Upgradeable contracts missing storage gaps.
+scope: Contract
+lens:
+- Upgradeability
+severity: medium
+match:
+  all:
+  - property: is_upgradeable
+    op: eq
+    value: true
+  - property: upgradeable_without_storage_gap
+    op: eq
+    value: true
+  - property: state_var_count
+    op: gt
+    value: 0

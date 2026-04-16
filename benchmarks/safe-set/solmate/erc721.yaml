@@ -1,0 +1,22 @@
+# Solmate ERC721
+id: solmate-erc721
+name: Solmate ERC721
+category: solmate
+source: "solmate/tokens/ERC721.sol"
+version: "6.x"
+
+contract_info:
+  description: |
+    Solmate's gas-optimized ERC721 implementation.
+  deployed_since: 2021
+  audit_sources:
+    - Paradigm
+
+expected_findings: []
+
+false_positive_categories:
+  - token-*
+  - erc721-*
+  - nft-*
+
+status: validated

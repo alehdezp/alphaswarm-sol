@@ -1,0 +1,33 @@
+id: auth-003
+vulndoc: access-control/general
+name: Missing Signature Validation
+description: ecrecover without full validation (zero address, domain, nonce, deadline,
+  v/s).
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_ecrecover
+    op: eq
+    value: true
+  any:
+  - property: checks_zero_address
+    op: eq
+    value: false
+  - property: has_deadline_check
+    op: eq
+    value: false
+  - property: has_nonce_parameter
+    op: eq
+    value: false
+  - property: uses_domain_separator
+    op: eq
+    value: false
+  - property: checks_sig_v
+    op: eq
+    value: false
+  - property: checks_sig_s
+    op: eq
+    value: false

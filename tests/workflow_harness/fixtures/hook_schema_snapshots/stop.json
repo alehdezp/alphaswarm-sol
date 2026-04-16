@@ -1,0 +1,5 @@
+{
+  "session_id": "eeb93c51-cb2c-4594-a4d9-4a5e5c11600f",
+  "stop_hook_active": false,
+  "_schema_note": "Stop event stdin from real CC session. Used by obs_session_end.py. stop_hook_active prevents infinite loops."
+}

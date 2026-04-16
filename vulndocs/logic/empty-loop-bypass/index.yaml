@@ -1,0 +1,78 @@
+# Empty Loop Bypass - Subcategory Index
+# Category: logic/empty-loop-bypass
+# Phase 17: Knowledge Aggregation
+# Source: DeFiVulnLabs - Empty Loop
+
+id: empty-loop-bypass
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Empty Loop Bypass
+description: |
+  Validation bypass via empty array input. When validation logic uses loops
+  over arrays without checking array length, attackers can pass empty arrays
+  to skip validation entirely.
+
+  Common in signature verification, permission checks, and batch operations.
+
+severity: medium
+
+graph_signals:
+  - property: has_loop_over_array
+    expected: true
+    critical: true
+    description: Function loops over array argument
+    confidence: 0.90
+
+  - property: no_array_length_check
+    expected: true
+    critical: true
+    description: Missing check for zero-length array
+    confidence: 0.85
+
+  - property: validation_in_loop_body
+    expected: true
+    critical: true
+    description: Security validation occurs inside loop
+    confidence: 0.90
+
+semantic_operations:
+  - VALIDATES_SIGNATURE
+  - CHECKS_PERMISSION
+  - PROCESSES_BATCH
+
+behavioral_signatures:
+  vulnerable:
+    - "L:array{no_check}->V:validate{in_loop}"  # Loop without length check
+  safe:
+    - "C:length>0->L:array->V:validate"  # Check length before loop
+
+preconditions:
+  - "Validation logic inside loop over array parameter"
+  - "No check that array length > 0"
+  - "Empty array causes loop to never execute"
+
+postconditions:
+  - "Validation skipped entirely"
+  - "Unauthorized access granted"
+
+remediation:
+  - approach: "Require non-empty arrays"
+    description: "require(array.length > 0) before loop"
+    effectiveness: high
+
+safe_properties:
+  - checks_array_length_before_loop: true
+
+related_cwes:
+  - CWE-20   # Improper Input Validation
+  - CWE-1286 # Improper Validation of Syntactic Correctness of Input
+
+detection_complexity: low
+pattern_id: logic-empty-loop-001
+context_cache_key: "logic-empty-loop-v1"
+
+tags:
+  - input-validation
+  - loop-bypass
+  - array-validation

@@ -1,0 +1,16 @@
+id: auth-025
+vulndoc: access-control/general
+name: Signature Missing Domain Separator
+description: Signature verification missing domain separator binding.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_ecrecover
+    op: eq
+    value: true
+  - property: uses_domain_separator
+    op: eq
+    value: false

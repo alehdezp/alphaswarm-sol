@@ -1,0 +1,30 @@
+# Pool Key Validation - Subcategory Index
+# Tier 8/10 Finding: Uniswap V4 Hook Security
+
+id: pool-key-validation
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Insufficient Pool Key Validation
+category: access-control
+severity: critical
+emerging: true
+protocols: ["uniswap-v4"]
+
+description: |
+  Hooks accepting arbitrary pool keys can be called with malicious pools.
+  Attacker supplies pool key with fake currencies to drain hook funds.
+
+operations:
+  - ACCEPTS_INPUT
+  - READS_EXTERNAL_VALUE
+  - TRANSFERS_VALUE_OUT
+
+behavioral_signature: "ACCEPTS_POOL_KEY(any) -> USES_CURRENCY -> DRAINS_FUNDS"
+
+related_cwes:
+  - CWE-20   # Improper Input Validation
+  - CWE-639  # Authorization Bypass Through User-Controlled Key
+
+pattern_ids:
+  - hook-003

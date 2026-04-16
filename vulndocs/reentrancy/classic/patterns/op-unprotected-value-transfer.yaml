@@ -1,0 +1,26 @@
+id: op-unprotected-value-transfer
+vulndoc: reentrancy/classic
+name: Unprotected Value Transfer (Operation-Based)
+description: 'Public functions that transfer value without permission checks.
+
+  Uses TRANSFERS_VALUE_OUT operation to detect regardless of naming.
+
+  '
+scope: Function
+lens:
+- Authority
+- ValueMovement
+severity: critical
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: TRANSFERS_VALUE_OUT
+    none:
+    - has_operation: CHECKS_PERMISSION
+aggregation:
+  mode: tier_a_only

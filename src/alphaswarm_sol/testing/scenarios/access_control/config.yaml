@@ -1,0 +1,61 @@
+name: "Access Control Detection"
+category: access_control
+description: |
+  Test detection of missing or weak access control on sensitive functions.
+
+contracts:
+  - path: corpus/access_control/missing-owner-check.sol
+    has_vulnerability: true
+    expected_pattern: missing-access-control
+    expected_severity: critical
+    ground_truth:
+      - pattern: missing-access-control
+        severity: critical
+        location: "setOwner:25"
+        description: "setOwner callable by anyone"
+
+  - path: corpus/access_control/weak-modifier.sol
+    has_vulnerability: true
+    expected_pattern: weak-access-control
+    expected_severity: high
+    ground_truth:
+      - pattern: weak-access-control
+        severity: high
+        location: "withdraw:40"
+        description: "Modifier checks tx.origin instead of msg.sender"
+
+  - path: corpus/access_control/safe-ownable.sol
+    has_vulnerability: false
+    notes: "Properly uses OpenZeppelin Ownable"
+    tags: ["false-positive-trap"]
+
+prompt_template: |
+  Analyze {contract_path} for access control vulnerabilities.
+
+  Check for:
+  1. Public/external functions that modify critical state
+  2. Missing ownership checks
+  3. Weak authentication (tx.origin)
+  4. Inconsistent access patterns
+
+  Return findings with pattern, severity, location, confidence.
+
+allowed_tools:
+  - "Bash(uv run alphaswarm build-kg*)"
+  - "Bash(uv run alphaswarm query*)"
+  - "Read"
+  - "Glob"
+
+json_schema:
+  type: object
+  properties:
+    has_vulnerability:
+      type: boolean
+    findings:
+      type: array
+    reasoning:
+      type: string
+  required: [has_vulnerability, findings, reasoning]
+
+timeout_seconds: 120
+difficulty: medium

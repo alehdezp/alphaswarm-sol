@@ -1,0 +1,295 @@
+project:
+  name: defi-lending-protocol-01
+  theme: lending
+  tier: 2
+  adversarial_categories:
+  - A
+  description: 'Lending protocol with credit positions, oracle integration, and risk
+    management. Category A obfuscation: functions named for business domain not vulnerability
+    type.'
+findings:
+- pattern_id: oracle-stale-price
+  contract: CreditFacility
+  function: issueCreditLine
+  line_range: 57-58
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify oracle.getLatestValue() call returns price and timestamp
+  - Notice timestamp value is destructured but never validated
+  - No freshness check - stale price data accepted
+  - 'Conclude: stale oracle price enables undercollateralized borrowing'
+- pattern_id: balance-update-after-transfer
+  contract: CreditFacility
+  function: issueCreditLine
+  line_range: 68-70
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: amount} at line 69'
+  - liability and totalLiabilities already updated before call
+  - But no reentrancy guard allows re-entry during callback
+  - 'Conclude: reentrancy via issueCreditLine callback'
+- pattern_id: balance-update-after-transfer
+  contract: CreditFacility
+  function: settlePosition
+  line_range: 78-90
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - 'Identify external call msg.sender.call{value: returnAmount} at line 86'
+  - Notice pos.collateral = 0 at line 88 occurs AFTER external call
+  - No reentrancy guard on settlePosition
+  - 'Conclude: reentrancy allows claiming collateral multiple times'
+- pattern_id: auth-001
+  contract: CreditFacility
+  function: forceClosePosition
+  line_range: 93-110
+  severity: high
+  adversarial_techniques:
+  - A2-misleading-names
+  expected_reasoning_chain:
+  - Identify forceClosePosition seizes collateral from any account
+  - No msg.sender check or modifier restricting callers
+  - Anyone can trigger liquidation on undercollateralized positions
+  - 'Conclude: missing access control allows MEV liquidation attacks'
+- pattern_id: auth-002
+  contract: CreditFacility
+  function: recalibrateSystem
+  line_range: 113-116
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify recalibrateSystem changes accrualRate and oracle address
+  - No onlyRiskManager modifier or access control
+  - Attacker can set malicious oracle and drain via price manipulation
+  - 'Conclude: missing access control on critical system configuration'
+- pattern_id: precision-loss-rounding
+  contract: PositionMath
+  function: computeAccrual
+  line_range: 9-15
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - 'Identify integer division: principal * rateBps * elapsed / (10000 * 86400)'
+  - Small principals with short elapsed times truncate to zero interest
+  - Borrowers with small positions accrue no interest
+  - 'Conclude: precision loss allows free borrowing for small positions'
+- pattern_id: access-tierb-001-trust-assumption-violation
+  contract: RiskEngine
+  function: registerOracle
+  line_range: 22-25
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify registerOracle adds oracle to whitelist
+  - No governance modifier present
+  - Anyone can register a malicious oracle
+  - 'Conclude: missing access control on oracle registration'
+- pattern_id: dos-unbounded-loop
+  contract: RiskEngine
+  function: purgeOracles
+  line_range: 43-48
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify for loop over oracleRegistry with no upper bound
+  - Combined with missing access control on registerOracle
+  - Attacker can push many entries making purgeOracles exceed gas limit
+  - 'Conclude: DoS via unbounded oracle registry iteration'
+- pattern_id: oracle-001
+  contract: CreditFacility
+  function: issueCreditLine
+  line_range: 57-58
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify oracle.getLatestValue() at line 57 returns (uint256 price, uint256 timestamp) but only price is used
+  - Notice the timestamp is destructured but never checked against a freshness threshold
+  - Recognize that a stale price (e.g., hours or days old) would allow borrowing against an outdated collateral valuation
+  - 'Conclude: missing oracle timestamp validation enables undercollateralized borrowing when price data is stale'
+- pattern_id: cross-function-reentrancy
+  contract: CreditFacility
+  function: settlePosition
+  line_range: 78-90
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify settlePosition sends ETH via msg.sender.call{value: returnAmount} at line 85 before zeroing pos.collateral at line 88
+  - Notice the callback gives control to msg.sender while pos.collateral still holds the original value
+  - Recognize re-entrant call to issueCreditLine would see non-zero collateral and allow borrowing against it
+  - 'Conclude: cross-function reentrancy — settle callback allows re-entering issueCreditLine to borrow against not-yet-zeroed collateral'
+- pattern_id: amount-division-without-precision-guard
+  contract: PositionMath
+  function: computeAccrual
+  line_range: 9-15
+  severity: medium
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify computeAccrual computes (principal * rateBps * elapsed) / (10000 * 86400) at line 14
+  - Notice that for small principal values (e.g., 1 wei) or short elapsed times, the numerator is smaller than the denominator
+  - Recognize integer division truncates to zero, meaning small positions accrue zero interest
+  - 'Conclude: precision loss from integer division without rounding guard allows small borrowers to avoid interest entirely'
+- pattern_id: oracle-004
+  contract: CreditFacility
+  function: forceClosePosition
+  line_range: 93-110
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify forceClosePosition calls oracle.getLatestValue() at line 100 to compute collateralValue for health check
+  - Notice no access control — any address can call forceClosePosition for any account
+  - Recognize that if oracle price is manipulable (or stale), attacker can force-liquidate healthy positions and seize collateral sent via msg.sender.call{value: seized}
+  - 'Conclude: unprotected liquidation combined with oracle dependency allows MEV bots or attackers to front-run price movements and seize collateral'
+- pattern_id: callback-chain-reentrancy
+  contract: CreditFacility
+  function: issueCreditLine
+  line_range: 68-70
+  severity: high
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify issueCreditLine sends ETH via msg.sender.call{value: amount} at line 68 after updating pos.liability and totalLiabilities at lines 66-67
+  - Notice no reentrancy guard (no mutex or nonReentrant modifier) protects the function
+  - Recognize callback from the ETH transfer can re-enter issueCreditLine — since liability is already updated, a second borrow uses the same collateral with inflated liability that still passes the health check
+  - 'Conclude: callback-chain reentrancy allows repeated borrowing in single transaction by re-entering issueCreditLine during ETH callback'
+safe_patterns: []
+
+# Multi-agent debate ground truth extension (Prestep P-2, GAP-08)
+# Additive — does not modify single-agent findings above.
+debate_expectations:
+  debatable_findings:
+    - finding_ref: balance-update-after-transfer  # settlePosition reentrancy
+      expected_outcome: confirmed
+      expected_rounds: 2
+      difficulty: easy
+
+      attacker_expected:
+        claim_type: exploit_path
+        must_cite:
+          - type: code_location
+            description: "msg.sender.call{value: returnAmount} at line 86 before pos.collateral = 0 at line 88"
+          - type: graph_node
+            description: "CEI violation: TRANSFERS_VALUE_OUT before WRITES_USER_BALANCE"
+        min_evidence_count: 2
+        min_confidence: 0.8
+
+      defender_expected:
+        position: concede
+        must_cite: []
+        expected_mitigations: []
+        # No reentrancy guard exists — honest defender should concede
+
+      verifier_expected:
+        must_check_both_sides: true
+        independent_queries:
+          - "Check for reentrancy guards on settlePosition"
+          - "Verify CEI ordering: external call vs state update"
+        arbitration_basis: evidence_weight
+        expected_verdict_confidence: high
+
+      quality_signals:
+        min_unique_evidence_items: 3
+        defender_must_engage: true
+        verifier_must_run_own_queries: true
+        max_rounds_without_new_argument: 1
+        anti_rubber_stamp_checks:
+          - "Defender cites at least one specific code location even when conceding"
+          - "Verifier references both attacker and defender positions"
+          - "Verifier independently checks for nonReentrant modifier"
+
+    - finding_ref: oracle-stale-price  # issueCreditLine oracle
+      expected_outcome: confirmed
+      expected_rounds: 3
+      difficulty: medium
+
+      attacker_expected:
+        claim_type: exploit_path
+        must_cite:
+          - type: code_location
+            description: "oracle.getLatestValue() at line 57 — timestamp destructured but never validated"
+          - type: reasoning
+            description: "Stale price enables undercollateralized borrowing"
+        min_evidence_count: 2
+        min_confidence: 0.7
+
+      defender_expected:
+        position: challenge_preconditions
+        must_cite:
+          - type: reasoning
+            description: "Oracle may have external freshness guarantees (Chainlink heartbeat)"
+        expected_mitigations:
+          - "Exploitability depends on oracle update frequency (external context)"
+        # Defender should push back — stale oracle is context-dependent
+
+      verifier_expected:
+        must_check_both_sides: true
+        independent_queries:
+          - "Check oracle interface for freshness guarantees"
+          - "Search codebase for timestamp validation anywhere"
+        arbitration_basis: precondition_analysis
+        expected_verdict_confidence: medium
+
+      quality_signals:
+        min_unique_evidence_items: 4
+        defender_must_engage: true
+        verifier_must_run_own_queries: true
+        max_rounds_without_new_argument: 1
+        anti_rubber_stamp_checks:
+          - "Defender provides specific counter-evidence about oracle reliability"
+          - "Verifier independently checks oracle interface"
+          - "If confirmed, verifier explains why defender's position is insufficient"
+
+    - finding_ref: auth-002  # recalibrateSystem missing access control
+      expected_outcome: confirmed
+      expected_rounds: 2
+      difficulty: easy
+
+      attacker_expected:
+        claim_type: exploit_path
+        must_cite:
+          - type: code_location
+            description: "recalibrateSystem at line 113-116 changes oracle address with no access control"
+          - type: graph_node
+            description: "MODIFIES_CRITICAL_STATE without CHECKS_PERMISSION"
+        min_evidence_count: 2
+        min_confidence: 0.9
+
+      defender_expected:
+        position: concede
+        must_cite: []
+        expected_mitigations: []
+
+      verifier_expected:
+        must_check_both_sides: true
+        independent_queries:
+          - "Check for access control modifiers on recalibrateSystem"
+          - "Verify if any role-based check exists"
+        arbitration_basis: evidence_weight
+        expected_verdict_confidence: high
+
+      quality_signals:
+        min_unique_evidence_items: 2
+        defender_must_engage: false  # trivially obvious missing access control
+        verifier_must_run_own_queries: true
+        max_rounds_without_new_argument: 1
+        anti_rubber_stamp_checks:
+          - "Verifier independently confirms no access control modifier exists"
+
+  global_quality_requirements:
+    evidence_citation_rate: 0.9
+    cross_reference_rate: 0.7
+    convergence_budget: 3
+
+summary:
+  total_findings: 13
+  total_safe_patterns: 0
+  total_debate_entries: 3
+  difficulty: medium
+  notes: 'Category A obfuscation: business domain naming hides vulnerability types.
+    Functions named issueCreditLine, settlePosition, forceClosePosition, recalibrateSystem
+    instead of borrow, withdraw, liquidate, setConfig.'

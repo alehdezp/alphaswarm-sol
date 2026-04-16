@@ -1,0 +1,25 @@
+id: op-oracle-manipulation-risk
+vulndoc: oracle/manipulation
+name: Oracle Read Before Value Transfer (Operation-Based)
+description: 'Reading oracle prices followed by value transfers without staleness checks.
+
+  Attack pattern: manipulate oracle, then extract value in same tx.
+
+  '
+scope: Function
+lens:
+- ExternalInfluence
+- ValueMovement
+severity: high
+match:
+  tier_a:
+    all:
+    - has_operation: READS_ORACLE
+    - has_any_operation:
+      - TRANSFERS_VALUE_OUT
+      - WRITES_USER_BALANCE
+    none:
+    - property: has_staleness_check
+      value: true
+aggregation:
+  mode: tier_a_only

@@ -1,0 +1,23 @@
+id: arith-011
+vulndoc: arithmetic/general
+name: Pre-0.8 Overflow/Underflow
+description: Arithmetic in pre-0.8 Solidity without SafeMath.
+scope: Function
+lens:
+- Arithmetic
+severity: high
+cwe:
+- 190
+- 191
+match:
+  all:
+  - property: compiler_version_lt_08
+    op: eq
+    value: true
+  - property: has_arithmetic
+    op: eq
+    value: true
+  none:
+  - property: uses_safemath
+    op: eq
+    value: true

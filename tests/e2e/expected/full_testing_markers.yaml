@@ -1,0 +1,455 @@
+# Expected Markers and Artifact Checks for /vrs-full-testing Orchestrator
+#
+# This file defines expected markers for each subworkflow and failure classification
+# markers for the full-testing orchestrator. These markers enable:
+#   1. Regression detection via golden transcript comparison
+#   2. Failure classification and targeted re-runs
+#   3. Evidence pack validation
+#
+# Usage:
+#   from alphaswarm_sol.testing.markers import MarkerValidator
+#   validator = MarkerValidator("tests/e2e/expected/full_testing_markers.yaml")
+#   validator.validate_transcript(transcript_path)
+
+version: "1.0.0"
+updated: "2026-01-30"
+
+# Marker format specification
+marker_format:
+  # Start marker format: [ALPHASWARM-START] <command-id> <timestamp>
+  start_pattern: '^\[ALPHASWARM-START\]\s+(\S+)\s+(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z?)$'
+  # End marker format: [ALPHASWARM-END] <command-id> <exit-code> <duration-ms>
+  end_pattern: '^\[ALPHASWARM-END\]\s+(\S+)\s+(\d+)\s+(\d+)$'
+
+  # Extract command ID from marker
+  command_id_group: 1
+  # Extract exit code from end marker
+  exit_code_group: 2
+  # Extract duration from end marker
+  duration_group: 3
+
+  # Minimum valid duration (ms) - runs under this are invalid
+  min_duration_ms: 5000
+
+# =============================================================================
+# COMMAND SUITE (S1) - CLI Command Coverage
+# =============================================================================
+command_suite:
+  id: s1_command
+  name: "Command Suite"
+  description: "CLI command coverage (build-kg, query, vulndocs, etc.)"
+
+  # Expected markers for this suite
+  markers:
+    # Build KG command
+    - marker_id: S1-BUILD-KG
+      command: "uv run alphaswarm build-kg"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_artifacts:
+        - path: ".vrs/graphs/*.toon"
+          description: "Built knowledge graph"
+        - path: ".vrs/graphs/completeness.json"
+          description: "Graph completeness report"
+
+    # Query command (NL)
+    - marker_id: S1-QUERY-NL
+      command: "uv run alphaswarm query"
+      expected_exit_code: 0
+      min_duration_ms: 2000
+      expected_outputs:
+        - pattern: 'Found \d+ function'
+          description: "Query result count"
+
+    # Query command (VQL2)
+    - marker_id: S1-QUERY-VQL2
+      command: "uv run alphaswarm query FIND"
+      expected_exit_code: 0
+      min_duration_ms: 2000
+
+    # VulnDocs validate
+    - marker_id: S1-VULNDOCS-VALIDATE
+      command: "uv run alphaswarm vulndocs validate"
+      expected_exit_code: 0
+      min_duration_ms: 3000
+      expected_outputs:
+        - pattern: 'Validated \d+ entries'
+          description: "Validation count"
+
+    # Context generate
+    - marker_id: S1-CONTEXT-GEN
+      command: "uv run alphaswarm context generate"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_artifacts:
+        - path: ".vrs/context/*.yaml"
+          description: "Protocol context pack"
+
+    # Label command
+    - marker_id: S1-LABEL
+      command: "uv run alphaswarm label"
+      expected_exit_code: 0
+      min_duration_ms: 3000
+      expected_artifacts:
+        - path: ".vrs/labels/*.json"
+          description: "Semantic label overlay"
+
+  # Suite-level validation
+  validation:
+    # All markers must be present
+    all_markers_required: true
+    # Markers must appear in order
+    ordered: true
+    # All expected artifacts must exist
+    artifacts_required: true
+
+# =============================================================================
+# AGENT SUITE (S2) - Subagent Workflows
+# =============================================================================
+agent_suite:
+  id: s2_agent
+  name: "Agent Suite"
+  description: "Subagent workflows (/vrs-audit, /vrs-investigate, /vrs-debate)"
+
+  markers:
+    # Audit workflow
+    - marker_id: S2-AUDIT
+      command: "/vrs-audit"
+      expected_exit_code: 0
+      min_duration_ms: 30000
+      expected_artifacts:
+        - path: ".vrs/reports/audit-report.md"
+          description: "Audit report"
+        - path: ".vrs/evidence/findings.json"
+          description: "Findings evidence"
+      expected_outputs:
+        - pattern: 'Stage \d/\d'
+          description: "Stage progress markers"
+        - pattern: "(Critical|High|Medium|Low):"
+          description: "Severity classification"
+
+    # Investigate workflow
+    - marker_id: S2-INVESTIGATE
+      command: "/vrs-investigate"
+      expected_exit_code: 0
+      min_duration_ms: 20000
+      expected_outputs:
+        - pattern: "(attacker|defender|verifier)"
+          description: "Agent mentions"
+
+    # Debate workflow
+    - marker_id: S2-DEBATE
+      command: "/vrs-debate"
+      expected_exit_code: 0
+      min_duration_ms: 15000
+      expected_artifacts:
+        - path: ".vrs/debate/transcript*.md"
+          description: "Debate transcript"
+        - path: ".vrs/debate/verdict.json"
+          description: "Debate verdict"
+      expected_outputs:
+        - pattern: 'Round \d:'
+          description: "Debate round markers"
+        - pattern: "(Claim|Counterclaim|Verdict):"
+          description: "Debate structure"
+
+    # Pattern matching
+    - marker_id: S2-PATTERN-MATCH
+      command: "pattern matching"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_outputs:
+        - pattern: '\d+ patterns matched'
+          description: "Pattern match count"
+
+    # Evidence pack generation
+    - marker_id: S2-EVIDENCE-PACK
+      command: "evidence pack"
+      expected_exit_code: 0
+      min_duration_ms: 3000
+      expected_artifacts:
+        - path: "evidence/manifest.json"
+          description: "Evidence manifest"
+
+  validation:
+    all_markers_required: true
+    ordered: true
+    artifacts_required: true
+
+# =============================================================================
+# CONTEXT SUITE (S3) - Protocol Context Detection
+# =============================================================================
+context_suite:
+  id: s3_context
+  name: "Context Suite"
+  description: "Protocol context + oracle + role detection"
+
+  markers:
+    # Context generation
+    - marker_id: S3-CONTEXT-GEN
+      command: "/vrs-context"
+      expected_exit_code: 0
+      min_duration_ms: 10000
+      expected_artifacts:
+        - path: ".vrs/context/context-pack.yaml"
+          description: "Protocol context pack"
+
+    # Oracle detection
+    - marker_id: S3-ORACLE-DETECT
+      command: "oracle detection"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_outputs:
+        - pattern: "Oracle dependencies:"
+          description: "Oracle list header"
+        - pattern: "(Chainlink|Uniswap|custom oracle)"
+          description: "Oracle type detection"
+
+    # Role identification
+    - marker_id: S3-ROLE-ID
+      command: "role identification"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_outputs:
+        - pattern: "Roles detected:"
+          description: "Role list header"
+        - pattern: "(owner|admin|operator|minter|pauser)"
+          description: "Common role patterns"
+
+    # Doc-code conflict detection
+    - marker_id: S3-DOC-CONFLICT
+      command: "doc-code conflict"
+      expected_exit_code: 0
+      min_duration_ms: 3000
+
+    # Invariant extraction
+    - marker_id: S3-INVARIANT
+      command: "invariant extraction"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_outputs:
+        - pattern: "Invariants:"
+          description: "Invariant list header"
+
+  validation:
+    all_markers_required: true
+    ordered: true
+
+# =============================================================================
+# RESUME MATRIX (S4) - Stop/Resume Capability
+# =============================================================================
+resume_matrix:
+  id: s4_resume
+  name: "Resume Matrix"
+  description: "Stop/resume, partial runs, stage skip"
+
+  markers:
+    # Snapshot capture
+    - marker_id: S4-SNAPSHOT-CAPTURE
+      command: "snapshot capture"
+      expected_exit_code: 0
+      min_duration_ms: 3000
+      expected_artifacts:
+        - path: "evidence/snapshots/*.tar.gz"
+          description: "Stage snapshot archive"
+        - path: "evidence/snapshots/manifest.json"
+          description: "Snapshot manifest"
+
+    # Resume from snapshot
+    - marker_id: S4-RESUME
+      command: "/vrs-full-testing --resume"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+      expected_outputs:
+        - pattern: "Resuming from (S1|S2|S3|S4)"
+          description: "Resume stage indicator"
+
+    # Partial run
+    - marker_id: S4-PARTIAL-RUN
+      command: "--only-suite"
+      expected_exit_code: 0
+      min_duration_ms: 5000
+
+    # Stage skip
+    - marker_id: S4-STAGE-SKIP
+      command: "--from S"
+      expected_exit_code: 0
+      min_duration_ms: 3000
+      expected_outputs:
+        - pattern: "Skipping (S1|S2|S3)"
+          description: "Skip confirmation"
+
+    # Snapshot integrity check
+    - marker_id: S4-SNAPSHOT-VERIFY
+      command: "snapshot verify"
+      expected_exit_code: 0
+      min_duration_ms: 2000
+      expected_outputs:
+        - pattern: "Checksum (valid|match)"
+          description: "Integrity confirmation"
+
+  validation:
+    all_markers_required: true
+    ordered: false  # Resume scenarios can run in any order
+
+# =============================================================================
+# ERROR MARKERS - Failure Classification
+# =============================================================================
+error_markers:
+  description: "Markers for failure classification and targeted re-runs"
+
+  # Infrastructure errors
+  infrastructure:
+    - marker_id: E-WORKTREE
+      pattern: '\[ERROR\] Worktree creation failed'
+      error_code: E001
+      category: infrastructure
+      retry_eligible: true
+      max_retries: 3
+
+    - marker_id: E-CLAUDE
+      pattern: '\[ERROR\] Claude Code.*(fail|error|timeout)'
+      error_code: E011
+      category: infrastructure
+      retry_eligible: true
+      max_retries: 2
+
+  # Marker validation errors
+  marker_errors:
+    - marker_id: E-NO-START
+      pattern: 'Missing ALPHASWARM-START'
+      error_code: E003
+      category: marker
+      retry_eligible: false
+
+    - marker_id: E-NO-END
+      pattern: 'Missing ALPHASWARM-END'
+      error_code: E004
+      category: marker
+      retry_eligible: false
+
+    - marker_id: E-DURATION
+      pattern: 'Duration below minimum|duration.*invalid'
+      error_code: E005
+      category: marker
+      retry_eligible: false
+
+    - marker_id: E-TRANSCRIPT
+      pattern: 'Transcript (empty|missing)'
+      error_code: E006
+      category: marker
+      retry_eligible: true
+      max_retries: 2
+
+  # Test errors (not retryable)
+  test_errors:
+    - marker_id: E-GROUND-TRUTH
+      pattern: 'Ground truth (file )?missing'
+      error_code: E007
+      category: test
+      retry_eligible: false
+
+    - marker_id: E-DETECTION
+      pattern: 'Detection mismatch|Expected.*(not found|missing)'
+      error_code: E008
+      category: test
+      retry_eligible: false
+
+    - marker_id: E-ASSERTION
+      pattern: 'Assert(ion)? fail'
+      error_code: E012
+      category: test
+      retry_eligible: false
+
+  # Resource errors
+  resource_errors:
+    - marker_id: E-RETRY-LIMIT
+      pattern: 'Retry limit exceeded'
+      error_code: E009
+      category: resource
+      retry_eligible: false
+
+    - marker_id: E-EVIDENCE
+      pattern: 'Evidence pack incomplete'
+      error_code: E010
+      category: resource
+      retry_eligible: true
+      max_retries: 1
+
+    - marker_id: E-TIMEOUT
+      pattern: '(Timeout|timed out)'
+      error_code: E013
+      category: resource
+      retry_eligible: true
+      max_retries: 2
+
+# =============================================================================
+# ARTIFACT VALIDATION
+# =============================================================================
+artifact_checks:
+  description: "Required artifacts for each subworkflow"
+
+  # Common artifacts for all runs
+  common:
+    - path: "evidence/manifest.json"
+      required: true
+      description: "Evidence pack manifest"
+
+    - path: "evidence/transcripts/"
+      required: true
+      type: directory
+      min_files: 1
+      description: "Transcript directory"
+
+  # Per-suite artifacts
+  per_suite:
+    s1_command:
+      - path: ".vrs/graphs/"
+        type: directory
+        required: true
+        extensions: [".toon", ".json"]
+        min_files: 1
+
+    s2_agent:
+      - path: ".vrs/reports/"
+        type: directory
+        required: true
+        min_files: 1
+
+      - path: ".vrs/debate/"
+        type: directory
+        required: true
+
+      - path: "evidence/agents/"
+        type: directory
+        required: true
+        description: "Agent debug outputs"
+
+    s3_context:
+      - path: ".vrs/context/"
+        type: directory
+        required: true
+        extensions: [".yaml", ".json"]
+
+    s4_resume:
+      - path: "evidence/snapshots/"
+        type: directory
+        required: true
+        extensions: [".tar.gz"]
+        min_files: 1
+
+# =============================================================================
+# VALIDATION CONFIGURATION
+# =============================================================================
+validation_config:
+  # Strict mode fails on first validation error
+  strict_mode: true
+
+  # Log level for marker validation
+  log_level: INFO
+
+  # Output format for validation results
+  output_format: json
+
+  # Emit validation report path
+  report_path: evidence/validation_report.json

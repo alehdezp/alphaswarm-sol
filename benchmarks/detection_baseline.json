@@ -1,0 +1,95 @@
+{
+  "original_contracts": {
+    "total_expected": 10,
+    "total_detected": 8,
+    "results": [
+      {
+        "contract": "ReentrancyClassic.sol",
+        "expected": 3,
+        "detected": 3,
+        "rate": 1.0,
+        "missed": []
+      },
+      {
+        "contract": "NoAccessGate.sol",
+        "expected": 3,
+        "detected": 3,
+        "rate": 1.0,
+        "missed": []
+      },
+      {
+        "contract": "DelegatecallNoAccessGate.sol",
+        "expected": 2,
+        "detected": 2,
+        "rate": 1.0,
+        "missed": []
+      },
+      {
+        "contract": "SwapNoSlippage.sol",
+        "expected": 1,
+        "detected": 0,
+        "rate": 0.0,
+        "missed": [
+          "Function swapExactTokensForTokens not found"
+        ]
+      },
+      {
+        "contract": "LoopDos.sol",
+        "expected": 1,
+        "detected": 0,
+        "rate": 0.0,
+        "missed": [
+          "Function distribute not found"
+        ]
+      }
+    ]
+  },
+  "renamed_contracts": {
+    "total_expected": 8,
+    "total_detected": 8,
+    "results": [
+      {
+        "contract": "renamed/ReentrancyRenamed.sol",
+        "expected": 3,
+        "detected": 3,
+        "rate": 1.0,
+        "missed": []
+      },
+      {
+        "contract": "renamed/AccessControlRenamed.sol",
+        "expected": 2,
+        "detected": 2,
+        "rate": 1.0,
+        "missed": []
+      },
+      {
+        "contract": "renamed/DelegateCallRenamed.sol",
+        "expected": 2,
+        "detected": 2,
+        "rate": 1.0,
+        "missed": []
+      },
+      {
+        "contract": "renamed/SwapRenamed.sol",
+        "expected": 0,
+        "detected": 0,
+        "rate": 0.0,
+        "missed": []
+      },
+      {
+        "contract": "renamed/LoopDosRenamed.sol",
+        "expected": 1,
+        "detected": 1,
+        "rate": 1.0,
+        "missed": []
+      }
+    ]
+  },
+  "summary": {
+    "original_detection_rate": 0.8,
+    "renamed_detection_rate": 1.0,
+    "degradation": -0.19999999999999996,
+    "target_renamed_rate": 0.9,
+    "gap_to_target": -0.09999999999999998
+  }
+}

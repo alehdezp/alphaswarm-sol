@@ -1,0 +1,20 @@
+id: supply-accounting-issue
+vulndoc: reentrancy/classic
+name: Supply Accounting Issue
+description: Mint/burn without updating supply state.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: writes_supply_state
+    op: eq
+    value: false
+  any:
+  - property: is_mint_like
+    op: eq
+    value: true
+  - property: is_burn_like
+    op: eq
+    value: true

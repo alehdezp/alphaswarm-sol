@@ -1,0 +1,15 @@
+id: logic-026
+vulndoc: logic/general
+name: Incorrect Event Parameters
+description: Event emission missing expected parameters.
+scope: Function
+lens:
+- LogicState
+severity: low
+cwe:
+- 778
+match:
+  all:
+  - property: event_param_mismatch
+    op: eq
+    value: true

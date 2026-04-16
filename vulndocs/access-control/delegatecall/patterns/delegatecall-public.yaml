@@ -1,0 +1,17 @@
+id: delegatecall-public
+vulndoc: access-control/delegatecall
+name: Public Delegatecall Usage
+description: Public or external functions that use delegatecall.
+scope: Function
+lens:
+  - ExternalInfluence
+  - Upgradeability
+severity: high
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: uses_delegatecall
+      op: eq
+      value: true

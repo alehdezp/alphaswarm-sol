@@ -1,0 +1,21 @@
+id: missing-slippage-protection
+vulndoc: upgrade/general
+name: Missing Slippage Protection
+description: Swap-like functions without a minimum output/slippage parameter.
+scope: Function
+lens:
+- Ordering
+severity: high
+match:
+  all:
+  - property: risk_missing_slippage_parameter
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true

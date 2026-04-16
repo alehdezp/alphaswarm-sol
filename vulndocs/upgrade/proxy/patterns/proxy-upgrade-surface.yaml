@@ -1,0 +1,16 @@
+id: proxy-upgrade-surface
+vulndoc: upgrade/proxy
+name: Proxy Upgrade Surface Detected
+description: Contracts that appear proxy-like and have upgrade functions.
+scope: Contract
+lens:
+  - Upgradeability
+severity: info
+match:
+  all:
+    - property: is_proxy_like
+      op: eq
+      value: true
+    - property: has_upgrade_function
+      op: eq
+      value: true

@@ -1,0 +1,79 @@
+id: UC-INV-004
+name: "Investigate with protocol economic context"
+workflow: vrs-investigate
+category: investigate
+tier: important
+
+input:
+  contract: "tests/contracts/FlashLoanCollateral.sol"
+  command: "/vrs-investigate tests/contracts/FlashLoanCollateral.sol --context lending-protocol"
+  context: >
+    FlashLoanCollateral.sol is a lending protocol component where collateral
+    valuation depends on a price oracle. The investigator should use protocol
+    economic context (lending protocol semantics: collateral, liquidation
+    thresholds, flash loan availability) to reason about whether a price
+    manipulation attack is economically viable. Without economic context, the
+    investigator might miss that flash loans make the attack capital-free.
+
+expected_behavior:
+  summary: |
+    The investigation workflow should build a BSKG, load protocol economic
+    context for a lending protocol, and use that context to reason about the
+    economic viability of a collateral manipulation attack. The investigation
+    must incorporate protocol semantics (collateral ratio, liquidation
+    threshold, flash loan availability) into its reasoning, not just identify
+    a code-level vulnerability.
+  must_happen:
+    - "Build BSKG from FlashLoanCollateral.sol"
+    - "Load or reference lending protocol economic context"
+    - "Query graph for value flow and oracle read operations"
+    - "Reason about economic viability of the attack (flash loan makes it capital-free)"
+    - "Incorporate protocol semantics into the evidence chain"
+    - "Finding includes economic impact estimate or reasoning"
+  must_not_happen:
+    - "Investigate purely at code level without economic context"
+    - "Miss the flash loan amplification of the attack"
+    - "Produce finding without economic reasoning"
+    - "Ignore protocol context and treat it as generic contract"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "flash-loan"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 50
+  key_dimensions:
+    - name: economic_reasoning
+      description: "Did the investigator incorporate economic context into its analysis?"
+    - name: protocol_awareness
+      description: "Did the investigator understand lending protocol semantics (collateral, liquidation)?"
+    - name: graph_utilization
+      description: "Were BSKG queries used to trace value flow and oracle dependencies?"
+    - name: attack_viability_assessment
+      description: "Did the finding assess whether the attack is economically viable?"
+  regression_signals:
+    - "No economic reasoning in finding -> REGRESSION: protocol context not used"
+    - "Flash loan amplification missed -> REGRESSION: economic attack modeling broken"
+    - "Investigation ignores protocol context -> REGRESSION: context integration broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/FlashLoanCollateral.sol"
+  related_scenarios:
+    - "UC-INV-001"
+    - "UC-AUDIT-007"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier because protocol context usage is a key differentiator.
+  Lower threshold (50) because economic reasoning is the most advanced
+  capability and we are still developing context integration.

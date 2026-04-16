@@ -1,0 +1,340 @@
+# Euler V2 LTV Gap Vulnerability - Specific Vulnerability
+# Discovered via Task 17.3a: Solodit/Exploit DB Crawl (2024-2026)
+
+id: euler-ltv-gap
+name: Euler V2 Missing LTV Gap Between Borrow and Liquidation
+parent_category: logic
+parent_subcategory: liquidation-mechanics
+
+description: |
+  Configuration vulnerability in Euler V2 (EVK) where no gap existed between
+  the Loan-to-Value (LTV) ratio for borrowing and the liquidation threshold.
+  This allowed users to borrow at the very edge of liquidation, making them
+  vulnerable to immediate liquidation upon slight price changes.
+
+  Attackers could exploit this by:
+  1. Borrowing at maximum LTV (edge of liquidation)
+  2. Front-running price oracle updates
+  3. Liquidating their own position profitably
+  4. Leaving bad debt for the protocol
+
+  This was identified in an OpenZeppelin audit and resolved before deployment.
+
+severity: high
+exploit_severity: high
+confidence_score: 0.92
+
+# Related VKG Properties for Detection
+detection:
+  graph_signals:
+    - property: is_lending_protocol
+      expected: true
+      critical: true
+      description: "Contract is part of lending protocol"
+      confidence: 0.95
+
+    - property: has_ltv_configuration
+      expected: true
+      critical: true
+      description: "Protocol has LTV threshold configuration"
+      confidence: 0.95
+
+    - property: has_liquidation_threshold
+      expected: true
+      critical: true
+      description: "Protocol defines liquidation threshold"
+      confidence: 0.95
+
+    - property: ltv_equals_liquidation_threshold
+      expected: true
+      critical: true
+      description: "Borrow LTV same as liquidation threshold (no gap)"
+      confidence: 0.90
+
+    - property: allows_max_borrow
+      expected: true
+      critical: true
+      description: "Allows borrowing up to maximum LTV"
+      confidence: 0.88
+
+  semantic_operations:
+    - READS_COLLATERAL_RATIO
+    - MODIFIES_CRITICAL_STATE
+    - PERFORMS_LIQUIDATION
+    - READS_ORACLE
+    - CHECKS_PERMISSION
+
+  behavioral_signatures:
+    - vulnerable: "C:ltv{check}->W:borrow{ltv==liquidation_threshold}"
+      description: "LTV check allows borrow at liquidation edge"
+
+    - vulnerable: "R:price->C:health{=1.0}->LIQUIDATABLE"
+      description: "Any price movement makes position liquidatable"
+
+  operation_sequences:
+    vulnerable:
+      - "BORROW(max_ltv) -> PRICE_CHANGE(tiny) -> LIQUIDATABLE"
+      - "R:collateral -> C:max_borrow{=liquidation_threshold} -> W:borrow"
+
+    safe:
+      - "BORROW(max_ltv) -> BUFFER_ZONE -> PRICE_CHANGE(small) -> STILL_HEALTHY"
+      - "R:collateral -> C:max_borrow{<liquidation_threshold-gap} -> W:borrow"
+
+  false_positive_indicators:
+    - "Separate borrow LTV and liquidation LTV configured"
+    - "Buffer/gap between max borrow and liquidation"
+    - "Cool-off period after account status check"
+    - "Maximum liquidation discount factor limits"
+    - "Gradual/partial liquidation mechanism"
+
+# Attack Mechanism Details
+attack_mechanism:
+  preconditions:
+    - "Lending protocol with no LTV gap"
+    - "Ability to borrow at maximum LTV"
+    - "Price oracle updates predictable or front-runnable"
+    - "Self-liquidation profitable due to liquidation bonus"
+
+  attack_steps:
+    - step: 1
+      phase: "Position at Liquidation Edge"
+      description: |
+        Deposit collateral and borrow at the maximum LTV, which
+        equals the liquidation threshold. Position is exactly at
+        the edge of liquidation.
+      operations:
+        - "Deposit collateral worth $1000"
+        - "If LTV = liquidation_threshold = 80%"
+        - "Borrow $800 worth of assets"
+        - "Health factor = 1.0 exactly"
+
+    - step: 2
+      phase: "Front-Run Price Update"
+      description: |
+        Monitor the mempool for price oracle updates. When a price
+        change is incoming (even tiny), front-run with a liquidation
+        transaction.
+      operations:
+        - "Monitor: oracle price update pending"
+        - "Price will drop 0.1% (any tiny movement)"
+        - "Health factor will drop below 1.0"
+        - "Position becomes liquidatable"
+
+    - step: 3
+      phase: "Self-Liquidation"
+      description: |
+        Execute liquidation of own position, receiving the liquidation
+        bonus. Because the position was at exactly 80% LTV, even a
+        small price drop makes liquidation profitable.
+      operations:
+        - "Execute: liquidate(own_position)"
+        - "Receive: collateral + liquidation_bonus"
+        - "Repay: borrowed amount at new (lower) price"
+        - "Profit: liquidation bonus - price difference"
+
+    - step: 4
+      phase: "Leave Bad Debt"
+      description: |
+        If the price moved significantly, the position may be
+        underwater and create bad debt for the protocol.
+      operations:
+        - "If collateral < debt: bad debt remains"
+        - "Protocol absorbs the loss"
+        - "Attacker extracted liquidation bonus"
+
+  exploitation_difficulty: "medium"
+  exploitation_notes: |
+    The attack requires:
+    1. Understanding of lending protocol mechanics
+    2. Ability to front-run oracle updates (MEV)
+    3. Capital for collateral deposits
+    4. Knowledge of liquidation bonus structure
+
+    Without an LTV gap, users are one price tick away from liquidation
+    at all times when borrowing at maximum capacity. This creates
+    systemic risk and enables self-liquidation attacks.
+
+# Audit Finding (Not an Exploit)
+exploits:
+  - id: euler-v2-audit-2024
+    name: "Euler V2 LTV Gap Audit Finding"
+    date: "2024-04"
+    loss_usd: 0  # Prevented by audit
+    protocol: "Euler Finance"
+    chain: ethereum
+    category: logic
+    subcategory: liquidation-mechanics
+    description: |
+      OpenZeppelin identified a High severity finding during the Euler
+      Vault Kit (EVK) audit in April 2024. The protocol lacked a gap
+      between the borrow LTV and liquidation threshold, allowing users
+      to borrow at the edge of liquidation.
+
+      The finding was RESOLVED before production deployment through:
+      1. Adding governor-configurable maximum discount factor
+      2. Allowing separate borrow and liquidation LTVs
+      3. Adding cool-off period after account status checks
+    attack_flow: |
+      HYPOTHETICAL (prevented by audit):
+      1. Deposit collateral, borrow at max LTV (= liquidation threshold)
+      2. Health factor = 1.0 exactly
+      3. Any price drop makes position liquidatable
+      4. Front-run oracle update, self-liquidate
+      5. Extract liquidation bonus, leave bad debt
+    postmortem_url: "https://blog.openzeppelin.com/euler-vault-kit-evk-audit"
+    vulnerable_code_url: "euler-vault-kit (pre-fix)"
+    pattern_ids:
+      - logic-liq-001
+
+# Remediation Guidance
+fixes:
+  root_cause:
+    description: |
+      The root cause was a missing buffer between the maximum borrow
+      ratio (LTV) and the liquidation threshold. This is a common
+      oversight in lending protocol design where the same value is
+      used for both parameters.
+
+  recommended:
+    - fix_id: "separate-ltv-thresholds"
+      name: "Implement Separate Borrow and Liquidation LTVs"
+      priority: critical
+      description: |
+        Configure separate thresholds for maximum borrowing and
+        liquidation. The gap provides a buffer zone where positions
+        are unhealthy but not yet liquidatable.
+      code_pattern: |
+        // VULNERABLE - Same threshold
+        uint constant LTV = 80;
+        uint constant LIQUIDATION_THRESHOLD = 80;  // No gap!
+
+        // SAFE - Separate thresholds with gap
+        uint constant BORROW_LTV = 75;              // Max borrow at 75%
+        uint constant LIQUIDATION_THRESHOLD = 80;  // Liquidate at 80%
+        // 5% gap provides buffer zone
+
+        function borrow(uint amount) external {
+            require(
+                calculateLTV(msg.sender) <= BORROW_LTV,
+                "Exceeds borrow limit"
+            );
+            // ...
+        }
+
+        function liquidate(address user) external {
+            require(
+                calculateLTV(user) > LIQUIDATION_THRESHOLD,
+                "Not liquidatable"
+            );
+            // ...
+        }
+      effectiveness: "Very High - Eliminates edge-of-liquidation borrowing"
+
+    - fix_id: "cool-off-period"
+      name: "Implement Cool-Off Period After Health Check"
+      priority: high
+      description: |
+        Add a delay between an account passing a health check and
+        becoming eligible for operations that could lead to immediate
+        liquidation. Prevents front-running attacks.
+      code_pattern: |
+        // SAFE - Cool-off period
+        mapping(address => uint) lastHealthCheck;
+        uint constant COOL_OFF = 1 hours;
+
+        function borrow(uint amount) external {
+            _checkHealth(msg.sender);
+            lastHealthCheck[msg.sender] = block.timestamp;
+            // ...
+        }
+
+        function liquidate(address user) external {
+            require(
+                block.timestamp >= lastHealthCheck[user] + COOL_OFF,
+                "Cool-off period active"
+            );
+            // ...
+        }
+      effectiveness: "High - Prevents immediate liquidation after borrow"
+
+    - fix_id: "max-liquidation-discount"
+      name: "Limit Liquidation Discount Factor"
+      priority: high
+      description: |
+        Cap the liquidation bonus/discount to limit attacker profitability.
+        Lower discounts reduce the incentive for self-liquidation attacks.
+      code_pattern: |
+        // SAFE - Capped liquidation discount
+        uint constant MAX_LIQUIDATION_DISCOUNT = 5;  // 5% max
+
+        function liquidate(address user, uint amount) external {
+            uint discount = calculateDiscount(user);
+            require(discount <= MAX_LIQUIDATION_DISCOUNT, "Discount too high");
+            // ...
+        }
+      effectiveness: "Medium - Reduces attack profitability"
+
+    - fix_id: "gradual-liquidation"
+      name: "Implement Gradual/Partial Liquidation"
+      priority: medium
+      description: |
+        Instead of liquidating entire positions, allow partial liquidation
+        that brings health factor back to safe levels. This reduces the
+        impact of liquidation events.
+      code_pattern: |
+        // SAFE - Partial liquidation
+        function liquidate(address user, uint amount) external {
+            uint maxLiquidatable = calculateMaxLiquidation(user);
+            uint targetHealth = 1.25e18;  // Target 125% health after
+
+            uint actualAmount = min(amount, maxLiquidatable);
+            require(actualAmount > 0, "Nothing to liquidate");
+
+            // Only liquidate enough to reach target health
+            uint neededToHealth = calculateNeededForHealth(user, targetHealth);
+            actualAmount = min(actualAmount, neededToHealth);
+            // ...
+        }
+      effectiveness: "Medium - Reduces systemic risk"
+
+# References and Sources
+references:
+  - title: "Euler Vault Kit (EVK) Audit"
+    url: "https://blog.openzeppelin.com/euler-vault-kit-evk-audit"
+    source: "OpenZeppelin"
+    date: "2024-05-20"
+    type: "audit_report"
+
+  - title: "The Holy Grail - Euler V2 Formal Verification"
+    url: "https://www.certora.com/blog/the-holy-grail"
+    source: "Certora"
+    date: "2024-08-22"
+    type: "formal_verification"
+
+  - title: "Euler V2 Code Reveal"
+    url: "https://euler.finance/blog/euler-v2-code-reveal"
+    source: "Euler Finance"
+    date: "2024-04-24"
+    type: "official_documentation"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "knowledge-aggregation-worker"
+  source: "Task 17.3a Solodit Crawl - Audit Findings"
+  token_estimate: 1700
+  context_cache_key: "euler-ltv-gap-v1"
+
+  key_learnings:
+    - "LTV gap between borrow and liquidation is critical"
+    - "Edge-of-liquidation positions create systemic risk"
+    - "Self-liquidation can be profitable with liquidation bonus"
+    - "Cool-off periods prevent timing attacks"
+
+  novel_aspects:
+    - "DeFi-specific configuration vulnerability"
+    - "Interaction between LTV, liquidation, and MEV"
+    - "Audit finding preventing production exploit"
+    - "Formal verification application to lending invariants"

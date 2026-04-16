@@ -1,0 +1,16 @@
+id: ext-019
+vulndoc: access-control/external-call
+name: Self Address Not Rejected
+description: Address parameter can be set to address(this) in critical calls.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: address_parameter_used_for_call
+    op: eq
+    value: true
+  - property: validates_address_not_self
+    op: eq
+    value: false

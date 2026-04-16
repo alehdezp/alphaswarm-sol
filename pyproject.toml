@@ -1,0 +1,72 @@
+[project]
+name = "alphaswarm-sol"
+version = "0.5.0"
+description = "AI-native smart contract security analysis powered by behavioral knowledge graphs"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["solidity", "security", "vulnerability", "audit", "llm", "ai", "smart-contract"]
+authors = [{ name = "AlphaSwarm Team" }]
+dependencies = [
+  "anthropic>=0.34.0",
+  "chromadb>=0.5.5",
+  "neo4j>=5.23.0",
+  "pydantic>=2.8.2",
+  "pydantic-settings>=2.4.0",
+  "pyyaml>=6.0.2",
+  "toons>=0.4.0",
+  "semgrep>=1.64.0",
+  "slither-analyzer>=0.10.4",
+  "structlog>=24.1.0",
+  "typer>=0.12.3",
+  # AlphaSwarm.sol: LLM Provider Abstraction
+  "google-generativeai>=0.8.0",
+  "openai>=1.54.0",
+  "httpx>=0.27.0",
+  "tiktoken>=0.8.0",
+  "z3-solver>=4.15.4.0",
+  "openai-agents>=0.6.9",
+  # AlphaSwarm.sol: Observability (Phase 7.1.5)
+  "opentelemetry-api>=1.28.0",
+  "opentelemetry-sdk>=1.28.0",
+  "opentelemetry-exporter-otlp-proto-http>=1.28.0",
+]
+
+[project.scripts]
+alphaswarm = "alphaswarm_sol.cli:app"
+aswarm = "alphaswarm_sol.cli:app"
+
+[tool.uv]
+package = true
+
+[tool.uv.sources]
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alphaswarm_sol"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/alphaswarm_sol/shipping/skills" = "alphaswarm_sol/shipping/skills"
+"src/alphaswarm_sol/shipping/agents" = "alphaswarm_sol/shipping/agents"
+"vulndocs" = "alphaswarm_sol/_vulndocs_data"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.24.0",
+    "pytest-testmon>=2.2.0",
+    "pytest-xdist>=3.8.0",
+]
+ci = [
+    # Schema and contract validation (Phase 5.9-13)
+    "jsonschema>=4.20.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["examples"]
+markers = ["semgrep: semgrep coverage and parity tests"]
+addopts = "-n auto --dist loadfile"

@@ -1,0 +1,13 @@
+id: vm-019
+vulndoc: reentrancy/general
+name: Callback Entrypoint Reentrancy
+description: Callback entrypoints making cross-contract calls without guards.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: callback_entrypoint_surface
+    op: eq
+    value: true

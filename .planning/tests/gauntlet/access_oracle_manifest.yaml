@@ -1,0 +1,15 @@
+version: 1
+suite_id: gauntlet-access-oracle
+cases:
+  - id: AO-01
+    contract_path: tests/contracts/access/Upgrade_01.sol  # TODO: add fixture
+    expected_vulnerable: true
+    ground_truth_id: AO-01
+  - id: AO-02
+    contract_path: tests/contracts/oracle/Oracle_01.sol  # TODO: add fixture
+    expected_vulnerable: true
+    ground_truth_id: AO-02
+  - id: AO-03
+    contract_path: tests/contracts/access/Upgrade_02.sol  # TODO: add fixture
+    expected_vulnerable: false
+    ground_truth_id: AO-03

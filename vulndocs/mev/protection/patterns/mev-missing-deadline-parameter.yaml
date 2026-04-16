@@ -1,0 +1,55 @@
+# =============================================================================
+# ⚠️ DEPRECATED PATTERN - Use mev-002 instead
+# =============================================================================
+#
+# This minimal pattern has been REPLACED by the comprehensive pattern:
+#   patterns/semantic/mev/mev-002-missing-deadline-protection.yaml
+#
+# The new pattern (mev-002) provides:
+#   - Detailed attack scenarios with real-world examples
+#   - Comprehensive fix recommendations with code examples
+#   - Verification steps for auditors
+#   - Combined detection of BOTH missing parameter AND unenforced parameter
+#   - Better documentation and context for LLM-driven analysis
+#
+# MIGRATION: Update your pattern references to use mev-002
+#
+# This pattern is KEPT for backward compatibility but will be removed
+# in a future release.
+#
+# =============================================================================
+
+id: mev-missing-deadline-parameter
+vulndoc: mev/protection
+name: MEV Risk (Missing Deadline Parameter)
+description: |
+  ⚠️ DEPRECATED: This pattern has been replaced by mev-002.
+
+  Swap-like functions without a deadline parameter allow transactions to be
+  executed at stale prices during network congestion.
+
+  Please use: patterns/semantic/mev/mev-002-missing-deadline-protection.yaml
+
+scope: Function
+lens:
+  - Ordering
+severity: medium
+status: deprecated
+
+match:
+  all:
+    - property: swap_like
+      op: eq
+      value: true
+    - property: risk_missing_deadline_parameter
+      op: eq
+      value: true
+
+# Deprecation Information
+deprecated: true
+deprecated_date: "2025-12-31"
+replacement_pattern: "mev-002"
+replacement_path: "patterns/semantic/mev/mev-002-missing-deadline-protection.yaml"
+deprecation_reason: |
+  Minimal pattern replaced by comprehensive pattern with detailed
+  attack scenarios, fix recommendations, and verification steps.

@@ -1,0 +1,43 @@
+id: auth-092
+vulndoc: access-control/general
+name: Multisig Execute Nonce Not Updated
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `multisig-002-nonce-not-updated` instead.
+
+
+  Location: `patterns/semantic/multisig/multisig-002-nonce-not-updated.yaml`
+
+
+  The semantic pattern uses `executes_multisig_operation` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Multisig execution with nonce parameter but no state update.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: medium
+status: deprecated
+deprecated_in_favor_of: multisig-002-nonce-not-updated
+match:
+  all:
+  - property: contract_has_multisig
+    op: eq
+    value: true
+  - property: label
+    op: regex
+    value: (?i)execute|submit|confirm
+  - property: has_nonce_parameter
+    op: eq
+    value: true
+  - property: writes_nonce_state
+    op: eq
+    value: false

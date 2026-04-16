@@ -1,0 +1,19 @@
+id: logic-003
+vulndoc: logic/general
+name: Missing Balance Check
+description: Withdraw-like functions without balance checks.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 754
+match:
+  all:
+  - property: is_withdraw_like
+    op: eq
+    value: true
+  none:
+  - property: has_balance_check
+    op: eq
+    value: true

@@ -1,0 +1,23 @@
+id: auth-064
+vulndoc: access-control/general
+name: Payable Fallback Without Access Gate
+description: Payable fallback/receive functions without access control.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: payable
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false
+  any:
+  - property: is_fallback
+    op: eq
+    value: true
+  - property: is_receive
+    op: eq
+    value: true

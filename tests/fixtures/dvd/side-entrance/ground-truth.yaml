@@ -1,0 +1,122 @@
+# Ground Truth for Side Entrance (Damn Vulnerable DeFi)
+# Source: https://github.com/tinchoabbate/damn-vulnerable-defi
+# Challenge: side-entrance
+# Official Solution: https://www.damnvulnerabledefi.xyz/challenges/side-entrance/
+
+contract: SideEntranceLenderPool
+file: src/SideEntranceLenderPool.sol
+source: damn-vulnerable-defi
+challenge_url: https://www.damnvulnerabledefi.xyz/challenges/side-entrance/
+
+vulnerabilities:
+  - id: DVD-SE-001
+    type: flash-loan-accounting
+    severity: critical
+    function: flashLoan
+    line_range: [82, 95]
+    description: |
+      The flash loan implementation only checks that the pool's ETH balance
+      doesn't decrease. However, the deposit() function can be called during
+      the flash loan callback, allowing the borrower to:
+
+      1. Borrow X ETH via flashLoan()
+      2. In execute() callback, call deposit() with the borrowed X ETH
+      3. This credits X to borrower's balance AND returns X to pool
+      4. After callback, pool balance is same, check passes
+      5. Borrower can now withdraw() the credited X ETH
+
+      This is an accounting bug where the flash loan repayment can be
+      "double-counted" as both repayment AND deposit.
+
+    # Expected BSKG detection
+    expected_graph:
+      operations:
+        - CALLS_EXTERNAL
+        - TRANSFERS_VALUE_OUT
+      properties:
+        visibility: external
+        has_callback: true
+        callback_allows_state_modification: true
+
+    # Expected pattern match
+    expected_pattern:
+      id: flash-loan-accounting
+      tier: B  # Requires understanding of callback + deposit interaction
+      confidence_min: 0.75
+
+    # Exploit steps (from official solution)
+    exploit_steps:
+      - Deploy attacker contract implementing IFlashLoanEtherReceiver
+      - In execute(), call deposit() with msg.value (all received ETH)
+      - Call flashLoan(pool.balance) to borrow entire pool
+      - execute() deposits borrowed funds, crediting attacker's balance
+      - After flashLoan returns, call withdraw() to drain pool
+
+  - id: DVD-SE-002
+    type: reentrancy
+    severity: high
+    function: withdraw
+    line_range: [64, 73]
+    description: |
+      The withdraw function has an external call (msg.sender.call) but follows
+      the CEI (Check-Effects-Interactions) pattern - state is updated before
+      the external call. This is actually SAFE from classic reentrancy.
+
+      However, it's flagged as "high" because:
+      1. External calls always warrant attention
+      2. Combined with other vulnerabilities, could enable attacks
+
+    # Expected BSKG detection
+    expected_graph:
+      operations:
+        - TRANSFERS_VALUE_OUT
+        - WRITES_USER_BALANCE
+      properties:
+        visibility: external
+        has_external_calls: true
+        state_writes_before_external_call: true  # CEI pattern = SAFE
+        behavioral_signature: "W:bal->X:out"  # Write before external = safe
+
+    # Expected pattern match
+    expected_pattern:
+      id: reentrancy-potential
+      tier: A
+      confidence_min: 0.5  # Lower confidence due to CEI pattern
+
+safe_functions:
+  - function: deposit
+    reason: Just credits balance, no external calls
+    note: However, being callable during flash loan callback makes it part of vulnerability
+    expected_properties:
+      has_external_calls: false
+      state_mutability: payable
+
+# Expected multi-agent debate outcomes
+expected_debates:
+  - finding: DVD-SE-001
+    attacker_claim: |
+      Flash loan can be exploited by calling deposit() during execute() callback.
+      The balance check only verifies ETH didn't leave the pool, not HOW it was returned.
+      Attacker gets credited balance while also "repaying" the loan.
+    defender_response: |
+      No mechanism prevents deposit() from being called during callback.
+      The repayment check is semantically incorrect - it conflates balance
+      return with legitimate repayment.
+    verifier_verdict: CONFIRMED
+    confidence_min: 0.9
+
+  - finding: DVD-SE-002
+    attacker_claim: |
+      withdraw() has external call that could enable reentrancy.
+    defender_response: |
+      CEI pattern is followed - balances[msg.sender] = 0 happens BEFORE
+      the external call. Classic reentrancy is not possible.
+    verifier_verdict: MITIGATED
+    confidence_min: 0.7
+    notes: The reentrancy is mitigated by CEI, but the accounting bug is the real issue
+
+# Validation thresholds
+thresholds:
+  precision_min: 0.60  # Lower due to DVD-SE-002 being debatable
+  recall_min: 0.80     # Must catch the critical DVD-SE-001
+  f1_min: 0.70

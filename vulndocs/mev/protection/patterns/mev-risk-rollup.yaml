@@ -1,0 +1,22 @@
+id: mev-risk-rollup
+vulndoc: mev/protection
+name: MEV Risk Rollup
+description: Summary rollup for MEV risks (high and medium).
+scope: Function
+lens:
+  - Ordering
+severity: info
+match:
+  any:
+    - property: risk_missing_slippage_parameter
+      op: eq
+      value: true
+    - property: risk_missing_deadline_parameter
+      op: eq
+      value: true
+    - property: risk_missing_slippage_check
+      op: eq
+      value: true
+    - property: risk_missing_deadline_check
+      op: eq
+      value: true

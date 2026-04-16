@@ -1,0 +1,22 @@
+# Signature Malleability - Subcategory Index
+
+id: signature-malleability
+name: Signature Malleability
+parent_category: crypto
+
+description: |
+  ECDSA signatures can be modified while remaining valid, allowing
+  signature reuse or replay in some contexts.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - crypto-001
+
+relevant_properties:
+  - uses_ecrecover
+  - checks_sig_s
+
+token_estimate: 400

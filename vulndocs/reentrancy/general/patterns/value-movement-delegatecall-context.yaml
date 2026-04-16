@@ -1,0 +1,16 @@
+id: value-movement-delegatecall-context
+vulndoc: reentrancy/general
+name: Delegatecall Context Confusion
+description: Delegatecall combined with msg.sender/tx.origin usage.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: delegatecall_context_sensitive
+    op: eq
+    value: true

@@ -1,0 +1,33 @@
+# Unbounded Loop DoS - Subcategory Index
+
+id: unbounded-loop
+name: Unbounded Loop DoS
+parent_category: dos
+
+description: |
+  Loops iterating over dynamic arrays without gas bounds can exceed block
+  gas limits. Attackers add entries to arrays (e.g., participants, pending
+  withdrawals) until iteration becomes impossible.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - dos-001
+
+relevant_properties:
+  - has_unbounded_loop
+  - external_calls_in_loop
+  - loop_iteration_count
+
+graph_signals:
+  - property: has_unbounded_loop
+    expected: true
+    critical: true
+
+behavioral_signatures:
+  - "L:unbnd->X:call"
+  - "L:unbnd->W:state"
+
+token_estimate: 400

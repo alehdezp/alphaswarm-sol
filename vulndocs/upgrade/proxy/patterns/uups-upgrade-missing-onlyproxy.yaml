@@ -1,0 +1,27 @@
+id: uups-upgrade-missing-onlyproxy
+vulndoc: upgrade/proxy
+name: UUPS Upgrade Missing onlyProxy
+description: UUPS upgrade functions missing onlyProxy modifier but otherwise access-controlled.
+scope: Function
+lens:
+- Upgradeability
+severity: info
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_is_uups_proxy
+    op: eq
+    value: true
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: has_access_control
+    op: eq
+    value: true
+  - property: has_only_proxy_modifier
+    op: eq
+    value: false

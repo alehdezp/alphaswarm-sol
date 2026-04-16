@@ -1,0 +1,22 @@
+# Proposal Manipulation - Subcategory Index
+
+id: proposal-manipulation
+name: Proposal Manipulation
+parent_category: governance
+
+description: |
+  Exploiting proposal creation, execution, or cancellation mechanics
+  to bypass governance safeguards.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - gov-002
+
+relevant_properties:
+  - has_timelock
+  - proposal_threshold
+
+token_estimate: 400

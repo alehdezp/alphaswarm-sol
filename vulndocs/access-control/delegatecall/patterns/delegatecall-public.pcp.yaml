@@ -1,0 +1,323 @@
+# Pattern Context Pack (PCP) v2 - Public Delegatecall Usage
+# Path: vulndocs/access-control/delegatecall/patterns/delegatecall-public.pcp.yaml
+
+schema_version: "2.0"
+
+# =============================================================================
+# IDENTITY (Required)
+# =============================================================================
+
+id: pcp-delegatecall-public
+version: "2.0"
+pattern_id: "delegatecall-public"
+name: "Public Delegatecall Usage"
+summary: |
+  Detects public or external functions that use delegatecall, which can allow
+  attackers to execute arbitrary code in the context of the calling contract,
+  potentially modifying storage and stealing funds.
+scope: Function
+
+# =============================================================================
+# DETERMINISM CONSTRAINTS (Required - do not modify defaults)
+# =============================================================================
+
+determinism:
+  no_rag: true
+  no_name_heuristics: true
+  serialization_order:
+    - pcp
+    - slice
+    - protocol
+    - evidence
+  hash_seed: "graph_hash + pcp_version + pattern_id"
+
+# =============================================================================
+# TOKEN BUDGET
+# =============================================================================
+
+budget:
+  pcp_max_tokens: 800
+  context_max_tokens: 2200
+  cheap_pass_tokens: 1200
+  verify_pass_tokens: 1800
+  deep_pass_tokens: 2400
+
+# =============================================================================
+# EVIDENCE WEIGHTS
+# =============================================================================
+
+evidence_weights:
+  required:
+    - "ev-delegatecall-usage"
+    - "ev-public-visibility"
+  strong:
+    - "ev-user-controlled-target"
+    - "ev-user-controlled-data"
+  weak:
+    - "ev-storage-modification"
+  optional:
+    - "ev-proxy-pattern"
+
+# =============================================================================
+# WITNESS REQUIREMENTS
+# =============================================================================
+
+witness:
+  minimal_required:
+    - "uses_delegatecall"
+    - "public_or_external_visibility"
+  negative_required:
+    - "target_address_hardcoded"
+    - "owner_only_access_control"
+    - "whitelisted_targets_only"
+
+# =============================================================================
+# EXPLOIT MODELING
+# =============================================================================
+
+preconditions:
+  - id: "pre-001"
+    description: "Function is publicly callable (public/external visibility)"
+    evidence_refs:
+      - "ev-public-visibility"
+  - id: "pre-002"
+    description: "Function uses delegatecall"
+    evidence_refs:
+      - "ev-delegatecall-usage"
+  - id: "pre-003"
+    description: "Target address or calldata is controllable by caller"
+    evidence_refs:
+      - "ev-user-controlled-input"
+
+exploit_steps:
+  - id: "step-001"
+    description: "Attacker identifies public function with delegatecall"
+    required_ops:
+      - "DELEGATECALL"
+    evidence_refs:
+      - "ev-delegatecall-discovery"
+  - id: "step-002"
+    description: "Attacker crafts malicious contract with selfdestruct or storage manipulation"
+    required_ops: []
+    evidence_refs:
+      - "ev-malicious-contract"
+  - id: "step-003"
+    description: "Attacker calls function with malicious target address"
+    required_ops:
+      - "DELEGATECALL"
+    evidence_refs:
+      - "ev-attack-call"
+  - id: "step-004"
+    description: "Malicious code executes in context of victim contract, modifying storage or draining funds"
+    required_ops:
+      - "WRITES_STATE"
+      - "TRANSFERS_VALUE_OUT"
+    evidence_refs:
+      - "ev-storage-corruption"
+      - "ev-fund-drain"
+
+impact_invariants:
+  - id: "impact-001"
+    description: "Contract storage can be arbitrarily modified (ownership takeover)"
+    evidence_refs:
+      - "ev-ownership-takeover"
+  - id: "impact-002"
+    description: "Contract can be destroyed via selfdestruct delegatecall"
+    evidence_refs:
+      - "ev-selfdestruct"
+  - id: "impact-003"
+    description: "All contract funds can be drained"
+    evidence_refs:
+      - "ev-fund-drain"
+
+# =============================================================================
+# OPERATION SIGNATURES (Required)
+# =============================================================================
+
+op_signatures:
+  required_ops:
+    - "DELEGATECALL"
+
+  ordering_variants:
+    - id: "seq-001"
+      description: "Direct delegatecall to user-provided address"
+      sequence:
+        - "READS_CALLDATA"
+        - "DELEGATECALL"
+    - id: "seq-002"
+      description: "Delegatecall after minimal validation"
+      sequence:
+        - "READS_CALLDATA"
+        - "CHECKS_CONDITION"
+        - "DELEGATECALL"
+
+  forbidden_ops: []
+
+# =============================================================================
+# ANTI-SIGNALS
+# =============================================================================
+
+anti_signals:
+  - id: "guard.owner-only"
+    guard_type: "access_control"
+    severity: "critical"
+    expected_context: "onlyOwner modifier or equivalent access control restricting delegatecall to admin"
+    evidence_refs:
+      - "ev-owner-modifier"
+    bypass_notes:
+      - "Owner account compromised"
+      - "Proxy admin can still execute arbitrary code"
+      - "Social engineering of admin"
+
+  - id: "guard.hardcoded-target"
+    guard_type: "custom"
+    severity: "critical"
+    expected_context: "Delegatecall target is hardcoded constant, not user-controllable"
+    evidence_refs:
+      - "ev-constant-target"
+    bypass_notes:
+      - "Implementation contract can be compromised"
+      - "Hardcoded address points to upgradeable contract"
+
+  - id: "guard.whitelist"
+    guard_type: "custom"
+    severity: "high"
+    expected_context: "Target address checked against whitelist before delegatecall"
+    evidence_refs:
+      - "ev-whitelist-check"
+    bypass_notes:
+      - "Whitelist update mechanism may be exploitable"
+      - "Whitelisted contract may have vulnerability"
+
+  - id: "guard.proxy-pattern"
+    guard_type: "custom"
+    severity: "high"
+    expected_context: "Standard proxy pattern (EIP-1967, UUPS, Diamond) with proper admin controls"
+    evidence_refs:
+      - "ev-eip1967-slot"
+      - "ev-uups-pattern"
+    bypass_notes:
+      - "UUPS: Uninitialized implementation can be taken over"
+      - "Diamond: Facet registration may be exploitable"
+      - "Admin role compromise"
+
+# =============================================================================
+# COUNTERFACTUALS
+# =============================================================================
+
+counterfactuals:
+  - id: "cf-001"
+    if_removed: "guard.owner-only"
+    becomes_true: true
+    notes: "Without access control, anyone can trigger delegatecall to arbitrary address"
+  - id: "cf-002"
+    if_removed: "guard.hardcoded-target"
+    becomes_true: true
+    notes: "Without hardcoded target, attacker can point to malicious contract"
+  - id: "cf-003"
+    if_removed: "guard.whitelist"
+    becomes_true: true
+    notes: "Without whitelist, any address can be used as delegatecall target"
+
+# =============================================================================
+# GUARD TAXONOMY
+# =============================================================================
+
+guard_taxonomy:
+  - id: "g-001"
+    type: "access_control"
+    description: "Owner/admin-only access control on delegatecall function"
+    expected_ops:
+      - "CHECKS_PERMISSION"
+    bypass_notes:
+      - "Admin compromise"
+      - "Privilege escalation"
+  - id: "g-002"
+    type: "custom"
+    description: "Hardcoded or whitelisted target address"
+    expected_ops:
+      - "CHECKS_CONDITION"
+    bypass_notes:
+      - "Implementation contract vulnerability"
+      - "Whitelist management vulnerability"
+
+# =============================================================================
+# ORDERING VARIANTS
+# =============================================================================
+
+ordering_variants:
+  - id: "ov-001"
+    description: "Unchecked delegatecall to user input"
+    sequence:
+      - "READS_CALLDATA"
+      - "DELEGATECALL"
+
+# =============================================================================
+# RISK ENVELOPE
+# =============================================================================
+
+risk_envelope:
+  asset_type: "mixed"
+  trust_boundary: "user->contract"
+  value_movement: "out"
+  severity_floor: "high"
+
+# =============================================================================
+# COMPOSITION HINTS
+# =============================================================================
+
+composition_hints:
+  co_occurs_with:
+    - "arbitrary-delegatecall-target"
+    - "delegatecall-storage-collision"
+  combine_with:
+    - "uninitialized-proxy"
+    - "storage-slot-collision"
+
+# =============================================================================
+# ECONOMIC PLACEHOLDERS (Phase 5.11)
+# =============================================================================
+
+economic_placeholders:
+  value_flows:
+    - "contract_balance -> attacker_address (via selfdestruct/transfer)"
+  incentive_hooks:
+    - "Full contract takeover enables total fund extraction"
+  role_assumptions:
+    - "Caller may be malicious actor"
+    - "Target address may point to malicious code"
+  offchain_dependencies: []
+  risk_pre_score: "high"
+
+# =============================================================================
+# EVIDENCE REQUIREMENTS
+# =============================================================================
+
+evidence_requirements:
+  node_types:
+    - "Function"
+    - "LowLevelCall"
+    - "StateVariable"
+  edge_types:
+    - "DELEGATECALL"
+    - "READS_CALLDATA"
+    - "WRITES_STATE"
+  path_constraints:
+    - "Function -[DELEGATECALL]-> *"
+
+# =============================================================================
+# UNKNOWNS POLICY
+# =============================================================================
+
+unknowns_policy:
+  missing_required: "unknown"
+  missing_optional: "unknown"
+  missing_anti_signal: "unknown"
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+created: 2026-01-29
+updated: 2026-01-29
+author: "claude-opus-4.5"

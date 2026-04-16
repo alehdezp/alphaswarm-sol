@@ -1,0 +1,19 @@
+id: auth-094
+vulndoc: access-control/general
+name: Multisig Signer Change Without Signature Validation
+description: Multisig signer changes without signature validation.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: contract_has_multisig
+    op: eq
+    value: true
+  - property: is_multisig_member_change
+    op: eq
+    value: true
+  - property: uses_ecrecover
+    op: eq
+    value: false

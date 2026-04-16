@@ -1,0 +1,19 @@
+id: upg-007
+vulndoc: upgrade/general
+name: Implementation Destructible
+description: Implementation contract contains selfdestruct.
+scope: Contract
+lens:
+- Upgradeability
+severity: critical
+match:
+  all:
+  - property: is_implementation_contract
+    op: eq
+    value: true
+  - property: is_upgradeable
+    op: eq
+    value: true
+  - property: has_selfdestruct
+    op: eq
+    value: true

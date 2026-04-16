@@ -1,0 +1,53 @@
+# Read-Only Reentrancy - Subcategory Index
+
+id: read-only
+name: Read-Only Reentrancy
+parent_category: reentrancy
+
+description: |
+  Exploiting view functions that read inconsistent state during a reentrant call.
+  While the attacked contract may have proper reentrancy guards on state-modifying
+  functions, external contracts that read its state via view functions can receive
+  stale or inconsistent data during an ongoing transaction.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - vm-004
+
+relevant_properties:
+  - reads_external_state
+  - is_view_function
+  - external_dependency
+  - price_calculation
+
+graph_signals:
+  - property: is_view_function
+    expected: true
+    critical: true
+    description: Function reading potentially stale external state
+
+  - property: reads_external_state
+    expected: true
+    critical: true
+
+behavioral_signatures:
+  - "V:read->E:stale"
+  - "R:ext->C:price"
+
+operation_sequences:
+  vulnerable:
+    - "External: X:out | Victim: V:read"
+    - "Lending: R:price from pool mid-swap"
+  safe:
+    - "External: X:out -> Update:oracle"
+    - "Check: reentrancy_flag before read"
+
+false_positive_indicators:
+  - "State dependency is on immutable data"
+  - "Read happens in same transaction as update"
+  - "External state has its own reentrancy protection"
+
+token_estimate: 400

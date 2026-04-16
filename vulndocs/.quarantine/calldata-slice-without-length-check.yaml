@@ -1,0 +1,16 @@
+id: calldata-slice-without-length-check
+vulndoc: logic/array-handling
+name: Calldata Slice Without Length Check
+description: Slicing calldata without validating length can lead to malformed input handling or out-of-bounds assumptions.
+scope: Function
+lens:
+  - Crypto
+severity: medium
+match:
+  all:
+    - property: uses_calldata_slice
+      op: eq
+      value: true
+    - property: has_calldata_length_check
+      op: eq
+      value: false

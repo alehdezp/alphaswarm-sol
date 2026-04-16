@@ -1,0 +1,13 @@
+id: dos-unbounded-deletion
+vulndoc: dos/unbounded
+name: Unbounded Deletion Loop
+description: Deletes state inside an unbounded loop (potential DoS).
+scope: Function
+lens:
+  - DoS
+severity: high
+match:
+  all:
+    - property: has_unbounded_deletion
+      op: eq
+      value: true

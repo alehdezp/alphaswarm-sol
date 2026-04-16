@@ -1,0 +1,663 @@
+# =============================================================================
+# PATTERN: token-002-erc777-reentrancy
+# ERC-777 Token Callback Reentrancy (Semantic, Name-Agnostic)
+# =============================================================================
+
+id: token-002-erc777-reentrancy
+vulndoc: token/transfer
+name: "ERC-777 Token Callback Reentrancy"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Functions that perform ERC-777 token operations (send, operatorSend, burn, mint)
+  and write state AFTER the external call, creating a reentrancy vulnerability
+  through the tokensReceived() or tokensToSend() callback hooks.
+
+  **Semantic Detection**: This pattern detects what the function DOES:
+  - Uses ERC-777 token operations (uses_erc777_send = true)
+  - Writes user balance/critical state (writes_balance_state or writes_state)
+  - Violates CEI pattern: external call happens BEFORE state update
+
+  ERC-777 is FUNDAMENTALLY different from ERC-20 because it calls recipient
+  hooks (tokensReceived/tokensToSend) DURING the token transfer, BEFORE the
+  transfer completes. This creates a reentrancy surface similar to ETH transfers.
+
+  ## Why It's Dangerous
+
+  ERC-777 tokens implement ERC-1820 registry hooks that execute callbacks:
+  - **tokensToSend()**: Called on sender BEFORE balance update
+  - **tokensReceived()**: Called on recipient BEFORE transfer completes
+
+  These hooks allow the recipient/sender to call back into the contract DURING
+  the token operation, while state is inconsistent:
+
+  **Attack Flow:**
+  1. User calls vulnerable withdraw/transfer function
+  2. Contract calls ERC-777 token.send(user, amount)
+  3. Token calls user's tokensReceived() hook **BEFORE updating state**
+  4. User's malicious contract re-enters withdraw() function
+  5. Old state still shows full balance (not yet updated)
+  6. Re-entered call succeeds, transferring tokens again
+  7. User drains contract by repeating steps 4-6
+
+  This is the classic DAO-style reentrancy but triggered by TOKEN operations
+  instead of ETH transfers.
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external)
+  2. Function uses ERC-777 operations (send, operatorSend, burn, mint)
+  3. Function writes user balance/critical state (accounting updates)
+  4. Function violates CEI: external call happens BEFORE state write
+  5. Function has NO reentrancy guard (nonReentrant modifier)
+
+  **Implementation-Agnostic**: Works regardless of:
+  - Function names (withdraw, redeem, unstake, claim, etc.)
+  - Variable names (balances, shares, stakes, deposits, etc.)
+  - Token parameter names (token, asset, erc777, etc.)
+
+  Safe patterns that are EXCLUDED:
+  - Functions with nonReentrant modifier
+  - Functions following CEI pattern (state update BEFORE external call)
+  - View/pure functions (no state changes)
+  - Internal/private functions (not externally callable)
+
+  ## Real-World Examples
+
+  - **Uniswap V1 + imBTC (2020)**: $300K loss - ERC-777 reentrancy attack
+  - **Lendf.Me (April 2020)**: $25M drained - ERC-777 callback reentrancy via imBTC token
+  - **dForce (April 2020)**: $25M loss - Same attack vector as Lendf.Me
+  - **Various BSC DeFi**: Multiple ERC-777 reentrancy incidents
+
+  **Critical Note**: The Lendf.Me hack demonstrated that even well-audited
+  protocols can be vulnerable if they don't account for ERC-777 callback hooks.
+
+scope: Function
+
+lens:
+  - Reentrancy
+  - ValueMovement
+  - Token
+
+severity: critical
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Must be externally callable
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Must use ERC-777 token operations (send, operatorSend, burn, mint)
+      # These operations trigger tokensReceived/tokensToSend hooks
+      - property: uses_erc777_send
+        op: eq
+        value: true
+
+      # Must write user balance or critical state (accounting updates)
+      # This creates the reentrancy race condition
+      - property: writes_balance_state
+        op: eq
+        value: true
+
+      # Core vulnerability: CEI violation - external call BEFORE state write
+      # In safe code, state updates happen BEFORE external calls
+      - property: state_write_after_external_call
+        op: eq
+        value: true
+
+    # At least ONE must match (OR logic) - not used
+    any: []
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # Safe: Has reentrancy guard (nonReentrant modifier)
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+      # Not applicable to view/pure functions
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Internal/private functions are not externally exploitable
+      - property: visibility
+        op: in
+        value: [internal, private]
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_only  # Only Tier A (deterministic) matching
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [token-vault]
+  true_positives: 10
+  true_negatives: 13
+  false_positives: 0
+  false_negatives: 7
+  edge_cases: 5
+  precision: 1.0
+  recall: 0.5882
+  variation_score: 1.0
+  last_tested: "2025-12-31"
+  notes: |
+    100% precision (no false positives) - critical for production use.
+
+    Recall limited by VKG builder property gaps (not pattern design flaws):
+    1. writes_balance_state=False for shares/stakes/deposits mappings
+       - Only "balances" mapping is detected
+       - Affects: redeem(), unstake(), claim(), withdrawToShares()
+    2. uses_erc777_send=False for burn() and operatorSend() calls
+       - Only send() is detected
+       - Affects: burnTokens(), withdrawViaOperator(), operatorWithdraw()
+
+    All implementation variations detected correctly (100% variation score).
+    Pattern works on all tested naming conventions and code patterns.
+
+status: ready
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Classic ERC-777 Reentrancy via tokensReceived"
+    description: |
+      Attacker exploits tokensReceived() callback to re-enter withdraw function
+      before balance is updated, draining contract funds
+    preconditions:
+      - "Contract accepts/handles ERC-777 tokens (imBTC, ERC-777 implementation)"
+      - "Withdraw/transfer function sends tokens BEFORE updating balance"
+      - "No reentrancy guard (nonReentrant modifier) present"
+      - "Attacker has deposited/staked tokens in the contract"
+    steps:
+      - "Attacker deploys malicious contract implementing IERC777Recipient"
+      - "Attacker deposits 100 ERC-777 tokens to build legitimate balance"
+      - "Attacker calls withdraw(100) on vulnerable contract"
+      - "Contract sends 100 ERC-777 tokens to attacker (via token.send())"
+      - "ERC-777 token calls attacker's tokensReceived() hook **BEFORE completing**"
+      - "Inside tokensReceived(), attacker calls withdraw(100) AGAIN"
+      - "Balance still shows 100 (not updated yet), second withdraw succeeds"
+      - "Attacker receives 200 tokens total from 100 deposited"
+      - "Repeat until contract is drained"
+    impact: "Complete drainage of contract's ERC-777 token holdings - $25M+ in historical attacks"
+
+  - name: "Cross-Function ERC-777 Reentrancy"
+    description: |
+      Attacker uses tokensReceived() callback to re-enter a DIFFERENT function
+      that relies on the same state (cross-function reentrancy)
+    preconditions:
+      - "Contract has multiple functions operating on same state"
+      - "Function A sends ERC-777 tokens (triggers callback)"
+      - "Function B reads/modifies same balance state"
+      - "No reentrancy guard protecting the shared state"
+    steps:
+      - "Attacker calls functionA() which sends ERC-777 tokens"
+      - "Inside tokensReceived() callback, attacker calls functionB()"
+      - "FunctionB() operates on stale state (not yet updated by functionA)"
+      - "State inconsistency allows exploitation"
+      - "Example: withdraw() sends tokens, claim() reads same balance"
+    impact: "Cross-function state inconsistency leading to fund loss or privilege escalation"
+
+  - name: "ERC-777 Operator Reentrancy"
+    description: |
+      Attacker exploits operatorSend() callback via tokensToSend hook
+      to manipulate state before operator transfer completes
+    preconditions:
+      - "Contract uses ERC-777 operatorSend() for third-party transfers"
+      - "tokensToSend() hook triggered on sender before transfer"
+      - "State update happens after operatorSend() call"
+    steps:
+      - "Attacker registers as ERC-777 token holder"
+      - "Contract calls token.operatorSend(attacker, recipient, amount)"
+      - "Token calls attacker's tokensToSend() hook BEFORE transfer"
+      - "Attacker re-enters contract during callback"
+      - "Stale state allows double-spend or other exploits"
+    impact: "Operator-based reentrancy attack vector, less common but equally dangerous"
+
+  - name: "Read-Only ERC-777 Reentrancy"
+    description: |
+      Attacker exploits view functions during ERC-777 callback to manipulate
+      oracle prices, share calculations, or other derived values
+    preconditions:
+      - "Contract has view functions reading balance/state"
+      - "Other protocols rely on these view functions (oracles, price feeds)"
+      - "ERC-777 transfer happens before state update"
+    steps:
+      - "Victim protocol calls vulnerable contract's getPrice() or similar"
+      - "Price depends on balance/state that can be manipulated"
+      - "Attacker initiates ERC-777 transfer to trigger callback"
+      - "During tokensReceived(), state is inconsistent (mid-transfer)"
+      - "Victim protocol reads manipulated price/value"
+      - "Attacker profits from price manipulation (e.g., flash loan attack)"
+    impact: "Price oracle manipulation, flash loan attacks, cross-protocol exploitation"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm function uses ERC-777 token operations (send, operatorSend, burn, mint)"
+  - "Verify the token being used IS actually ERC-777 compatible:"
+  - "  - Check if token implements ERC-1820 registry (IERC777 interface)"
+  - "  - Common ERC-777 tokens: imBTC, some wrapped tokens"
+  - "  - Note: Most modern tokens are ERC-20, not ERC-777"
+  - "Trace execution order using CFG:"
+  - "  1. Identify where ERC-777 token.send() is called"
+  - "  2. Identify where balance/state is updated"
+  - "  3. Confirm external call happens BEFORE state update (CEI violation)"
+  - "Check for reentrancy guards:"
+  - "  - Look for: nonReentrant modifier (OpenZeppelin ReentrancyGuard)"
+  - "  - Look for: manual reentrancy lock (bool locked pattern)"
+  - "Assess attack feasibility:"
+  - "  - Can attacker control the recipient address? (receive callback)"
+  - "  - Does contract hold significant ERC-777 token balances?"
+  - "  - Are there other users' funds at risk?"
+  - "Check if ERC-777 support is intentional or accidental"
+  - "Verify if safe alternatives exist (ERC-20 instead of ERC-777)"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add Reentrancy Guard (Recommended)"
+    description: |
+      Use OpenZeppelin's ReentrancyGuard to prevent reentrancy attacks
+    example: |
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+      contract TokenVault is ReentrancyGuard {
+          mapping(address => uint256) public balances;
+          IERC777 public token;
+
+          // VULNERABLE CODE
+          function withdraw(uint256 amount) external {
+              require(balances[msg.sender] >= amount, "Insufficient balance");
+              token.send(msg.sender, amount, "");  // ERC-777 callback HERE
+              balances[msg.sender] -= amount;      // State update AFTER call
+          }
+
+          // FIXED CODE - Reentrancy Guard
+          function withdraw(uint256 amount) external nonReentrant {
+              require(balances[msg.sender] >= amount, "Insufficient balance");
+              token.send(msg.sender, amount, "");  // Protected by guard
+              balances[msg.sender] -= amount;      // Safe even after call
+          }
+      }
+
+  - name: "Follow CEI Pattern (Checks-Effects-Interactions)"
+    description: |
+      Update state BEFORE external calls to prevent reentrancy exploitation
+    example: |
+      // VULNERABLE CODE - CEI Violation
+      function withdraw(uint256 amount) external {
+          require(balances[msg.sender] >= amount, "Insufficient balance");  // Check
+          token.send(msg.sender, amount, "");  // Interaction BEFORE Effect
+          balances[msg.sender] -= amount;      // Effect AFTER Interaction (WRONG)
+      }
+
+      // FIXED CODE - Proper CEI Pattern
+      function withdraw(uint256 amount) external {
+          require(balances[msg.sender] >= amount, "Insufficient balance");  // Check
+          balances[msg.sender] -= amount;      // Effect BEFORE Interaction
+          token.send(msg.sender, amount, "");  // Interaction AFTER Effect
+      }
+
+      // NOTE: For ERC-777, CEI alone may not be sufficient if there are
+      // cross-function reentrancy risks. Use both CEI + ReentrancyGuard.
+
+  - name: "Use ERC-20 Instead of ERC-777 (Most Secure)"
+    description: |
+      Avoid ERC-777 entirely and use standard ERC-20 tokens with SafeERC20
+    example: |
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+      contract TokenVault {
+          using SafeERC20 for IERC20;
+          mapping(address => uint256) public balances;
+          IERC20 public token;  // Use ERC-20, NOT ERC-777
+
+          function withdraw(uint256 amount) external {
+              require(balances[msg.sender] >= amount, "Insufficient balance");
+              balances[msg.sender] -= amount;
+              token.safeTransfer(msg.sender, amount);  // No callback hooks
+          }
+
+          // IMPORTANT: Explicitly reject ERC-777 tokens in deposit
+          function deposit(IERC20 _token, uint256 amount) external {
+              // Check token is NOT ERC-777 (no ERC-1820 support)
+              require(
+                  !supportsInterface(_token, type(IERC777).interfaceId),
+                  "ERC-777 not supported"
+              );
+              _token.safeTransferFrom(msg.sender, address(this), amount);
+              balances[msg.sender] += amount;
+          }
+      }
+
+  - name: "Implement Pull Payment Pattern"
+    description: |
+      Instead of sending tokens directly, let users pull their tokens
+    example: |
+      contract TokenVault {
+          mapping(address => uint256) public balances;
+          mapping(address => uint256) public pendingWithdrawals;
+          IERC777 public token;
+
+          // Step 1: Mark tokens available for withdrawal (no external call)
+          function requestWithdraw(uint256 amount) external {
+              require(balances[msg.sender] >= amount, "Insufficient balance");
+              balances[msg.sender] -= amount;  // Update state first
+              pendingWithdrawals[msg.sender] += amount;  // Mark available
+          }
+
+          // Step 2: User pulls their tokens (separate transaction)
+          function claimWithdrawal() external nonReentrant {
+              uint256 amount = pendingWithdrawals[msg.sender];
+              require(amount > 0, "Nothing to claim");
+              pendingWithdrawals[msg.sender] = 0;  // Clear pending
+              token.send(msg.sender, amount, "");  // Transfer
+          }
+
+          // Two-step process prevents reentrancy:
+          // - requestWithdraw() updates state, no external call
+          // - claimWithdrawal() has external call but uses separate state
+      }
+
+  - name: "Use Mutex Lock Pattern (Manual Reentrancy Guard)"
+    description: |
+      Implement manual reentrancy lock if ReentrancyGuard is not available
+    example: |
+      contract TokenVault {
+          mapping(address => uint256) public balances;
+          IERC777 public token;
+          bool private locked;  // Mutex lock
+
+          modifier noReentrancy() {
+              require(!locked, "Reentrancy detected");
+              locked = true;
+              _;
+              locked = false;
+          }
+
+          function withdraw(uint256 amount) external noReentrancy {
+              require(balances[msg.sender] >= amount, "Insufficient balance");
+              token.send(msg.sender, amount, "");
+              balances[msg.sender] -= amount;
+          }
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - reentrancy-001-classic-reentrancy  # Classic ETH reentrancy
+  - reentrancy-002-cross-function  # Cross-function reentrancy
+  - reentrancy-003-read-only  # Read-only reentrancy
+  - token-001-unhandled-fee-on-transfer  # Related token accounting issue
+  - vm-002-cei-violation  # CEI pattern violations
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC05  # Reentrancy
+  - SC06  # Unchecked External Calls
+  - SC03  # Logic Errors (CEI violation)
+
+# CWE mapping
+cwe_mapping:
+  - CWE-841  # Improper Enforcement of Behavioral Workflow (CEI violation)
+  - CWE-362  # Concurrent Execution using Shared Resource (reentrancy race)
+  - CWE-691  # Insufficient Control Flow Management
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+# Detect CEI violation: CALLS_EXTERNAL happens BEFORE WRITES_USER_BALANCE
+semantic_ops:
+  has_all_operations:
+    - CALLS_EXTERNAL  # ERC-777 send triggers external callback
+    - WRITES_USER_BALANCE  # Balance update
+  sequence_order:
+    before: CALLS_EXTERNAL  # External call happens first
+    after: WRITES_USER_BALANCE  # State write happens after (VULNERABLE)
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  pattern: "X:call→W:bal"
+  description: "External call before balance write - CEI violation with ERC-777"
+  matches_exploits: [lendfme-2020, dforce-2020, uniswap-imbtc-2020]
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - lendfme-2020
+    - dforce-2020
+    - uniswap-imbtc-2020
+  signature: "X:call→W:bal"
+  description: "ERC-777 callback reentrancy - CEI violation pattern"
+  similarity_threshold: 0.90
+
+# Attack Path Templates (Phase 7)
+attack_paths:
+  - name: erc777_reentrancy_attack
+    description: "ERC-777 tokensReceived callback reentrancy"
+    entry_role: EntryPoint
+    must_traverse:
+      - operation: CALLS_EXTERNAL  # ERC-777 send
+      - operation: WRITES_USER_BALANCE  # Balance update
+    sequence_constraints:
+      - before: CALLS_EXTERNAL
+        after: WRITES_USER_BALANCE  # Vulnerable ordering
+    preconditions:
+      - "uses_erc777_send == true"
+      - "has_reentrancy_guard == false"
+    impact: "Reentrancy attack via ERC-777 callback hooks"
+    min_steps: 2
+    max_steps: 5
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Explorer agent: Trace execution path from entry to token send to state write
+  explorer:
+    entry_points: [EntryPoint]
+    must_traverse:
+      - operation: CALLS_EXTERNAL
+      - operation: WRITES_USER_BALANCE
+    sinks: [WRITES_USER_BALANCE]
+    max_depth: 5
+
+  # Pattern agent: Verify CEI violation (call before write)
+  pattern:
+    require_all_conditions: true
+    check_ordering: true
+
+  # Constraint agent: Prove reentrancy is reachable
+  constraint:
+    enabled: true
+    variables:
+      - name: balance
+        type: uint256
+        source: state_variable
+      - name: amount
+        type: uint256
+        source: function_parameter
+    vulnerability_condition: "balance >= amount in callback context"
+    verdict:
+      sat: vulnerable  # Reentrancy is reachable
+      unsat: safe  # Reentrancy not possible
+
+  # Risk agent: Assess exploitability
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 8.0  # Critical severity
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 3
+    mode: voting
+
+# =============================================================================
+# ADDITIONAL CONTEXT
+# =============================================================================
+
+# ERC-777 vs ERC-20 Comparison
+erc777_vs_erc20:
+  description: |
+    ERC-777 is an ADVANCED token standard with HOOKS that create reentrancy risks.
+
+    **ERC-20** (Standard, Safe):
+    - transfer() and transferFrom() are simple balance updates
+    - NO callbacks or hooks
+    - Reentrancy risk is LOW (only via custom logic)
+
+    **ERC-777** (Advanced, Dangerous):
+    - send() and operatorSend() trigger CALLBACK HOOKS
+    - tokensReceived() called on recipient BEFORE transfer completes
+    - tokensToSend() called on sender BEFORE transfer completes
+    - Implements ERC-1820 registry for hook discovery
+    - Reentrancy risk is HIGH (hooks create attack surface)
+
+    **Why ERC-777 is Rarely Used:**
+    - Lendf.Me and dForce hacks ($50M+ total) scared ecosystem
+    - Most protocols explicitly block ERC-777 tokens
+    - ERC-20 with SafeERC20 is the de-facto standard
+    - Uniswap, Aave, Compound, and others reject ERC-777
+
+  erc20_flow: |
+    ERC-20 transfer():
+    1. Check sender balance
+    2. Deduct from sender
+    3. Add to recipient
+    4. Return success
+    (No callbacks, atomic operation)
+
+  erc777_flow: |
+    ERC-777 send():
+    1. Check sender balance
+    2. Call sender's tokensToSend() hook ← CALLBACK HERE (reentrancy risk)
+    3. Deduct from sender
+    4. Add to recipient
+    5. Call recipient's tokensReceived() hook ← CALLBACK HERE (reentrancy risk)
+    6. Return success
+    (Two callback opportunities for reentrancy)
+
+# Historical Context - Lendf.Me Hack
+lendfme_hack_details:
+  date: "April 19, 2020"
+  amount: "$25,000,000 USD"
+  token: "imBTC (ERC-777 wrapped Bitcoin)"
+  root_cause: |
+    Lendf.Me lending protocol used imBTC (ERC-777 token) without proper
+    reentrancy protection. The supply() function transferred imBTC tokens
+    BEFORE updating the user's balance, allowing reentrancy via tokensReceived().
+
+  attack_sequence:
+    - "Attacker called supply(imBTC, amount)"
+    - "Contract called imBTC.send(contract, amount) ← ERC-777 transfer"
+    - "imBTC called attacker's tokensReceived() hook ← CALLBACK"
+    - "Inside callback, attacker called supply() AGAIN"
+    - "Balance not yet updated, second supply() succeeded"
+    - "Attacker repeated reentrancy to inflate balance"
+    - "Attacker withdrew all funds using inflated balance"
+    - "Total loss: $25M across imBTC and other assets"
+
+  aftermath: |
+    - Funds were eventually returned by attacker
+    - dForce (Lendf.Me's parent company) nearly collapsed
+    - Entire DeFi ecosystem became wary of ERC-777 tokens
+    - Most protocols now explicitly reject ERC-777 or use reentrancy guards
+    - This hack is THE textbook example of ERC-777 reentrancy
+
+# Detection Notes
+detection_notes:
+  erc777_identification: |
+    Identifying ERC-777 tokens:
+    1. Check if contract implements IERC777 interface
+    2. Look for ERC-1820 registry integration
+    3. Check for tokensReceived/tokensToSend hook implementations
+    4. Common ERC-777 tokens: imBTC, some wrapped/synthetic assets
+
+  false_positive_risk: |
+    Low false-positive risk when ALL conditions are met:
+    - uses_erc777_send (definitive signal)
+    - state_write_after_external_call (CEI violation)
+    - writes_balance_state (accounting updates)
+    - No reentrancy guard
+
+    False positives may occur if:
+    - Token is misidentified as ERC-777 (low risk, property is accurate)
+    - State write is unrelated to token transfer (very rare)
+    - Custom reentrancy protection exists (not detected by pattern)
+
+  testing_priority: |
+    HIGH PRIORITY pattern to test because:
+    - Historical exploits: $50M+ in losses
+    - Critical severity: Complete fund drainage
+    - Common vulnerability: CEI violations are frequent
+    - Clear fix: Add nonReentrant modifier
+
+# Why This Pattern is Critical
+pattern_importance:
+  criticality_score: 10/10
+  reason: |
+    This pattern detects one of the MOST DANGEROUS vulnerability classes:
+    1. Historical Impact: $50M+ in real losses (Lendf.Me, dForce)
+    2. Exploitability: Easy to exploit (simple callback reentrancy)
+    3. Impact: Complete drainage of contract funds
+    4. Prevalence: CEI violations are common in DeFi code
+    5. Token Risk: Any protocol accepting ERC-777 is at risk
+
+  recommended_action: |
+    For auditors:
+    - ALWAYS check if protocol accepts ERC-777 tokens
+    - ALWAYS verify reentrancy guards on token operations
+    - ALWAYS check CEI pattern compliance
+    - Recommend rejecting ERC-777 tokens entirely
+
+    For developers:
+    - Use ERC-20 instead of ERC-777 (simpler, safer)
+    - If ERC-777 is required, use ReentrancyGuard on ALL functions
+    - Follow CEI pattern religiously
+    - Test with actual ERC-777 tokens (imBTC, etc.)
+    - Consider pull payment pattern for withdrawals
+
+# Testing Recommendations
+testing_recommendations:
+  unit_tests:
+    - "Test with actual ERC-777 token implementation (not mocks)"
+    - "Implement malicious IERC777Recipient contract"
+    - "Test reentrancy via tokensReceived() callback"
+    - "Verify nonReentrant modifier prevents reentrancy"
+    - "Test CEI pattern compliance (state before call)"
+
+  integration_tests:
+    - "Test cross-function reentrancy scenarios"
+    - "Test operator-based reentrancy (operatorSend)"
+    - "Test read-only reentrancy during callbacks"
+    - "Test flash loan + reentrancy combinations"
+
+  edge_cases:
+    - "Multiple nested reentrancy calls (depth testing)"
+    - "Reentrancy with different amounts"
+    - "Cross-contract reentrancy (via another contract)"
+    - "Reentrancy during token burn/mint operations"
+
+  fuzzing:
+    - "Fuzz callback reentrancy with random amounts"
+    - "Fuzz multiple reentrancy entry points"
+    - "Invariant: totalBalances <= actualTokenBalance"

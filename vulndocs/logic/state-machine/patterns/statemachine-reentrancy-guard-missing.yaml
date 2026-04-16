@@ -1,0 +1,35 @@
+id: statemachine-reentrancy-guard-missing
+vulndoc: logic/state-machine
+name: Reentrant Without Guard
+description: 'Function labeled as potentially reentrant but lacks guard.
+
+  External calls combined with state writes need protection.
+
+
+  Risk: Classic reentrancy attack where attacker calls back into
+
+  vulnerable function before state is updated, draining funds.
+
+  '
+severity: critical
+scope: Function
+lens:
+- Reentrancy
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - has_operation: CALLS_EXTERNAL
+    - has_operation: WRITES_USER_BALANCE
+    none:
+    - property: has_reentrancy_guard
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: external_interaction.reentrancy_risk
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: external_interaction.reentrancy_safe

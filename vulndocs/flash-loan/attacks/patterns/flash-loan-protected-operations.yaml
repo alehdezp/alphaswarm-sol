@@ -1,0 +1,16 @@
+id: flash-loan-protected-operations
+vulndoc: flash-loan/attacks
+name: Flash Loan Protected Operations
+description: Price-sensitive operations without flash loan guards.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: flash_loan_sensitive_operation
+    op: eq
+    value: true
+  - property: flash_loan_guard
+    op: eq
+    value: false

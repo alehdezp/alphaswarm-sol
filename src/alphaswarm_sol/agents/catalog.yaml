@@ -1,0 +1,751 @@
+# Subagent Catalog
+# Canonical registry of all VRS agents with roles, models, and contracts
+# Schema: See docs/reference/subagent-catalog.md for update policy
+
+version: "1.0.0"
+format_version: "catalog-v1"
+last_updated: "2026-01-29"
+
+documentation_defaults:
+  references:
+    - docs/reference/agents.md
+    - docs/workflows/README.md
+    - docs/reference/testing-framework.md
+    - docs/reference/claude-code-orchestration.md
+  debugging:
+    - .planning/testing/guides/guide-agent-debugging.md
+    - .planning/testing/guides/guide-alignment-campaign.md
+
+agents:
+  # Core Verification Agents
+  - id: vrs-attacker
+    name: "BSKG Attacker"
+    role: attacker
+    category: investigation
+    model_tier: opus
+    purpose: "Constructs exploit paths and attack vectors for vulnerability verification"
+    workflow_refs:
+      - docs/workflows/workflow-tasks.md
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null  # Embedded in agent prompt
+      required_fields:
+        - attack_preconditions
+        - attack_steps
+        - exploitability
+        - impact
+    allowed_tools:
+      - Read
+      - Grep
+      - Glob
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 3
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-attacker.md
+      dev: null
+
+  - id: vrs-defender
+    name: "BSKG Defender"
+    role: defender
+    category: investigation
+    model_tier: sonnet
+    purpose: "Searches for guards, mitigations, and protective mechanisms"
+    workflow_refs:
+      - docs/workflows/workflow-tasks.md
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null  # Embedded in agent prompt
+      required_fields:
+        - guards_found
+        - mitigation_analysis
+        - residual_risks
+    allowed_tools:
+      - Read
+      - Grep
+      - Glob
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 2
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-defender.md
+      dev: null
+
+  - id: vrs-verifier
+    name: "BSKG Verifier"
+    role: verifier
+    category: investigation
+    model_tier: opus
+    purpose: "Cross-checks evidence from attacker/defender and synthesizes verdicts"
+    workflow_refs:
+      - docs/workflows/workflow-tasks.md
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null  # Embedded in agent prompt
+      required_fields:
+        - verdict
+        - confidence
+        - evidence_quality
+        - verdict_rationale
+    allowed_tools:
+      - Read
+      - Grep
+      - Glob
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 5
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-verifier.md
+      dev: null
+
+  - id: vrs-secure-reviewer
+    name: "Secure Solidity Reviewer"
+    role: secure-reviewer
+    category: investigation
+    model_tier: sonnet
+    purpose: "Blends creative attack thinking with adversarial skepticism, evidence-first reasoning"
+    workflow_refs:
+      - docs/workflows/workflow-audit.md
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: json
+      schema_ref: schemas/secure_reviewer_output.json
+      required_fields:
+        - summary
+        - risk_level
+        - mode
+        - evidence
+        - graph_queries
+        - gaps
+        - recommendations
+        - known_unknowns
+    allowed_tools:
+      - Read
+      - Grep
+      - Glob
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 1
+      cite_graph_nodes: true
+      graph_first: true
+      require_behavioral_signature: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-secure-reviewer.md
+      dev: .claude/subagents/secure-solidity-reviewer.md
+
+  # Orchestration & Coordination Agents
+  - id: vrs-supervisor
+    name: "VRS Supervisor"
+    role: orchestrator
+    category: orchestration
+    model_tier: sonnet
+    purpose: "Coordinates multi-agent workflows and manages debate protocol"
+    workflow_refs:
+      - docs/workflows/workflow-audit.md
+      - docs/workflows/workflow-progress.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - workflow_status
+        - agent_assignments
+        - next_steps
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-supervisor.md
+      dev: null
+
+  - id: vrs-integrator
+    name: "VRS Integrator"
+    role: orchestrator
+    category: orchestration
+    model_tier: sonnet
+    purpose: "Merges verdicts and generates consolidated audit reports"
+    workflow_refs:
+      - docs/workflows/workflow-audit.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - merged_findings
+        - report_sections
+        - summary_stats
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-integrator.md
+      dev: null
+
+  # Pattern & Discovery Agents
+  - id: vrs-pattern-scout
+    name: "Pattern Scout"
+    role: triage
+    category: investigation  # Fast triage for investigation pipeline
+    model_tier: haiku
+    purpose: "Fast pattern triage for candidate findings"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-audit.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - triage_decision
+        - confidence
+        - quick_rationale
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 1
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-pattern-scout.md
+      dev: null
+
+  - id: vrs-pattern-verifier
+    name: "Pattern Verifier"
+    role: verifier
+    category: investigation
+    model_tier: sonnet
+    purpose: "Verifies Tier B/C pattern matches with evidence gates"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - verification_result
+        - evidence_quality
+        - confidence
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 2
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-pattern-verifier.md
+      dev: null
+
+  - id: vrs-pattern-composer
+    name: "Pattern Composer"
+    role: architect
+    category: investigation
+    model_tier: sonnet
+    purpose: "Discovers composite vulnerabilities using semantic operation algebra"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-audit.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - composite_pattern
+        - operation_sequence
+        - feasibility
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 3
+      cite_graph_nodes: true
+      graph_first: true
+      require_behavioral_signature: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-pattern-composer.md
+      dev: null
+
+  # Context & Evidence Agents
+  - id: vrs-context-packer
+    name: "Context Packer"
+    role: curator
+    category: support
+    model_tier: sonnet
+    purpose: "Assembles Pattern Context Packs (PCP) for batch discovery"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-context.md
+    output_contract:
+      format: json
+      schema_ref: schemas/pattern_context_pack_v2.json
+      required_fields:
+        - pattern_id
+        - functions_in_scope
+        - relevant_evidence
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 0
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-context-packer.md
+      dev: null
+
+  - id: vrs-finding-merger
+    name: "Finding Merger"
+    role: curator
+    category: support
+    model_tier: sonnet
+    purpose: "Merges duplicate findings deterministically"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - merged_finding
+        - deduplication_rationale
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-finding-merger.md
+      dev: null
+
+  - id: vrs-finding-synthesizer
+    name: "Finding Synthesizer"
+    role: curator
+    category: investigation  # Synthesizes evidence with confidence bounds
+    model_tier: sonnet
+    purpose: "Merges convergent evidence with confidence bounds"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - synthesized_finding
+        - confidence_bounds
+        - conflicts
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 2
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-finding-synthesizer.md
+      dev: null
+
+  - id: vrs-contradiction
+    name: "Contradiction Agent"
+    role: adversarial
+    category: investigation
+    model_tier: sonnet
+    purpose: "Refutation-only adversarial review, never confirms vulnerabilities"
+    workflow_refs:
+      - docs/workflows/workflow-verify.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - refutations
+        - counter_evidence
+        - strength
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 1
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-contradiction.md
+      dev: null
+
+  # Validation Pipeline Agents (Phase 7.2)
+  - id: vrs-test-conductor
+    name: "Test Conductor"
+    role: orchestrator
+    category: orchestration
+    model_tier: opus
+    purpose: "Orchestrates validation pipeline and enforces quality gates. Leverages coverage radar, scenario synthesis, and adaptive tiers to optimize test execution order and resource allocation"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - pipeline_status
+        - gate_results
+        - escalations
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-test-conductor.md
+      dev: null
+
+  - id: vrs-corpus-curator
+    name: "Corpus Curator"
+    role: curator
+    category: support
+    model_tier: sonnet
+    purpose: "Validates corpus integrity, ground truth, and composition balance"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - corpus_quality
+        - ground_truth_status
+        - issues
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-corpus-curator.md
+      dev: null
+
+  - id: vrs-benchmark-runner
+    name: "Benchmark Runner"
+    role: tester
+    category: support
+    model_tier: haiku
+    purpose: "Executes benchmarks and collects precision/recall metrics"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - precision
+        - recall
+        - f1_score
+        - confusion_matrix
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-benchmark-runner.md
+      dev: null
+
+  - id: vrs-mutation-tester
+    name: "Mutation Tester"
+    role: tester
+    category: support
+    model_tier: haiku
+    purpose: "Generates contract variants for pattern robustness testing"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-e2e.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - mutations_generated
+        - robustness_score
+    allowed_tools:
+      - Read
+      - Write
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-mutation-tester.md
+      dev: null
+
+  - id: vrs-regression-hunter
+    name: "Regression Hunter"
+    role: tester
+    category: support
+    model_tier: sonnet
+    purpose: "Detects accuracy degradation and bisects to find root cause. Uses reasoning fingerprinting to detect behavioral drift via statistical profiles, not just score drops"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-failure-recovery.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - regression_detected
+        - root_cause
+        - affected_patterns
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-regression-hunter.md
+      dev: null
+
+  - id: vrs-gap-finder
+    name: "Gap Finder"
+    role: auditor
+    category: investigation  # Deep coverage analysis with graph reasoning
+    model_tier: opus
+    purpose: "Comprehensive coverage gap analysis with root cause identification. Uses the 4-axis coverage radar (vulnerability class, semantic operation, reasoning skill, graph query pattern) to identify untested capabilities"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-failure-recovery.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - coverage_gaps
+        - root_causes
+        - recommendations
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: true
+      min_evidence_items: 1
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-gap-finder.md
+      dev: null
+
+  - id: vrs-gap-finder-lite
+    name: "Gap Finder Lite"
+    role: auditor
+    category: investigation  # Fast coverage scan variant
+    model_tier: sonnet
+    purpose: "Fast coverage scan with escalation flag for deep analysis"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-failure-recovery.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - coverage_score
+        - quick_gaps
+        - escalate
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: true
+      graph_first: true
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-gap-finder-lite.md
+      dev: null
+
+  - id: vrs-prevalidator
+    name: "Prevalidator"
+    role: triage
+    category: discovery  # URL provenance and duplicate detection for knowledge ingestion
+    model_tier: haiku
+    purpose: "Fast gate: URL provenance, schema sanity, duplicate detection"
+    workflow_refs:
+      - docs/guides/patterns-basics.md
+      - docs/workflows/workflow-vulndocs.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - gate_passed
+        - issues_found
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: src/alphaswarm_sol/shipping/agents/vrs-prevalidator.md
+      dev: null
+
+  # Development-Only Agents (Not Shipped)
+  - id: skill-auditor
+    name: "Skill Auditor"
+    role: auditor
+    category: support  # Development-only quality auditing
+    model_tier: sonnet
+    purpose: "Audits skill/subagent quality, cost, and guardrails"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-skills.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - quality_score
+        - cost_analysis
+        - recommendations
+    allowed_tools:
+      - Read
+      - Bash(alphaswarm*)
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: null
+      dev: .claude/subagents/skill-auditor.md
+
+  - id: cost-governor
+    name: "Cost Governor"
+    role: auditor
+    category: support  # Budget-aware routing recommendations
+    model_tier: haiku
+    purpose: "Provides budget-aware routing recommendations for agent selection"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-orchestration.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - recommended_model
+        - cost_estimate
+        - rationale
+    allowed_tools:
+      - Read
+    default_context: inline
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: null
+      dev: .claude/subagents/cost-governor.md
+
+  - id: gsd-context-researcher
+    name: "GSD Context Researcher"
+    role: researcher
+    category: discovery  # Deep web research for knowledge acquisition
+    model_tier: sonnet
+    purpose: "Deep Exa research for roadmap phase context generation"
+    workflow_refs:
+      - .planning/testing/workflows/workflow-docs-validation.md
+    output_contract:
+      format: structured
+      schema_ref: null
+      required_fields:
+        - research_summary
+        - key_sources
+        - recommendations
+    allowed_tools:
+      - Read
+      - mcp__exa-search__web_search_exa
+    default_context: fork
+    evidence_requirements:
+      must_link_code: false
+      min_evidence_items: 0
+      cite_graph_nodes: false
+      graph_first: false
+    location:
+      shipped: null
+      dev: .claude/subagents/gsd-context-researcher.md
+
+# Catalog metadata
+catalog_stats:
+  total_agents: 24
+  shipped_agents: 21
+  dev_only_agents: 3
+  roles:
+    attacker: 1
+    defender: 1
+    verifier: 2
+    secure-reviewer: 1
+    orchestrator: 3
+    triage: 3
+    architect: 1
+    curator: 4
+    adversarial: 1
+    tester: 3
+    auditor: 3
+    researcher: 1
+  model_tiers:
+    opus: 3
+    sonnet: 14
+    haiku: 4
+    adaptive: 0

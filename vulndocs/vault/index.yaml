@@ -1,0 +1,26 @@
+# vault Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: vault
+name: Vault
+description: 'Vulnerability subcategories for vault domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: donation-attack
+  path: donation-attack/
+- id: exchange-rate
+  path: exchange-rate/
+- id: first-depositor
+  path: first-depositor/
+- id: share-inflation
+  name: Share Inflation Attack
+  path: share-inflation/
+- id: shares
+  name: Shares
+  path: shares/
+statistics:
+  subcategory_count: 5
+  last_updated: '2026-02-18'

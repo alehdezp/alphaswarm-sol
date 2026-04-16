@@ -1,0 +1,48 @@
+id: auth-112
+vulndoc: access-control/general
+name: Unprotected Cross-Chain Configuration
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `bridge-001-unprotected-configuration` instead.
+
+
+  Location: `patterns/semantic/bridge/bridge-001-unprotected-configuration.yaml`
+
+
+  The semantic pattern uses `updates_bridge_configuration` property for name-agnostic
+  detection.
+
+
+  ---
+
+
+  Original description: Bridge/cross-chain configuration updated without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: bridge-001-unprotected-configuration
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(bridge|crosschain|xchain|relayer|messaging|endpoint|adapter|router)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

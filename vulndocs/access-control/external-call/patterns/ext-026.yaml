@@ -1,0 +1,16 @@
+id: ext-026
+vulndoc: access-control/external-call
+name: TWAP Observation Coverage Missing
+description: TWAP usage without observation/cardinality validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_twap
+    op: eq
+    value: true
+  - property: has_twap_observation_check
+    op: eq
+    value: false

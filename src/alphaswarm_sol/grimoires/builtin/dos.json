@@ -1,0 +1,169 @@
+{
+  "id": "grimoire-dos",
+  "name": "Denial of Service Verification Grimoire",
+  "category": "dos",
+  "subcategories": ["unbounded-loop", "gas-limit", "strict-equality", "external-call-failure", "block-stuffing"],
+  "skill": "/test-dos",
+  "aliases": ["/verify-dos", "/check-dos", "/test-denial-of-service"],
+  "description": "Expert procedure for verifying denial of service vulnerabilities. Tests for unbounded loops, gas limit issues, strict equality checks, and external call failure handling.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["high", "common", "foundry", "fuzzing"],
+
+  "required_context": [
+    "function_code",
+    "loop_structures",
+    "external_calls"
+  ],
+  "optional_context": [
+    "array_operations",
+    "gas_usage",
+    "equality_checks"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE has_unbounded_loop = true",
+    "FIND functions WHERE external_calls_in_loop = true",
+    "FIND functions WHERE has_strict_equality_check = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check DoS Properties",
+        "action": "check_graph",
+        "description": "Query VKG for DoS indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["graph_matches", "has_unbounded_loop", "external_calls_in_loop", "strict_equality"],
+        "queries": [
+          "has_unbounded_loop",
+          "external_calls_in_loop",
+          "has_strict_equality_check",
+          "uses_transfer"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Analyze Loop Bounds",
+        "action": "check_property",
+        "description": "Analyze loop iteration bounds and gas consumption",
+        "inputs": ["loop_structures", "node_properties"],
+        "outputs": ["unbounded_detected", "estimated_gas_per_iteration"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 3,
+        "name": "Generate DoS Test",
+        "action": "generate_test",
+        "description": "Generate Foundry test to trigger DoS condition",
+        "inputs": ["function_code", "contract_name", "function_name", "loop_structures"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_dos",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 4,
+        "name": "Execute Gas Test",
+        "action": "execute_test",
+        "description": "Run test to measure gas consumption with increasing input",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "gas_measurements", "test_passed"],
+        "tools": ["foundry"],
+        "command": "forge test --match-test testDoS --gas-report -vvv",
+        "timeout_seconds": 180,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 5,
+        "name": "Fuzz for DoS Conditions",
+        "action": "execute_fuzz",
+        "description": "Fuzz to find inputs that cause excessive gas",
+        "inputs": ["contract_path"],
+        "outputs": ["fuzz_report", "fuzz_found_issue"],
+        "tools": ["medusa", "echidna"],
+        "timeout_seconds": 180,
+        "optional": true
+      },
+      {
+        "step_number": 6,
+        "name": "Analyze Results",
+        "action": "analyze_results",
+        "description": "Analyze gas consumption and DoS potential",
+        "inputs": ["test_output", "gas_measurements", "fuzz_report"],
+        "outputs": ["dos_confirmed", "max_gas_used", "analysis_complete"],
+        "timeout_seconds": 30
+      },
+      {
+        "step_number": 7,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["dos_confirmed", "has_unbounded_loop", "external_calls_in_loop", "max_gas_used"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "dos_confirmed",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Test confirmed DoS is possible"
+      },
+      {
+        "condition": "fuzz_found_issue",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Fuzzer found DoS condition"
+      },
+      {
+        "condition": "has_unbounded_loop && external_calls_in_loop",
+        "verdict": "likely_vulnerable",
+        "confidence": "high",
+        "explanation": "Unbounded loop with external calls - high DoS risk"
+      },
+      {
+        "condition": "has_unbounded_loop",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Unbounded loop detected - potential DoS"
+      },
+      {
+        "condition": "strict_equality",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Strict equality check could cause unexpected reverts"
+      },
+      {
+        "condition": "!has_unbounded_loop && !external_calls_in_loop",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "No unbounded loops or problematic patterns"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": true,
+    "echidna_enabled": true,
+    "medusa_duration": 120,
+    "echidna_duration": 120,
+    "fork_enabled": false,
+    "fork_rpc": "",
+    "fork_block": "latest",
+    "testnet_enabled": false,
+    "testnet_network": "sepolia"
+  },
+
+  "test_templates": {
+    "foundry_dos": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ncontract DoSTest is Test {\n    ${CONTRACT_NAME} public target;\n    uint256 constant BLOCK_GAS_LIMIT = 30_000_000;\n\n    function setUp() public {\n        target = new ${CONTRACT_NAME}();\n    }\n\n    function testDoS_SmallInput() public {\n        uint256 gasBefore = gasleft();\n        target.${FUNCTION_NAME}(10);\n        uint256 gasUsed = gasBefore - gasleft();\n        emit log_named_uint(\"Gas used (10 items)\", gasUsed);\n    }\n\n    function testDoS_MediumInput() public {\n        uint256 gasBefore = gasleft();\n        target.${FUNCTION_NAME}(100);\n        uint256 gasUsed = gasBefore - gasleft();\n        emit log_named_uint(\"Gas used (100 items)\", gasUsed);\n    }\n\n    function testDoS_LargeInput() public {\n        uint256 gasBefore = gasleft();\n        target.${FUNCTION_NAME}(1000);\n        uint256 gasUsed = gasBefore - gasleft();\n        emit log_named_uint(\"Gas used (1000 items)\", gasUsed);\n\n        // If gas exceeds block limit, DoS is possible\n        if (gasUsed > BLOCK_GAS_LIMIT / 2) {\n            emit log(\"WARNING: Gas usage exceeds 50% of block limit\");\n        }\n    }\n\n    function testDoS_ExtremeInput() public {\n        // This should either revert or use excessive gas\n        try target.${FUNCTION_NAME}(10000) {\n            uint256 gasUsed = gasleft();\n            assertLt(gasUsed, BLOCK_GAS_LIMIT, \"Exceeded block gas limit\");\n        } catch {\n            // Expected to revert with large input\n            assertTrue(true, \"Reverted as expected with extreme input\");\n        }\n    }\n\n    function testDoS_GasScaling() public {\n        uint256[] memory inputs = new uint256[](5);\n        inputs[0] = 10;\n        inputs[1] = 50;\n        inputs[2] = 100;\n        inputs[3] = 500;\n        inputs[4] = 1000;\n\n        uint256 prevGas = 0;\n        for (uint256 i = 0; i < inputs.length; i++) {\n            uint256 gasBefore = gasleft();\n            target.${FUNCTION_NAME}(inputs[i]);\n            uint256 gasUsed = gasBefore - gasleft();\n\n            emit log_named_uint(\"Input size\", inputs[i]);\n            emit log_named_uint(\"Gas used\", gasUsed);\n\n            if (prevGas > 0) {\n                uint256 ratio = (gasUsed * 100) / prevGas;\n                emit log_named_uint(\"Gas ratio vs prev (%)\", ratio);\n            }\n            prevGas = gasUsed;\n        }\n    }\n}"
+  }
+}

@@ -1,0 +1,13 @@
+id: auth-073
+vulndoc: access-control/general
+name: Governance Execute Without Timelock Check
+description: Governance execution without timelock enforcement.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: governance_exec_without_timelock_check
+    op: eq
+    value: true

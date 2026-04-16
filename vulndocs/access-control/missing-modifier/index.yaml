@@ -1,0 +1,86 @@
+# Missing Access Control Modifier - Subcategory Index
+# Sensitive functions lacking any access control check
+
+id: missing-modifier
+name: Missing Access Control Modifier
+parent_category: access-control
+
+description: |
+  Sensitive functions that lack any access control modifier or check. These functions
+  can be called by anyone, allowing attackers to execute privileged operations like
+  ownership transfer, fund withdrawal, or parameter manipulation without authorization.
+
+severity_range:
+  - high
+  - critical
+
+# Associated detection patterns
+patterns:
+  - auth-001
+  - auth-002
+
+# VKG properties for detection
+relevant_properties:
+  - has_access_gate
+  - writes_privileged_state
+  - visibility
+  - modifies_owner
+  - modifies_roles
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: has_access_gate
+    expected: false
+    critical: true
+    description: Function lacks any access control modifier or check
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    description: Function writes to owner/admin/role/fee/treasury state
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+  - property: modifies_owner
+    expected: true
+    critical: false
+    description: Function can modify ownership state
+
+# Behavioral signatures
+behavioral_signatures:
+  - "W:owner->!G:access"
+  - "W:role->!G:access"
+  - "W:critical->!G:access"
+  - "X:call{value}->!G:access"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "MODIFIES_OWNER without CHECKS_PERMISSION"
+    - "MODIFIES_ROLES without CHECKS_PERMISSION"
+    - "MODIFIES_CRITICAL_STATE without CHECKS_PERMISSION"
+  safe:
+    - "CHECKS_PERMISSION -> MODIFIES_OWNER"
+    - "CHECKS_PERMISSION -> MODIFIES_ROLES"
+    - "CHECKS_PERMISSION -> MODIFIES_CRITICAL_STATE"
+
+# False positive indicators
+false_positive_indicators:
+  - "Function is internal or private"
+  - "Function checks msg.sender inline (not via modifier)"
+  - "Function is constructor (owner set once)"
+  - "Function is intentionally public (e.g., claim rewards)"
+  - "Access control implemented in parent contract"
+
+# Related real-world exploits
+related_exploits:
+  - parity-wallet-hack
+  - audius-governance-hack
+
+# Token estimate for this subcategory
+token_estimate: 450

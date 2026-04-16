@@ -1,0 +1,49 @@
+# DVDeFi Challenge: Selfie
+# Vulnerability: Governance flash loan attack
+
+id: dvd-selfie
+name: Selfie
+version: "4"
+difficulty: 3
+category: Governance
+
+source_path: examples/damm-vuln-defi/src/selfie
+
+vulnerability:
+  type: governance-flash-loan
+  description: |
+    Governance token voting power can be borrowed via flash loan to
+    queue malicious proposals that drain the pool.
+  cwe: CWE-362
+  severity: critical
+
+expected_detections:
+  - pattern: governance-flash-loan
+    contract: SimpleGovernance
+    function: queueAction
+    property: governance_function
+    confidence: high
+
+  - pattern: flash-loan-governance-manipulation
+    contract: SelfiePool
+    function: flashLoan
+    property: callback_chain_surface
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - SimpleGovernance.queueAction
+    - SelfiePool.flashLoan
+  safe:
+    - SimpleGovernance.executeAction
+
+false_positive_exclusions:
+  - description: "executeAction has time delay"
+    reason: Time delay is security mechanism
+
+verification:
+  exploit_summary: "Flash loan governance tokens, queue drainAllFunds proposal, wait, execute"
+  fix_summary: "Require tokens to be locked during voting, use time-weighted voting power"
+
+status: detected
+detection_date: "2026-01-06"

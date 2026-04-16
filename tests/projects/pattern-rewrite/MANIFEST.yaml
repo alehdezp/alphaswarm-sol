@@ -1,0 +1,76 @@
+project: pattern-rewrite
+description: Brutal test suite for pattern forge cycles - comprehensive TP/TN/edge/variation coverage
+max_files: 30
+current_files: 1
+
+# Patterns tested in this project
+patterns:
+  vm-001-classic:
+    files: [ReentrancyTest.sol]
+    functions:
+      vulnerable:
+        - withdraw           # TP1: Classic CEI violation
+        - extract            # TP2: Renamed with 'funds'
+        - fn_0x123abc        # TP3: Obfuscated name
+        - withdrawViaCall    # TP4: call() instead of transfer()
+        - withdrawViaSend    # TP5: send() instead of transfer()
+        - removeFunds        # VARIATION1: Different naming
+        - extractShares      # VARIATION2: Block-style
+        - quickWithdraw      # VARIATION3: Compact style
+        - withdrawNoGuard    # TP6: Inherited contract, no guard
+        - withdrawTokens     # TP7: ERC777 callback
+        - withdrawBalance    # TP8: Cross-function variant
+        - init               # EDGE9: Fake initializer
+      safe:
+        - withdrawSafe                  # TN1: Correct CEI
+        - withdrawWithGuard             # TN2: Guard pattern
+        - withdrawWithRenamedGuard      # TN3: Renamed guard
+        - getBalance                    # TN4: View function
+        - donate                        # TN5: No balance write
+        - updateBalance                 # TN6: No transfer
+        - withdrawWithInheritedGuard    # EDGE7: Inherited guard
+        - withdrawTokensSafe            # TN7: Safe token withdrawal
+      edge_cases:
+        - _internalWithdraw     # EDGE1: Internal visibility
+        - _privateWithdraw      # EDGE2: Private visibility
+        - calculate             # EDGE3: Pure function
+        - constructor           # EDGE4: Constructor
+        - fallback              # EDGE5: Fallback (special)
+        - receive               # EDGE6: Receive
+        - initialize            # EDGE8: True initializer
+    last_updated: "2025-12-31"
+
+notes: |
+  Comprehensive test suite for vm-001-classic pattern testing:
+
+  TRUE POSITIVES (12):
+  - Classic withdraw, extract, obfuscated names
+  - call(), send(), transfer() variations
+  - ERC777 token callbacks
+  - Cross-function reentrancy
+  - Multiple naming conventions (balances/funds/shares/deposits)
+
+  TRUE NEGATIVES (8):
+  - Correct CEI pattern
+  - Guard variations (nonReentrant, noReentrancy, inherited)
+  - View functions
+  - Functions with only one operation (transfer OR write, not both)
+
+  EDGE CASES (9):
+  - Internal/private visibility (should NOT flag)
+  - Pure functions (should NOT flag)
+  - Constructor (should NOT flag)
+  - Fallback/receive (special cases)
+  - True initializer vs fake initializer
+
+  VARIATIONS TESTED:
+  - Naming: balances/funds/shares/deposits/userDeposits/accountShares
+  - Functions: withdraw/extract/removeFunds/extractShares
+  - Transfer methods: transfer(), call(), send()
+  - Code styles: standard, compact, block-style
+  - Guard naming: nonReentrant, noReentrancy, locked
+
+  EXPECTED RESULTS:
+  - Precision target: >= 90% (minimal false positives)
+  - Recall target: >= 85% (catches most vulnerabilities)
+  - Variation score: >= 85% (naming-agnostic)

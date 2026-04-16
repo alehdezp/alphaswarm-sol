@@ -1,0 +1,116 @@
+project: defi-protocol
+description: Comprehensive DeFi infrastructure parameter testing (circuit breakers, governance, tokenomics, bridges, risk params, emergency, merkle, oracle, treasury)
+max_files: 30
+current_files: 1
+
+# Patterns tested in this project
+patterns:
+  circuit-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [pause, unpause, setPaused, toggleCircuitBreaker, activateEmergencyStop, halt]
+      safe: [pauseProtected, isPaused, unpauseWithRequire]
+    last_updated: "2025-12-31"
+    notes: "Circuit breaker pattern testing - pause/unpause without access control"
+
+  governance-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setVotingDelay, setQuorum, updateProposalThreshold, setExecutionDelay, setProposalDelay, updateGovernanceDelay, setQuorumBPS]
+      safe: [setVotingDelayProtected, getVotingDelay]
+    last_updated: "2025-12-31"
+    notes: "Governance parameter updates - quorum, voting delays, thresholds"
+
+  tokenomics-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setRewardRate, setEmissionRate, updateInflationRate, setVestingParams, setRewardPerBlock]
+      safe: [setRewardRateProtected, currentRewardRate, setEmissionRateWithRequire]
+    last_updated: "2025-12-31"
+    notes: "Tokenomics parameter updates - rewards, emissions, vesting"
+
+  bridge-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setRelayer, setBridgeEndpoint, updateChainConfig, setValidator, setBridgeOperator, setL1Messenger]
+      safe: [setRelayerProtected, getRelayer, setRelayerMultisig]
+    last_updated: "2025-12-31"
+    notes: "CRITICAL - Bridge configuration updates (Poly $611M, Ronin $625M, Nomad $190M exploits)"
+
+  defi-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setLiquidationThreshold, setCollateralRatio, updateLTV, setProtocolFee, setCollateralFactor, setMaxLTV, updateBorrowFee]
+      safe: [setLiquidationThresholdProtected, getLTV]
+    last_updated: "2025-12-31"
+    notes: "DeFi risk parameter updates - liquidation, collateral, fees"
+
+  emergency-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [emergencyWithdraw, rescueTokens, recoverETH, sweep, drain, extractFunds]
+      safe: [emergencyWithdrawProtected, canRecover]
+    last_updated: "2025-12-31"
+    notes: "Emergency recovery operations affecting user funds"
+
+  merkle-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setMerkleRoot, updateRoot, setAirdropRoot, updateWhitelistRoot, setClaimRoot, updateProofRoot]
+      safe: [setMerkleRootProtected, currentRoot, setMerkleRootWithRequire]
+    last_updated: "2025-12-31"
+    notes: "Merkle root updates for airdrops, whitelists, claims"
+
+  oracle-002:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setOracle, updatePriceFeed, setPriceSource, setPriceMultiplier, setChainlinkOracle, setOracleDecimals]
+      safe: [setOracleProtected, getOracle, setOracleMultisig]
+    last_updated: "2025-12-31"
+    notes: "Oracle/price feed configuration updates"
+
+  treasury-001:
+    files: [UnprotectedParametersTest.sol]
+    functions:
+      vulnerable: [setTreasury, updateTreasuryRecipient, setFeeCollector, setFeeRate, setRevenueRecipient, updateTreasuryFee]
+      safe: [setTreasuryProtected, getTreasury, setTreasuryGovernance]
+    last_updated: "2025-12-31"
+    notes: "Treasury/fee recipient address updates affecting revenue"
+
+# Project statistics
+statistics:
+  total_vulnerable_functions: 54
+  total_safe_functions: 27
+  total_variation_functions: 18
+  coverage: "9 critical DeFi infrastructure patterns"
+
+# Notes for maintainers
+notes: |
+  This project provides comprehensive testing for 9 structurally similar patterns that all
+  detect unprotected writes to critical protocol parameters. All patterns use the same core
+  detection logic:
+
+  - writes_privileged_state OR writes_sensitive_config
+  - has_access_gate: false
+  - visibility: [public, external]
+
+  The patterns differ primarily in the CATEGORY of state variables they target:
+  - circuit-001: pause/paused/emergencyStop state
+  - governance-001: governance-tagged state (quorum, voting, threshold, delay)
+  - tokenomics-001: reward/emission/vesting state
+  - bridge-001: dependency state (relayer, endpoint, validator) + cross-chain context
+  - defi-001: fee/collateral/debt/liquidity/reserve state
+  - emergency-001: can_affect_user_funds (value transfer operations)
+  - merkle-001: config state (merkle roots)
+  - oracle-002: oracle/price feed state
+  - treasury-001: treasury/fee recipient state
+
+  All patterns should achieve similar precision/recall metrics since they rely on the
+  same underlying builder heuristics for state variable tagging.
+
+  Expected metrics: precision >= 90%, recall >= 85% (excellent rating)
+
+  CRITICAL BUILDER DEPENDENCIES:
+  - heuristics.py: State variable security tagging
+  - builder.py: writes_privileged_state, writes_sensitive_config properties
+  - All patterns depend on correct heuristic classification of state variables

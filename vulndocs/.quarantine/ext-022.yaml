@@ -1,0 +1,16 @@
+id: ext-022
+vulndoc: access-control/external-call
+name: Array Length Mismatch
+description: Multiple arrays used without matching length checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_array_parameter
+    op: eq
+    value: true
+  - property: has_array_length_match
+    op: eq
+    value: false

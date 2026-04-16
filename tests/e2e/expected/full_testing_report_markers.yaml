@@ -1,0 +1,426 @@
+# Report Markers for /vrs-full-testing Dashboard Validation
+#
+# This file defines markers for validating dashboard output from
+# render_full_testing_dashboard.py. These markers enable automated
+# verification that dashboards contain required sections and fields.
+#
+# Usage:
+#   from alphaswarm_sol.testing.markers import ReportMarkerValidator
+#   validator = ReportMarkerValidator("tests/e2e/expected/full_testing_report_markers.yaml")
+#   validator.validate_dashboard(dashboard_path)
+
+version: "1.0.0"
+updated: "2026-01-30"
+
+# =============================================================================
+# Required Sections (Markdown)
+# =============================================================================
+required_sections:
+  description: "Sections that MUST appear in markdown dashboard output"
+
+  sections:
+    - id: header
+      name: "Dashboard Header"
+      pattern: '# /vrs-full-testing Dashboard'
+      required: true
+
+    - id: gate_status
+      name: "Gate Status Summary"
+      pattern: '## 1\. Gate Status Summary'
+      required: true
+      subsections:
+        - pattern: '\| Gate \| Name \| Status \| Value \| Threshold \| Blocking \|'
+          description: "Gate table header"
+        - pattern: '\| G0[1-9] \|'
+          description: "Gate entries"
+
+    - id: coverage
+      name: "Scenario Coverage Heatmap"
+      pattern: '## 2\. Scenario Coverage Heatmap'
+      required: true
+      subsections:
+        - pattern: '### By Category'
+          description: "Category breakdown"
+        - pattern: '\| Category \| Total \| Passed \| Failed \| Skipped \| Coverage \|'
+          description: "Coverage table header"
+
+    - id: debug
+      name: "Debug-Mode Compliance"
+      pattern: '## 3\. Debug-Mode Compliance'
+      required: true
+      subsections:
+        - pattern: '\*\*Status:\*\* (COMPLIANT|NON-COMPLIANT)'
+          description: "Compliance status"
+        - pattern: '\*\*Debug Mode:\*\* (Enabled|Disabled)'
+          description: "Debug mode status"
+
+    - id: failures
+      name: "Failure Taxonomy Breakdown"
+      pattern: '## 4\. Failure Taxonomy Breakdown'
+      required: true
+
+    - id: perfect_metrics
+      name: "Perfect Metrics Investigation"
+      pattern: '## 5\. Perfect Metrics Investigation'
+      required: true
+      subsections:
+        - pattern: '\*\*Status:\*\* (TRIGGERED|NOT_TRIGGERED)'
+          description: "Investigation status"
+
+# =============================================================================
+# Gate Status Markers
+# =============================================================================
+gate_status_markers:
+  description: "Markers for validating gate status section"
+
+  # Overall status must be one of these values
+  overall_status:
+    field: "ga_gate_status"
+    valid_values: ["PASS", "FAIL", "WARN"]
+    pattern: '\*\*Overall Status:\*\* (PASS|FAIL|WARN)'
+    required: true
+
+  # Evaluated timestamp must be ISO 8601
+  evaluated_at:
+    field: "evaluated_at"
+    pattern: '\*\*Evaluated:\*\* \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}'
+    required: true
+
+  # All 10 gates must have entries
+  gate_entries:
+    required_count: 10
+    gate_ids: ["G01", "G02", "G03", "G04", "G05", "G06", "G07", "G08", "G09", "G10"]
+    entry_pattern: '\| (G0[1-9]|G10) \| .+ \| (PASS|FAIL|WARN) \| .+ \| .+ \| (Yes|No) \|'
+
+  # Gate-specific markers
+  gates:
+    G01:
+      name: "Stage Completion"
+      status_pattern: '\| G01 \| Stage Completion \| (PASS|FAIL)'
+      value_pattern: '\d+/\d+'
+
+    G02:
+      name: "Precision"
+      status_pattern: '\| G02 \| Precision \| (PASS|FAIL)'
+      value_pattern: '(0\.\d{2}|N/A)'
+      threshold: ">= 0.85"
+
+    G03:
+      name: "Recall"
+      status_pattern: '\| G03 \| Recall \| (PASS|FAIL)'
+      value_pattern: '(0\.\d{2}|N/A)'
+      threshold: ">= 0.80"
+
+    G04:
+      name: "F1 Score"
+      status_pattern: '\| G04 \| F1 Score \| (PASS|FAIL)'
+      value_pattern: '(0\.\d{2}|N/A)'
+      threshold: ">= 0.82"
+
+    G05:
+      name: "Debug Coverage"
+      status_pattern: '\| G05 \| Debug Coverage \| (PASS|FAIL)'
+      value_pattern: '(\d+/\d+|disabled|invalid)'
+      threshold: "100%"
+
+    G06:
+      name: "Tier-C Detection"
+      status_pattern: '\| G06 \| Tier-C Detection \| (PASS|FAIL)'
+      value_pattern: '\d+ TPs'
+      threshold: ">= 1"
+
+    G07:
+      name: "Economic Context"
+      status_pattern: '\| G07 \| Economic Context \| (PASS|FAIL)'
+      value_pattern: '\d+/\d+'
+      threshold: ">= 1"
+
+    G08:
+      name: "Agent Agreement"
+      status_pattern: '\| G08 \| Agent Agreement \| (PASS|WARN)'
+      value_pattern: '(0\.\d{2}|N/A)'
+      threshold: ">= 0.90"
+      blocking: false
+
+    G09:
+      name: "Transcript Validity"
+      status_pattern: '\| G09 \| Transcript Validity \| (PASS|FAIL)'
+      value_pattern: '(\d+/\d+|invalid)'
+      threshold: "All valid"
+
+    G10:
+      name: "Duration Validity"
+      status_pattern: '\| G10 \| Duration Validity \| (PASS|FAIL)'
+      value_pattern: '(All > 5s|\d+ invalid)'
+      threshold: "> 5000ms"
+
+  # Summary section
+  summary:
+    pattern: '\*\*Summary:\*\*'
+    required_fields:
+      - pattern: 'Passed: \d+/10 gates'
+        description: "Passed gate count"
+      - pattern: 'Blocking Failures: \d+'
+        description: "Blocking failure count"
+
+# =============================================================================
+# Coverage Markers
+# =============================================================================
+coverage_markers:
+  description: "Markers for validating coverage section"
+
+  # Overall coverage percentage
+  overall_percentage:
+    field: "overall_percentage"
+    pattern: '\| \*\*TOTAL\*\* .+ \*\*\d+%\*\* \|'
+    valid_range: [0, 100]
+
+  # Category table structure
+  category_table:
+    header_pattern: '\| Category \| Total \| Passed \| Failed \| Skipped \| Coverage \|'
+    row_pattern: '\| .+ \| \d+ \| \d+ \| \d+ \| \d+ \| \d+% \|'
+    required_categories:
+      - "reentrancy"
+      - "access"
+      - "oracle"
+      - "upgradeability"
+      - "flash_loan"
+      - "governance"
+      - "erc_standards"
+      - "math"
+      - "cross_contract"
+      - "mev"
+      - "tier_c"
+      - "workflow"
+      - "failure_injection"
+
+  # Negative control analysis (optional section)
+  negative_controls:
+    section_pattern: '### Negative Control Analysis'
+    table_pattern: '\| ID \| Scenario \| Expected \| Actual \| Status \|'
+    entry_pattern: '\| S\d{2} \| .+ \| TN \| (TN|FP) \| (PASS|FAIL) \|'
+    summary_pattern: 'Negative Control Summary'
+
+# =============================================================================
+# Debug Compliance Markers
+# =============================================================================
+debug_markers:
+  description: "Markers for validating debug compliance section"
+
+  # Status field
+  status:
+    field: "debug.compliance_status"
+    pattern: '\*\*Status:\*\* (COMPLIANT|NON-COMPLIANT)'
+    valid_values: ["COMPLIANT", "NON-COMPLIANT"]
+
+  # Debug mode enabled
+  enabled:
+    field: "debug.enabled"
+    pattern: '\*\*Debug Mode:\*\* (Enabled|Disabled)'
+    required: true
+
+  # Records count
+  records_count:
+    field: "debug.records_count"
+    pattern: '\*\*Records Captured:\*\* \d+'
+    min_value: 0
+
+  # Agent debug table (if agents used)
+  agent_table:
+    header_pattern: '\| Agent \| Invocations \| Records \| Valid \| Duration \(avg\) \|'
+    row_pattern: '\| vrs-.+ \| \d+ \| \d+ \| \d+ \| .+ \|'
+
+  # Skill debug table (if skills used)
+  skill_table:
+    header_pattern: '\| Skill \| Invocations \| Records \| Valid \| Duration \(avg\) \|'
+    row_pattern: '\| /vrs-.+ \| \d+ \| \d+ \| \d+ \| .+ \|'
+
+  # Compliance rate
+  compliance_rate:
+    field: "debug.compliance_rate"
+    pattern: '\*\*Debug Compliance Rate:\*\* \d+%'
+    valid_range: [0, 100]
+
+# =============================================================================
+# Failure Markers
+# =============================================================================
+failure_markers:
+  description: "Markers for validating failure taxonomy section"
+
+  # By category table
+  category_table:
+    header_pattern: '\| Category \| Count \| Examples \|'
+    row_pattern: '\| .+ \| \d+ \| .+ \|'
+
+  # Detailed failure list
+  detail_table:
+    header_pattern: '\| Scenario \| Error Code \| Category \| Message \| Retry \|'
+    row_pattern: '\| S\d{2,3} \| E-.+ \| .+ \| .+ \| (Yes|No) \|'
+
+  # No failures case
+  no_failures:
+    pattern: 'No failures recorded\.'
+
+# =============================================================================
+# Perfect Metrics Markers
+# =============================================================================
+perfect_metrics_markers:
+  description: "Markers for validating perfect metrics investigation section"
+
+  # Investigation status
+  status:
+    field: "perfect_metrics_check.triggered"
+    pattern: '\*\*Status:\*\* (TRIGGERED|NOT_TRIGGERED)'
+    valid_values: ["TRIGGERED", "NOT_TRIGGERED"]
+
+  # Metric checks table
+  checks_table:
+    header_pattern: '\| Metric \| Value \| Threshold \| Status \|'
+    row_pattern: '\| (Precision|Recall|F1 Score) \| [0-1]\.\d{2} \| != 1\.0 \| (OK|INVESTIGATE) \|'
+
+  # Investigation notes (when triggered)
+  investigation_notes:
+    trigger_condition: "status == TRIGGERED"
+    patterns:
+      - "Perfect metrics.*trigger investigation"
+      - "Is the corpus too easy"
+      - "Are negative controls included"
+      - "Manual review required"
+
+# =============================================================================
+# Regression Markers (Optional Section)
+# =============================================================================
+regression_markers:
+  description: "Markers for validating regression analysis section (if baseline provided)"
+
+  # Section header
+  section_header:
+    pattern: '## 6\. Regression Analysis'
+    required_when: "baseline_provided"
+
+  # Baseline and current run IDs
+  run_ids:
+    baseline_pattern: '\*\*Baseline Run:\*\* .+'
+    current_pattern: '\*\*Current Run:\*\* .+'
+
+  # Metric comparison table
+  metric_table:
+    header_pattern: '\| Metric \| Baseline \| Current \| Delta \| Threshold \| Status \|'
+    row_pattern: '\| .+ \| [0-1]\.\d{2} \| [0-1]\.\d{2} \| [+-][0-1]\.\d{2} \| <= [0-1]\.\d{2} \| (PASS|FAIL) \|'
+
+  # Scenario changes table
+  scenario_table:
+    header_pattern: '\| Scenario \| Baseline \| Current \| Change \|'
+    row_pattern: '\| S\d{2,3} \| (passed|failed|N/A) \| (passed|failed|N/A) \| (REGRESSION|IMPROVEMENT|CHANGED) \|'
+
+  # Summary counts
+  counts:
+    regression_pattern: '\*\*Regression Count:\*\* \d+'
+    improvement_pattern: '\*\*Improvement Count:\*\* \d+'
+
+# =============================================================================
+# JSON Output Markers
+# =============================================================================
+json_markers:
+  description: "Markers for validating JSON dashboard output"
+
+  # Required top-level fields
+  required_fields:
+    - field: "run_id"
+      type: "string"
+    - field: "evaluated_at"
+      type: "string"
+      format: "iso8601"
+    - field: "duration_ms"
+      type: "number"
+      min_value: 0
+    - field: "status"
+      type: "string"
+      valid_values: ["PASS", "FAIL", "WARN"]
+
+  # Gate summary structure
+  gate_summary:
+    required_fields:
+      - field: "ga_gate_status"
+        type: "string"
+        valid_values: ["PASS", "FAIL", "WARN"]
+      - field: "gates_passed"
+        type: "array"
+      - field: "gates_failed"
+        type: "array"
+      - field: "gates_warned"
+        type: "array"
+      - field: "blocking_failures"
+        type: "number"
+        min_value: 0
+      - field: "gates"
+        type: "array"
+        min_length: 10
+
+  # Coverage structure
+  coverage:
+    required_fields:
+      - field: "by_category"
+        type: "object"
+      - field: "overall_percentage"
+        type: "number"
+        valid_range: [0, 100]
+
+  # Debug compliance structure
+  debug_compliance:
+    required_fields:
+      - field: "enabled"
+        type: "boolean"
+      - field: "compliance_rate"
+        type: "number"
+        valid_range: [0, 100]
+      - field: "records_count"
+        type: "number"
+        min_value: 0
+
+  # Failures structure
+  failures:
+    required_fields:
+      - field: "total"
+        type: "number"
+        min_value: 0
+      - field: "by_category"
+        type: "object"
+      - field: "detailed_list"
+        type: "array"
+
+  # Perfect metrics structure
+  perfect_metrics_check:
+    required_fields:
+      - field: "triggered"
+        type: "boolean"
+      - field: "checks"
+        type: "array"
+
+  # Evidence pack path
+  evidence_pack:
+    required: true
+    type: "string"
+
+# =============================================================================
+# Validation Configuration
+# =============================================================================
+validation_config:
+  # Strict mode fails on first validation error
+  strict_mode: true
+
+  # Log level for marker validation
+  log_level: INFO
+
+  # Output format for validation results
+  output_format: json
+
+  # Emit validation report path
+  report_path: evidence/report_validation_report.json
+
+  # Exit codes
+  exit_codes:
+    success: 0
+    validation_error: 1
+    missing_section: 2
+    invalid_field: 3

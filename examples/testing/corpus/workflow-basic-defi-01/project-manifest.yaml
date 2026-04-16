@@ -1,0 +1,29 @@
+name: "workflow-basic-defi-01"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "vault"
+tier: 1
+adversarial_categories: []
+pattern_count: 7
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/SimpleVault.sol"
+    - "contracts/periphery/RewardDistributor.sol"
+    - "contracts/libraries/ShareMath.sol"
+    - "contracts/interfaces/IVaultCore.sol"
+    - "contracts/interfaces/IPriceFeed.sol"
+  safe:
+    - "contracts/core/SimpleVault_safe.sol"
+    - "contracts/periphery/RewardDistributor_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

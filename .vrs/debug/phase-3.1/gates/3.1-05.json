@@ -1,0 +1,62 @@
+{
+  "plan": "3.1-05",
+  "phase": "3.1-testing-audit-cleanup",
+  "generated": "2026-02-11",
+  "assertions": [
+    {
+      "id": "schema-valid",
+      "description": "JSON Schema self-validates as Draft 7",
+      "status": "PASS",
+      "evidence": "jsonschema.Draft7Validator.check_schema() succeeds"
+    },
+    {
+      "id": "samples-validate",
+      "description": "All 3 sample contracts validate against schema",
+      "status": "PASS",
+      "evidence": "jsonschema.validate() succeeds for skill-audit.json, agent-attacker.json, orchestrator-debate.json"
+    },
+    {
+      "id": "invalid-rejected",
+      "description": "Invalid contracts are rejected by schema",
+      "status": "PASS",
+      "evidence": "7 invalid contract tests pass: missing workflow_id, empty capability_checks, invalid grader_type, invalid category, empty rule_refs, lowercase rule_ref, missing check subfield"
+    },
+    {
+      "id": "assertion-helpers-importable",
+      "description": "assert_matches_contract and assert_reasoning_dimensions_covered importable from assertions.py",
+      "status": "PASS",
+      "evidence": "from tests.workflow_harness.lib.assertions import assert_matches_contract, assert_reasoning_dimensions_covered"
+    },
+    {
+      "id": "assertion-pass-fail",
+      "description": "Both pass and fail cases for each assertion helper",
+      "status": "PASS",
+      "evidence": "5 pass/fail tests for assert_matches_contract, 6 pass/fail tests for assert_reasoning_dimensions_covered"
+    },
+    {
+      "id": "no-regressions",
+      "description": "Existing 7 assertion categories unaffected",
+      "status": "PASS",
+      "evidence": "91 workflow_harness tests pass, 4 existing assertion regression tests pass"
+    },
+    {
+      "id": "rule-refs-valid",
+      "description": "Sample contract rule_refs match stable IDs from 3.1-04",
+      "status": "PASS",
+      "evidence": "All rule_refs (EXEC-INTEGRITY, GROUND-TRUTH, REPORT-INTEGRITY, EVIDENCE-CHAIN, TRANSCRIPT-AUTH, GATE-INTEGRITY) are in the 15-ID set"
+    },
+    {
+      "id": "no-enforcement-stack",
+      "description": "No standalone enforcement files created",
+      "status": "PASS",
+      "evidence": "No pytest_rules_plugin.py or transcript_validator.py files exist"
+    }
+  ],
+  "test_results": {
+    "test_file": "tests/test_evaluation_contracts.py",
+    "tests_passed": 37,
+    "tests_failed": 0,
+    "duration_seconds": 4.21
+  },
+  "overall": "PASS"
+}

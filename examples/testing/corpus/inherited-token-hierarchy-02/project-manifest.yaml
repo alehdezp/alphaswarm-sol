@@ -1,0 +1,27 @@
+name: "inherited-token-hierarchy-02"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "token_sale"
+tier: 2
+adversarial_categories: ["B"]
+pattern_count: 6
+safe_pattern_count: 0
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable:
+    - "contracts/core/BaseToken.sol"
+    - "contracts/core/MintableToken.sol"
+    - "contracts/core/RewardToken.sol"
+  safe:
+    - "contracts/core/BaseToken.sol"
+    - "contracts/core/RewardToken_safe.sol"
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

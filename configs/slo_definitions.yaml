@@ -1,0 +1,49 @@
+# SLO (Service Level Objective) Definitions
+#
+# These SLOs define reliability targets for AlphaSwarm multi-agent orchestration.
+# Each SLO includes:
+# - target: Desired performance level
+# - alert_threshold: Level at which to generate alerts
+# - measurement_window_minutes: Time window for measurement (default 5)
+# - comparison: 'gte' (higher is better) or 'lte' (lower is better)
+
+slos:
+  - id: pool_success_rate
+    name: Pool Success Rate
+    description: Percentage of audit pools that complete successfully without errors
+    target: 95.0  # 95% or higher
+    alert_threshold: 90.0  # Alert if drops below 90%
+    measurement_window_minutes: 5
+    comparison: gte  # Higher is better
+
+  - id: pool_completion_latency_p95
+    name: Pool Completion Latency P95
+    description: 95th percentile pool completion time in seconds
+    target: 300.0  # 5 minutes target
+    alert_threshold: 360.0  # Alert if exceeds 6 minutes
+    measurement_window_minutes: 5
+    comparison: lte  # Lower is better
+
+  - id: verdict_accuracy
+    name: Verdict Accuracy
+    description: Percentage of verdicts that match ground truth (when available)
+    target: 90.0  # 90% or higher
+    alert_threshold: 85.0  # Alert if drops below 85%
+    measurement_window_minutes: 5
+    comparison: gte  # Higher is better
+
+  - id: cost_per_finding
+    name: Cost Per Finding
+    description: Average cost in USD per vulnerability finding
+    target: 2.00  # $2.00 or less
+    alert_threshold: 3.00  # Alert if exceeds $3.00
+    measurement_window_minutes: 5
+    comparison: lte  # Lower is better
+
+  - id: bead_mttr
+    name: Bead Mean Time To Resolution
+    description: Average time in seconds to resolve failed beads
+    target: 60.0  # 1 minute target
+    alert_threshold: 120.0  # Alert if exceeds 2 minutes
+    measurement_window_minutes: 5
+    comparison: lte  # Lower is better

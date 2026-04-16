@@ -1,0 +1,40 @@
+ARCHIVED: Patterns requiring semantic/LLM analysis beyond tier_a capability
+==========================================================================
+
+These 39 patterns reference properties that require deep semantic analysis,
+cross-contract reasoning, or protocol-specific knowledge that cannot be
+implemented as deterministic builder properties. They are NOT suitable for
+tier_a matching.
+
+Every pattern here has ALL its tier_a property conditions referencing
+non-existent builder properties, meaning the pattern ALWAYS returns zero
+findings -- it silently pretends to check for something it cannot detect.
+
+These patterns should be redesigned as:
+- Tier B (risk-tag-based) patterns with LLM-assisted classification
+- Tier C (semantic-label-based) patterns
+- Full agent investigation beads (attacker/defender/verifier)
+
+They should NOT be restored as tier_a patterns because the underlying
+properties cannot be deterministically computed from Solidity AST alone.
+
+Moved: 2026-02-08 (Phase 2.1-04 Pattern Triage)
+
+Categories:
+- Governance semantics: vote-without-snapshot, quorum checks, timelock checks,
+  vote period validation (auth-046, auth-072, auth-073, auth-076, auth-077,
+  auth-093, ext-045, governance-vote-without-snapshot)
+- Multisig semantics: threshold/signer changes, minimum checks
+  (auth-047, auth-048, auth-074, auth-075, auth-099, auth-100)
+- Complex authorization: bypassable access control, cross-contract auth,
+  emergency delegatecall bypass, multicall batching
+  (auth-009, auth-010, auth-030, auth-049, auth-050)
+- State machine reasoning: invalid transitions, balance invariants,
+  double counting, extcodesize in constructor, race conditions
+  (logic-001, logic-002, logic-004, logic-007, logic-011, logic-012,
+  logic-013, logic-017, logic-019, logic-020)
+- Financial semantic analysis: share inflation, fee precision, token decimal
+  mismatch, percentage overflow, price overflow, basis points, ratio calc,
+  fee accumulation (arith-005 through arith-020 subset)
+- Fund locking analysis: locks_funds, unlock conditions
+  (live-010, live-036)

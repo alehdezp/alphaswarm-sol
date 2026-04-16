@@ -1,0 +1,23 @@
+id: live-003
+vulndoc: dos/general
+name: Push Payment Griefing
+description: Push payments without failure handling or pull alternative.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_push_payment
+    op: eq
+    value: true
+  - property: payment_recipient_controllable
+    op: eq
+    value: true
+  any:
+  - property: handles_transfer_failure
+    op: eq
+    value: false
+  - property: contract_has_withdraw
+    op: eq
+    value: false

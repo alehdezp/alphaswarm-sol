@@ -1,0 +1,79 @@
+id: UC-AUDIT-003
+name: "Cross-contract analysis on Damn Vulnerable DeFi suite"
+workflow: vrs-audit
+category: audit
+tier: important
+
+input:
+  contract: "examples/damm-vuln-defi/src/"
+  command: "/vrs-audit examples/damm-vuln-defi/src/"
+  context: >
+    The Damn Vulnerable DeFi (DVDefi) suite contains multiple interacting
+    contracts across several challenge categories (flash loans, reentrancy,
+    access control, oracle manipulation, etc.). This tests the audit workflow's
+    ability to handle a multi-contract project, build a cross-contract graph,
+    and identify vulnerabilities that span contract boundaries.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build a BSKG covering all contracts in the src/
+    directory, identify cross-contract interactions, and produce findings across
+    multiple vulnerability categories. The workflow should prioritize high-impact
+    findings (flash loans, access control) and handle the larger codebase
+    without timing out or crashing.
+  must_happen:
+    - "Build BSKG from the entire examples/damm-vuln-defi/src/ directory"
+    - "Graph must include nodes from multiple contract files"
+    - "Query for cross-contract call patterns (CALLS_EXTERNAL between contracts)"
+    - "Identify at least one flash loan or reentrancy vulnerability"
+    - "Produce findings from at least 2 different vulnerability categories"
+    - "Each finding must reference the specific contract file it belongs to"
+  must_not_happen:
+    - "Analyze only one contract and ignore the rest"
+    - "Time out or crash on the multi-contract build"
+    - "Produce findings without specifying which contract they apply to"
+    - "Skip graph building for the multi-contract case"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+      - "Write"
+    required:
+      - "Bash"
+      - "Read"
+      - "Write"
+  expected_findings:
+    min_count: 3
+    must_include_category: "flash-loan"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 50
+  key_dimensions:
+    - name: cross_contract_coverage
+      description: "Did the workflow analyze multiple contracts and detect cross-contract patterns?"
+    - name: graph_utilization
+      description: "Was a unified graph built across all contracts?"
+    - name: finding_diversity
+      description: "Were findings produced across multiple vulnerability categories?"
+    - name: evidence_quality
+      description: "Do findings reference specific contracts and code locations?"
+  regression_signals:
+    - "Finding count drops below 3 -> REGRESSION: multi-contract analysis degraded"
+    - "Only single-contract findings produced -> REGRESSION: cross-contract detection lost"
+    - "Build step fails -> CRITICAL REGRESSION: multi-contract graph build broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "examples/damm-vuln-defi/src/"
+  related_scenarios:
+    - "UC-AUDIT-001"
+    - "UC-AUDIT-004"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier (not core) because multi-contract analysis is expected but
+  the DVDefi suite is large and may require longer processing. Lower pass
+  threshold (50) reflects the difficulty of the task.

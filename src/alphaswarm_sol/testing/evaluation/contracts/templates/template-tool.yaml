@@ -1,0 +1,32 @@
+_template: tool
+category: skill
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- TOOL-FIDELITY
+reasoning_dimensions:
+- tool_selection
+- result_interpretation
+- error_handling
+evaluation_config:
+  run_gvs: false
+  run_reasoning: true
+  debrief: false
+  depth: standard
+capability_checks:
+- id: tool_invoked
+  description: The target external tool was invoked
+  expected_behavior: Tool sequence contains Bash with the tool command
+  grader_type: code
+- id: results_interpreted
+  description: Agent interpreted tool output meaningfully
+  expected_behavior: Response discusses findings from tool output
+  grader_type: model
+evidence_requirements:
+- type: tool_output
+  description: Raw output from the external tool
+hooks:
+- Stop
+- SessionEnd
+status: active
+coverage_axes: []

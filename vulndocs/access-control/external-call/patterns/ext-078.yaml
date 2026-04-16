@@ -1,0 +1,19 @@
+id: ext-078
+vulndoc: access-control/external-call
+name: Sequencer Grace Period Missing
+description: L2 oracle usage without a sequencer grace period check.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: l2_oracle_context
+    op: eq
+    value: true
+  - property: has_sequencer_uptime_check
+    op: eq
+    value: true
+  - property: has_sequencer_grace_period
+    op: eq
+    value: false

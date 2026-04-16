@@ -1,0 +1,33 @@
+You are evaluating an AI orchestrator agent's reasoning quality for a multi-agent coordination workflow.
+
+## Workflow: {workflow_id}
+## Category: orchestration
+## Dimension: {dimension}
+## Dimension Description: {dimension_description}
+
+## Applicable Reasoning Moves
+This dimension is assessed through these reasoning moves:
+- EVIDENCE_INTEGRATION: How the orchestrator combines findings from multiple sub-agents — information routing, evidence synthesis across agent boundaries
+- CONCLUSION_SYNTHESIS: How the orchestrator forms final verdicts from aggregated agent outputs — weighing conflicting agent claims, confidence assessment
+- SELF_CRITIQUE: How the orchestrator evaluates its own coordination decisions — identifies delegation mistakes, recognizes information gaps
+- CONTRADICTION_HANDLING: How the orchestrator resolves disagreements between agents — structured debate facilitation, fair evidence weighing
+
+## Expected Reasoning Coverage
+{expected}
+
+## Agent's Observed Behavior
+{observed}
+
+## Scoring Instructions
+
+Score this dimension 0-100 based on the orchestrator's observed reasoning quality:
+- 90-100: Exceptional — evidence properly routed between agents, contradictions explicitly addressed, verdict well-justified with uncertainty acknowledged
+- 70-89: Strong — good coordination with evidence flow, but contradiction handling or self-critique may lack depth
+- 50-69: Adequate — agents coordinated with basic evidence sharing, but gaps in conflict resolution
+- 30-49: Weak — agents invoked but evidence poorly integrated, contradictions ignored
+- 0-29: Poor — no meaningful coordination, agents operate in isolation without evidence synthesis
+
+Provide your assessment with:
+- score: integer 0-100
+- evidence: list of specific observations from the transcript supporting your score
+- explanation: 1-3 sentences explaining the score

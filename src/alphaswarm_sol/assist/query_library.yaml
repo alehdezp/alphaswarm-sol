@@ -1,0 +1,320 @@
+# Query Library: Proven Vulnerability Queries
+# Format: category -> list of queries with metadata
+
+access_control:
+  - id: "ac-001"
+    query: "FIND Function WHERE writes_state AND NOT has_access_gate"
+    priority: "CRITICAL"
+    category: "access_control"
+    title: "Unprotected state-changing functions"
+    why: "Functions without access gates can be called by anyone, enabling unauthorized state modifications"
+    expected_findings: "2-5 functions"
+    effectiveness: 0.95
+    base_score: 100
+    applicability_conditions:
+      requires:
+        - "total_functions > 0"
+      boosts_if:
+        - condition: "has_access_control == false"
+          boost: 20
+        - condition: "privileged_state_vars > 0"
+          boost: 15
+    found_in:
+      - "VulnerableStateInput.sol"
+      - "ArbitraryDelegatecall.sol"
+      - "UnprotectedConfigUpdates.sol"
+
+  - id: "ac-002"
+    query: "FIND Function WHERE uses_delegatecall AND NOT has_access_gate"
+    priority: "CRITICAL"
+    category: "access_control"
+    title: "Unprotected delegatecall"
+    why: "Arbitrary delegatecall allows complete contract takeover by replacing implementation logic"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.98
+    base_score: 100
+    applicability_conditions:
+      requires:
+        - "has_delegatecalls == true"
+      boosts_if:
+        - condition: "has_access_control == false"
+          boost: 25
+    found_in:
+      - "ArbitraryDelegatecall.sol"
+
+  - id: "ac-003"
+    query: "FIND Function WHERE uses_tx_origin"
+    priority: "HIGH"
+    category: "access_control"
+    title: "tx.origin for authorization"
+    why: "tx.origin can be spoofed in phishing attacks, use msg.sender instead"
+    expected_findings: "1-3 functions"
+    effectiveness: 0.92
+    base_score: 85
+    applicability_conditions:
+      requires:
+        - "total_functions > 0"
+    found_in:
+      - "TxOriginAuth.sol"
+
+  - id: "ac-004"
+    query: "FIND Function WHERE writes_privileged_state AND NOT has_access_gate"
+    priority: "CRITICAL"
+    category: "access_control"
+    title: "Unprotected privileged state modifications"
+    why: "Critical state variables (owner, admin, implementation) without access control"
+    expected_findings: "1-4 functions"
+    effectiveness: 0.96
+    base_score: 100
+    applicability_conditions:
+      requires:
+        - "privileged_state_vars > 0"
+      boosts_if:
+        - condition: "has_access_control == false"
+          boost: 20
+    found_in:
+      - "VulnerableStateInput.sol"
+      - "UnprotectedInitializer.sol"
+
+  - id: "ac-005"
+    query: "FIND Function WHERE name == 'initialize' AND NOT has_initializer_check"
+    priority: "CRITICAL"
+    category: "access_control"
+    title: "Unprotected initializer"
+    why: "Initializer functions without protection can be called by anyone"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.90
+    base_score: 95
+    applicability_conditions:
+      requires:
+        - "has_upgrade_mechanism == true"
+    found_in:
+      - "UnprotectedInitializer.sol"
+      - "ImplementationInitializerNoProxy.sol"
+
+reentrancy:
+  - id: "reen-001"
+    query: "FIND Function WHERE state_write_after_external_call AND NOT has_reentrancy_guard"
+    priority: "HIGH"
+    category: "reentrancy"
+    title: "Classic reentrancy pattern"
+    why: "State changes after external calls enable reentrancy attacks"
+    expected_findings: "1-3 functions"
+    effectiveness: 0.88
+    base_score: 90
+    applicability_conditions:
+      requires:
+        - "has_external_calls == true"
+      boosts_if:
+        - condition: "has_reentrancy_guards == false"
+          boost: 15
+    found_in:
+      - "ReentrancyClassic.sol"
+      - "ValueMovementExternalCalls.sol"
+
+  - id: "reen-002"
+    query: "FIND Function WHERE has_external_calls AND writes_state AND NOT has_reentrancy_guard"
+    priority: "MEDIUM"
+    category: "reentrancy"
+    title: "Potential reentrancy (looser check)"
+    why: "Functions with external calls and state writes may be vulnerable"
+    expected_findings: "2-8 functions"
+    effectiveness: 0.65
+    base_score: 60
+    applicability_conditions:
+      requires:
+        - "has_external_calls == true"
+      boosts_if:
+        - condition: "has_reentrancy_guards == false"
+          boost: 10
+    found_in:
+      - "ValueMovementExternalCalls.sol"
+
+  - id: "reen-003"
+    query: "FIND Function WHERE uses_delegatecall AND NOT has_reentrancy_guard"
+    priority: "HIGH"
+    category: "reentrancy"
+    title: "Delegatecall reentrancy"
+    why: "Delegatecall to untrusted contracts can lead to reentrancy"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.85
+    base_score: 85
+    applicability_conditions:
+      requires:
+        - "has_delegatecalls == true"
+    found_in:
+      - "ValueMovementDelegatecall.sol"
+
+oracle:
+  - id: "oracle-001"
+    query: "FIND Function WHERE reads_oracle_price AND NOT has_staleness_check"
+    priority: "HIGH"
+    category: "oracle"
+    title: "Oracle without staleness check"
+    why: "Stale oracle data can be exploited for price manipulation"
+    expected_findings: "1-4 functions"
+    effectiveness: 0.85
+    base_score: 85
+    applicability_conditions:
+      requires:
+        - "has_oracle_reads == true"
+    found_in:
+      - "OracleManipulation.sol"
+
+  - id: "oracle-002"
+    query: "FIND Function WHERE reads_oracle_price AND NOT has_sequencer_uptime_check"
+    priority: "MEDIUM"
+    category: "oracle"
+    title: "L2 oracle without sequencer check"
+    why: "On L2s, sequencer downtime can cause stale prices"
+    expected_findings: "1-3 functions"
+    effectiveness: 0.75
+    base_score: 70
+    applicability_conditions:
+      requires:
+        - "has_oracle_reads == true"
+    found_in:
+      - "OracleManipulation.sol"
+
+  - id: "oracle-003"
+    query: "FIND Function WHERE reads_oracle_price AND NOT oracle_freshness_ok"
+    priority: "HIGH"
+    category: "oracle"
+    title: "Oracle without proper freshness validation"
+    why: "Missing comprehensive oracle validation (staleness + sequencer)"
+    expected_findings: "1-4 functions"
+    effectiveness: 0.88
+    base_score: 85
+    applicability_conditions:
+      requires:
+        - "has_oracle_reads == true"
+    found_in:
+      - "OracleManipulation.sol"
+
+mev:
+  - id: "mev-001"
+    query: "FIND Function WHERE swap_like AND risk_missing_slippage_parameter"
+    priority: "MEDIUM"
+    category: "mev"
+    title: "Swap without slippage protection"
+    why: "Swaps without slippage checks are vulnerable to sandwich attacks"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.80
+    base_score: 70
+    applicability_conditions:
+      requires:
+        - "has_swap_operations == true"
+    found_in:
+      - "SwapNoParams.sol"
+
+  - id: "mev-002"
+    query: "FIND Function WHERE swap_like AND risk_missing_deadline_check"
+    priority: "MEDIUM"
+    category: "mev"
+    title: "Swap without deadline check"
+    why: "Swaps without deadlines can be executed at unfavorable times"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.75
+    base_score: 65
+    applicability_conditions:
+      requires:
+        - "has_swap_operations == true"
+    found_in:
+      - "SwapNoParams.sol"
+
+token:
+  - id: "token-001"
+    query: "FIND Function WHERE uses_erc20_transfer AND NOT token_return_guarded"
+    priority: "HIGH"
+    category: "token"
+    title: "Unchecked ERC20 transfer return value"
+    why: "Some tokens return false on failure instead of reverting"
+    expected_findings: "2-5 functions"
+    effectiveness: 0.85
+    base_score: 80
+    applicability_conditions:
+      requires:
+        - "has_token_transfers == true"
+    found_in:
+      - "ValueMovementTokens.sol"
+
+  - id: "token-002"
+    query: "FIND Function WHERE uses_erc20_transfer AND NOT uses_safe_erc20"
+    priority: "MEDIUM"
+    category: "token"
+    title: "Not using SafeERC20"
+    why: "SafeERC20 library handles non-standard token behaviors"
+    expected_findings: "2-8 functions"
+    effectiveness: 0.70
+    base_score: 60
+    applicability_conditions:
+      requires:
+        - "has_token_transfers == true"
+    found_in:
+      - "ValueMovementTokens.sol"
+
+dos:
+  - id: "dos-001"
+    query: "FIND Loop WHERE has_unbounded_loop"
+    priority: "MEDIUM"
+    category: "dos"
+    title: "Unbounded loops"
+    why: "Unbounded loops can run out of gas and cause DoS"
+    expected_findings: "1-3 loops"
+    effectiveness: 0.80
+    base_score: 70
+    applicability_conditions:
+      requires:
+        - "has_unbounded_loops == true"
+    found_in:
+      - "LivenessLens.sol"
+
+  - id: "dos-002"
+    query: "FIND Loop WHERE external_calls_in_loop"
+    priority: "HIGH"
+    category: "dos"
+    title: "External calls in loops"
+    why: "External calls in loops can cause DoS if any call fails"
+    expected_findings: "1-2 loops"
+    effectiveness: 0.85
+    base_score: 80
+    applicability_conditions:
+      requires:
+        - "has_loops_with_external_calls == true"
+    found_in:
+      - "LivenessLens.sol"
+
+upgradeability:
+  - id: "upgrade-001"
+    query: "FIND Function WHERE name CONTAINS 'upgrade' AND NOT has_access_gate"
+    priority: "CRITICAL"
+    category: "upgradeability"
+    title: "Unprotected upgrade function"
+    why: "Upgrade functions without access control allow contract takeover"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.95
+    base_score: 100
+    applicability_conditions:
+      requires:
+        - "has_upgrade_mechanism == true"
+      boosts_if:
+        - condition: "has_access_control == false"
+          boost: 25
+    found_in:
+      - "ProxyTypes.sol"
+      - "UpgradeTimelockMissing.sol"
+
+  - id: "upgrade-002"
+    query: "FIND Function WHERE name CONTAINS 'upgrade' AND NOT has_timelock_delay"
+    priority: "HIGH"
+    category: "upgradeability"
+    title: "Upgrade without timelock"
+    why: "Immediate upgrades don't give users time to exit before malicious changes"
+    expected_findings: "1-2 functions"
+    effectiveness: 0.75
+    base_score: 75
+    applicability_conditions:
+      requires:
+        - "has_upgrade_mechanism == true"
+    found_in:
+      - "UpgradeTimelockMissing.sol"

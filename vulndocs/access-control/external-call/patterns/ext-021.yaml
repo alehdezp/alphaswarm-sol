@@ -1,0 +1,16 @@
+id: ext-021
+vulndoc: access-control/external-call
+name: Array Index Not Validated
+description: User index used without bounds validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_array_parameter
+    op: eq
+    value: true
+  - property: has_array_index_check
+    op: eq
+    value: false

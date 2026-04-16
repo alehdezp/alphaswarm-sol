@@ -1,0 +1,65 @@
+id: UC-FAIL-003
+name: "Graceful timeout with partial results"
+workflow: failure
+category: failure
+tier: mechanical
+
+input:
+  contract: "examples/damm-vuln-defi/"
+  command: "/vrs-audit examples/damm-vuln-defi/ --timeout 60"
+  context: >
+    The user audits a very large project with an aggressive timeout. The
+    workflow should make progress on as many contracts as possible, detect
+    when the time budget is exhausted, save partial results, and report
+    what was completed and what remains.
+
+expected_behavior:
+  summary: |
+    The workflow should begin analysis, track its time budget, and when the
+    timeout approaches, gracefully stop, save any findings produced so far,
+    and report a summary of what was analyzed, what was skipped, and how to
+    resume or increase the timeout.
+  must_happen:
+    - "Begin analysis and make progress on at least some contracts"
+    - "Track time budget during execution"
+    - "Detect approaching timeout before hard cutoff"
+    - "Save partial results (findings produced so far)"
+    - "Report what was analyzed and what was skipped"
+    - "Suggest how to resume or increase timeout"
+  must_not_happen:
+    - "Hard crash on timeout with no output"
+    - "Lose all findings when timeout triggers"
+    - "Continue running past the timeout without stopping"
+    - "Report timeout without any partial results"
+  expected_tools:
+    required:
+      - "Bash"
+
+evaluation:
+  pass_threshold: 50
+  key_dimensions:
+    - name: partial_results_saved
+      description: "Were findings from completed analysis preserved?"
+    - name: timeout_detection
+      description: "Did the workflow detect and handle the timeout gracefully?"
+    - name: progress_reporting
+      description: "Does the output report what was completed and what remains?"
+    - name: resume_guidance
+      description: "Does the output suggest how to continue the interrupted work?"
+  regression_signals:
+    - "Hard crash on timeout -> CRITICAL REGRESSION: timeout handling broken"
+    - "All results lost -> REGRESSION: partial save broken"
+    - "No progress reporting -> REGRESSION: timeout UX degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  related_scenarios:
+    - "UC-FAIL-001"
+    - "UC-FAIL-004"
+    - "UC-AUDIT-008"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Mechanical tier. Tests operational resilience. Lower threshold (50) because
+  timeout handling involves heuristics about when to stop.

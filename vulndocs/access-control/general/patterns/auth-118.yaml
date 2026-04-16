@@ -1,0 +1,48 @@
+id: auth-118
+vulndoc: access-control/general
+name: Unprotected Fee Recipient Update
+description: '**DEPRECATED**: This pattern uses name-based detection (regex on function
+  names).
+
+
+  **Migration**: Use semantic pattern `treasury-001-unprotected-recipient-update`
+  instead.
+
+
+  Location: `patterns/semantic/treasury/treasury-001-unprotected-recipient-update.yaml`
+
+
+  The semantic pattern uses `updates_fee_recipient` property for name-agnostic detection.
+
+
+  ---
+
+
+  Original description: Fee recipient or treasury updates without access control.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+status: deprecated
+deprecated_in_favor_of: treasury-001-unprotected-recipient-update
+match:
+  all:
+  - property: label
+    op: regex
+    value: (?i)(?:^|[^a-z0-9]|(?<=[a-z]))(recipient|beneficiary|treasury|fee_receiver|feerecipient)(?:$|[^a-z0-9]|(?=[A-Z]))
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true
+  - property: writes_sensitive_config
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

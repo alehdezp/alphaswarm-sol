@@ -1,0 +1,513 @@
+# =============================================================================
+# PATTERN: crypto-002-incomplete-permit-implementation
+# =============================================================================
+
+id: crypto-002
+vulndoc: crypto/signature
+name: Incomplete EIP-2612 Permit Implementation
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Incomplete or insecure implementations of EIP-2612 permit functions that allow gasless
+  token approvals via signatures. A complete permit implementation requires multiple
+  security components:
+
+  1. **Deadline Check**: Validates signature expiration (prevents stale signature attacks)
+  2. **Nonce Management**: Increments nonce mapping (prevents signature replay attacks)
+  3. **Domain Separator**: Uses EIP-712 domain separation (prevents cross-contract/cross-chain replay)
+  4. **Signature Validation**: Uses ecrecover with proper checks (prevents unauthorized approvals)
+
+  Missing ANY of these components creates critical vulnerabilities that enable various
+  attack vectors including replay attacks, cross-chain exploits, and stale signature abuse.
+
+  ## Why It's Dangerous
+  Permit functions are high-value targets because they grant token approvals without gas costs,
+  making them attractive attack vectors:
+
+  - **Stale Signature Attack**: Without deadline checks, old signatures remain valid forever,
+    allowing attackers to use expired authorizations
+  - **Infinite Replay Attack**: Without nonce management, the same signature can be replayed
+    repeatedly to drain user funds
+  - **Cross-Contract Replay**: Without domain separator, signatures intended for one contract
+    can be replayed on another contract with identical permit interface
+  - **Cross-Chain Replay**: Without chain ID in domain separator, signatures valid on one chain
+    (mainnet) can be replayed on L2s/sidechains
+  - **Authorization Bypass**: Without proper signature validation, attackers can forge approvals
+
+  EIP-2612 is a powerful feature but MUST be implemented correctly per the standard. Incomplete
+  implementations are a common high/critical severity finding in security audits.
+
+  ## Detection Logic
+  This pattern triggers when a function:
+
+  **MUST have (core permit detection):**
+  1. `is_permit_like = true` (function is semantically a permit implementation)
+  2. `visibility in [public, external]` (externally callable)
+
+  **AND missing ANY critical component (vulnerability present):**
+  3. `has_deadline_check = false` (missing deadline validation)
+  4. `writes_nonce_state = false` (missing nonce increment)
+  5. `uses_domain_separator = false` (missing EIP-712 domain separator)
+  6. `uses_ecrecover = false` (missing signature verification entirely)
+
+  **EXCLUDE (safe patterns):**
+  - `is_view = true` OR `is_pure = true` (read-only functions)
+  - `has_signature_validity_checks = true` (comprehensive validation present)
+
+  ## Real-World Examples
+  - Multiple DeFi protocols with permit replay vulnerabilities (medium-high severity findings)
+  - Cross-chain permit replay attacks on multi-chain token deployments
+  - Stolen approvals via incomplete permit implementations
+  - Common audit finding: Missing deadline check, missing nonce, missing domain separator
+  - Several tokens with broken permit() that don't follow EIP-2612 standard
+
+  EIP-2612 permit vulnerabilities are frequently discovered in audits by Trail of Bits,
+  OpenZeppelin, Consensys Diligence, and other top firms.
+
+scope: Function
+
+lens:
+  - Crypto
+
+severity: high
+
+# Pattern quality status (set by vrs-test-conductor agent)
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Core permit detection - function is permit-like
+    - property: is_permit_like
+      op: eq
+      value: true
+
+    # Must be externally callable to be exploitable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+  # At least ONE vulnerability must be present (OR logic)
+  any:
+    # Missing deadline check - allows stale signature attacks
+    - property: has_deadline_check
+      op: eq
+      value: false
+
+    # Missing nonce management - allows infinite replay attacks
+    - property: writes_nonce_state
+      op: eq
+      value: false
+
+    # Missing domain separator - allows cross-contract/cross-chain replay
+    - property: uses_domain_separator
+      op: eq
+      value: false
+
+    # Missing signature verification entirely - critical vulnerability
+    - property: uses_ecrecover
+      op: eq
+      value: false
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Complete signature validation includes deadline + ecrecover + zero address check
+    - property: has_signature_validity_checks
+      op: eq
+      value: true
+
+    # Read-only functions (no state changes, lower risk)
+    - property: is_view
+      op: eq
+      value: true
+
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+edges: []
+
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [token-vault]
+  true_positives: 15
+  true_negatives: 5
+  edge_cases: 3
+  false_positives: 3
+  false_negatives: 2
+  precision: 0.8333
+  recall: 0.8824
+  variation_score: 0.6667
+  last_tested: "2025-12-31"
+  notes: |
+    READY pattern - Reliable detection with acceptable accuracy.
+
+    **Strengths:**
+    - Detects 15 different incomplete permit implementations
+    - Correctly identifies missing deadline, nonce, domain separator, signature checks
+    - Handles different parameter orders and signature formats (v,r,s vs bytes)
+    - Correctly excludes view, internal, and private functions
+    - Works with DAI-style permit variations (holder/expiry naming)
+
+    **Limitations (False Positives - 3):**
+    - Builder limitation: ECDSAHelper.recover() not detected as having signature_validity_checks
+    - PermitSafeManual, PermitSafeWithTryCatch, PermitVariation4_DaiStyleSafe flagged despite being safe
+    - Functions using library-based ECDSA recovery are not recognized as having comprehensive checks
+
+    **Limitations (False Negatives - 2):**
+    - Requires "permit" in function name (is_permit_like property limitation)
+    - grantApprovalWithSignature and approveViaSignature not detected
+    - Pattern misses permit-like functions with non-standard naming conventions
+
+    **Variations Tested:**
+    - Different parameter ordering
+    - Bytes signature format vs v,r,s
+    - DAI-style naming (holder/expiry vs owner/deadline)
+    - Inherited implementations
+    - 4/6 variations handled correctly (66.67%)
+
+    **Production Readiness:**
+    - Suitable for production audits with human review
+    - False positives require manual verification of ECDSA library usage
+    - Consider supplementing with manual checks for non-standard permit naming
+    - Precision (83.33%) and recall (88.24%) acceptable for HIGH severity pattern
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: Stale Signature Attack (Missing Deadline)
+    description: |
+      Attacker uses old permit signature after user's intention has changed or
+      authorization should have expired
+    preconditions:
+      - Permit function accepts deadline parameter but doesn't validate it
+      - User signed permit with future deadline
+      - User's authorization status changed (revoked approval, changed mind, etc.)
+    steps:
+      - "User signs permit signature with deadline far in future"
+      - "User later revokes approval or changes mind about authorization"
+      - "Attacker observes original signature (from mempool, logs, API)"
+      - "Attacker submits permit() with old signature and original deadline"
+      - "Permit succeeds because deadline not checked (require(block.timestamp <= deadline) missing)"
+      - "Attacker gains approval and transfers user's tokens without permission"
+    impact: |
+      Unauthorized token approvals using expired signatures, token theft, loss of user control
+
+  - name: Infinite Replay Attack (Missing Nonce)
+    description: |
+      Attacker replays the same permit signature multiple times because nonce is not
+      incremented, allowing unlimited approvals
+    preconditions:
+      - Permit function doesn't increment nonce mapping
+      - Permit function uses hardcoded nonce (0) or doesn't include nonce in hash
+      - User signs valid permit once
+    steps:
+      - "User signs valid permit signature for one-time approval"
+      - "Attacker captures signature from transaction or API"
+      - "Attacker submits permit() with original signature"
+      - "First permit succeeds and grants approval"
+      - "Attacker submits same permit() again with identical signature"
+      - "Second permit succeeds because nonce not incremented (nonces[owner]++ missing)"
+      - "Attacker repeats infinitely, gaining approvals each time"
+      - "Attacker drains user's tokens by repeatedly refreshing approval"
+    impact: |
+      Unlimited replay of single signature, infinite approvals, complete token drainage
+
+  - name: Cross-Contract Replay (Missing Domain Separator)
+    description: |
+      Signature intended for Token A can be replayed on Token B because domain
+      separator not used to bind signature to specific contract
+    preconditions:
+      - Permit function doesn't use EIP-712 domain separator
+      - Multiple tokens with same permit interface deployed
+      - User signs permit for Token A
+    steps:
+      - "User signs permit for Token A to approve Spender X"
+      - "Attacker observes signature"
+      - "Attacker submits same signature to Token B's permit() function"
+      - "Token B validates signature without domain separator (no contract address in hash)"
+      - "Signature is valid because not bound to Token A's contract address"
+      - "Attacker gains approval on Token B using signature meant for Token A"
+      - "Attacker transfers user's Token B balance without authorization"
+    impact: |
+      Cross-contract signature replay, unauthorized approvals on unintended tokens
+
+  - name: Cross-Chain Replay (Missing Chain ID)
+    description: |
+      Signature valid on mainnet replayed on L2/sidechain because chain ID not
+      included in domain separator
+    preconditions:
+      - Domain separator doesn't include block.chainid
+      - Token deployed on multiple chains (mainnet, Arbitrum, Optimism, Polygon, etc.)
+      - User signs permit on one chain
+    steps:
+      - "User signs permit on Ethereum mainnet"
+      - "Token also deployed on Arbitrum with identical code"
+      - "Attacker observes mainnet signature"
+      - "Attacker replays same signature on Arbitrum's token contract"
+      - "Signature validates because chain ID not in domain separator"
+      - "Attacker gains approval on Arbitrum using mainnet signature"
+      - "Attacker drains user's Arbitrum token balance"
+    impact: |
+      Cross-chain signature replay, multi-chain token theft, user loses funds on all chains
+
+  - name: Authorization Bypass (Missing Signature Verification)
+    description: |
+      Permit function missing ecrecover entirely or not using recovered address
+      for authorization check
+    preconditions:
+      - Permit function doesn't use ecrecover
+      - Permit function doesn't validate signature authenticity
+      - Anyone can call permit with arbitrary parameters
+    steps:
+      - "Attacker calls permit() with target owner address"
+      - "Attacker provides arbitrary v, r, s values (or function doesn't require them)"
+      - "Function doesn't verify signature with ecrecover"
+      - "Permit succeeds without cryptographic proof of authorization"
+      - "Attacker gains approval on victim's behalf"
+      - "Attacker transfers victim's tokens"
+    impact: |
+      Complete authorization bypass, anyone can approve on behalf of anyone, critical vulnerability
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Verify function name contains 'permit' and accepts EIP-2612 parameters (owner, spender, value, deadline, v, r, s)"
+  - "Check if OpenZeppelin ERC20Permit extension is inherited (includes all checks)"
+  - "Manually review function body to confirm which checks are missing:"
+  - "  - Deadline: Look for 'require(block.timestamp <= deadline)' or similar"
+  - "  - Nonce: Look for 'nonces[owner]++' or 'nonces[owner] += 1'"
+  - "  - Domain separator: Look for DOMAIN_SEPARATOR constant/immutable and its usage in hash"
+  - "  - Signature: Look for 'ecrecover' call and comparison to owner"
+  - "Verify this is not a wrapper/proxy that delegates to safe implementation"
+  - "Check if missing checks are implemented in inherited contracts"
+  - "Assess exploitability based on token value and deployment chains"
+  - "Review if token is deployed on multiple chains (higher cross-chain replay risk)"
+
+# Recommended fixes
+fix_recommendations:
+  - name: Use OpenZeppelin ERC20Permit Extension (RECOMMENDED)
+    description: |
+      Inherit from OpenZeppelin's ERC20Permit which provides a complete, audited
+      EIP-2612 implementation with all security checks
+    example: |
+      // RECOMMENDED: Use OpenZeppelin ERC20Permit
+      import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+
+      contract MyToken is ERC20, ERC20Permit {
+          constructor()
+              ERC20("MyToken", "MTK")
+              ERC20Permit("MyToken")
+          {}
+
+          // ✓ OpenZeppelin ERC20Permit includes:
+          // - Deadline check: require(block.timestamp <= deadline, "Expired")
+          // - Nonce management: nonces[owner]++ with public nonces mapping
+          // - Domain separator: EIP-712 domain with name, version, chainId, address
+          // - Signature validation: ecrecover with zero address check
+          // - EIP-2612 compliant PERMIT_TYPEHASH
+          // - Full compliance with EIP-2612 standard
+      }
+
+  - name: Manual Complete EIP-2612 Implementation
+    description: |
+      If not using OpenZeppelin, implement ALL required components per EIP-2612 standard
+    example: |
+      // Manual EIP-2612 implementation (only if OpenZeppelin not available)
+      import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+      contract MyToken is ERC20 {
+          // 1. DOMAIN SEPARATOR with chain ID
+          bytes32 public constant DOMAIN_TYPEHASH = keccak256(
+              "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+          );
+
+          bytes32 public constant PERMIT_TYPEHASH = keccak256(
+              "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+          );
+
+          bytes32 public immutable DOMAIN_SEPARATOR;
+
+          // 2. NONCE MAPPING for replay protection
+          mapping(address => uint256) public nonces;
+
+          constructor() {
+              DOMAIN_SEPARATOR = keccak256(abi.encode(
+                  DOMAIN_TYPEHASH,
+                  keccak256(bytes("MyToken")),
+                  keccak256(bytes("1")),        // version
+                  block.chainid,                // ✓ Chain ID for cross-chain protection
+                  address(this)                 // ✓ Contract address for cross-contract protection
+              ));
+          }
+
+          function permit(
+              address owner,
+              address spender,
+              uint256 value,
+              uint256 deadline,
+              uint8 v,
+              bytes32 r,
+              bytes32 s
+          ) external {
+              // 3. DEADLINE CHECK - prevent stale signatures
+              require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
+
+              // 4. Construct EIP-712 hash with domain separator and nonce
+              bytes32 structHash = keccak256(abi.encode(
+                  PERMIT_TYPEHASH,
+                  owner,
+                  spender,
+                  value,
+                  nonces[owner]++,              // ✓ Nonce increment for replay protection
+                  deadline
+              ));
+
+              bytes32 hash = keccak256(abi.encodePacked(
+                  "\x19\x01",
+                  DOMAIN_SEPARATOR,             // ✓ Domain separator for cross-contract/chain protection
+                  structHash
+              ));
+
+              // 5. SIGNATURE VALIDATION with all checks
+              address signer = ECDSA.recover(hash, v, r, s);  // ✓ Includes zero address check, s-value check
+              require(signer == owner, "ERC20Permit: invalid signature");
+
+              // 6. Grant approval
+              _approve(owner, spender, value);
+          }
+      }
+
+  - name: Add Missing Deadline Check
+    description: |
+      If only deadline check is missing, add validation at function start
+    example: |
+      function permit(
+          address owner,
+          address spender,
+          uint256 value,
+          uint256 deadline,
+          uint8 v,
+          bytes32 r,
+          bytes32 s
+      ) external {
+          // ✓ ADD THIS: Deadline check to prevent stale signatures
+          require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
+
+          // ... rest of permit logic
+      }
+
+  - name: Add Missing Nonce Management
+    description: |
+      If only nonce management is missing, add nonce mapping and increment
+    example: |
+      // ✓ ADD THIS: Nonce mapping for replay protection
+      mapping(address => uint256) public nonces;
+
+      function permit(
+          address owner,
+          address spender,
+          uint256 value,
+          uint256 deadline,
+          uint8 v,
+          bytes32 r,
+          bytes32 s
+      ) external {
+          require(block.timestamp <= deadline, "Expired");
+
+          bytes32 structHash = keccak256(abi.encode(
+              PERMIT_TYPEHASH,
+              owner,
+              spender,
+              value,
+              nonces[owner]++,        // ✓ ADD THIS: Increment nonce to prevent replay
+              deadline
+          ));
+
+          // ... rest of permit logic
+      }
+
+  - name: Add Missing Domain Separator
+    description: |
+      If only domain separator is missing, add EIP-712 domain with chain ID
+    example: |
+      // ✓ ADD THIS: Domain separator with chain ID
+      bytes32 public constant DOMAIN_TYPEHASH = keccak256(
+          "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+      );
+
+      bytes32 public immutable DOMAIN_SEPARATOR;
+
+      constructor() {
+          DOMAIN_SEPARATOR = keccak256(abi.encode(
+              DOMAIN_TYPEHASH,
+              keccak256(bytes("MyToken")),
+              keccak256(bytes("1")),
+              block.chainid,          // ✓ Chain ID prevents cross-chain replay
+              address(this)           // ✓ Contract address prevents cross-contract replay
+          ));
+      }
+
+      function permit(...) external {
+          // ...
+          bytes32 hash = keccak256(abi.encodePacked(
+              "\x19\x01",
+              DOMAIN_SEPARATOR,       // ✓ USE DOMAIN_SEPARATOR in hash
+              structHash
+          ));
+          // ...
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - crypto-001  # Insecure signature validation (general)
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC04  # Input Validation
+
+# CWE mapping
+cwe_mapping:
+  - CWE-347  # Improper Verification of Cryptographic Signature
+  - CWE-345  # Insufficient Verification of Data Authenticity
+  - CWE-294  # Authentication Bypass by Capture-replay
+  - CWE-346  # Origin Validation Error
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+semantic_ops: {}
+
+behavioral_signature: {}
+
+tier_match: {}
+
+constraints: {}
+
+attack_paths: []
+
+exploit_similarity:
+  matches:
+    - eip2612-incomplete-implementations
+    - permit-replay-vulnerabilities
+  signature: "permit_missing_checks"
+  similarity_threshold: 0.80
+
+verification_agents: {}

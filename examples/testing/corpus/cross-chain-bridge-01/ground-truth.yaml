@@ -1,0 +1,138 @@
+project:
+  name: cross-chain-bridge-01
+  theme: bridge
+  tier: 2
+  adversarial_categories:
+  - A
+  - B
+  description: 'Cross-chain bridge with message verification. Category A+B: cross-contract
+    split vulnerability between BridgeGateway and MessageVerifier.'
+findings:
+- pattern_id: crypto-missing-chainid
+  contract: MessageVerifier
+  function: validateProof
+  line_range: 19-35
+  severity: critical
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify proof validation reconstructs hash from messageId, recipient, amount
+  - No chain ID included in signed message
+  - Proof valid on source chain also valid on destination chain
+  - 'Cross-chain replay: release assets on multiple chains with same proof'
+  - 'Conclude: missing chainId in bridge message enables cross-chain replay'
+- pattern_id: balance-update-after-transfer
+  contract: BridgeGateway
+  function: executeRelease
+  line_range: 44-58
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - 'Identify external call recipient.call{value: amount}'
+  - processedMessages set before call but totalLocked update is safe
+  - However recipient callback can re-enter other bridge functions
+  - 'Conclude: reentrancy via release callback'
+- pattern_id: auth-001
+  contract: BridgeGateway
+  function: emergencyUnlock
+  line_range: 62-70
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify emergencyUnlock sends locked assets to user
+  - No access control - anyone can trigger emergency unlock for any user
+  - Combined with reentrancy (state after call)
+  - 'Conclude: missing access control + reentrancy on emergency unlock'
+- pattern_id: auth-002
+  contract: BridgeGateway
+  function: updateRelayer
+  line_range: 73-76
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - Identify updateRelayer changes the relayer address
+  - No access control modifier
+  - Relayer controls toggleBridge
+  - 'Conclude: anyone can become relayer'
+- pattern_id: auth-003
+  contract: BridgeGateway
+  function: updateVerifier
+  line_range: 79-81
+  severity: critical
+  adversarial_techniques:
+  - A1-function-renaming
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify updateVerifier changes the message verification contract
+  - No access control
+  - Attacker deploys malicious verifier that returns true for all proofs
+  - 'Conclude: verifier replacement enables unlimited asset theft'
+- pattern_id: auth-004
+  contract: MessageVerifier
+  function: rotateSigner
+  line_range: 38-40
+  severity: critical
+  adversarial_techniques:
+  - B1-multi-contract-split
+  expected_reasoning_chain:
+  - Identify rotateSigner changes trustedSigner in verifier
+  - No access control
+  - Attacker sets own address as signer, forges valid proofs
+  - 'Cross-contract impact: BridgeGateway trusts this verifier'
+  - 'Conclude: signer takeover enables bridge drain'
+- pattern_id: balance-update-after-transfer
+  contract: BridgeGateway
+  function: emergencyUnlock
+  line_range: 62-70
+  severity: high
+  adversarial_techniques:
+  - A1-function-renaming
+  expected_reasoning_chain:
+  - 'Identify external call user.call{value: amount}'
+  - lockedAssets[user] = 0 occurs AFTER external call
+  - Reentrancy allows repeated emergency unlocks
+  - 'Conclude: reentrancy in emergencyUnlock'
+- pattern_id: bridge-001
+  contract: BridgeGateway
+  function: executeRelease
+  line_range: 44-58
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify executeRelease sends ETH via recipient.call{value: amount} at line 54
+  - Notice processedMessages[messageId] is set before the call but totalLocked is decremented at line 53 without reentrancy guard
+  - Recognize that recipient is attacker-controlled and callback can re-enter other bridge functions like emergencyUnlock
+  - 'Conclude: cross-function reentrancy in bridge release allows draining locked assets via re-entrant callback'
+- pattern_id: cc-001
+  contract: MessageVerifier
+  function: validateProof
+  line_range: 19-35
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify validateProof reconstructs expectedHash from keccak256(abi.encodePacked(messageId, recipient, amount)) at line 24-26
+  - Notice no chain identifier is included in the packed message — hash is chain-agnostic
+  - Recognize a valid signature on chain A is also valid on chain B since the same hash is produced
+  - 'Conclude: missing chainId in message hash enables cross-chain replay of bridge proofs to release assets on multiple chains'
+- pattern_id: inv-cc-001
+  contract: BridgeGateway
+  function: executeRelease
+  line_range: 44-58
+  severity: critical
+  adversarial_techniques: []
+  expected_reasoning_chain:
+  - Identify executeRelease calls verifier.validateProof which checks proof against keccak256(messageId, recipient, amount) with no chain ID
+  - Notice totalLocked is decremented at line 53 and ETH transferred at line 54 based solely on the chain-agnostic proof
+  - Recognize an invariant violation — bridge releases assets without verifying the proof is bound to this specific chain
+  - 'Conclude: cross-contract invariant violation — BridgeGateway trusts MessageVerifier proofs that lack chain binding, enabling multi-chain asset drain'
+safe_patterns: []
+summary:
+  total_findings: 10
+  total_safe_patterns: 0
+  difficulty: hard
+  notes: 'Category A+B: Cross-contract vulnerability split between BridgeGateway and
+    MessageVerifier. Verifier weakness only manifests when gateway trusts it.'

@@ -1,0 +1,53 @@
+{
+  "workflow_id": "agent-vrs-attacker",
+  "category": "agent",
+  "description": "Capability contract for the vrs-attacker agent. Validates that the attacker constructs exploit paths from graph evidence, identifies attack vectors, and produces findings with proper citation.",
+  "agent_ref": "src/alphaswarm_sol/shipping/agents/vrs-attacker.md",
+  "capability_checks": [
+    {
+      "id": "attacker-01",
+      "name": "identifies_attack_vectors_from_graph",
+      "description": "The attacker agent must query the BSKG to identify potential attack surfaces before constructing exploit paths",
+      "check_type": "graph_first",
+      "assertion": "assert_graph_first(parser)",
+      "required": true
+    },
+    {
+      "id": "attacker-02",
+      "name": "constructs_exploit_path",
+      "description": "The attacker must produce at least one exploit path showing the sequence of operations that leads to the vulnerability",
+      "check_type": "evidence_validity",
+      "assertion": "assert_findings_have_locations(findings)",
+      "required": true
+    },
+    {
+      "id": "attacker-03",
+      "name": "cites_graph_node_ids",
+      "description": "Every finding must reference specific BSKG graph node IDs as evidence, not just code line numbers",
+      "check_type": "evidence_validity",
+      "assertion": "assert_findings_cite_graph_nodes(findings)",
+      "required": true
+    },
+    {
+      "id": "attacker-04",
+      "name": "uses_semantic_operations",
+      "description": "The attacker should reason about semantic operations (TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE, etc.) not just function names",
+      "check_type": "reasoning_quality",
+      "assertion": "llm_graded: 'Does the attacker reason about semantic operations rather than just function names?'",
+      "required": false
+    }
+  ],
+  "expected_behaviors": [
+    "Queries BSKG for functions with value transfer operations",
+    "Identifies missing access control checks",
+    "Constructs step-by-step exploit paths",
+    "Cites graph node IDs in every finding",
+    "Classifies vulnerability severity based on economic impact",
+    "Considers cross-function attack vectors"
+  ],
+  "performance_bounds": {
+    "min_duration_sec": 10,
+    "max_duration_sec": 300,
+    "min_tool_calls": 3
+  }
+}

@@ -1,0 +1,74 @@
+# MEV Investigation Template
+vulnerability_class: mev
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify swap or trade operation"
+    look_for: |
+      - DEX swap calls (Uniswap, Sushi, etc.)
+      - Token exchange operations
+      - Price-dependent operations
+    evidence_needed: "Swap/trade function identification"
+
+  - step_number: 2
+    action: "Check for slippage protection"
+    look_for: |
+      - amountOutMin parameter
+      - minReturn, minAmountOut
+      - Price bounds
+    evidence_needed: "Slippage parameter and its value"
+    red_flag: "No slippage parameter or hardcoded to 0"
+    safe_if: "User-provided slippage with reasonable defaults"
+
+  - step_number: 3
+    action: "Check for deadline protection"
+    look_for: |
+      - deadline parameter
+      - require(block.timestamp <= deadline)
+      - Expiry timestamp
+    evidence_needed: "Deadline check code"
+    red_flag: "No deadline or set to type(uint256).max"
+    safe_if: "User-provided deadline with validation"
+
+  - step_number: 4
+    action: "Assess sandwich attack potential"
+    look_for: |
+      - Large swaps without protection
+      - Predictable price impact
+      - Public mempool visibility
+    evidence_needed: "Attack profitability analysis"
+
+  - step_number: 5
+    action: "Check for frontrunning protection"
+    look_for: |
+      - Commit-reveal schemes
+      - Private transaction submission
+      - Flashbots usage
+    evidence_needed: "Anti-frontrunning mechanism"
+
+questions_to_answer:
+  - "Is this a swap or price-dependent operation?"
+  - "Is there slippage protection?"
+  - "Is there a deadline parameter?"
+  - "Can this be sandwich attacked profitably?"
+  - "Is there any MEV protection mechanism?"
+
+common_false_positives:
+  - "Swap is internal protocol operation with trusted prices"
+  - "Slippage is set by user in outer function"
+  - "Small amounts make MEV unprofitable"
+  - "Private/protected transaction submission"
+
+key_indicators:
+  - "Swap without amountOutMin parameter"
+  - "No deadline or deadline far in future"
+  - "Large value at risk"
+  - "Public transaction submission"
+
+safe_patterns:
+  - "User-controlled slippage parameter"
+  - "Reasonable deadline (< 1 hour)"
+  - "Commit-reveal for sensitive operations"
+  - "Flashbots or private mempool"

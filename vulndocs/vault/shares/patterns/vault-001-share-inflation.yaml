@@ -1,0 +1,236 @@
+# =============================================================================
+# PATTERN: ERC-4626 Share Inflation Attack
+# =============================================================================
+# Detects ERC-4626 vaults vulnerable to share inflation/donation attacks
+# where attackers can manipulate the share-to-asset exchange rate.
+#
+# Source: Phase 17 Exa Discovery (2026-01-09)
+# Real-world: ResupplyFi ($9.8M, June 2025), Perennial (Zellic audit)
+# =============================================================================
+
+id: vault-001
+vulndoc: vault/shares
+name: ERC-4626 Share Inflation Vulnerability
+description: |
+  Detects ERC-4626 vaults vulnerable to share inflation attacks. When a vault
+  has no virtual offset or dead shares protection, attackers can:
+
+  1. Deposit a small amount (1 wei) to receive 1 share
+  2. Donate a large amount directly to the vault (not through deposit)
+  3. Subsequent depositors receive 0 shares due to rounding
+  4. Attacker redeems their 1 share to claim all assets
+
+  This attack exploits the share calculation formula:
+    shares = assets * totalSupply / totalAssets
+
+  When totalSupply is 1 and totalAssets is artificially inflated, new deposits
+  result in 0 shares (integer division rounds toward zero).
+
+  Impact: Complete theft of deposited funds from subsequent users.
+
+scope: Function
+lens:
+  - ValueMovement
+  - Arithmetic
+severity: critical
+status: ready
+
+# VulnDocs reference for LLM context retrieval
+vulndocs_reference:
+  category: vault
+  subcategory: share-inflation
+  depth: detection
+
+# Match conditions - semantic, not name-based
+match:
+  all:
+    # Must be a share calculation function (deposit/mint)
+    - property: visibility
+      op: in
+      value: [public, external]
+    # Must perform division (share calculation)
+    - property: uses_division
+      op: eq
+      value: true
+    # Must read and write balance-like state
+    - property: reads_state
+      op: eq
+      value: true
+    - property: writes_state
+      op: eq
+      value: true
+  any:
+    # Could be deposit or mint pattern
+    - property: is_erc4626_deposit_like
+      op: eq
+      value: true
+    - property: is_erc4626_mint_like
+      op: eq
+      value: true
+    # Or generic share calculation
+    - property: has_share_calculation
+      op: eq
+      value: true
+  none:
+    # Safe patterns that prevent attack
+    - property: has_virtual_offset
+      op: eq
+      value: true
+    - property: has_dead_shares_protection
+      op: eq
+      value: true
+    - property: has_minimum_deposit_check
+      op: eq
+      value: true
+
+# Semantic operations for behavioral detection
+semantic_ops:
+  has_all_operations:
+    - READS_USER_BALANCE     # totalAssets or similar
+    - PERFORMS_DIVISION      # Share calculation
+    - WRITES_USER_BALANCE    # Share minting
+  sequence_order:
+    before: READS_USER_BALANCE
+    after: PERFORMS_DIVISION
+
+# Behavioral signature
+behavioral_signature:
+  pattern: "R:bal->A:div->W:bal"
+  note: "Read balance, divide for shares, write shares - without protection"
+
+# Attack scenarios
+attack_scenarios:
+  - name: "First Depositor Share Inflation"
+    description: |
+      Attacker front-runs first legitimate depositor to steal their funds.
+    preconditions:
+      - "Vault is empty or nearly empty (totalSupply very low)"
+      - "No virtual offset or dead shares protection"
+      - "No minimum deposit requirement"
+    steps:
+      - "Attacker deposits 1 wei to receive 1 share"
+      - "Attacker transfers (donates) large amount directly to vault"
+      - "Victim deposits X tokens"
+      - "Victim receives 0 shares (X * 1 / largeAmount = 0)"
+      - "Attacker redeems 1 share for all vault assets"
+    impact: "Complete theft of victim's deposit"
+
+  - name: "Donation Attack on Active Vault"
+    description: |
+      Even with existing deposits, donation can cause rounding losses.
+    preconditions:
+      - "Vault has existing shares but low totalSupply"
+      - "No virtual offset protection"
+    steps:
+      - "Attacker observes pending deposit transaction"
+      - "Attacker front-runs with large donation to vault"
+      - "Victim's deposit results in fewer shares than expected"
+      - "Attacker profits from inflated share value"
+    impact: "Partial theft via rounding manipulation"
+
+# Verification steps
+verification_steps:
+  - "Check if vault inherits OpenZeppelin ERC4626 with _decimalsOffset()"
+  - "Look for dead shares burned to address(0) in constructor"
+  - "Check for MIN_DEPOSIT or similar minimum amount validation"
+  - "Verify totalAssets() cannot be manipulated independently of totalSupply"
+  - "Check if there's initial liquidity or virtual assets/shares"
+  - "Review convertToShares() for virtual offset implementation"
+
+# Fix recommendations
+fix_recommendations:
+  - name: "Virtual Offset (Recommended)"
+    description: |
+      Add virtual assets and shares to prevent exchange rate manipulation.
+      This is the OpenZeppelin standard approach.
+    example: |
+      function _decimalsOffset() internal view virtual override returns (uint8) {
+          return 3;  // 10^3 virtual shares
+      }
+
+      function _convertToShares(uint256 assets, Math.Rounding rounding)
+          internal view virtual override returns (uint256) {
+          return assets.mulDiv(
+              totalSupply() + 10 ** _decimalsOffset(),  // Virtual shares
+              totalAssets() + 1,                         // Virtual assets
+              rounding
+          );
+      }
+
+  - name: "Dead Shares"
+    description: |
+      Burn initial shares to establish minimum share value.
+    example: |
+      constructor() {
+          _mint(address(0), 1000);  // Burn dead shares
+      }
+
+  - name: "Minimum Deposit"
+    description: |
+      Require deposits above dust threshold to prevent manipulation.
+    example: |
+      uint256 constant MIN_DEPOSIT = 1e15;  // 0.001 tokens
+
+      function deposit(uint256 assets, address receiver) public returns (uint256) {
+          require(assets >= MIN_DEPOSIT, "Deposit too small");
+          // ... rest of deposit logic
+      }
+
+  - name: "Rounding Direction"
+    description: |
+      Always round in favor of the vault on deposits and in favor of users on withdrawals.
+    example: |
+      // Deposit: round down shares (vault favorable)
+      shares = assets.mulDiv(totalSupply, totalAssets, Math.Rounding.Down);
+
+      // Withdraw: round up assets needed (vault favorable)
+      assets = shares.mulDiv(totalAssets, totalSupply, Math.Rounding.Up);
+
+# Related patterns
+related_patterns:
+  - arith-001  # Division precision loss
+  - vm-002     # Unprotected transfer
+  - logic-001  # Accounting errors
+
+# Real-world exploits
+exploits:
+  - name: "ResupplyFi"
+    date: "2025-06-26"
+    loss: "$9.8M"
+    chain: "Ethereum"
+    description: |
+      Attacker used $4K flash loan to donate tokens to wstUSR vault.
+      Combined with flawed _updateExchangeRate that set rate to zero,
+      enabled $9.8M drain via collateral theft.
+    source: "SolidityScan"
+
+  - name: "Perennial Vault"
+    date: "2025"
+    loss: "Critical (pre-deployment)"
+    chain: "N/A"
+    description: |
+      Zellic audit found critical inflation attack where attacker
+      could front-run first depositor to steal entire deposit.
+    source: "Zellic Audit Reports"
+
+# OWASP mapping
+owasp_mapping:
+  - SC03  # Logic Errors
+  - SC04  # Lack of Input Validation
+
+# CWE mapping
+cwe_mapping:
+  - CWE-190  # Integer overflow/underflow
+  - CWE-682  # Incorrect calculation
+
+# Test coverage
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Pattern created from Exa discovery. Needs test fixtures."

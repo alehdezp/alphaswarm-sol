@@ -1,0 +1,45 @@
+{
+  "schema_version": "3.5.0",
+  "measured_at": "TBD - measure before starting Phase 0",
+  "description": "Baseline metrics for VKG 2.x before 3.5 enhancements",
+
+  "detection_quality": {
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "false_positive_rate": null,
+    "business_logic_detection_rate": 0,
+    "notes": "Business logic detection is 0% in current VKG - no semantic understanding"
+  },
+
+  "efficiency": {
+    "tokens_per_audit_function": null,
+    "time_to_finding_seconds": null,
+    "false_positive_triage_minutes": null
+  },
+
+  "coverage": {
+    "vulnerability_classes_detected": 20,
+    "erc_standards_covered": 0,
+    "defi_primitives_modeled": 0,
+    "attack_patterns_defined": 0,
+    "semantic_operations": 20
+  },
+
+  "test_corpus": {
+    "vulnerable_contracts": 0,
+    "safe_contracts": 0,
+    "true_positives": null,
+    "false_positives": null,
+    "false_negatives": null,
+    "notes": "Test corpus to be created in P0-T5"
+  },
+
+  "measurement_methodology": {
+    "precision": "TP / (TP + FP) on test corpus",
+    "recall": "TP / (TP + FN) on test corpus",
+    "f1": "2 * (precision * recall) / (precision + recall)",
+    "false_positive_rate": "FP / (FP + TN)",
+    "business_logic_detection": "Correctly identified semantic mismatches / total BL vulns"
+  }
+}

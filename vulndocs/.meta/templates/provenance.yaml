@@ -1,0 +1,57 @@
+# Provenance Template
+# Source tracking for vulndoc content
+# Path: vulndocs/{category}/{subcategory}/provenance.yaml
+
+schema_version: "1.0"
+
+# Source tracking for URL ingestion and content origin
+# This file tracks where vulnerability information was discovered and extracted from
+
+sources:
+  - url: ""
+    # Source type: exploit, audit, research, education, advisory, postmortem
+    type: ""
+    # Date the source was fetched/processed (ISO format)
+    fetched: ""
+    # Quality assessment: high, medium, low
+    # high: primary source, well-documented, includes code
+    # medium: secondary source, good detail but incomplete
+    # low: tertiary source, limited detail or unverified
+    quality: ""
+    # What was extracted from this source
+    extracted:
+      # Documentation content extracted
+      docs:
+        - core-pattern  # Updated core-pattern.md
+        - detection     # Updated detection content
+        - verification  # Updated verification content
+        - exploits      # Added exploit references
+      # Patterns created or updated
+      patterns: []
+    # Optional: Notes about the source
+    notes: ""
+
+  # Example entry:
+  # - url: "https://rekt.news/the-dao-rekt/"
+  #   type: postmortem
+  #   fetched: "2026-01-23"
+  #   quality: high
+  #   extracted:
+  #     docs:
+  #       - exploits
+  #     patterns: []
+  #   notes: "Original DAO hack postmortem"
+
+# Deduplication tracking
+# Prevents duplicate extraction from same sources
+processed_urls: []
+  # - url: ""
+  #   hash: ""  # Content hash at time of processing
+  #   processed_date: ""
+
+# Last update timestamp
+last_updated: ""
+
+# Discovery agent notes (optional)
+# Notes from automated discovery processes
+discovery_notes: ""

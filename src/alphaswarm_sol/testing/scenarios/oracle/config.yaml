@@ -1,0 +1,195 @@
+name: "Oracle Manipulation Detection"
+category: oracle
+description: |
+  Test detection of oracle manipulation vulnerabilities including
+  price manipulation, stale data, single-source dependency, and
+  L2 sequencer uptime/grace period issues.
+
+contracts:
+  # --- Price Manipulation / Staleness Cases ---
+
+  - path: corpus/oracle/single-block-price.sol
+    has_vulnerability: true
+    expected_pattern: oracle-manipulation
+    expected_severity: critical
+    ground_truth:
+      - pattern: oracle-manipulation
+        severity: critical
+        location: "getPrice:30"
+        description: "Uses spot price from single block"
+
+  - path: corpus/oracle/no-staleness-check.sol
+    has_vulnerability: true
+    expected_pattern: stale-oracle-data
+    expected_severity: high
+    ground_truth:
+      - pattern: stale-oracle-data
+        severity: high
+        location: "fetchPrice:45"
+        description: "No staleness check on Chainlink answer"
+
+  - path: corpus/oracle/safe-twap.sol
+    has_vulnerability: false
+    notes: "Uses TWAP with proper averaging window"
+
+  # --- L2 Sequencer Grace Period Cases (Phase 7.2) ---
+  # From: vulndocs/oracle/sequencer-uptime/tests/cases.yaml
+
+  # Vulnerable: Missing grace period entirely
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/vuln-001-basic-no-grace.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: high
+    tags: ["sequencer", "grace-period", "l2"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: high
+        location: "getPrice"
+        description: "Checks sequencer answer == 0 but no startedAt comparison"
+
+  # Vulnerable: Grace period set to zero (ineffective)
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/vuln-005-zero-grace.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: high
+    tags: ["sequencer", "grace-period", "l2", "zero-constant"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: high
+        location: "getPrice"
+        description: "GRACE_PERIOD = 0 makes check ineffective"
+
+  # Vulnerable: Inverted grace period check (allows during, blocks after)
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/vuln-007-inverted-grace.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: high
+    tags: ["sequencer", "grace-period", "l2", "inverted-guard"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: high
+        location: "getPrice"
+        description: "require(timeSinceUp <= GRACE) instead of > inverts logic"
+
+  # Vulnerable: Uses wrong timestamp (updatedAt instead of startedAt)
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/vuln-013-wrong-timestamp.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: high
+    tags: ["sequencer", "grace-period", "l2", "wrong-timestamp"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: high
+        location: "getPrice"
+        description: "Uses updatedAt instead of startedAt for grace period"
+
+  # Vulnerable: Critical liquidation without grace period
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/vuln-016-liquidation.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: critical
+    tags: ["sequencer", "grace-period", "l2", "liquidation", "critical-operation"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: critical
+        location: "liquidate"
+        description: "Critical liquidation uses stale oracle post-restart"
+
+  # Safe: Standard 1-hour grace period
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/safe-001-standard-grace.sol
+    has_vulnerability: false
+    tags: ["sequencer", "grace-period", "l2", "safe"]
+    notes: "Chainlink recommended 1-hour grace period implementation"
+
+  # Safe: Grace period with staleness check (defense in depth)
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/safe-002-grace-staleness.sol
+    has_vulnerability: false
+    tags: ["sequencer", "grace-period", "l2", "safe", "defense-in-depth"]
+    notes: "Defense in depth: grace period + staleness check"
+
+  # Safe: Conditional L2 check based on chain ID
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/safe-010-chain-conditional.sol
+    has_vulnerability: false
+    tags: ["sequencer", "grace-period", "l2", "safe", "chain-conditional"]
+    notes: "Only enforces grace period on L2 chains (42161, 10, 8453)"
+
+  # Safe: L1 deployment (no sequencer needed)
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/safe-009-l1-deployment.sol
+    has_vulnerability: false
+    tags: ["sequencer", "l1", "safe"]
+    notes: "L1 mainnet deployment without sequencer dependency"
+
+  # Counterfactual: Remove grace period from safe contract
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/cf-003-remove-grace.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: high
+    tags: ["sequencer", "grace-period", "l2", "counterfactual"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: high
+        location: "getPrice"
+        description: "Counterfactual: grace period removed from safe implementation"
+
+  # Helper depth: Grace period in direct helper function
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/helper-001-direct.sol
+    has_vulnerability: false
+    tags: ["sequencer", "grace-period", "l2", "safe", "helper-depth-1"]
+    notes: "One level of helper function delegation with grace period"
+
+  # Helper depth: Missing grace period at depth 2
+  - path: vulndocs/oracle/sequencer-uptime/tests/contracts/helper-005-missing-deep.sol
+    has_vulnerability: true
+    expected_pattern: oracle-l2-sequencer-grace-missing
+    expected_severity: high
+    tags: ["sequencer", "grace-period", "l2", "helper-depth-2"]
+    ground_truth:
+      - pattern: oracle-l2-sequencer-grace-missing
+        severity: high
+        location: "_validateSequencer"
+        description: "Deep helper missing grace period at depth 2"
+
+# --- Prompt Configuration ---
+
+prompt_template: |
+  Analyze {contract_path} for oracle manipulation vulnerabilities.
+
+  Check for:
+  1. Single-block price reads (flash loan susceptible)
+  2. Missing staleness checks
+  3. Single oracle dependency
+  4. Missing price bounds validation
+  5. L2 sequencer uptime check without grace period
+  6. Inverted or ineffective grace period checks
+
+  Return findings with pattern, severity, location, confidence.
+
+allowed_tools:
+  - "Bash(uv run alphaswarm build-kg*)"
+  - "Bash(uv run alphaswarm query*)"
+  - "Read"
+
+json_schema:
+  type: object
+  properties:
+    has_vulnerability:
+      type: boolean
+    findings:
+      type: array
+    reasoning:
+      type: string
+  required: [has_vulnerability, findings, reasoning]
+
+timeout_seconds: 150
+difficulty: hard
+
+# --- Extended Test Pack Reference ---
+# Full sequencer grace test cases (55 cases) are defined in:
+# vulndocs/oracle/sequencer-uptime/tests/cases.yaml
+#
+# This config includes a representative subset for scenario testing.
+# The full test pack includes:
+#   - 25 vulnerable cases (basic, timing, critical operations, helper variants)
+#   - 15 safe cases (proper implementation, L1/L2 conditional, view functions)
+#   - 10 counterfactual cases (guard inversion, order mutation, value mutation)
+#   - 5 helper depth cases (1-2 levels, library, inheritance)

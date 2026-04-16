@@ -1,0 +1,21 @@
+id: value-movement-arbitrary-delegatecall
+vulndoc: reentrancy/general
+name: Arbitrary Delegatecall
+description: Delegatecall target controlled by user input.
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: critical
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: delegatecall_target_user_controlled
+    op: eq
+    value: true
+  none:
+  - property: delegatecall_in_proxy_upgrade_context
+    op: eq
+    value: true

@@ -1,0 +1,24 @@
+# Balancer Read-Only Reentrancy via getPoolTokens
+id: smartbugs-balancer-readonly-reentrancy-getpooltokens
+name: Balancer getPoolTokens Read-Only Reentrancy
+category: reentrancy
+source: examples/semgrep-smart-contracts/solidity/security/balancer-readonly-reentrancy-getpooltokens.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: reentrancy-readonly
+  description: |
+    Balancer Vault's getPoolTokens() can return stale/manipulated data
+    during a reentrancy attack via ERC777 or other callback tokens.
+  severity: high
+  cwe: CWE-841
+
+expected_detections:
+  - pattern: oracle-reentrancy
+    confidence: medium
+
+vkg_pattern_mapping:
+  primary: oracle-reentrancy
+  secondary: [reentrancy-readonly]
+
+status: pending

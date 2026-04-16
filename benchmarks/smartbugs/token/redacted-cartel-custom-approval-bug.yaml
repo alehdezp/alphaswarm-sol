@@ -1,0 +1,22 @@
+# Redacted Cartel Custom Approval Bug
+id: smartbugs-redacted-cartel-custom-approval-bug
+name: Redacted Cartel Custom Approval Bug
+category: token
+source: examples/semgrep-smart-contracts/solidity/security/redacted-cartel-custom-approval-bug.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: approval-bypass
+  description: Custom approval logic can be bypassed
+  severity: high
+  cwe: CWE-284
+
+expected_detections:
+  - pattern: token-001
+    confidence: medium
+
+vkg_pattern_mapping:
+  primary: token-001
+  secondary: [approval-bypass]
+
+status: pending

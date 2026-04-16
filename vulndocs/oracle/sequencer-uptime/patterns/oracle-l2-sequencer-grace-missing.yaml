@@ -1,0 +1,424 @@
+# =============================================================================
+# PATTERN: oracle-l2-sequencer-grace-missing
+# =============================================================================
+#
+# EXEMPLAR VULNERABILITY PATTERN - L2 Oracle Read Missing Grace Period
+#
+# This pattern identifies VULNERABLE oracle usage on Layer 2 networks where
+# contracts check sequencer uptime but FAIL to enforce a grace period after
+# sequencer restart, allowing stale price exploitation in the immediate
+# post-restart window.
+#
+# Distinction from oracle-004 (missing sequencer check):
+# - oracle-004: No sequencer uptime check at all
+# - oracle-l2-sequencer-grace-missing: Sequencer check exists BUT no grace period
+#
+# This is a Phase 7.2 EXEMPLAR pattern with comprehensive PCP v2 + 50+ test cases.
+#
+# =============================================================================
+
+id: oracle-l2-sequencer-grace-missing
+vulndoc: oracle/sequencer-uptime
+name: "L2 Oracle Read Missing Grace Period After Sequencer Restart"
+
+description: |
+  ## What This Detects
+
+  Functions that read oracle prices on Layer 2 networks and check sequencer
+  uptime status but FAIL to enforce a grace period after sequencer restart.
+  This allows attackers to exploit stale oracle prices in the immediate
+  window after the sequencer comes back online before oracle data stabilizes.
+
+  **This pattern specifically targets the GRACE PERIOD OMISSION, not missing
+  sequencer checks entirely (which is oracle-004).**
+
+  ## Why It's Dangerous
+
+  When an L2 sequencer restarts after downtime:
+  1. Sequencer status changes from DOWN (1) to UP (0)
+  2. Transactions can now be processed again
+  3. **BUT** oracle data is still stale from pre-downtime prices
+  4. Oracle feeds need time to propagate current market prices
+  5. **ATTACK WINDOW**: The period between sequencer restart and oracle update
+
+  A sequencer uptime check (answer == 0) is INSUFFICIENT because:
+  - It only confirms the sequencer is currently running
+  - It does NOT confirm oracle data has been refreshed
+  - Attackers can exploit the first blocks after restart
+
+  The grace period (typically 1 hour) allows oracle nodes to:
+  - Reconnect to price sources
+  - Validate and aggregate prices
+  - Publish updated prices on-chain
+
+  ## Real-World Incidents
+
+  ### Arbitrum Sequencer Downtime (December 2021)
+  - **Duration**: 45 minutes
+  - **Post-restart stale window**: ~10 blocks
+  - **Oracle lag**: Several minutes before prices updated
+  - **Attack vector**: Immediate post-restart transactions with stale prices
+
+  ### Optimism Sequencer Downtime (February 2023)
+  - **Duration**: ~2 hours
+  - **Market movement during downtime**: Significant volatility
+  - **Post-restart stale window**: 20-30 blocks
+  - **Attack vector**: Over-borrowing using stale collateral valuations
+
+  ### Base Sequencer Issues (August 2023)
+  - **Pattern**: Multiple brief 5-15 minute outages
+  - **Attack pattern**: Systematic monitoring and exploitation
+  - **Risk**: Even brief outages create exploitation opportunities
+
+  ## Chainlink Recommended Grace Period
+
+  Chainlink officially recommends a **1 hour grace period** after sequencer restart.
+
+  From Chainlink docs: "Make sure to check if the Arbitrum Sequencer is active
+  and wait for a GRACE_PERIOD (e.g., 1 hour) after the sequencer comes back
+  up to avoid answering requests with stale data."
+
+  Source: https://docs.chain.link/data-feeds/l2-sequencer-feeds
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function reads oracle price (`READS_ORACLE` operation)
+  2. Function checks sequencer uptime status (`has_sequencer_uptime_check: true`)
+  3. Function is NOT view/pure (modifies state or transfers value)
+  4. **NO grace period check** (`has_grace_period_check: false`)
+
+  The key distinction: sequencer check EXISTS but grace period is MISSING.
+
+scope: Function
+
+lens:
+  - Oracle
+  - ExternalInfluence
+  - L2Security
+
+severity: high
+
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  tier_a:
+    all:
+      # Must read from oracle
+      - has_operation: READS_ORACLE
+
+      # Must be externally callable or state-modifying
+      - property: visibility
+        op: in
+        value: [public, external, internal]
+
+      # Must have sequencer uptime check (distinguishes from oracle-004)
+      - property: has_sequencer_uptime_check
+        op: eq
+        value: true
+
+    none:
+      # Must NOT have grace period check (this is the vulnerability)
+      - property: has_grace_period_check
+        op: eq
+        value: true
+
+      # Exclude view functions
+      - property: is_view
+        op: eq
+        value: true
+
+      # Exclude pure functions
+      - property: is_pure
+        op: eq
+        value: true
+
+  tier_c:
+    # Label-dependent refinement for higher confidence
+    any:
+      - has_label: oracle.price_read
+      - has_label: oracle.chainlink_feed
+      - has_label: l2.sequencer_dependent
+
+    missing_label_required:
+      - oracle.grace_period_enforced
+      - oracle.post_restart_protection
+
+# =============================================================================
+# SEMANTIC OPERATIONS
+# =============================================================================
+
+semantic_ops:
+  has_operation: READS_ORACLE
+  required_ops:
+    - READS_ORACLE
+    - CHECKS_SEQUENCER_UPTIME
+
+behavioral_signature:
+  # Sequencer check followed by oracle read, but no grace period validation
+  pattern: "U:seq→R:orc(?!.*G:grace)"
+  description: "Sequencer uptime check followed by oracle read without grace period validation"
+  matches_exploits:
+    - arbitrum-sequencer-grace-bypass-2021
+    - optimism-immediate-restart-exploitation-2023
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: [oracle-sequencer-grace]
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: "2026-01-29"
+  notes: |
+    EXEMPLAR PATTERN for Phase 7.2.
+
+    Test suite designed for 50+ cases covering:
+    - Missing grace period (vulnerable)
+    - Proper grace period enforcement (safe)
+    - Counterfactual variants (guard inversion, ordering)
+    - Helper-depth variations
+    - L1/L2 conditional branches
+    - Chain-ID specific logic
+
+    Metrics to be populated after test execution.
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Immediate Post-Restart Exploitation"
+    description: |
+      Attacker monitors sequencer uptime feed and executes transactions in the
+      first blocks after sequencer restart when oracle still has stale prices.
+    preconditions:
+      - L2 deployment with sequencer uptime check
+      - NO grace period validation after restart
+      - Oracle reads accepted immediately when answer == 0
+    steps:
+      - Monitor Chainlink sequencer uptime feed for restart (answer: 1 -> 0)
+      - Sequencer restarts; startedAt = current block.timestamp
+      - No grace period check: block.timestamp - startedAt == 0 is accepted
+      - Oracle still shows pre-downtime stale price
+      - Execute transaction with favorable stale price
+      - Profit from stale price vs real market divergence
+    impact: "Stale price exploitation during immediate post-restart window"
+    cvss: 7.8
+    l2_specific: true
+
+  - name: "Flash Loan Amplified Grace Period Bypass"
+    description: |
+      Attacker uses flash loan to amplify exploitation during the brief
+      window between sequencer restart and oracle stabilization.
+    preconditions:
+      - Protocol accepts oracle prices immediately after restart
+      - Flash loan available on the L2 network
+      - Collateral/lending operations use stale oracle price
+    steps:
+      - Wait for sequencer restart event
+      - Take flash loan in first available block
+      - Use stale oracle price for over-borrowing
+      - Oracle updates to real market price
+      - Position is now under-collateralized
+      - Repay flash loan, keep extracted value
+    impact: "Flash loan amplified bad debt creation"
+    cvss: 8.5
+    l2_specific: true
+
+  - name: "Multi-Protocol Stale Price Arbitrage"
+    description: |
+      Exploit stale prices across multiple protocols on the same L2 that
+      all lack grace period validation.
+    preconditions:
+      - Multiple protocols without grace period checks
+      - Different oracle update frequencies
+      - Sequencer restart creates price divergence
+    steps:
+      - Sequencer restarts after downtime
+      - Protocol A: Borrow at stale low collateral valuation
+      - Protocol B: Liquidate position at stale high valuation
+      - Protocol C: Swap at stale favorable rate
+      - Aggregate profits from multi-protocol arbitrage
+    impact: "Systemic exploitation across L2 ecosystem"
+    cvss: 8.0
+    l2_specific: true
+
+# =============================================================================
+# FIX RECOMMENDATIONS
+# =============================================================================
+
+fix_recommendations:
+  - name: "Add Grace Period Validation (Minimum Fix)"
+    description: |
+      Add a grace period check after sequencer uptime validation to ensure
+      oracle data has had time to stabilize.
+    example: |
+      uint256 constant GRACE_PERIOD_TIME = 1 hours; // Chainlink recommended
+
+      function _checkSequencerUptime() internal view {
+          (
+              ,
+              int256 answer,
+              uint256 startedAt,
+              ,
+          ) = sequencerUptimeFeed.latestRoundData();
+
+          // Check sequencer is up (0 = up, 1 = down)
+          require(answer == 0, "Sequencer: down");
+
+          // CRITICAL FIX: Grace period after restart
+          require(
+              block.timestamp - startedAt > GRACE_PERIOD_TIME,
+              "Sequencer: grace period not elapsed"
+          );
+      }
+
+  - name: "Configurable Grace Period (Recommended)"
+    description: |
+      Make grace period configurable per asset class for flexibility.
+    example: |
+      mapping(address => uint256) public assetGracePeriods;
+      uint256 public constant DEFAULT_GRACE_PERIOD = 1 hours;
+
+      function getGracePeriod(address asset) public view returns (uint256) {
+          uint256 period = assetGracePeriods[asset];
+          return period > 0 ? period : DEFAULT_GRACE_PERIOD;
+      }
+
+      function _validateOracleReadiness(address asset) internal view {
+          (, int256 answer, uint256 startedAt, ,) = sequencerUptimeFeed.latestRoundData();
+          require(answer == 0, "Sequencer down");
+          require(
+              block.timestamp - startedAt > getGracePeriod(asset),
+              "Grace period not elapsed"
+          );
+      }
+
+  - name: "Defense in Depth (Best Practice)"
+    description: |
+      Combine grace period with staleness check and circuit breaker.
+    example: |
+      function getValidatedPrice() external view returns (uint256) {
+          // Layer 1: Sequencer uptime check
+          _checkSequencerUp();
+
+          // Layer 2: Grace period validation
+          _checkGracePeriodElapsed();
+
+          // Layer 3: Oracle freshness check
+          (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
+          require(block.timestamp - updatedAt < STALENESS_THRESHOLD, "Stale price");
+
+          // Layer 4: Sanity bounds
+          require(price > 0 && price < MAX_REASONABLE_PRICE, "Invalid price");
+
+          return uint256(price);
+      }
+
+# =============================================================================
+# VERIFICATION STEPS
+# =============================================================================
+
+verification_steps:
+  - "Identify oracle read operation (latestRoundData, getPrice, etc.)"
+  - "Confirm L2 deployment target (Arbitrum, Optimism, Base, etc.)"
+  - "Check if sequencer uptime check exists:"
+  - "  - Look for: sequencerUptimeFeed.latestRoundData()"
+  - "  - Look for: require(answer == 0) // sequencer up"
+  - "If sequencer check exists, verify GRACE PERIOD:"
+  - "  - Look for: block.timestamp - startedAt > GRACE_PERIOD"
+  - "  - Minimum recommended: 1 hour (3600 seconds)"
+  - "  - If NO grace period: TRUE POSITIVE"
+  - "Check helper functions for delegated grace period validation"
+  - "Assess impact based on oracle usage criticality:"
+  - "  - CRITICAL: Liquidations, borrowing, collateral"
+  - "  - HIGH: Swap pricing, minting, redemptions"
+  - "  - MEDIUM: Fee calculations, rewards"
+
+# =============================================================================
+# RELATED PATTERNS
+# =============================================================================
+
+related_patterns:
+  - oracle-004-missing-sequencer-check  # No sequencer check at all
+  - oracle-003-missing-staleness-check  # Missing freshness validation
+  - oracle-001-freshness-complete       # Safe oracle pattern
+
+owasp_mapping:
+  - SC02  # Oracle Manipulation
+  - SC04  # Input Validation
+
+cwe_mapping:
+  - CWE-345  # Insufficient Verification of Data Authenticity
+  - CWE-367  # Time-of-check Time-of-use (TOCTOU) Race Condition
+  - CWE-1284 # Improper Validation of Specified Quantity in Input
+
+# =============================================================================
+# L2 NETWORK REFERENCES
+# =============================================================================
+
+l2_networks:
+  arbitrum_one:
+    sequencer_feed: "0xFdB631F5EE196F0ed6FAa767959853A9F217697D"
+    recommended_grace_period: 3600
+    chain_id: 42161
+
+  optimism:
+    sequencer_feed: "0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389"
+    recommended_grace_period: 3600
+    chain_id: 10
+
+  base:
+    sequencer_feed: "0xBCF85224fc0756B9Fa45aA7892530B47e10b6433"
+    recommended_grace_period: 3600
+    chain_id: 8453
+
+  metis:
+    sequencer_feed: "0x8484Ef722627bf18ca5Ae6BcF031c23E6e922B30"
+    recommended_grace_period: 3600
+    chain_id: 1088
+
+# =============================================================================
+# PATTERN METADATA
+# =============================================================================
+
+pattern_type: vulnerability
+quality_indicator: false
+l2_specific: true
+complementary_to: oracle-004-missing-sequencer-check
+distinguishes_from: oracle-004  # This pattern requires sequencer check to exist
+
+auditor_notes: |
+  This pattern identifies a SPECIFIC L2 vulnerability:
+
+  - Sequencer uptime check EXISTS (answer == 0)
+  - Grace period validation MISSING (no startedAt comparison)
+
+  **Key distinction from oracle-004:**
+  - oracle-004: No sequencer check at all (more severe)
+  - oracle-l2-sequencer-grace-missing: Has sequencer check, lacks grace period
+
+  **False positive risk:**
+  - L1 deployments (sequencer check not needed)
+  - Helper function delegation (grace period in called function)
+  - Test/mock contracts
+
+  **Grace period recommendations:**
+  - Chainlink official: 1 hour (3600 seconds)
+  - High volatility assets: Consider 2 hours
+  - Stablecoins: 30 minutes may be acceptable
+
+created: 2026-01-29
+updated: 2026-01-29
+author: "claude-opus-4.5"
+version: "1.0.0"

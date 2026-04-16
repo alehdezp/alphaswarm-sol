@@ -1,0 +1,23 @@
+id: live-005
+vulndoc: dos/general
+name: Division by Zero
+description: Division uses unvalidated divisor.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: uses_division
+    op: eq
+    value: true
+  - property: divisor_validated_nonzero
+    op: eq
+    value: false
+  any:
+  - property: divisor_source
+    op: contains_any
+    value:
+    - parameter
+    - storage
+    - calculation

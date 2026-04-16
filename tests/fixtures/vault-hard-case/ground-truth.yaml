@@ -1,0 +1,113 @@
+# Ground Truth for Foundry Vault Test Fixture
+# This file defines the expected vulnerabilities and their detection criteria
+
+contract: Vault
+file: src/Vault.sol
+
+vulnerabilities:
+  - id: VAULT-001
+    type: reentrancy
+    severity: critical
+    function: withdraw
+    line_range: [71, 85]
+    description: >
+      External call via msg.sender.call{value: amount}("") occurs before
+      the state update balances[msg.sender] -= amount. An attacker can
+      re-enter withdraw() before the balance is updated.
+
+    # Expected BSKG detection
+    expected_graph:
+      operations:
+        - TRANSFERS_VALUE_OUT
+        - WRITES_USER_BALANCE
+      properties:
+        has_reentrancy_guard: false
+        external_calls_before_state_writes: true
+      behavioral_signature: "R:bal→X:out→W:bal"
+
+    # Expected pattern match
+    expected_pattern:
+      id: reentrancy-classic
+      tier: A
+      confidence_min: 0.9
+
+    # Expected agent findings
+    expected_agent:
+      type: reentrancy-specialist
+      evidence_required:
+        - bskg_node_id
+        - semantic_operations
+        - exploit_path
+
+  - id: VAULT-002
+    type: access-control
+    severity: critical
+    function: setOwner
+    line_range: [117, 124]
+    description: >
+      The setOwner function has no access control modifier. Any address
+      can call this function and take ownership of the contract.
+
+    # Expected BSKG detection
+    expected_graph:
+      operations:
+        - MODIFIES_OWNER
+      properties:
+        has_access_gate: false
+        visibility: external
+        modifies_owner: true
+
+    # Expected pattern match
+    expected_pattern:
+      id: weak-access-control
+      tier: A
+      confidence_min: 0.85
+
+    # Expected agent findings
+    expected_agent:
+      type: access-specialist
+      evidence_required:
+        - bskg_node_id
+        - missing_access_gate
+
+# Functions that should NOT be flagged (false positive checks)
+safe_functions:
+  - function: safeWithdraw
+    reason: Has nonReentrant modifier (reentrancy guard)
+    expected_properties:
+      has_reentrancy_guard: true
+
+  - function: emergencyWithdraw
+    reason: Has onlyOwner modifier (access control)
+    expected_properties:
+      has_access_gate: true
+
+  - function: transferOwnership
+    reason: Has onlyOwner modifier (access control)
+    expected_properties:
+      has_access_gate: true
+
+  - function: deposit
+    reason: No external calls, no privileged operations
+    expected_properties:
+      has_external_calls: false
+
+# Expected multi-agent debate outcomes
+expected_debates:
+  - finding: VAULT-001
+    attacker_claim: "Exploit path: deposit 1 ETH, call withdraw, re-enter via fallback"
+    defender_response: "No reentrancy guard found, no CEI pattern"
+    verifier_verdict: CONFIRMED
+    confidence_min: 0.9
+
+  - finding: VAULT-002
+    attacker_claim: "Anyone can call setOwner and take control of contract"
+    defender_response: "No access control modifiers, no timelock"
+    verifier_verdict: CONFIRMED
+    confidence_min: 0.9
+
+# Validation thresholds
+thresholds:
+  precision_min: 0.70  # At least 70% of findings are true positives
+  recall_min: 0.60     # At least 60% of ground truth vulnerabilities found
+  f1_min: 0.65         # Harmonic mean of precision and recall

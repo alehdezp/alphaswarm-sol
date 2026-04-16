@@ -1,0 +1,153 @@
+# Hash Collision via abi.encodePacked - Subcategory Index
+# Category: crypto/hash-collision
+# Phase 17: Knowledge Aggregation
+#
+# Source: DeFiVulnLabs - abi.encodePacked() Hash Collisions
+
+id: hash-collision
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Hash Collision via abi.encodePacked
+description: |
+  Using abi.encodePacked() with multiple variable-length arguments can lead to
+  hash collisions. Unlike abi.encode(), abi.encodePacked() does not include
+  length prefixes, allowing different input combinations to produce identical
+  encodings.
+
+  For example:
+  - abi.encodePacked("a", "bc") == abi.encodePacked("ab", "c")  // Both produce "abc"
+  - Hash collisions enable signature replay, authorization bypass, and merkle proof forgery.
+
+severity: medium
+
+# VKG graph signals for detection
+graph_signals:
+  - property: uses_abi_encode_packed
+    expected: true
+    critical: true
+    description: Function uses abi.encodePacked
+    confidence: 0.95
+
+  - property: multiple_dynamic_args_to_encode_packed
+    expected: true
+    critical: true
+    description: Multiple variable-length arguments passed to abi.encodePacked
+    confidence: 0.90
+
+  - property: hash_used_for_security
+    expected: true
+    critical: true
+    description: Hash result used in security-critical logic (sig verification, merkle, etc)
+    confidence: 0.85
+
+  - property: no_fixed_length_separator
+    expected: true
+    critical: true
+    description: No fixed-length values separating dynamic arguments
+    confidence: 0.80
+
+# Semantic operations
+semantic_operations:
+  - COMPUTES_HASH
+  - VERIFIES_SIGNATURE
+  - CHECKS_MERKLE_PROOF
+  - CHECKS_PERMISSION
+
+# Behavioral signatures
+behavioral_signatures:
+  vulnerable:
+    - "EP:multi{dynamic}->H:hash->V:sig"  # encodePacked multiple dynamic -> hash -> verify
+    - "EP:str+str->H:hash->S:store{key}"  # encodePacked strings -> hash -> use as key
+  safe:
+    - "E:multi{dynamic}->H:hash->V:sig"   # encode (not packed) -> hash -> verify
+    - "EP:fixed+fixed->H:hash"            # encodePacked with fixed-length only
+
+# Real-world examples
+exploits:
+  - name: "General Pattern"
+    date: "Ongoing"
+    loss: "Varies"
+    chain: "All EVM chains"
+    description: |
+      Hash collision via abi.encodePacked affects many signature verification
+      and merkle proof systems. Attackers craft inputs that produce same hash
+      as legitimate inputs.
+    source: "https://github.com/Consensys/smart-contract-best-practices"
+    cve: null
+
+# Attack preconditions
+preconditions:
+  - "Uses abi.encodePacked with 2+ dynamic-length arguments"
+  - "Hash result used for security (signatures, merkle proofs, authorization)"
+  - "No fixed-length separators between dynamic arguments"
+  - "Attacker can control input ordering or content"
+
+# Attack postconditions
+postconditions:
+  - "Different inputs produce same hash"
+  - "Authorization bypass via hash collision"
+  - "Signature replay with different data"
+  - "Merkle proof forgery"
+
+# Remediation
+remediation:
+  - approach: "Use abi.encode instead"
+    description: |
+      abi.encode() includes length prefixes for dynamic types, preventing
+      collisions. Always use abi.encode() for security-critical hashing.
+    effectiveness: high
+    library: "Built-in Solidity"
+
+  - approach: "Add fixed-length separators"
+    description: |
+      If abi.encodePacked is required for gas optimization, add fixed-length
+      values between dynamic arguments: abi.encodePacked(a, uint256(0), b)
+    effectiveness: medium
+
+  - approach: "Use keccak256(abi.encode())"
+    description: |
+      Explicitly use keccak256(abi.encode(...)) for all security hashes.
+    effectiveness: high
+
+# Safe properties
+safe_properties:
+  - uses_abi_encode_for_hashing: true
+  - has_fixed_length_separator: true
+  - only_fixed_length_args_to_packed: true
+
+# Related CWE
+related_cwes:
+  - CWE-328  # Use of Weak Hash
+  - CWE-345  # Insufficient Verification of Data Authenticity
+
+# Related vulnerabilities
+related_vulnerabilities:
+  - category: crypto
+    subcategory: replay
+    relationship: "Hash collisions can enable signature replay attacks"
+  - category: crypto
+    subcategory: signature-malleability
+    relationship: "Both involve signature manipulation"
+
+# Detection complexity
+detection_complexity: low
+
+# Pattern ID reference
+pattern_id: crypto-hash-001
+
+# Context cache key
+context_cache_key: "crypto-hash-collision-v1"
+
+# External references
+external_refs:
+  - "Solidity Docs: ABI Encoding Functions"
+  - "ConsenSys Best Practices: Hash Collisions"
+  - "SWC-133: Hash Collisions With Multiple Variable Length Arguments"
+
+# Tags
+tags:
+  - abi-encoding
+  - hash-collision
+  - signature-verification
+  - merkle-proof

@@ -1,0 +1,16 @@
+id: ext-023
+vulndoc: access-control/external-call
+name: External Data Integrity Missing
+description: External bytes input used without integrity checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_bytes_parameter
+    op: eq
+    value: true
+  - property: has_external_data_integrity_check
+    op: eq
+    value: false

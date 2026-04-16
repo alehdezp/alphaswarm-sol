@@ -1,0 +1,16 @@
+id: ext-049
+vulndoc: access-control/external-call
+name: Liquidation Spot Reserves Without TWAP
+description: Liquidation logic uses pool reserves without TWAP protection.
+scope: Function
+lens:
+- ExternalInfluence
+severity: critical
+match:
+  all:
+  - property: pool_reserves_used_in_liquidation
+    op: eq
+    value: true
+  - property: has_twap_validation
+    op: eq
+    value: false

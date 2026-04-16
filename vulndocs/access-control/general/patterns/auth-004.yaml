@@ -1,0 +1,20 @@
+id: auth-004
+vulndoc: access-control/general
+name: Signature Replay Vulnerability
+description: Signature verification missing nonce tracking.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_ecrecover
+    op: eq
+    value: true
+  any:
+  - property: has_nonce_parameter
+    op: eq
+    value: false
+  - property: writes_nonce_state
+    op: eq
+    value: false

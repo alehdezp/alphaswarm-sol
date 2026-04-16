@@ -1,0 +1,15 @@
+id: logic-010
+vulndoc: logic/general
+name: Incomplete State Cleanup
+description: State machine steps without cleanup/reset.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 840
+match:
+  all:
+  - property: state_cleanup_missing
+    op: eq
+    value: true

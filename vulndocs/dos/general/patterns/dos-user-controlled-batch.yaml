@@ -1,0 +1,24 @@
+id: dos-user-controlled-batch
+vulndoc: dos/general
+name: User-Controlled Batch Without Limit
+description: |
+  Function accepts array parameter for batch operations without enforcing maximum size limit,
+  allowing attacker to cause out-of-gas by passing large arrays. Maps to CWE-400
+  (Uncontrolled Resource Consumption) and CWE-770.
+scope: Function
+lens:
+  - DoS
+  - Authority
+severity: high
+match:
+  all:
+    - property: has_loops
+      op: eq
+      value: true
+    - property: visibility
+      op: in
+      value: [public, external]
+  any:
+    - property: loop_bound_sources
+      op: contains
+      value: user_input

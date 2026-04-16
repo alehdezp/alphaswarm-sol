@@ -1,0 +1,20 @@
+id: crypto-missing-domain-separator
+vulndoc: crypto/signature
+name: Cross-Contract Signature Replay - Missing Domain Separator
+description: |
+  Detects permit-like functions that don't use a domain separator, enabling cross-contract replay.
+  Without proper domain binding, signatures intended for one contract can be used on another.
+  Real-world example: Li.Fi cross-contract signature replay vulnerability.
+  Reference: EIP-712 domain separator binds signatures to specific contract instances.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: is_permit_like
+      op: eq
+      value: true
+    - property: uses_domain_separator
+      op: eq
+      value: false

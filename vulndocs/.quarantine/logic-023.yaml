@@ -1,0 +1,15 @@
+id: logic-023
+vulndoc: logic/general
+name: Forced Ether via Selfdestruct
+description: Selfdestruct target is user-controlled.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 749
+match:
+  all:
+  - property: selfdestruct_target_user_controlled
+    op: eq
+    value: true

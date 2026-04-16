@@ -1,0 +1,345 @@
+# =============================================================================
+# PATTERN: vm-002-unprotected-transfer
+# Unprotected Value Transfer Function (Semantic, Name-Agnostic)
+# =============================================================================
+
+id: vm-002-unprotected-transfer
+vulndoc: reentrancy/value-transfer
+name: "Unprotected Value Transfer Function"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Public/external functions that transfer value or modify user balances without
+  access control, **regardless of function naming**. This pattern detects what
+  the function DOES (transfers value, modifies balances), not what it's NAMED
+  (withdraw, transfer, redeem, etc.).
+
+  Unlike name-based patterns that match "withdraw|transfer|redeem", this semantic
+  pattern detects ANY function that:
+  - Transfers ETH/tokens out of the contract (TRANSFERS_VALUE_OUT operation)
+  - OR modifies user balance state (WRITES_USER_BALANCE operation)
+
+  This catches obfuscated functions like `extract()`, `removeFunds()`,
+  `claimTokens()`, or even `fn_0x123abc()`.
+
+  ## Why It's Dangerous
+
+  Attackers can exploit unprotected value transfer functions to:
+  - Drain contract funds by calling withdrawal-like functions
+  - Manipulate user balances to steal funds
+  - Bypass intended access controls by finding alternative function names
+  - Exploit obfuscated or poorly-named functions
+
+  The impact is direct fund loss - attackers can extract all contract holdings
+  or manipulate accounting to their advantage.
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external)
+  2. Function has NO access control (no modifiers, no require checks)
+  3. Function performs value movement OR balance manipulation:
+     - TRANSFERS_VALUE_OUT: Sends ETH/tokens via transfer(), send(), call{value:}
+     - OR WRITES_USER_BALANCE: Modifies balance/shares/deposits state variables
+  4. NOT a view/pure/constructor/initializer (safe contexts)
+
+  **Implementation-Agnostic**: This pattern works regardless of:
+  - Function names (withdraw, extract, removeFunds, fn_0x123, etc.)
+  - Variable names (balances, funds, shares, deposits, etc.)
+  - Coding conventions or obfuscation
+
+  ## Real-World Examples
+
+  - **Parity Wallet Hack (2017)**: $150M frozen due to unprotected `kill()` function
+  - **Poly Network (2021)**: $611M stolen via unprotected keeper modification
+  - **Numerous DeFi hacks**: Unprotected withdrawal functions with non-standard names
+
+scope: Function
+
+lens:
+  - ValueMovement
+  - Authority
+
+severity: high
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic)
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Must be externally callable
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Core vulnerability: NO access control
+      - property: has_access_gate
+        op: eq
+        value: false
+
+      # Semantic detection: Function performs value movement OR balance modification
+      # This is the KEY difference from name-based patterns
+      - has_any_operation:
+          - TRANSFERS_VALUE_OUT
+          - WRITES_USER_BALANCE
+
+    # At least ONE must match (OR logic) - not used
+    any: []
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # Not applicable to view/pure functions (no state changes)
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Constructors are initialization-only (one-time execution)
+      - property: is_constructor
+        op: eq
+        value: true
+
+      # Initializers are one-time setup (protected by initializer modifier)
+      - property: is_initializer_function
+        op: eq
+        value: true
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_only  # Only Tier A (deterministic) matching
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [token-vault]
+  true_positives: 11
+  true_negatives: 9
+  false_positives: 4
+  false_negatives: 1
+  edge_cases: 6
+  precision: 0.73
+  recall: 0.92
+  variation_score: 0.80
+  last_tested: "2025-12-31"
+  notes: |
+    READY status achieved (precision 73%, recall 92%, variation 80%).
+
+    Strengths:
+    - Excellent recall (92%) - catches most unprotected value transfers
+    - Name-agnostic detection works across naming variations (extract, removeFunds, fn_0x123abc)
+    - Detects both TRANSFERS_VALUE_OUT and WRITES_USER_BALANCE operations
+    - Correctly excludes view/pure/internal/private/constructor functions
+
+    Known Limitations (False Positives):
+    - Does not recognize if-statement access checks (e.g., if (msg.sender != owner) revert())
+    - Does not detect pull payment pattern (self-authorization via balances[msg.sender])
+    - Custom initializer modifiers not recognized (only built-in initializer detection)
+    - Intentionally public functions (airdrops, rewards) flagged (expected - needs Tier B)
+
+    Known Gaps (False Negatives):
+    - Struct field writes not detected (e.g., accounts[user].balance = amount)
+    - Requires WRITES_USER_BALANCE operation enhancement in builder.py
+
+    Recommended Improvements:
+    1. Enhance has_access_gate to detect if-statement checks
+    2. Add pull payment pattern detection (self-authorization)
+    3. Extend WRITES_USER_BALANCE to detect struct field writes
+    4. Consider Tier B for intentional public distribution validation
+
+status: ready
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Direct Fund Extraction"
+    description: |
+      Attacker discovers unprotected value transfer function and drains contract
+    preconditions:
+      - "Function is publicly callable (public/external visibility)"
+      - "No access control present (no modifiers, no require checks)"
+      - "Function transfers value OR modifies balance state"
+    steps:
+      - "Attacker scans contract for public/external functions"
+      - "Identifies function that transfers value (even with obfuscated name)"
+      - "Calls function directly (e.g., extract(), removeFunds(), fn_0x123())"
+      - "Contract transfers funds without authorization check"
+      - "Attacker repeats until contract is drained"
+    impact: "Complete fund drainage - attacker steals all contract holdings"
+
+  - name: "Balance Manipulation"
+    description: |
+      Attacker manipulates user balance state to steal funds
+    preconditions:
+      - "Function modifies balance/shares/deposits state variables"
+      - "No access control on balance modification"
+      - "Balance state used in other withdrawal functions"
+    steps:
+      - "Attacker finds unprotected balance modification function"
+      - "Calls function to inflate their balance"
+      - "Uses inflated balance in legitimate withdrawal function"
+      - "Extracts more funds than entitled to"
+    impact: "Theft via accounting manipulation - attacker steals other users' funds"
+
+  - name: "Obfuscated Function Exploitation"
+    description: |
+      Attacker exploits poorly-named or obfuscated value transfer functions
+    preconditions:
+      - "Function has non-standard name (not 'withdraw' or 'transfer')"
+      - "Function transfers value without access control"
+      - "Developer assumed obscurity = security"
+    steps:
+      - "Attacker analyzes contract bytecode or source"
+      - "Identifies function signatures and behavior"
+      - "Discovers value transfer function with unexpected name"
+      - "Calls obfuscated function directly"
+      - "Contract transfers funds without checking authorization"
+    impact: "Fund loss despite attempted security through obscurity"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Confirm function is externally callable (public/external, not internal/private)"
+  - "Verify no access control present (check modifiers, require statements, if conditions)"
+  - "Identify which operation triggers detection:"
+  - "  - TRANSFERS_VALUE_OUT: Check for transfer(), send(), call{value:}, token transfers"
+  - "  - WRITES_USER_BALANCE: Check for balance/shares/deposits state modifications"
+  - "Validate this is not intentional public distribution (e.g., airdrop, claim)"
+  - "Check if function is part of pull-payment pattern (may be intentional)"
+  - "Review business logic: should this function be restricted?"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Add Access Control Modifier"
+    description: |
+      Restrict function to authorized users with modifier-based access control
+    example: |
+      // VULNERABLE CODE
+      function extract(uint256 amount) external {
+          payable(msg.sender).transfer(amount);
+      }
+
+      // FIXED CODE - Access Control
+      function extract(uint256 amount) external onlyOwner {
+          payable(msg.sender).transfer(amount);
+      }
+
+  - name: "Add require() Check"
+    description: |
+      Validate caller authorization with require statement
+    example: |
+      // VULNERABLE CODE
+      function removeFunds(uint256 amount) external {
+          funds[msg.sender] -= amount;
+          payable(msg.sender).transfer(amount);
+      }
+
+      // FIXED CODE - require() Check
+      function removeFunds(uint256 amount) external {
+          require(msg.sender == owner, "Only owner can remove funds");
+          funds[msg.sender] -= amount;
+          payable(msg.sender).transfer(amount);
+      }
+
+  - name: "Use Pull Payment Pattern"
+    description: |
+      Let users withdraw their own allocated funds (self-authorization)
+    example: |
+      // VULNERABLE CODE
+      function fn_0x123abc(uint256 amount) external {
+          payable(msg.sender).transfer(amount);
+      }
+
+      // FIXED CODE - Pull Payment Pattern
+      mapping(address => uint256) public withdrawable;
+
+      function withdraw() external {
+          uint256 amount = withdrawable[msg.sender];  // User can only withdraw their allocation
+          require(amount > 0, "Nothing to withdraw");
+          withdrawable[msg.sender] = 0;
+          payable(msg.sender).transfer(amount);
+      }
+
+  - name: "Implement Role-Based Access Control"
+    description: |
+      Use OpenZeppelin AccessControl for fine-grained permissions
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyContract is AccessControl {
+          bytes32 public constant WITHDRAWER_ROLE = keccak256("WITHDRAWER_ROLE");
+
+          function claimTokens(uint256 amount) external onlyRole(WITHDRAWER_ROLE) {
+              payable(msg.sender).transfer(amount);
+          }
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - auth-001  # Unprotected Privileged State Write
+  - vm-001-classic  # Classic Reentrancy
+  - auth-006  # Unprotected Initializer
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+  - SC06  # Unchecked External Calls
+
+# CWE mapping
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-306  # Missing Authentication for Critical Function
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3) - CURRENTLY USED
+semantic_ops:
+  has_any_operation:
+    - TRANSFERS_VALUE_OUT
+    - WRITES_USER_BALANCE
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  pattern: "X:out|W:bal"
+  description: "Transfer out OR write balance without access check"
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches: [parity-wallet-2017, poly-network-2021]
+  description: "Matches unprotected fund extraction patterns"
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Explorer agent: Trace value movement from entry to exit
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE]
+    max_depth: 5
+
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+
+  # Risk agent: Exploitability assessment
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 7.0  # High severity
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 3
+    mode: voting

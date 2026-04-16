@@ -1,0 +1,15 @@
+id: arith-020
+vulndoc: arithmetic/general
+name: Fee Accumulation Overflow
+description: Fee accumulation without bounds.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 190
+match:
+  all:
+  - property: fee_accumulation_overflow_risk
+    op: eq
+    value: true

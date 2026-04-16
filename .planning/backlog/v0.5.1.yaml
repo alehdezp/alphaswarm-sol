@@ -1,0 +1,246 @@
+# AlphaSwarm.sol v0.5.1 Backlog
+# Consolidated from Phase 7.3 GA Validation
+# Generated: 2026-01-30
+
+version: "0.5.1"
+generated_at: "2026-01-30T06:58:34Z"
+source_phase: "07.3-ga-validation"
+total_items: 18
+
+improvements:
+  # ============================================================================
+  # CRITICAL - Should be addressed in v0.5.1
+  # ============================================================================
+
+  - id: IMPROV-001
+    source: 07.3-05-PLAN
+    category: bug
+    description: |
+      Fix WRITES_SHARED_STATE taxonomy error in reentrancy-002-gmx-cross-function.yaml.
+      Pattern uses undefined semantic operation causing taxonomy validation failure.
+    priority: critical
+    complexity: trivial
+    deferred_reason: "Validation-only - does not affect runtime behavior"
+    affected_file: vulndocs/reentrancy/classic/patterns/reentrancy-002-gmx-cross-function.yaml
+
+  - id: IMPROV-002
+    source: 07.3-08-PLAN
+    category: bug
+    description: |
+      Counterfactual factory generates pattern IDs (access-control-hidden,
+      chain-specific-bypass) that don't exist in VulnDocs. Inflates FN count.
+    priority: critical
+    complexity: medium
+    deferred_reason: "Affects test metrics, not production detection"
+    affected_file: scripts/counterfactual_factory.py
+
+  # ============================================================================
+  # HIGH - Recommended for v0.5.1
+  # ============================================================================
+
+  - id: IMPROV-003
+    source: 07.3-02-PLAN
+    category: performance
+    description: |
+      Weak-access-control pattern shows SSS of 0.00 under obfuscation.
+      Pattern relies on identifier naming instead of semantic operations.
+    priority: high
+    complexity: medium
+    deferred_reason: "SSS 0.73 overall is acceptable, pattern works for non-obfuscated code"
+    affected_file: vulndocs/access-control/weak/patterns/*.yaml
+
+  - id: IMPROV-004
+    source: 07.3-02-PLAN
+    category: performance
+    description: |
+      Approval-race pattern may rely on naming heuristics.
+      Flagged for semantic operation enhancement.
+    priority: high
+    complexity: medium
+    deferred_reason: "SSS validation passed overall threshold"
+    affected_file: vulndocs/token/approval/patterns/*.yaml
+
+  - id: IMPROV-005
+    source: 07.3-05-PLAN
+    category: architecture
+    description: |
+      Add PCP (Pattern Context Pack) format support to ECC audit.
+      Currently PCP files appear as "broken" due to different schema.
+    priority: high
+    complexity: medium
+    deferred_reason: "ECC audit is validation-only, not production"
+    affected_file: scripts/run_pattern_tier_validation.py
+
+  - id: IMPROV-006
+    source: 07.3-05-PLAN
+    category: feature
+    description: |
+      Configure shadow mode with production-calibrated labelers.
+      Current test data has intentional disagreement for testing.
+    priority: high
+    complexity: complex
+    deferred_reason: "Requires labeler calibration dataset"
+    affected_file: .vrs/testing/tier_c_stability.yaml
+
+  - id: IMPROV-007
+    source: 07.3-10-PLAN
+    category: performance
+    description: |
+      Improve reentrancy-classic pattern edge case detection.
+      Shadow audit showed 33% recall (2 misses from mock simulation).
+    priority: high
+    complexity: medium
+    deferred_reason: "Overall recall meets GA threshold"
+    affected_file: vulndocs/reentrancy/classic/patterns/*.yaml
+
+  - id: IMPROV-008
+    source: 07.3-10-PLAN
+    category: performance
+    description: |
+      Strengthen weak-access-control Tier C patterns.
+      Shadow audit showed 0% recall (label-dependent pattern limitations).
+    priority: high
+    complexity: complex
+    deferred_reason: "Tier C requires labeling infrastructure improvements"
+    affected_file: vulndocs/access-control/weak/patterns/tier-c/*.yaml
+
+  # ============================================================================
+  # MEDIUM - Nice to have for v0.5.1
+  # ============================================================================
+
+  - id: IMPROV-009
+    source: 07.3-04-PLAN
+    category: feature
+    description: |
+      Update 49 shipped skills with schema v2 frontmatter.
+      Skills work but lack: role, model_tier, tools, evidence_requirements,
+      output_contract, failure_modes, version fields.
+    priority: medium
+    complexity: simple
+    deferred_reason: "Skills are functional, frontmatter is documentation"
+    affected_file: .claude/skills/*.md
+
+  - id: IMPROV-010
+    source: 07.3-05-PLAN
+    category: bug
+    description: |
+      Fix precision dashboard pattern ID mismatches.
+      Dashboard uses legacy IDs that don't match VulnDocs patterns.
+    priority: medium
+    complexity: medium
+    deferred_reason: "Test infrastructure only, not production"
+    affected_file: scripts/generate_precision_dashboard.py
+
+  - id: IMPROV-011
+    source: 07.3-01-PLAN
+    category: feature
+    description: |
+      Define 15 new semantic operations for novel 2025-2026 attack patterns:
+      precision-loss, eip7702-delegation, zk-proof-bypass, cached-storage, etc.
+    priority: medium
+    complexity: complex
+    deferred_reason: "Novel patterns work with existing operations, new ops are optimization"
+    affected_file: src/alphaswarm_sol/kg/builder/operations.py
+
+  - id: IMPROV-012
+    source: 07.3-09-PLAN
+    category: feature
+    description: |
+      Install and validate Aderyn tool integration in live mode.
+      Currently tested only in mock mode.
+    priority: medium
+    complexity: simple
+    deferred_reason: "Mock validation sufficient for GA, live mode for hardening"
+    affected_file: scripts/run_tool_validation.py
+
+  - id: IMPROV-013
+    source: 07.3-01-PLAN
+    category: feature
+    description: |
+      Complete practice repo ground truth stubs with actual contract paths.
+      7 practice repositories have stub entries pending ingestion.
+    priority: medium
+    complexity: medium
+    deferred_reason: "Core corpus sufficient for GA validation"
+    affected_file: .vrs/corpus/ground-truth/practice-repos.yaml
+
+  - id: IMPROV-014
+    source: 07.3-08-PLAN
+    category: feature
+    description: |
+      Populate mutations corpus segment via counterfactual factory.
+      Currently empty, adversarial segment has contracts but mutations does not.
+    priority: medium
+    complexity: medium
+    deferred_reason: "Adversarial segment covers mutation testing needs"
+    affected_file: .vrs/corpus/contracts/mutations/
+
+  # ============================================================================
+  # LOW - Post-v0.5.1
+  # ============================================================================
+
+  - id: IMPROV-015
+    source: 07.3-06-PLAN
+    category: performance
+    description: |
+      Add query benchmark success validation.
+      Query benchmarks show failures due to missing pre-built graph files.
+    priority: low
+    complexity: simple
+    deferred_reason: "Timing captured, success counts are secondary metric"
+    affected_file: scripts/run_performance_baseline.py
+
+  - id: IMPROV-016
+    source: 07.3-01-PLAN
+    category: feature
+    description: |
+      Pin commit SHAs for all corpus sources after ingestion.
+      Currently using HEAD references which may drift.
+    priority: low
+    complexity: trivial
+    deferred_reason: "Corpus stability sufficient for GA"
+    affected_file: .vrs/corpus/metadata/sources.yaml
+
+  - id: IMPROV-017
+    source: 07.3-07-PLAN
+    category: feature
+    description: |
+      Add more protocols to corpus database for context A/B testing.
+      Simulated mode found only 2 protocols, switched to mock for 20-protocol sample.
+    priority: low
+    complexity: medium
+    deferred_reason: "Mock validation sufficient for GA decision"
+    affected_file: .vrs/corpus/metadata/
+
+  - id: IMPROV-018
+    source: 07.3-00-PLAN
+    category: feature
+    description: |
+      Add CI integration for claude-code-agent-teams-based workflow testing.
+      Infrastructure works locally, CI integration deferred.
+    priority: low
+    complexity: complex
+    deferred_reason: "Local testing sufficient for GA validation"
+    affected_file: .github/workflows/
+
+# ============================================================================
+# Summary
+# ============================================================================
+
+summary:
+  critical: 2
+  high: 6
+  medium: 6
+  low: 4
+
+  by_category:
+    bug: 3
+    performance: 4
+    feature: 9
+    architecture: 1
+
+  by_complexity:
+    trivial: 2
+    simple: 3
+    medium: 9
+    complex: 4

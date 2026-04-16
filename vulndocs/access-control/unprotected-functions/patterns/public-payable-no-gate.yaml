@@ -1,0 +1,20 @@
+id: public-payable-no-gate
+vulndoc: access-control/unprotected-functions
+name: Public Payable Without Access Gate
+description: Payable public/external functions that lack access gates.
+scope: Function
+lens:
+  - ValueMovement
+  - Authority
+severity: medium
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: payable
+      op: eq
+      value: true
+    - property: has_access_gate
+      op: eq
+      value: false

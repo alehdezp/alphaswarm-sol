@@ -1,0 +1,16 @@
+id: oracle-update-missing-deviation-check
+vulndoc: oracle/freshness
+name: Oracle Update Missing Deviation Check
+description: Oracle update functions without deviation bounds allow extreme price jumps.
+scope: Function
+lens:
+  - Oracle
+severity: medium
+match:
+  all:
+    - property: oracle_update_function
+      op: eq
+      value: true
+    - property: has_oracle_update_deviation_check
+      op: eq
+      value: false

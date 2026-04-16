@@ -1,0 +1,524 @@
+# =============================================================================
+# PATTERN: logic-003 - Cetus Protocol Arithmetic Overflow
+# =============================================================================
+# Detects unchecked arithmetic operations on user input that write to critical
+# state variables, replicating the Cetus Protocol vulnerability ($260M, May 2025).
+#
+# Source: Phase 18 Solidity Security Knowledge Base
+# Real-world: Cetus Protocol on Sui ($260M, May 2025)
+# =============================================================================
+
+id: logic-003
+vulndoc: logic/business-logic
+name: Cetus Protocol Arithmetic Overflow
+description: |
+  Detects unchecked arithmetic operations (specifically multiplication and division)
+  on user-controlled input that writes to critical state variables without bounds
+  validation. This pattern replicates the Cetus Protocol vulnerability that resulted
+  in $260M in losses.
+
+  The vulnerability occurs when:
+  1. A function receives user-controlled numeric input
+  2. The function performs arithmetic operations (multiplication/division) without validation
+  3. The result is written to critical state variables that control fund distribution
+  4. No bounds checking, SafeMath, or overflow guards are present
+
+  Attack vector: By providing specially crafted input values, an attacker causes
+  intermediate arithmetic results to overflow/wrap, resulting in incorrect position
+  sizes or balances being written to state. These incorrect values can then be
+  exploited to drain funds.
+
+  While the Cetus exploit occurred on Sui/Move, the underlying arithmetic pattern
+  applies to Solidity contracts performing similar calculations on unprotected
+  integer types (especially in Solidity < 0.8.0 without built-in overflow checks).
+
+scope: Function
+lens:
+  - Arithmetic
+  - Logic
+severity: critical
+status: draft
+
+# VulnDocs reference for LLM context retrieval
+vulndocs_reference:
+  category: logic
+  subcategory: arithmetic
+  specifics: cetus-sui-overflow
+  depth: detection
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic) - core vulnerability signals
+  all:
+    # Must be externally callable (attackers can provide input)
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must perform multiplication (primary arithmetic operation)
+    - property: performs_multiplication
+      op: eq
+      value: true
+
+    # Must write to critical state variables (where result goes)
+    - property: writes_privileged_state
+      op: eq
+      value: true
+
+    # NO input validation (critical signal of vulnerability)
+    - property: validates_input
+      op: eq
+      value: false
+
+    # NO SafeMath or checked arithmetic (critical signal)
+    - property: uses_safemath
+      op: eq
+      value: false
+
+  # At least ONE should match (OR logic) - alternative detection paths
+  any:
+    # Could also have division (amplifies overflow impact)
+    - property: has_division
+      op: eq
+      value: true
+
+    # Or explicitly modifying balance/position state
+    - property: writes_user_balance
+      op: eq
+      value: true
+
+  # NONE can match (NOT logic) - safe patterns to exclude
+  none:
+    # SafeMath library provides overflow protection
+    - property: uses_safemath
+      op: eq
+      value: true
+
+    # Solidity 0.8.0+ has built-in overflow checks
+    - property: solidity_version
+      op: gte
+      value: "0.8.0"
+
+    # Explicit bounds validation before arithmetic
+    - property: has_bounds_validation
+      op: eq
+      value: true
+
+    # Checked arithmetic patterns (e.g., checked_mul, safe_div)
+    - property: has_arithmetic_guards
+      op: eq
+      value: true
+
+# =============================================================================
+# SEMANTIC OPERATIONS FOR BEHAVIORAL DETECTION
+# =============================================================================
+
+semantic_ops:
+  # All these operations must be present
+  has_all_operations:
+    - READS_USER_INPUT       # Accepts user-controlled values
+    - PERFORMS_MULTIPLICATION  # Arithmetic without bounds
+    - WRITES_PRIVILEGED_STATE  # Result goes to critical state
+
+  # Operation ordering constraint
+  sequence_order:
+    before: READS_USER_INPUT
+    after: WRITES_PRIVILEGED_STATE
+
+# Behavioral signature: Read input -> Calculate unchecked multiplication -> Write state
+behavioral_signature:
+  pattern: "R:input->C:mul{unchecked}->W:state"
+  note: |
+    Read user input, perform multiplication without bounds checking,
+    write result directly to critical state variable.
+
+# Alternative signature with division
+alternative_signature:
+  pattern: "R:input->C:mul->C:div{partial}->W:balance"
+  note: |
+    Read user input, multiply, divide (potentially with precision loss),
+    write to balance state. Combination amplifies overflow impact.
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Position Size Overflow Attack"
+    description: |
+      Attacker crafts input values that cause multiplication to overflow,
+      resulting in incorrect position sizes written to state.
+    preconditions:
+      - "Function accepts user input (amount, size, quantity, etc.)"
+      - "Function performs multiplication on user input without validation"
+      - "Result is written to position/balance state variable"
+      - "No bounds checking or SafeMath protection"
+      - "Solidity < 0.8.0 OR overflow guards explicitly disabled"
+    steps:
+      - "Attacker analyzes arithmetic logic in function"
+      - "Attacker calculates maximum input that causes overflow"
+      - "Example: For uint256 max value (2^256-1), multiply by 2 = 2 (wraps)"
+      - "Attacker provides crafted input to overflow arithmetic"
+      - "Intermediate calculation overflows and wraps to incorrect value"
+      - "Incorrect position/balance written to critical state variable"
+      - "Attacker exploits incorrect state to drain funds or manipulate protocol"
+    impact: |
+      Complete loss of funds. Incorrect position sizes enable:
+      - Withdrawal of more funds than deposited
+      - Liquidation bypasses
+      - Protocol insolvency
+      - Fund drainage
+
+  - name: "Division Precision Loss Amplification"
+    description: |
+      Attacker provides input where multiplication followed by division
+      results in severe precision loss, deflating the final value.
+    preconditions:
+      - "Function performs: multiply(input) / divisor"
+      - "No minimum value checks after division"
+      - "Result represents critical quantity (balance, shares, collateral)"
+    steps:
+      - "Attacker provides small input value"
+      - "Multiplication succeeds but intermediate value is small"
+      - "Division rounds down due to integer arithmetic"
+      - "Final result becomes effectively zero or minimal"
+      - "Attacker gets access to resource with minimal payment"
+    impact: |
+      Attacker bypasses deposit/payment requirements by exploiting
+      rounding. Can obtain substantial value for minimal cost.
+
+  - name: "State Inconsistency from Overflow"
+    description: |
+      Multiple operations dependent on overflow result create cascading
+      incorrect state that breaks protocol invariants.
+    preconditions:
+      - "Protocol depends on consistent state across variables"
+      - "Overflow causes one state variable to have incorrect value"
+      - "Other operations trust this value without re-validation"
+    steps:
+      - "Attacker overflows position size state variable"
+      - "Position size now too small (wrapped value)"
+      - "Subsequent logic calculating fees, liquidity uses wrong position"
+      - "Protocol's accounting breaks down"
+      - "Attacker exploits accounting inconsistency"
+    impact: |
+      Systemic protocol failure. Incorrect state propagates through
+      multiple operations, enabling complex multi-step exploits.
+
+# =============================================================================
+# VERIFICATION AND FALSE POSITIVE REDUCTION
+# =============================================================================
+
+verification_steps:
+  - "Confirm function is externally callable (not internal-only)"
+  - "Trace arithmetic operations: are they on user-controlled input?"
+  - "Identify state variable being modified: is it critical (position, balance, shares)?"
+  - "Check for input validation before arithmetic (require/assert)"
+  - "Verify whether SafeMath library is imported and used"
+  - "Check Solidity compiler version (< 0.8.0 is higher risk)"
+  - "Look for explicit overflow guards: checked_mul, safe_mul, etc."
+  - "Verify no unchecked blocks suppressing overflow detection (0.8.0+)"
+  - "Check for bounds validation like require(amount <= MAX_AMOUNT)"
+  - "Verify protocol constants that cap maximum calculation results"
+
+# =============================================================================
+# FIX RECOMMENDATIONS
+# =============================================================================
+
+fix_recommendations:
+  - name: "Use Checked Arithmetic (Solidity 0.8.0+)"
+    description: |
+      Upgrade to Solidity 0.8.0 or higher. Built-in overflow checks are enabled
+      by default and will revert on overflow/underflow.
+    example: |
+      // Solidity 0.8.0+ (SAFE: automatic overflow checking)
+      // pragma solidity ^0.8.0;
+      function calculatePosition(uint256 amount) public {
+          require(amount > 0, "Amount must be positive");
+
+          // This multiplication is automatically checked
+          // If overflow would occur, transaction reverts
+          uint256 position = amount * pricePerUnit;
+          positions[msg.sender] = position;
+      }
+
+  - name: "Use SafeMath Library (Solidity < 0.8.0)"
+    description: |
+      For legacy contracts on Solidity < 0.8.0, use OpenZeppelin's SafeMath
+      library to get overflow/underflow protection.
+    example: |
+      // Solidity 0.7.x with SafeMath (SAFE)
+      pragma solidity ^0.7.0;
+      import "@openzeppelin/contracts/math/SafeMath.sol";
+
+      contract PositionManager {
+          using SafeMath for uint256;
+
+          function calculatePosition(uint256 amount) public {
+              require(amount > 0, "Amount must be positive");
+
+              // SafeMath multiplication throws on overflow
+              uint256 position = amount.mul(pricePerUnit);
+              positions[msg.sender] = position;
+          }
+      }
+
+  - name: "Add Input Bounds Validation"
+    description: |
+      Even with SafeMath/0.8.0+, validate input against protocol limits
+      to prevent overflow at the source. This is defense in depth.
+    example: |
+      pragma solidity ^0.8.0;
+
+      contract LiquidityPool {
+          uint256 constant MAX_POSITION_SIZE = 10**18;  // 1 unit maximum
+          uint256 constant MAX_PRICE_PER_UNIT = 10**9;
+
+          function calculatePosition(uint256 amount) public {
+              // Validate input bounds BEFORE arithmetic
+              require(amount > 0, "Amount must be positive");
+              require(amount <= MAX_POSITION_SIZE, "Amount exceeds maximum");
+
+              // Additional safety check: prevent overflow in multiplication
+              // Verify: amount * pricePerUnit <= max uint256
+              require(
+                  amount <= type(uint256).max / pricePerUnit,
+                  "Calculation would overflow"
+              );
+
+              uint256 position = amount * pricePerUnit;
+              positions[msg.sender] = position;
+          }
+      }
+
+  - name: "Implement Protocol-Specific Maximum Values"
+    description: |
+      Define and enforce maximum allowed values for each critical state
+      variable based on protocol design. Check results against these.
+    example: |
+      pragma solidity ^0.8.0;
+
+      contract DerivativesPool {
+          // Define safe maximums based on protocol economics
+          uint256 constant MAX_POSITION_SIZE = 1000 * 10**18;  // 1000 tokens
+          uint256 constant MAX_LEVERAGE = 10 * 10**18;         // 10x leverage
+          uint256 constant MAX_TOTAL_POSITIONS = 1000000 * 10**18;
+
+          function openPosition(uint256 amount, uint256 leverage) public {
+              // Comprehensive bounds checking
+              require(amount > 0 && amount <= MAX_POSITION_SIZE, "Invalid amount");
+              require(leverage > 0 && leverage <= MAX_LEVERAGE, "Invalid leverage");
+
+              // Calculate position with explicit overflow protection
+              uint256 position = (amount * leverage) / 100;  // 0.8.0+ auto-checks
+
+              require(
+                  getTotalPositions() + position <= MAX_TOTAL_POSITIONS,
+                  "Position exceeds pool maximum"
+              );
+
+              positions[msg.sender] = position;
+              emit PositionOpened(msg.sender, amount, leverage, position);
+          }
+      }
+
+  - name: "Add State Invariant Validation"
+    description: |
+      After state modifications from arithmetic, verify protocol invariants
+      still hold. Detect corrupted state before exploitation.
+    example: |
+      pragma solidity ^0.8.0;
+
+      contract PositionManager {
+          mapping(address => uint256) positions;
+          uint256 totalPositions;
+
+          function updatePosition(address user, uint256 newSize) public {
+              uint256 oldSize = positions[user];
+              positions[user] = newSize;
+
+              // Update total positions accounting
+              if (newSize > oldSize) {
+                  totalPositions += (newSize - oldSize);
+              } else {
+                  totalPositions -= (oldSize - newSize);
+              }
+
+              // Invariant: total positions must not exceed supply
+              require(totalPositions <= getTotalSupply(), "Invariant violated");
+
+              // Invariant: no individual position exceeds protocol maximum
+              require(newSize <= MAX_POSITION_SIZE, "Position too large");
+
+              // Invariant: all positions must be non-negative (implicit in uint256)
+              assert(newSize >= 0);
+          }
+      }
+
+# =============================================================================
+# TESTING GUIDANCE
+# =============================================================================
+
+testing_guidance:
+  unit_tests:
+    - "Test: Multiply maximum allowed input by multiplier, verify no overflow"
+    - "Test: Multiply (MAX_UINT256 / multiplier) + 1, should fail or handle safely"
+    - "Test: Division with rounding: verify result matches expected precision"
+    - "Test: Zero amount handling: ensure proper validation"
+    - "Test: Boundary values: MAX_POSITION_SIZE, MAX_POSITION_SIZE - 1, MAX_POSITION_SIZE + 1"
+
+  fuzz_tests:
+    - "Generate random input amounts (0 to MAX_UINT256)"
+    - "Generate random multipliers/divisors"
+    - "Verify no transaction succeeds with invalid result"
+    - "Verify state invariants hold after every operation"
+
+  edge_cases:
+    - "Input = 2^256 - 1 with multiplier = 2 (would overflow)"
+    - "Input = 2^256 / divisor with division that would lose precision"
+    - "Input = 1 wei (dust attack)"
+    - "Input = MAX_POSITION_SIZE (boundary)"
+    - "Input = MAX_POSITION_SIZE + 1 (should be rejected)"
+
+  integration_tests:
+    - "Multi-step operations that accumulate rounding"
+    - "User interactions that depend on correct position sizes"
+    - "Verify total protocol positions stay within supply"
+    - "Stress test with multiple concurrent position updates"
+
+# =============================================================================
+# RELATED PATTERNS
+# =============================================================================
+
+related_patterns:
+  - logic-001  # Generic overflow/underflow
+  - logic-002  # Precision loss in division
+  - auth-003   # Unprotected state modification
+  - dos-002    # Resource exhaustion via arithmetic
+
+# =============================================================================
+# REAL-WORLD EXPLOITS
+# =============================================================================
+
+exploits:
+  - name: "Cetus Protocol SUI Overflow"
+    date: "2025-05-22"
+    loss: "$260,000,000"
+    chain: "Sui"
+    description: |
+      The Cetus Protocol on Sui suffered a critical arithmetic overflow
+      vulnerability in liquidity position calculations. Attackers exploited
+      unchecked multiplication operations on user input to cause overflow,
+      resulting in incorrect position sizes written to state. These incorrect
+      values were then used to drain the protocol of approximately $260M.
+
+      While the Cetus exploit occurred on Move (Sui's language), the underlying
+      arithmetic pattern applies to Solidity contracts performing similar
+      calculations without proper overflow protection.
+    attack_vector: |
+      1. Attacker identifies liquidity calculation function
+      2. Analyzes arithmetic: multiply(userAmount, pricePerUnit)
+      3. Calculates input that causes overflow
+      4. Submits transaction with crafted input
+      5. Arithmetic overflows, wraps to small value
+      6. Small value written to position state
+      7. Attacker manipulates protocol using incorrect state
+    source: "Cetus Protocol Official Announcement"
+    cve: "CVE-TBD-2025-CETUS"
+    reference: "knowledge/vulndocs/categories/logic/subcategories/arithmetic/specifics/cetus-sui-overflow"
+
+# =============================================================================
+# OWASP AND CWE MAPPING
+# =============================================================================
+
+owasp_mapping:
+  - SC03  # Logic Errors
+  - SC04  # Lack of Input Validation
+
+cwe_mapping:
+  - CWE-190  # Integer Overflow or Wraparound
+  - CWE-191  # Integer Underflow (Wrap or Wraparound)
+  - CWE-682  # Incorrect Calculation
+  - CWE-369  # Divide By Zero
+
+# =============================================================================
+# TEST COVERAGE (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Pattern created from Cetus Protocol exploit analysis. Needs test fixtures."
+
+# =============================================================================
+# PATTERN METADATA
+# =============================================================================
+
+# Metadata for caching and retrieval
+token_estimate: 1200
+context_cache_key: "logic-arithmetic-cetus-overflow-v1"
+
+# Version tracking
+version: "1.0"
+created: "2026-01-09"
+last_updated: "2026-01-09"
+author: "Phase 18 Solidity Security Knowledge Base"
+
+# Tags for searching and filtering
+tags:
+  - arithmetic-overflow
+  - unchecked-math
+  - integer-overflow
+  - critical-severity
+  - real-world-exploit
+  - 2025-incident
+  - position-calculation
+  - liquidity-vulnerability
+  - user-input-arithmetic
+  - state-corruption
+
+# =============================================================================
+# REFERENCES
+# =============================================================================
+
+references:
+  - title: "Cetus Protocol Official Documentation"
+    url: "https://cetus-protocol.gitbook.io/"
+    description: "Protocol security incident announcement and postmortem"
+    date: "2025-05-22"
+    relevance: "Primary source for exploit details"
+
+  - title: "Sui Blockchain Security Guidelines"
+    url: "https://sui.io/"
+    description: "Sui blockchain official documentation"
+    date: "2025-05-22"
+    relevance: "Context for Move language overflow behavior"
+
+  - title: "Solidity Security: Integer Arithmetic"
+    url: "https://docs.soliditylang.org/en/latest/contracts.html#unchecked"
+    description: "Solidity documentation on overflow checking"
+    date: "2025"
+    relevance: "Solidity < 0.8.0 vs >= 0.8.0 behavior"
+
+  - title: "OpenZeppelin SafeMath Library"
+    url: "https://docs.openzeppelin.com/contracts/"
+    description: "Production-tested safe arithmetic library"
+    date: "2025"
+    relevance: "Recommended fix for legacy contracts"
+
+  - title: "CWE-190: Integer Overflow or Wraparound"
+    url: "https://cwe.mitre.org/data/definitions/190.html"
+    description: "MITRE CWE classification"
+    date: "Ongoing"
+    relevance: "Security weakness classification"
+
+# =============================================================================

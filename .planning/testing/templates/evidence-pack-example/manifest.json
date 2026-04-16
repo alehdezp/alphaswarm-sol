@@ -1,0 +1,20 @@
+{
+  "run_id": "evidence-pack-example",
+  "workflow": "audit-entrypoint",
+  "session_label": "vrs-demo-audit-entrypoint-20260204-120000",
+  "pane_id": "0:1.2",
+  "timestamp_utc": "2026-02-04T12:00:00Z",
+  "git_commit": "abc1234",
+  "duration_ms": 62000,
+  "line_count": 214,
+  "required_markers_present": true,
+  "marker_list": ["[ALPHASWARM-START]", "[ALPHASWARM-END]", "TaskCreate(", "TaskUpdate(", "[VQL-MIN-01]"],
+  "artifacts": [
+    "manifest.json",
+    "transcript.txt",
+    "report.json",
+    "environment.json",
+    "commands.log",
+    "ground_truth.json"
+  ]
+}

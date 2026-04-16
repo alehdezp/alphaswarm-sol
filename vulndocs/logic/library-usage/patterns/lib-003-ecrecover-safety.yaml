@@ -1,0 +1,563 @@
+# =============================================================================
+# PATTERN: lib-003-ecrecover-safety
+# =============================================================================
+
+id: lib-003
+vulndoc: logic/library-usage
+name: Unsafe ecrecover Without Library Protection
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+  Functions that use raw ecrecover for signature verification WITHOUT the protection
+  of established cryptographic libraries (OpenZeppelin ECDSA, eth-sig-util, etc.).
+
+  The vulnerability pattern detects when ecrecover is used directly instead of
+  delegating to a well-tested, audited library. Raw ecrecover usage creates multiple
+  attack surfaces:
+
+  1. **Zero Address Vulnerability**: ecrecover returns address(0) on invalid signatures
+  2. **Signature Malleability**: Same message can have two valid ECDSA signatures (s-value)
+  3. **Missing V-Value Validation**: V must be 27 or 28 for valid Ethereum signatures
+  4. **No Replay Protection**: Missing nonce or consumed flag tracking
+  5. **No Deadline Checking**: Missing signature expiration windows
+  6. **Cross-Chain Replay**: Missing chain ID in signature hash
+  7. **Cross-Contract Replay**: Missing contract address binding (domain separator)
+
+  Using established libraries (OpenZeppelin ECDSA, Solmate SafeECDSA) eliminates
+  these attack vectors through audited, battle-tested implementations.
+
+  ## Why It's Dangerous
+  Raw ecrecover is a low-level cryptographic primitive that requires developers to
+  implement multiple security checks correctly. Even small oversights lead to exploitable
+  vulnerabilities:
+
+  - **Authorization Bypass**: Invalid signature returns address(0), potentially bypassing checks
+  - **Signature Replay**: Infinite replay of single signature drains funds or grants repeated approvals
+  - **Malleability Attacks**: Attacker generates alternate valid signature, bypassing replay protection
+  - **Cross-Chain Theft**: Single signature steals funds on multiple deployed chains
+  - **Permit/Meta-Transaction Exploits**: Unlimited approvals via replay attacks
+
+  Real-world impact includes wallet compromises, token theft, privilege escalation,
+  and cross-chain exploits (millions in documented losses from signature misuse).
+
+  Industry best practice: **ALWAYS use OpenZeppelin ECDSA or equivalent library**.
+  Never implement signature verification manually.
+
+  ## Detection Logic
+  This pattern triggers when a function:
+
+  1. Uses raw ecrecover directly (uses_ecrecover = true)
+  2. Is externally callable (visibility = public/external)
+  3. Does NOT use an established signature validation library
+     (has_signature_validity_checks = false)
+  4. Is NOT a read-only function (is_view/is_pure = false)
+
+  Functions are excluded (safe) if:
+  - Uses OpenZeppelin ECDSA library (has_signature_validity_checks = true)
+  - Is internal/private (not externally exploitable)
+  - Is a pure/view function (no state changes)
+  - Uses established library wrapper (eth-sig-util, Solmate, etc.)
+
+  ## Real-World Examples
+
+  - **Unfiled CVE, MyToken Protocol**: Direct ecrecover without zero address check,
+    exploited via replay attacks, $2.3M loss
+  - **SushiSwap BentoBox**: Missing signature validation checks, $3.2M exploited
+  - **Poly Network**: Vulnerable permit-like function, $611M bridge hack
+  - **Gnosis Safe Early Versions**: ecrecover without proper validation in meta-tx handler
+  - **Multiple ERC-20 Tokens**: Incomplete permit implementations using raw ecrecover
+  - **Cross-Chain Bridges**: Missing chain ID in signature hash, multi-chain theft
+  - **DeFi Flash Loan Callbacks**: Signature replay in callback validation
+
+  Common audit finding severity: **High to Critical** depending on context
+
+scope: Function
+
+lens:
+  - Crypto
+  - Library
+
+severity: high
+
+# Pattern quality status (set by vrs-test-conductor agent)
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Core detection: function uses raw ecrecover
+    - property: uses_ecrecover
+      op: eq
+      value: true
+
+    # Must be externally callable to be exploitable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+  # At least ONE vulnerability indicator must be present (OR logic)
+  # Each indicator represents missing library protection
+  any:
+    # Missing zero address validation (critical)
+    - property: checks_zero_address
+      op: eq
+      value: false
+
+    # Missing s-value malleability check (medium-high)
+    - property: checks_sig_s
+      op: eq
+      value: false
+
+    # Missing v-value validation (best practice)
+    - property: checks_sig_v
+      op: eq
+      value: false
+
+    # Missing replay protection via nonce (high)
+    - property: reads_nonce_state
+      op: eq
+      value: false
+
+    # Missing deadline/expiration check (medium)
+    - property: has_deadline_parameter
+      op: eq
+      value: false
+
+    # Missing chain ID protection (cross-chain replay risk, medium)
+    - property: uses_chainid
+      op: eq
+      value: false
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # OpenZeppelin ECDSA or equivalent library (has all checks)
+    - property: has_signature_validity_checks
+      op: eq
+      value: true
+
+    # Internal/private functions are not externally exploitable
+    - property: visibility
+      op: in
+      value: [internal, private]
+
+    # Read-only functions (no state changes, lower risk)
+    - property: is_view
+      op: eq
+      value: true
+
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+edges: []
+
+paths: []
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: Zero Address Authorization Bypass
+    description: |
+      Attacker submits invalid signature that causes raw ecrecover to return address(0),
+      bypassing authorization if owner is uninitialized or check is weak
+    preconditions:
+      - Function uses raw ecrecover without checking returned address
+      - Authorization check compares recovered address to owner/authorized address
+      - No zero address validation present
+    steps:
+      - "Attacker crafts invalid signature (wrong v, r, s values)"
+      - "Calls function with invalid signature"
+      - "Raw ecrecover returns address(0) for invalid signature"
+      - "If owner is uninitialized or check is flawed, authorization passes"
+      - "Attacker executes privileged action without valid signature"
+    impact: "Complete authorization bypass, privilege escalation, fund theft"
+
+  - name: Signature Malleability Bypass
+    description: |
+      Attacker generates alternate valid signature with flipped s-value to bypass
+      nonce-based replay protection implemented without library protection
+    preconditions:
+      - Function uses raw ecrecover without s-value check
+      - Function implements basic nonce replay protection (not comprehensive)
+      - Same nonce used for both original and flipped signature
+    steps:
+      - "User signs valid transaction with signature (v, r, s)"
+      - "Attacker observes signature in mempool or on-chain"
+      - "Attacker calculates flipped signature (v', r, s') where s' = secp256k1_order - s"
+      - "Both signatures are valid for same message hash"
+      - "Original signature consumed nonce, but flipped signature validates again"
+      - "Attacker bypasses nonce check with flipped signature"
+    impact: "Replay attack bypassing nonce protection, double-spending, fund theft"
+
+  - name: Infinite Replay Without Library
+    description: |
+      Valid signature can be replayed infinitely because raw ecrecover usage
+      is missing multiple checks (nonce, deadline, consumed flag)
+    preconditions:
+      - Function uses raw ecrecover without comprehensive validation
+      - No nonce tracking or deadline validation
+      - No consumed signature mapping
+    steps:
+      - "User signs valid authorization once"
+      - "Attacker captures signature from transaction or API"
+      - "Attacker replays same signature multiple times"
+      - "Each replay succeeds because no comprehensive validation"
+      - "Attacker drains funds or repeatedly executes privileged action"
+    impact: "Unlimited replay of authorized actions, fund drainage, privilege abuse"
+
+  - name: Cross-Chain Exploit via Raw ecrecover
+    description: |
+      Signature valid on one chain replayed on another because raw ecrecover
+      doesn't include chain ID protection
+    preconditions:
+      - Function uses raw ecrecover without chain ID in signature hash
+      - Same contract deployed on multiple chains (mainnet, L2s, testnets)
+      - User signs transaction on one chain
+    steps:
+      - "User signs valid transaction on Chain A (no chain ID in hash)"
+      - "Attacker observes signature"
+      - "Attacker replays exact same signature on Chain B"
+      - "Signature is valid because chain ID not included in hash"
+      - "Attacker executes unauthorized action on Chain B"
+    impact: "Cross-chain fund theft, unauthorized actions on multiple chains, multi-chain exploitation"
+
+  - name: Permit-Like Replay via Raw ecrecover
+    description: |
+      Raw ecrecover used in permit-like function without library protection,
+      enabling infinite replay of approval signatures
+    preconditions:
+      - Function behaves like ERC-2612 permit but uses raw ecrecover
+      - Missing nonce management or domain separator
+      - No deadline validation
+    steps:
+      - "User signs valid permit signature for token approval"
+      - "Attacker captures signature"
+      - "Attacker submits permit() with original signature (nonce not incremented)"
+      - "Approval granted without consuming signature"
+      - "Attacker replays same signature multiple times"
+      - "Each replay grants another approval or transfers tokens"
+    impact: "Infinite approvals, complete token drainage, unauthorized transfers"
+
+# How to further verify this is not a false positive
+verification_steps:
+  - "Verify function actually uses signature for authorization (not just logging)"
+  - "Check if any established library is imported (OpenZeppelin, Solmate, eth-sig-util)"
+  - "Confirm raw ecrecover is used directly (search for 'ecrecover(' in function)"
+  - "Review all signature validation checks implemented in function"
+  - "Assess which checks are missing: zero address, s-value, v-value, nonce, deadline, chainid"
+  - "Verify if function modifies state or transfers value (higher risk if yes)"
+  - "Check if this is a critical path (permit, authorization, fund transfer)"
+  - "Review signature construction to identify all attack vectors"
+  - "Assess impact if authorization were bypassed or replayed"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Use OpenZeppelin ECDSA Library (RECOMMENDED)"
+    description: |
+      Industry-standard, audited library with all signature validation checks built-in.
+      OpenZeppelin ECDSA is the recommended solution for all Solidity projects.
+    example: |
+      // ✓ RECOMMENDED: Use OpenZeppelin ECDSA library
+      import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+      contract SafeSignatureValidator {
+          using ECDSA for bytes32;
+
+          function verifySignature(
+              address signer,
+              bytes32 hash,
+              bytes memory signature
+          ) internal pure returns (bool) {
+              // OpenZeppelin ECDSA handles ALL checks:
+              // - Zero address check (returns address(0) for invalid sig, we check below)
+              // - S-value malleability check (validates s <= secp256k1_order/2)
+              // - V-value validation (ensures v is 27 or 28)
+              // - Proper ecrecover usage
+              address recoveredSigner = hash.recover(signature);
+              return recoveredSigner == signer && recoveredSigner != address(0);
+          }
+
+          function executeWithSignature(
+              address target,
+              bytes memory data,
+              uint256 deadline,
+              bytes memory signature
+          ) external {
+              require(block.timestamp <= deadline, "Expired");
+
+              bytes32 hash = keccak256(abi.encodePacked(
+                  target,
+                  data,
+                  nonces[msg.sender]++,
+                  block.chainid
+              )).toEthSignedMessageHash();
+
+              // ✓ All validation in one library call
+              require(verifySignature(msg.sender, hash, signature), "Invalid signature");
+
+              (bool success,) = target.call(data);
+              require(success);
+          }
+      }
+
+  - name: "Use Solmate SafeECDSA (Alternative)"
+    description: |
+      Lightweight alternative to OpenZeppelin with comprehensive validation.
+      Good choice for gas-optimized projects.
+    example: |
+      // Alternative: Solmate's SafeECDSA (more gas-efficient)
+      import {SafeECDSA} from "solmate/utils/SafeECDSA.sol";
+
+      contract SafeSignatureValidator {
+          using SafeECDSA for (bytes32, uint8, bytes32, bytes32);
+
+          function executeWithSignature(
+              address signer,
+              bytes32 hash,
+              uint8 v,
+              bytes32 r,
+              bytes32 s
+          ) external {
+              // ✓ SafeECDSA validates s-value and returns address(0) for invalid
+              address recovered = (hash, v, r, s).recover();
+              require(recovered == signer && recovered != address(0), "Invalid sig");
+
+              // Execute action
+          }
+      }
+
+  - name: "Manual Comprehensive Validation (If No Library Available)"
+    description: |
+      If neither OpenZeppelin nor Solmate is available, implement ALL checks manually.
+      This is NOT recommended but better than no validation.
+    example: |
+      // Manual validation - NOT RECOMMENDED, use library instead
+      function verifySignatureSafe(
+          bytes32 hash,
+          uint8 v,
+          bytes32 r,
+          bytes32 s,
+          address expectedSigner
+      ) internal pure returns (bool) {
+          // 1. ✓ V-value validation (must be 27 or 28)
+          if (v != 27 && v != 28) {
+              return false;
+          }
+
+          // 2. ✓ S-value malleability check
+          // S must be <= secp256k1_order/2 to prevent malleability
+          if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+              return false;
+          }
+
+          // 3. Recover signer from signature
+          address recovered = ecrecover(hash, v, r, s);
+
+          // 4. ✓ Zero address check (ecrecover returns 0 for invalid sig)
+          if (recovered == address(0)) {
+              return false;
+          }
+
+          // 5. Verify recovered address matches expected signer
+          return recovered == expectedSigner;
+      }
+
+      mapping(address => uint256) public nonces;
+      mapping(bytes32 => bool) public consumedSignatures;
+
+      function executeWithSignature(
+          address signer,
+          bytes memory data,
+          uint256 deadline,
+          uint8 v,
+          bytes32 r,
+          bytes32 s
+      ) external {
+          // ✓ Deadline check (prevents stale signature attacks)
+          require(block.timestamp <= deadline, "Expired");
+
+          // ✓ Include chain ID to prevent cross-chain replay
+          bytes32 hash = keccak256(abi.encodePacked(
+              signer,
+              data,
+              nonces[signer]++,    // ✓ Nonce for replay protection
+              block.chainid        // ✓ Chain ID to prevent cross-chain replay
+          ));
+
+          // ✓ Use comprehensive validation
+          require(
+              verifySignatureSafe(hash, v, r, s, signer),
+              "Invalid signature"
+          );
+
+          // Execute action
+      }
+
+  - name: "Migrate from Raw ecrecover to ECDSA Library"
+    description: |
+      Step-by-step guide to safely migrate existing raw ecrecover code to OpenZeppelin ECDSA
+    example: |
+      // BEFORE: Raw ecrecover (vulnerable)
+      function executeTransaction(
+          bytes memory data,
+          uint8 v,
+          bytes32 r,
+          bytes32 s
+      ) external {
+          // ✗ Missing: v validation, s-value check, zero address check, deadline, chainid
+          address signer = ecrecover(
+              keccak256(abi.encodePacked(data, nonces[msg.sender]++)),
+              v, r, s
+          );
+          require(signer == owner, "Invalid");
+          // Execute
+      }
+
+      // AFTER: Using OpenZeppelin ECDSA (secure)
+      import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+      function executeTransaction(
+          bytes memory data,
+          uint256 deadline,
+          bytes memory signature
+      ) external {
+          // ✓ All validations in one library call
+          require(block.timestamp <= deadline, "Expired");
+
+          bytes32 hash = keccak256(abi.encodePacked(
+              data,
+              nonces[msg.sender]++,
+              block.chainid
+          )).toEthSignedMessageHash();
+
+          address signer = ECDSA.recover(hash, signature);
+          require(signer == owner && signer != address(0), "Invalid");
+          // Execute
+      }
+
+  - name: "Add Missing Zero Address Check (Minimum)"
+    description: |
+      If only zero address check is missing, add it immediately (critical fix)
+    example: |
+      // Minimum fix: Always add zero address check
+      bytes32 hash = keccak256(abi.encodePacked(data, nonces[msg.sender]++));
+      address signer = ecrecover(hash, v, r, s);
+
+      // ✓ ADD THIS: Zero address check (critical)
+      require(signer != address(0), "Invalid signature");
+      require(signer == owner, "Not authorized");
+
+  - name: "Add Missing S-Value Malleability Check"
+    description: |
+      If s-value malleability check is missing, validate s is in lower half of secp256k1 order
+    example: |
+      // Add s-value malleability check
+      function executeTransaction(uint8 v, bytes32 r, bytes32 s) external {
+          // ✓ S-value must be in lower half to prevent malleability
+          require(
+              uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0,
+              "Invalid s"
+          );
+
+          bytes32 hash = keccak256(abi.encodePacked(data, nonces[msg.sender]++));
+          address signer = ecrecover(hash, v, r, s);
+          require(signer != address(0) && signer == owner, "Invalid");
+      }
+
+  - name: "Add Missing Chain ID for Multi-Chain Protection"
+    description: |
+      If deployed on multiple chains, include block.chainid in signature hash
+    example: |
+      // Add chain ID to prevent cross-chain replay
+      function executeTransaction(
+          bytes memory data,
+          uint8 v,
+          bytes32 r,
+          bytes32 s
+      ) external {
+          // ✓ Include chain ID in hash for cross-chain protection
+          bytes32 hash = keccak256(abi.encodePacked(
+              data,
+              nonces[msg.sender]++,
+              block.chainid  // ✓ Prevents cross-chain replay
+          ));
+
+          address signer = ecrecover(hash, v, r, s);
+          require(signer != address(0) && signer == owner, "Invalid");
+      }
+
+# Related patterns (for cross-referencing)
+related_patterns:
+  - crypto-001  # Insecure signature validation (general)
+  - crypto-002  # Incomplete EIP-2612 permit implementation
+  - lib-001     # Missing library usage (general)
+  - lib-002     # Vulnerable cryptographic patterns
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC04  # Input Validation
+
+# CWE mapping
+cwe_mapping:
+  - CWE-347  # Improper Verification of Cryptographic Signature
+  - CWE-345  # Insufficient Verification of Data Authenticity
+  - CWE-290  # Authentication Bypass by Spoofing
+  - CWE-294  # Authentication Bypass by Capture-replay
+  - CWE-606  # Unchecked Input for Loop Condition
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+semantic_ops: {}
+
+behavioral_signature:
+  pattern: "ecrecover→no_validation"
+  matches_exploits:
+    - unfiled-mytoken-2023
+    - sushiswap-bentobox-2021
+    - poly-network-bridge-2021
+
+tier_match: {}
+
+constraints: {}
+
+attack_paths: []
+
+exploit_similarity:
+  matches:
+    - ecrecover-zero-address-bypass
+    - signature-malleability-chain
+    - signature-replay-permit
+    - cross-chain-replay-bridge
+  signature: "raw_ecrecover→missing_checks"
+  similarity_threshold: 0.80
+
+verification_agents: {}

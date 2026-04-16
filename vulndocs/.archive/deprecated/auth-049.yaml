@@ -1,0 +1,13 @@
+id: auth-049
+vulndoc: access-control/general
+name: Emergency Delegatecall Bypass
+description: Emergency delegatecall paths without target validation.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: emergency_delegatecall_bypass
+    op: eq
+    value: true

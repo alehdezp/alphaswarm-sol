@@ -1,0 +1,23 @@
+id: arbitrary-delegatecall-target
+vulndoc: access-control/delegatecall
+name: Arbitrary Delegatecall Target
+description: Delegatecall target controlled by user input.
+scope: Function
+lens:
+- ValueMovement
+severity: critical
+match:
+  all:
+  - property: uses_delegatecall
+    op: eq
+    value: true
+  - property: delegatecall_target_user_controlled
+    op: eq
+    value: true
+  none:
+  - property: validates_delegatecall_target
+    op: eq
+    value: true
+  - property: delegatecall_in_proxy_upgrade_context
+    op: eq
+    value: true

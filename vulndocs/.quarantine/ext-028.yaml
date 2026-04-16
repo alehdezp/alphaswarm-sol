@@ -1,0 +1,16 @@
+id: ext-028
+vulndoc: access-control/external-call
+name: Oracle Update Missing Timelock
+description: Oracle update functions without timelock delays.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: oracle_update_function
+    op: eq
+    value: true
+  - property: has_oracle_update_timelock
+    op: eq
+    value: false

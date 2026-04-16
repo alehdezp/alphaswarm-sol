@@ -1,0 +1,96 @@
+# AlphaSwarm.sol Docker Compose Configuration
+# Usage: docker compose run alphaswarm build-kg /workspace/contracts/
+
+version: "3.8"
+
+services:
+  # =============================================================================
+  # CLI Service - Interactive usage
+  # =============================================================================
+  alphaswarm:
+    build:
+      context: .
+      target: runtime
+    image: ghcr.io/alphaswarm/alphaswarm-sol:0.5.0
+    volumes:
+      # Mount your contracts directory
+      - ./contracts:/workspace/contracts:ro
+      # Persist analysis output
+      - ./.vrs:/workspace/.vrs
+    environment:
+      - ALPHASWARM_LOG_LEVEL=INFO
+      # Optional: LLM API keys for Tier B features
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+    working_dir: /workspace
+
+  # =============================================================================
+  # Agent Service - Non-interactive, machine-parseable output
+  # =============================================================================
+  alphaswarm-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      target: agent
+    image: ghcr.io/alphaswarm/alphaswarm-sol:0.5.0-agent
+    volumes:
+      - ./contracts:/workspace/contracts:ro
+      - ./.vrs:/workspace/.vrs
+      - ./output:/workspace/output
+    environment:
+      # Agent mode pre-configured in Dockerfile.agent
+      # Override API keys as needed
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    working_dir: /workspace
+    profiles:
+      - agent
+
+  # =============================================================================
+  # Development Service - With tests and dev tools
+  # =============================================================================
+  alphaswarm-dev:
+    build:
+      context: .
+      target: development
+    image: ghcr.io/alphaswarm/alphaswarm-sol:0.5.0-dev
+    volumes:
+      - .:/app
+      - ./contracts:/workspace/contracts:ro
+    working_dir: /app
+    profiles:
+      - dev
+
+  # =============================================================================
+  # CI Service - Automated analysis runner
+  # =============================================================================
+  alphaswarm-ci:
+    build:
+      context: .
+      target: runtime
+    image: ghcr.io/alphaswarm/alphaswarm-sol:0.5.0
+    volumes:
+      - ./contracts:/workspace/contracts:ro
+      - ./output:/workspace/output
+    working_dir: /workspace
+    command: ["lens-report", "--format", "sarif", "--output", "/workspace/output/results.sarif"]
+    profiles:
+      - ci
+
+# =============================================================================
+# Example Usage
+# =============================================================================
+#
+# Interactive CLI:
+#   docker compose run alphaswarm build-kg /workspace/contracts/
+#   docker compose run alphaswarm query "pattern:weak-access-control"
+#   docker compose run alphaswarm lens-report --format sarif
+#
+# Agent mode (JSON output):
+#   docker compose --profile agent run alphaswarm-agent build-kg /workspace/contracts/
+#
+# Development:
+#   docker compose --profile dev run alphaswarm-dev pytest tests/ -v
+#
+# CI/CD:
+#   docker compose --profile ci run alphaswarm-ci

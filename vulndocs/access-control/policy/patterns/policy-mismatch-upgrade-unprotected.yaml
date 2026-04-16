@@ -1,0 +1,46 @@
+id: policy-mismatch-upgrade-unprotected
+vulndoc: access-control/policy
+name: Unprotected Upgrade Function
+description: 'Contract upgrade function lacks proper access control or timelock.
+
+  Upgrades should be highly restricted.
+
+
+  Risk: Unauthorized contract upgrades can replace all logic,
+
+  enabling complete takeover of funds and functionality.
+
+  '
+severity: critical
+scope: Function
+lens:
+- AccessControl
+- Upgradeability
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    any:
+    - property: is_upgrade_function
+      op: eq
+      value: true
+    - property: modifies_implementation
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: state_mutation.upgrades_contract
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: access_control.owner_only
+    - type: has_label
+      value: temporal.has_timelock
+required_labels:
+- state_mutation.upgrades_contract

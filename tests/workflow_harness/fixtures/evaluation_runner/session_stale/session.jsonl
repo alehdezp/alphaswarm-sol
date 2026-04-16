@@ -1,0 +1,3 @@
+{"type": "assistant", "timestamp": "2025-01-01T10:00:00Z", "session_id": "sess-stale-001", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "tu_001", "name": "Bash", "input": {"command": "uv run alphaswarm build-kg contracts/Vault.sol"}}]}}
+{"type": "user", "timestamp": "2025-01-01T10:00:05Z", "session_id": "sess-stale-001", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "tu_001", "content": "Knowledge graph built"}]}}
+{"type": "assistant", "timestamp": "2025-01-01T10:01:00Z", "session_id": "sess-stale-001", "subtype": "agent_stop", "message": {"role": "assistant", "content": [{"type": "text", "text": "Done"}]}}

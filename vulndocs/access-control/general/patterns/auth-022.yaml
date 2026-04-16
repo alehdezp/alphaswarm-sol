@@ -1,0 +1,19 @@
+id: auth-022
+vulndoc: access-control/general
+name: Dangerous Admin Function
+description: Privileged admin function that mutates critical state.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_admin_named
+    op: eq
+    value: true
+  - property: writes_privileged_state
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: true

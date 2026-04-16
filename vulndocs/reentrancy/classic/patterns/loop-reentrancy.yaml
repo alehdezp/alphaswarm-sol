@@ -1,0 +1,20 @@
+id: loop-reentrancy
+vulndoc: reentrancy/classic
+name: Loop Reentrancy Surface
+description: External calls in loops with state writes and no guard.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: external_calls_in_loop
+    op: eq
+    value: true
+  - property: writes_state
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

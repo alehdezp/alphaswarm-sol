@@ -1,0 +1,74 @@
+id: UC-DEB-003
+name: "Debate escalation to human on non-convergence"
+workflow: vrs-debate
+category: debate
+tier: important
+
+input:
+  contract: "tests/contracts/ReadOnlyReentrancy.sol"
+  command: "/vrs-debate tests/contracts/ReadOnlyReentrancy.sol --finding reentrancy"
+  context: >
+    ReadOnlyReentrancy.sol is an ambiguous case: the contract has a read-only
+    reentrancy pattern where a view function reads stale state during a
+    callback. Whether this is exploitable depends on how the view function is
+    used externally, which is outside the contract's scope. The attacker and
+    defender may not converge because neither can definitively prove their
+    case without external context. The debate should escalate to a human.
+
+expected_behavior:
+  summary: |
+    The debate workflow should allow attacker and defender to exchange evidence,
+    detect that convergence is not happening within the round budget, and
+    escalate to a human reviewer with a summary of both positions, the key
+    point of disagreement, and what additional information would resolve it.
+  must_happen:
+    - "Attacker presents evidence of read-only reentrancy pattern"
+    - "Defender argues exploitability depends on external usage"
+    - "Debate runs through available rounds without convergence"
+    - "Workflow detects non-convergence and triggers escalation"
+    - "Escalation summary includes both positions with evidence"
+    - "Escalation identifies the key unresolvable question"
+    - "Escalation suggests what additional context would help resolve it"
+  must_not_happen:
+    - "Debate runs indefinitely without escalating"
+    - "Workflow silently drops the finding without verdict or escalation"
+    - "Escalation lacks a summary of both sides"
+    - "Forced verdict without sufficient evidence"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 50
+  key_dimensions:
+    - name: escalation_trigger
+      description: "Did the workflow correctly detect non-convergence and trigger escalation?"
+    - name: escalation_summary_quality
+      description: "Does the escalation include both positions, evidence, and the key question?"
+    - name: debate_quality_before_escalation
+      description: "Did the debate show genuine effort before escalating (not immediate escalation)?"
+    - name: actionable_escalation
+      description: "Does the escalation tell the human what information would resolve the debate?"
+  regression_signals:
+    - "Debate runs indefinitely -> CRITICAL REGRESSION: escalation logic broken"
+    - "Forced verdict without evidence -> REGRESSION: premature convergence"
+    - "Escalation without both positions -> REGRESSION: escalation quality degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReadOnlyReentrancy.sol"
+  related_scenarios:
+    - "UC-DEB-001"
+    - "UC-DEB-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Important tier. Tests the escalation path which is critical for honest
+  reporting. A system that forces a verdict when evidence is insufficient
+  is worse than one that honestly says "I need human input."

@@ -1,0 +1,20 @@
+id: vm-005
+vulndoc: reentrancy/general
+name: ERC Token Callback Reentrancy
+description: Token callback surface with post-call state writes.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: token_callback_surface
+    op: eq
+    value: true
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+  none:
+  - property: has_reentrancy_guard
+    op: eq
+    value: true

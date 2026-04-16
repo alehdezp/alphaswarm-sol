@@ -1,0 +1,16 @@
+id: value-movement-withdrawal-without-balance-check
+vulndoc: reentrancy/general
+name: Withdrawal Without Balance Check
+description: Withdraw-like functions without balance checks.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: is_withdraw_like
+    op: eq
+    value: true
+  - property: has_balance_check
+    op: eq
+    value: false

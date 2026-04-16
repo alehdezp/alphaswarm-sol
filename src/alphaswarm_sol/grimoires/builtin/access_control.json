@@ -1,0 +1,162 @@
+{
+  "id": "grimoire-access-control",
+  "name": "Access Control Verification Grimoire",
+  "category": "access-control",
+  "subcategories": ["missing-gate", "permissive-gate", "privilege-escalation", "tx-origin"],
+  "skill": "/test-access",
+  "aliases": ["/verify-access", "/check-access-control", "/test-auth"],
+  "description": "Expert procedure for verifying access control vulnerabilities. Checks for missing access gates, privilege escalation paths, tx.origin usage, and role-based access issues.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["critical", "common", "foundry", "testing"],
+
+  "required_context": [
+    "function_code",
+    "access_modifiers",
+    "state_variables_written"
+  ],
+  "optional_context": [
+    "role_hierarchy",
+    "owner_variable",
+    "call_graph_1_hop"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE visibility IN [public, external] AND writes_privileged_state AND NOT has_access_gate",
+    "FIND functions WHERE uses_tx_origin = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check Access Properties",
+        "action": "check_graph",
+        "description": "Query VKG for access control indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["graph_matches", "missing_gate_detected", "uses_tx_origin"],
+        "queries": [
+          "has_access_gate",
+          "writes_privileged_state",
+          "uses_tx_origin",
+          "visibility"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Check State Variables",
+        "action": "check_property",
+        "description": "Verify what privileged state is being modified",
+        "inputs": ["state_variables_written", "node_properties"],
+        "outputs": ["privileged_writes", "admin_modifiable"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 3,
+        "name": "Generate Auth Bypass Test",
+        "action": "generate_test",
+        "description": "Generate Foundry test to bypass access control",
+        "inputs": ["function_code", "contract_name", "function_name"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_access_bypass",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 4,
+        "name": "Execute Test",
+        "action": "execute_test",
+        "description": "Run the generated Foundry test",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed"],
+        "tools": ["foundry"],
+        "command": "forge test --match-test testAccessBypass -vvv",
+        "timeout_seconds": 120,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 5,
+        "name": "Fuzz Access Control",
+        "action": "execute_fuzz",
+        "description": "Fuzz for unexpected access patterns",
+        "inputs": ["contract_path"],
+        "outputs": ["fuzz_report", "fuzz_found_issue"],
+        "tools": ["medusa", "echidna"],
+        "timeout_seconds": 120,
+        "optional": true
+      },
+      {
+        "step_number": 6,
+        "name": "Analyze Results",
+        "action": "analyze_results",
+        "description": "Analyze all test and fuzz results",
+        "inputs": ["test_output", "fuzz_report", "graph_matches"],
+        "outputs": ["exploit_successful", "analysis_complete"],
+        "timeout_seconds": 30
+      },
+      {
+        "step_number": 7,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["exploit_successful", "missing_gate_detected", "graph_matches", "uses_tx_origin"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "exploit_successful",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Test confirmed unauthorized access is possible"
+      },
+      {
+        "condition": "fuzz_found_issue",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Fuzzer found access control bypass"
+      },
+      {
+        "condition": "missing_gate_detected && privileged_writes",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Public function writes privileged state without access control"
+      },
+      {
+        "condition": "uses_tx_origin",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "Uses tx.origin for authentication - vulnerable to phishing"
+      },
+      {
+        "condition": "!missing_gate_detected && !uses_tx_origin",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "Access gates present and no tx.origin usage"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": true,
+    "echidna_enabled": true,
+    "medusa_duration": 60,
+    "echidna_duration": 60,
+    "fork_enabled": false,
+    "fork_rpc": "",
+    "fork_block": "latest",
+    "testnet_enabled": false,
+    "testnet_network": "sepolia"
+  },
+
+  "test_templates": {
+    "foundry_access_bypass": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ncontract AccessControlTest is Test {\n    ${CONTRACT_NAME} public target;\n    address public owner;\n    address public attacker;\n\n    function setUp() public {\n        owner = makeAddr(\"owner\");\n        attacker = makeAddr(\"attacker\");\n\n        vm.prank(owner);\n        target = new ${CONTRACT_NAME}();\n    }\n\n    function testAccessBypass() public {\n        // Try to call privileged function as attacker\n        vm.prank(attacker);\n\n        // This should revert if access control is working\n        // If it doesn't revert, access control is missing\n        try target.${FUNCTION_NAME}() {\n            // If we get here, access control is missing\n            assertTrue(true, \"Access control bypass successful - VULNERABLE\");\n        } catch {\n            // Access control working as expected\n            assertTrue(true, \"Access control prevented unauthorized access\");\n        }\n    }\n\n    function testOnlyOwnerCanCall() public {\n        // Owner should be able to call\n        vm.prank(owner);\n        target.${FUNCTION_NAME}();\n\n        // Attacker should not be able to call\n        vm.prank(attacker);\n        vm.expectRevert();\n        target.${FUNCTION_NAME}();\n    }\n}"
+  }
+}

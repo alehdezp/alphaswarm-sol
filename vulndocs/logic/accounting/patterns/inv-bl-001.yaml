@@ -1,0 +1,126 @@
+# Accounting Invariant Violation Investigation Pattern
+# Task 13.11: LLM Investigation Patterns
+
+id: inv-bl-001
+vulndoc: logic/accounting
+name: Accounting Invariant Violation
+type: investigation
+category: business-logic
+subcategories:
+  - balance-tracking
+  - totalSupply
+  - shares
+severity_range:
+  - HIGH
+  - CRITICAL
+description: |
+  Investigate whether balance tracking invariants can be violated, leading to
+  fund extraction or inflation attacks. Looks for mismatches between internal
+  accounting and actual token holdings.
+version: "1.0.0"
+author: VKG Team
+tags:
+  - defi
+  - accounting
+  - invariant
+
+trigger:
+  description: "Function modifies balance-like state"
+  require_all: false
+  graph_signals:
+    - signal: "Function writes user balance"
+      property: writes_user_balance
+    - signal: "Function writes critical state"
+      property: writes_critical_state
+    - signal: "Function has external call"
+      property: has_external_calls
+
+investigation:
+  hypothesis: "Balance tracking may not match actual token holdings"
+
+  steps:
+    - id: 1
+      action: explore_graph
+      description: "Find all functions that modify balances"
+      graph_query: "FIND functions WHERE writes_state AND (modifies balance OR modifies totalSupply)"
+      interpretation: |
+        For each balance-modifying function, note:
+        - What triggers the modification (deposit, withdraw, transfer)?
+        - Is the modification atomic with token movement?
+        - Are there edge cases (zero amounts, self-transfers)?
+        - Are external calls made BEFORE updating internal state?
+      timeout_seconds: 15
+
+    - id: 2
+      action: lsp_references
+      description: "Find all balance reads"
+      target: "balances"
+      interpretation: |
+        Check where balances are READ:
+        - Are reads always after writes settle?
+        - Any TOCTOU risks between read and use?
+        - Can balance be read in an inconsistent state during reentrancy?
+      timeout_seconds: 10
+
+    - id: 3
+      action: read_code
+      description: "Examine the specific function code"
+      target: "${function_name}"
+      interpretation: |
+        Look for:
+        - External calls before state updates (CEI violation)
+        - Arithmetic that could overflow/underflow
+        - Missing checks for fee-on-transfer tokens
+        - Rounding errors that could accumulate
+      timeout_seconds: 10
+
+    - id: 4
+      action: reason
+      description: "Analyze invariant preservation"
+      prompt: |
+        Analyzing the balance tracking invariant:
+
+        INVARIANT: sum(balances) == actualTokenBalance OR totalSupply == sum(balances)
+
+        Step 1 findings (balance modifications): {step_1_results}
+        Step 2 findings (balance reads): {step_2_results}
+        Step 3 findings (function code): {step_3_results}
+
+        Check for:
+        1. Can an external call between balance check and update break invariant?
+        2. Are there rounding errors that accumulate?
+        3. Can fee-on-transfer tokens break accounting?
+        4. What happens with zero-amount operations?
+        5. Can self-transfers create or destroy value?
+        6. Is there a flashloan attack vector?
+
+        Provide specific attack scenarios if the invariant can be broken.
+      timeout_seconds: 30
+
+  verdict_criteria:
+    vulnerable: |
+      - Clear path to break the accounting invariant exists
+      - Invariant violation leads to fund extraction or inflation
+      - Attack is profitable (value extracted > gas cost)
+    likely_vulnerable: |
+      - Possible invariant break but requires specific token types
+      - Edge cases that could accumulate over time
+    uncertain: |
+      - Complex accounting logic needs manual review
+      - Depends on external contract behavior
+    likely_safe: |
+      - Invariant preserved in most paths
+      - Minor edge cases with limited impact
+    safe: |
+      - Invariant mathematically preserved in all paths
+      - Proper guards against edge cases (fee tokens, zero amounts)
+      - CEI pattern followed correctly
+
+output:
+  verdict: "VULNERABLE | LIKELY_VULNERABLE | UNCERTAIN | LIKELY_SAFE | SAFE"
+  attack_path: "Description of how to break the invariant and extract value"
+  confidence: "0-100"
+  evidence:
+    - "Code locations where invariant could be broken"
+    - "Specific edge cases that cause issues"
+  recommendation: "How to fix the accounting issue if vulnerable"

@@ -1,0 +1,15 @@
+id: arith-015
+vulndoc: arithmetic/general
+name: Address to Uint Conversion
+description: Address cast to integer types.
+scope: Function
+lens:
+- Arithmetic
+severity: low
+cwe:
+- 681
+match:
+  all:
+  - property: has_address_to_uint_cast
+    op: eq
+    value: true

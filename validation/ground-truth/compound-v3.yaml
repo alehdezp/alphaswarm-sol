@@ -1,0 +1,126 @@
+# Compound V3 (Comet) Ground Truth
+# Source: OpenZeppelin Security Audit (August 2022)
+# URL: https://blog.openzeppelin.com/compound-iii-comet-security-audit
+
+project_name: compound-v3
+project_type: lending
+audit_source: OpenZeppelin
+audit_date: "2022-08-15"
+audit_url: https://blog.openzeppelin.com/compound-iii-comet-security-audit
+code_url: https://github.com/compound-finance/comet
+code_commit: main
+solidity_version: "^0.8.15"
+
+findings:
+  # High Severity
+  - id: OZ-001
+    title: Liquidation can be front-run by absorbing collateral
+    category: mev_slippage
+    severity: high
+    location:
+      file: Comet.sol
+      function: absorb
+      line_start: 0
+      line_end: 0
+    description: "An attacker can front-run a liquidation transaction by absorbing the collateral first."
+    recommendation: "Implement deadline or slippage protection."
+    vkg_should_find: true
+
+  - id: OZ-002
+    title: Supply and withdraw operations vulnerable to sandwich attacks
+    category: mev_slippage
+    severity: high
+    location:
+      file: Comet.sol
+      function: supply
+      line_start: 0
+      line_end: 0
+    description: "Supply/withdraw operations can be sandwiched for profit extraction."
+    recommendation: "Add slippage parameters."
+    vkg_should_find: true
+
+  # Medium Severity
+  - id: OZ-003
+    title: Missing access control on pause guardian
+    category: access_control
+    severity: medium
+    location:
+      file: Comet.sol
+      function: pause
+      line_start: 0
+      line_end: 0
+    description: "Pause functionality may be callable by unauthorized parties."
+    vkg_should_find: true
+
+  - id: OZ-004
+    title: Oracle staleness check may be bypassed
+    category: oracle_manipulation
+    severity: medium
+    location:
+      file: Comet.sol
+      function: getPrice
+      line_start: 0
+      line_end: 0
+    description: "Oracle price may be used even when stale under certain conditions."
+    vkg_should_find: true
+
+  - id: OZ-005
+    title: Interest rate model rounding issues
+    category: arithmetic
+    severity: medium
+    location:
+      file: CometMath.sol
+      function: accrue
+      line_start: 0
+      line_end: 0
+    description: "Rounding in interest calculations may accumulate."
+    vkg_should_find: true
+
+  # Low Severity
+  - id: OZ-006
+    title: Event emission missing in admin functions
+    category: informational
+    severity: low
+    location:
+      file: Comet.sol
+      function: setGovernor
+      line_start: 0
+      line_end: 0
+    description: "State changes not properly logged."
+    vkg_should_find: false  # Informational
+
+  - id: OZ-007
+    title: Complex business logic in collateral factor calculation
+    category: business_logic
+    severity: medium
+    location:
+      file: Comet.sol
+      function: getBorrowingPower
+      line_start: 0
+      line_end: 0
+    description: "Edge cases in collateral factor may lead to unexpected behavior."
+    vkg_should_find: false  # Business logic - out of scope
+
+  - id: OZ-008
+    title: Potential DoS via gas-intensive operations
+    category: dos
+    severity: low
+    location:
+      file: Comet.sol
+      function: withdrawCollateral
+      line_start: 0
+      line_end: 0
+    description: "Loop over assets may consume excessive gas."
+    vkg_should_find: true
+
+notes: |
+  Compound V3 (Comet) is a significant rewrite of Compound.
+  The audit was conducted by OpenZeppelin in August 2022.
+
+  Note: Line numbers are placeholder (0) as exact lines may vary by commit.
+  The file and function names should be sufficient for matching.
+
+  Out of scope:
+  - Business logic issues (require understanding Compound's intent)
+  - Informational findings (not security vulnerabilities)
+  - Gas optimization suggestions

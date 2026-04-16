@@ -1,0 +1,89 @@
+# Unsafe Downcasting - Subcategory Index
+# Category: logic/unsafe-downcast
+# Phase 17: Knowledge Aggregation
+# Source: DeFiVulnLabs - Unsafe Downcasting
+
+id: unsafe-downcast
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Unsafe Integer Downcasting
+description: |
+  Downcasting from larger integer to smaller type without bounds checking causes
+  silent overflow. Example: uint256 -> uint128 -> if value > type(uint128).max,
+  high bits are truncated, resulting in incorrect smaller value.
+
+  Post-Solidity 0.8.0, arithmetic operations check overflow but explicit casts do not.
+
+severity: high
+
+graph_signals:
+  - property: has_explicit_downcast
+    expected: true
+    critical: true
+    description: Explicit type conversion to smaller integer
+    confidence: 0.95
+
+  - property: no_bounds_check_before_cast
+    expected: true
+    critical: true
+    description: Missing require(value <= type(T).max)
+    confidence: 0.90
+
+  - property: cast_result_used_in_critical_logic
+    expected: true
+    critical: true
+    description: Cast value used in balances, amounts, timestamps
+    confidence: 0.85
+
+semantic_operations:
+  - WRITES_USER_BALANCE
+  - MODIFIES_CRITICAL_STATE
+  - COMPUTES_AMOUNT
+
+behavioral_signatures:
+  vulnerable:
+    - "C:downcast{no_check}->W:balance"  # Downcast without check → write balance
+  safe:
+    - "C:check{bounds}->C:downcast->W:balance"  # Check bounds → downcast → write
+
+preconditions:
+  - "Downcast from uint256 to smaller type (uint128, uint64, uint32, etc)"
+  - "No validation that value fits in target type"
+  - "Large value causes silent truncation"
+
+postconditions:
+  - "Incorrect value stored (overflow)"
+  - "Balance corruption"
+  - "Timestamp manipulation"
+
+remediation:
+  - approach: "Use OpenZeppelin SafeCast"
+    library: "SafeCast.toUint128"
+    description: "Reverts if value doesn't fit"
+    effectiveness: high
+
+  - approach: "Manual bounds check"
+    description: "require(value <= type(uint128).max)"
+    effectiveness: high
+
+safe_properties:
+  - uses_safe_cast_library: true
+  - checks_bounds_before_cast: true
+
+related_cwes:
+  - CWE-190  # Integer Overflow
+  - CWE-681  # Incorrect Conversion between Numeric Types
+
+detection_complexity: medium
+pattern_id: logic-downcast-001
+context_cache_key: "logic-unsafe-downcast-v1"
+
+external_refs:
+  - "OpenZeppelin SafeCast: https://docs.openzeppelin.com/contracts/4.x/api/utils#SafeCast"
+  - "Sherlock Issue #96: https://github.com/sherlock-audit/2022-10-union-finance-judging/issues/96"
+
+tags:
+  - integer-overflow
+  - type-casting
+  - bounds-checking

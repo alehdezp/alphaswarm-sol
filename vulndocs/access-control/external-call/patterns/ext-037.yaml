@@ -1,0 +1,16 @@
+id: ext-037
+vulndoc: access-control/external-call
+name: Duration Bounds Missing
+description: Duration or lock parameters without sanity bounds.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_duration_parameter
+    op: eq
+    value: true
+  - property: has_duration_bounds
+    op: eq
+    value: false

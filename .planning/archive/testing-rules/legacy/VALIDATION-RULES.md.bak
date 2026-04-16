@@ -1,0 +1,1306 @@
+# Validation Rules for AlphaSwarm.sol
+
+**Version:** 1.1
+**Created:** 2026-01-30
+**Status:** Draft policy for Phase 3 planning (not fully enforced yet)
+**Enforcement:** Target is automated checks + code review once Phase 3 implementation lands
+
+---
+
+## PURPOSE
+
+This document defines MANDATORY rules for all validation activities in this project. These rules exist because Phase 07.3 GA Validation was found to be entirely fabricated - using mock/simulated modes, hardcoded ground truth, and perfect metrics that prove nothing.
+
+**The testing infrastructure exists. These rules ensure it's actually used.**
+
+---
+
+## RULE CATEGORIES
+
+### Category A: Execution Mode Rules (BLOCKING)
+### Category B: Ground Truth Rules (BLOCKING)
+### Category C: Metrics Rules (WARNING → BLOCKING)
+### Category D: Infrastructure Rules (BLOCKING)
+### Category E: Reporting Rules (BLOCKING)
+### Category F: Anti-Fabrication Rules (BLOCKING)
+### Category G: Artifact Dependency Rules (BLOCKING)
+
+---
+
+## CATEGORY A: EXECUTION MODE RULES
+
+### A1: LIVE Mode Required for Validation
+
+**Rule:** Any plan tagged `type: validation`, `type: ga-validation`, or `type: e2e` MUST use LIVE execution mode.
+
+**Forbidden:**
+```python
+# FORBIDDEN in validation plans
+mode = "mock"
+mode = "simulated"
+mode = InvocationMode.MOCK
+mode = InvocationMode.SIMULATED
+```
+
+**Required:**
+```python
+# REQUIRED in validation plans
+mode = "live"
+mode = InvocationMode.LIVE
+```
+
+**Enforcement:**
+```bash
+# Automated check - MUST PASS before plan completion
+grep -r "mode.*mock\|mode.*simulated" scripts/run_*.py && echo "FAIL: Mock mode in validation" && exit 1
+```
+
+**Exception:** Unit tests for testing infrastructure itself may use mock mode.
+
+---
+
+### A2: Real API Calls Required
+
+**Rule:** Validation MUST include actual Anthropic API calls with measured token usage.
+
+**Forbidden:**
+```python
+# FORBIDDEN - hardcoded token estimates
+result.tokens_used += 1500
+result.tokens_used += 4500
+tokens = 43500  # Estimated
+```
+
+**Required:**
+```python
+# REQUIRED - measured from actual API response
+result.tokens_used = api_response.usage.total_tokens
+# OR captured from Claude Code output
+tokens = extract_tokens_from_transcript(transcript)
+```
+
+**Enforcement:**
+```bash
+# Automated check
+grep -r "tokens_used.*+=" scripts/run_*.py && echo "FAIL: Hardcoded tokens" && exit 1
+```
+
+---
+
+### A3: Real Duration Required
+
+**Rule:** Validation reports MUST have non-zero duration_ms indicating actual execution.
+
+**Forbidden:**
+```json
+{
+  "duration_ms": 0
+}
+```
+
+**Required:**
+```json
+{
+  "duration_ms": 34567
+}
+```
+
+**Minimum thresholds (canonical):**
+| Validation Type | Minimum Duration |
+|-----------------|------------------|
+| Smoke test | 5,000 ms |
+| Single agent test | 30,000 ms |
+| Integration flow | 60,000 ms |
+| E2E audit | 120,000 ms |
+| Full debate | 300,000 ms |
+
+**Enforcement:**
+```bash
+# Automated check on all validation reports (use per-type thresholds where possible)
+jq '.duration_ms < 5000' .vrs/testing/reports/*.json | grep -q true && echo "FAIL: Below minimum duration" && exit 1
+```
+
+---
+
+### A4: Agent Teams-Based Execution for Interactive Tests
+
+**Rule:** Interactive tests (Claude Code workflows, agent orchestration) MUST use Agent Teams + `claude-code-controller` execution.
+
+**Required infrastructure (target):**
+- `/vrs-test-workflow` skill for workflow orchestration tests
+- `/vrs-test-e2e` skill for E2E workflow checks
+- `/vrs-test-component` skill for component-level checks
+- `/vrs-test-enforce` skill for enforcement checks
+- `claude-code-controller` for isolated session control + transcript capture
+
+**Forbidden:**
+```python
+# FORBIDDEN - direct simulation
+def run_solo_mode(findings):
+    for finding in findings:
+        if finding.confidence >= 0.6:  # Simulation logic
+            result.append(finding)
+```
+
+**Required:**
+```bash
+# REQUIRED - real execution via Claude Code + Agent Teams
+claude-code-controller launch "zsh"
+claude-code-controller send "claude" --pane=<pane_id>
+claude-code-controller send "/vrs-investigate <contract> --mode solo" --pane=<pane_id>
+claude-code-controller wait_idle --pane=<pane_id> --idle-time=15.0
+claude-code-controller capture --pane=<pane_id> --output=.vrs/testing/runs/<run_id>/transcript.txt
+```
+
+---
+
+## CATEGORY B: GROUND TRUTH RULES
+
+### B1: External Ground Truth Required
+
+**Rule:** Ground truth for validation MUST come from external sources with documented provenance.
+
+**Acceptable sources:**
+| Source | Quality | Provenance Required |
+|--------|---------|---------------------|
+| Code4rena reports | Gold | Report URL, contest ID |
+| Sherlock contests | Gold | Contest URL, judge confirmation |
+| Immunefi disclosures | Gold | Disclosure URL, bounty ID |
+| Trail of Bits audits | Gold | Audit report URL |
+| SmartBugs-curated | Silver | Commit hash, file path |
+| CGT dataset | Silver | Commit hash, entry ID |
+
+**Forbidden:**
+```python
+# FORBIDDEN - fabricated ground truth
+Finding(
+    id="finding-001",
+    is_true_positive=True,  # MANUALLY ASSIGNED
+    confidence=0.85,        # HARDCODED
+)
+```
+
+**Required:**
+```yaml
+# REQUIRED - external provenance
+finding:
+  id: "C4-2024-vault-H01"
+  source: "Code4rena"
+  report_url: "https://code4rena.com/reports/2024-05-vault"
+  auditor: "warden123"
+  judge_confirmed: true
+  severity: "high"
+  location: "Vault.sol:145"
+```
+
+**Enforcement:**
+```bash
+# Automated check - ground truth must have provenance
+grep -r "is_true_positive.*True\|is_true_positive.*False" scripts/ && echo "FAIL: Hardcoded ground truth" && exit 1
+```
+
+---
+
+### B2: Ground Truth Separation
+
+**Rule:** Ground truth MUST be stored separately from test code.
+
+**Forbidden:**
+```python
+# FORBIDDEN - inline ground truth
+contracts.append({
+    "findings": [
+        Finding(is_true_positive=True),
+        Finding(is_true_positive=False),
+    ]
+})
+```
+
+**Required:**
+```
+.vrs/corpus/ground-truth/
+├── code4rena/
+│   ├── 2024-05-vault.yaml
+│   └── 2024-06-lending.yaml
+├── smartbugs/
+│   └── curated-v1.yaml
+└── provenance.yaml  # Documents all sources
+```
+
+---
+
+### B3: No Circular Validation
+
+**Rule:** Ground truth MUST NOT be derived from the system being tested.
+
+**Forbidden:**
+```python
+# FORBIDDEN - circular validation
+findings = our_tool.detect(contract)
+ground_truth = findings  # Using our own output as truth
+metrics = compare(findings, ground_truth)  # Always 100%!
+```
+
+**Required:**
+```python
+# REQUIRED - external comparison
+findings = our_tool.detect(contract)
+ground_truth = load_from_code4rena(contract)  # Independent source
+metrics = compare(findings, ground_truth)
+```
+
+---
+
+## CATEGORY C: METRICS RULES
+
+### C0: Metrics Interpretation by Detection Tier
+
+**Rule:** Metrics MUST be interpreted relative to the detection tier being tested.
+
+**Expected metrics by tier (from IMPROVEMENT-ROADMAP.md):**
+
+| Detection Tier | Expected Precision | Expected Recall | Rationale |
+|----------------|-------------------|-----------------|-----------|
+| **Tier A** (deterministic, graph patterns) | 80-95% | 70-90% | Deterministic patterns should have high accuracy |
+| **Tier B** (LLM-verified) | 60-85% | 50-80% | LLM verification introduces variance |
+| **Tier C** (protocol context required) | 50-75% | 40-70% | Context-dependent detection has highest variance |
+| **E2E pipeline** | >= 1 TP per contract | N/A | At least 1 true positive per known vulnerable contract |
+
+**Interpretation guidelines:**
+- Metrics at the upper bound of expected range suggest healthy detection
+- Metrics below expected range indicate pattern/detection issues to investigate
+- Metrics ABOVE expected range (especially hitting 100%) are suspicious (see C1)
+- Different tiers are NOT comparable - Tier C at 60% precision may be excellent while Tier A at 60% is poor
+
+**Required in reports:**
+```yaml
+metrics_context:
+  detection_tier: "B"
+  expected_precision_range: [0.60, 0.85]
+  expected_recall_range: [0.50, 0.80]
+  interpretation: "Metrics within expected range for Tier B detection"
+```
+
+---
+
+### C1: Perfect Metrics are Suspicious
+
+**Rule:** Metrics of 100% precision AND 100% recall MUST trigger investigation.
+
+**Warning triggers:**
+| Metric | Suspicious Range |
+|--------|------------------|
+| Precision | > 95% |
+| Recall | > 98% |
+| Pass rate | = 100% |
+| Error rate | = 0% |
+
+**Required action:** If metrics are suspiciously perfect, document why:
+- Is the test set too easy?
+- Is ground truth contaminated?
+- Is validation using mock mode?
+
+**Enforcement:**
+```bash
+# Automated warning
+jq 'select(.precision >= 0.95 and .recall >= 0.98)' report.json && echo "WARN: Perfect metrics - investigate"
+```
+
+---
+
+### C2: Error Budget Required
+
+**Rule:** Real validation MUST expect and document some failures.
+
+**Expected error rates:**
+| Validation Type | Expected Error Rate |
+|-----------------|---------------------|
+| Agent unit tests | 2-10% |
+| Integration flows | 5-15% |
+| E2E audits | 10-20% |
+| Blind validation | 15-30% |
+
+**Forbidden:**
+```json
+{
+  "error_rate": 0,
+  "failures": 0,
+  "all_tests_passed": true
+}
+```
+
+**Required:**
+```json
+{
+  "error_rate": 0.08,
+  "failures": 3,
+  "failure_categories": {
+    "timeout": 1,
+    "drift": 1,
+    "wrong_verdict": 1
+  }
+}
+```
+
+---
+
+### C3: Variance Required
+
+**Rule:** Metrics MUST show variance across different test cases.
+
+**Forbidden:**
+```json
+{
+  "by_contract": [
+    {"precision": 0.75, "recall": 1.0},
+    {"precision": 0.75, "recall": 1.0},
+    {"precision": 0.75, "recall": 1.0},
+    {"precision": 0.75, "recall": 1.0}
+  ]
+}
+```
+
+**Required:**
+```json
+{
+  "by_contract": [
+    {"precision": 0.82, "recall": 0.91},
+    {"precision": 0.65, "recall": 1.0},
+    {"precision": 0.90, "recall": 0.75},
+    {"precision": 0.71, "recall": 0.88}
+  ]
+}
+```
+
+---
+
+## CATEGORY D: INFRASTRUCTURE RULES
+
+### D1: Use Existing Testing Skills
+
+**Rule:** Validation MUST use the testing infrastructure that was built.
+
+**Required skills (target):**
+| Skill | When Required |
+|-------|---------------|
+| `/vrs-test-workflow` | Any workflow validation |
+| `/vrs-test-e2e` | E2E workflow validation |
+| `/vrs-test-component` | Component-level validation |
+| `/vrs-test-enforce` | Rule/enforcement validation |
+| `claude-code-controller` | Claude Code automation + capture |
+
+**Forbidden:**
+```python
+# FORBIDDEN - bypassing infrastructure
+def simulate_workflow():
+    if confidence >= 0.6:
+        return "pass"
+```
+
+**Required:**
+```
+# REQUIRED - use the skills
+/vrs-test-workflow "/vrs-audit contracts/" --criteria agent-execution
+```
+
+---
+
+### D2: Transcript Capture Required
+
+**Rule:** All interactive validation MUST capture full transcripts.
+
+**Required artifacts:**
+```
+.vrs/testing/runs/
+├── workflow-test-20260130-143200.txt
+├── solo-vs-swarm-20260130-150000.txt
+└── e2e-audit-20260130-160000.txt
+```
+
+**Enforcement:**
+```bash
+# Transcripts must exist for validation reports
+ls .vrs/testing/runs/*/transcript.txt | wc -l  # Must be > 0
+```
+
+---
+
+### D3: Isolation Required
+
+**Rule:** Test subject (Claude Code under test) MUST be isolated from test controller.
+
+**Required architecture:**
+```
+Controller (your session)
+    │
+    │ orchestrates via Claude Code Agent Teams + claude-code-controller
+    │
+    ▼
+Subject (isolated Claude Code session)
+    │
+    │ real execution
+    ▼
+Output (captured transcript)
+```
+
+**Forbidden:**
+```python
+# FORBIDDEN - same process simulation
+findings = simulate_agent_detection()
+```
+
+---
+
+### D4: Agent Teams Session Naming Convention
+
+**Rule:** Agent Teams test sessions MUST use the standard naming convention to prevent collisions in parallel execution.
+
+**Session name pattern:**
+```
+vrs-demo-{workflow}-{timestamp}
+```
+
+**Examples:**
+- `vrs-demo-smoke-1706644800` - Smoke test workflow
+- `vrs-demo-audit-entrypoint-1706645100` - Audit entrypoint workflow
+- `vrs-demo-e2e-1706644500` - E2E audit workflow
+
+**Required usage:**
+```python
+import re
+import time
+
+def generate_session_name(workflow: str) -> str:
+    return f"vrs-demo-{workflow}-{int(time.time())}"
+
+def validate_session_naming(session_name: str) -> bool:
+    pattern = r"^vrs-demo-[a-zA-Z0-9-]+-\\d{10}$"
+    return bool(re.match(pattern, session_name))
+
+session_name = generate_session_name("audit-entrypoint")
+assert validate_session_naming(session_name)
+# Collision checks should query controller/API session list before launch.
+```
+
+**Forbidden:**
+```python
+# FORBIDDEN - hardcoded session names that can collide
+session_name = "vrs-demo"  # May collide with parallel runs
+session_name = "test"      # Not following convention
+```
+
+**Capture interval:**
+The capture interval for fast output detection is 500ms (`CAPTURE_INTERVAL_MS`).
+
+**Enforcement:**
+```python
+# Automated collision check
+def validate_session_naming(session_name: str) -> bool:
+    """Validate session name follows convention."""
+    import re
+    pattern = r'^vrs-demo-[a-zA-Z0-9-]+-\d{10}$'
+    return bool(re.match(pattern, session_name))
+```
+
+---
+
+## CATEGORY E: REPORTING RULES
+
+### E1: Mode Declaration Required
+
+**Rule:** All validation reports MUST declare their execution mode.
+
+**Required fields:**
+```json
+{
+  "mode": "live",  // MUST be "live" for GA validation
+  "api_calls_made": 47,
+  "tokens_measured": true,
+  "ground_truth_source": "SmartBugs-curated"
+}
+```
+
+---
+
+### E2: Limitations Section Required
+
+**Rule:** All validation reports MUST document limitations honestly.
+
+**Required:**
+```json
+{
+  "limitations": [
+    "Ground truth limited to SmartBugs contracts",
+    "3 contracts timed out and were excluded",
+    "Blind validation shows 15% lower recall than corpus validation"
+  ]
+}
+```
+
+**Forbidden:**
+```json
+{
+  "limitations": []
+}
+```
+
+---
+
+### E3: No Hidden Mock Acknowledgments
+
+**Rule:** If mock/simulated mode is used, it MUST NOT be hidden in fine print.
+
+**Forbidden:**
+```json
+{
+  "status": "PASS",
+  "precision": 1.0,
+  "limitations": ["Results are simulated/mock"]  // Hidden admission
+}
+```
+
+**Required:** Mock results MUST NOT claim validation status.
+
+---
+
+## CATEGORY F: ANTI-FABRICATION RULES
+
+These rules detect when AI creates false tests that pass expected results without actually testing anything.
+
+### F1: Transcript Length Verification
+
+**Rule:** Transcripts from interactive tests MUST be substantial, not fabricated stubs.
+
+**Minimum requirements:**
+| Transcript Type | Minimum Lines | Required Markers |
+|-----------------|---------------|------------------|
+| Smoke test | 50 | `>>>` (Claude prompt) |
+| Agent unit test | 100 | `alphaswarm` or `slither` |
+| E2E audit | 200 | Tool invocations + findings |
+| Full debate | 300 | Attacker/Defender/Verifier turns |
+
+**Forbidden:**
+```python
+# FORBIDDEN - stub transcript
+transcript = """
+>>> /vrs-audit contracts/Vault.sol
+Audit complete.
+Findings: 2
+"""
+```
+
+**Required:**
+```python
+# REQUIRED - authentic transcript
+def verify_transcript_authentic(transcript: str) -> bool:
+    """Transcripts must be substantial, not fabricated stubs."""
+    lines = transcript.strip().split('\n')
+    return (
+        len(lines) >= 50 and  # Minimum 50 lines
+        any('>>>' in line for line in lines) and  # Claude prompt marker
+        any('alphaswarm' in line.lower() or 'slither' in line.lower() for line in lines)  # Tool usage
+    )
+```
+
+**Enforcement:**
+```bash
+# Check transcript authenticity
+wc -l .vrs/testing/runs/*/transcript.txt | awk '$1 < 50 {print "FAIL: Short transcript:", $2; exit 1}'
+```
+
+---
+
+### F2: Required Tool Invocations
+
+**Rule:** Every audit transcript MUST contain evidence of actual tool usage.
+
+**Required markers (at least one per category):**
+
+| Category | Required Patterns |
+|----------|-------------------|
+| Knowledge Graph | `alphaswarm\s+build-kg`, `Knowledge graph.*built` |
+| Pattern Matching | `pattern:`, `Matching patterns` |
+| Agent Investigation | `Attacker:`, `Defender:`, `Verifier:` |
+| Code Locations | `\.sol\s*$`, `contracts/\w+\.sol` |
+
+**Forbidden:**
+```python
+# FORBIDDEN - transcript without tool evidence
+transcript = """
+>>> /vrs-audit contracts/Vault.sol
+I analyzed the contract and found a reentrancy vulnerability.
+The function withdraw() is vulnerable.
+"""
+```
+
+**Required:**
+```python
+# REQUIRED - transcript with tool invocations
+REQUIRED_MARKERS = [
+    r"alphaswarm\s+build-kg",
+    r"Knowledge graph.*built",
+    r"Attacker:|Defender:|Verifier:",
+    r"\.sol\s*$|contracts/\w+\.sol",
+]
+
+def verify_tool_invocations(transcript: str) -> bool:
+    """At least 3 of 4 marker categories must be present."""
+    import re
+    matches = sum(1 for pattern in REQUIRED_MARKERS if re.search(pattern, transcript, re.IGNORECASE))
+    return matches >= 3
+```
+
+**Enforcement:**
+```bash
+# Check for tool invocations in transcripts
+for f in .vrs/testing/runs/*/transcript.txt; do
+    grep -qE "alphaswarm|slither|Attacker:|Defender:" "$f" || echo "FAIL: No tool invocations in $f"
+done
+```
+
+---
+
+### F3: Timestamp Consistency
+
+**Rule:** Duration must be realistic for the operation type.
+
+**Minimum duration thresholds:**
+| Operation | Minimum Duration | Rationale |
+|-----------|------------------|-----------|
+| `smoke_test` | 5,000 ms | Basic smoke requires tool startup |
+| `agent_unit` | 30,000 ms | Agent reasoning takes time |
+| `integration` | 60,000 ms | Multi-step flows |
+| `e2e_audit` | 120,000 ms | Full audit with debate |
+| `full_audit` | 180,000 ms | Complete workflow |
+
+**Forbidden:**
+```json
+{
+  "operation": "e2e_audit",
+  "duration_ms": 500,
+  "status": "passed"
+}
+```
+
+**Required:**
+```python
+def verify_timestamps(report: dict) -> bool:
+    """Duration must be realistic for the operation."""
+    duration_ms = report.get('duration_ms', 0)
+    operation = report.get('operation', 'unknown')
+
+    MIN_DURATIONS = {
+        'smoke_test': 5000,      # 5 seconds minimum
+        'agent_unit': 30000,     # 30 seconds minimum
+        'integration': 60000,    # 1 minute minimum
+        'e2e_audit': 120000,     # 2 minutes minimum
+        'full_audit': 180000,    # 3 minutes minimum
+    }
+
+    return duration_ms >= MIN_DURATIONS.get(operation, 5000)
+```
+
+**Enforcement:**
+```bash
+# Check duration consistency
+jq -r 'select(.operation == "e2e_audit" and .duration_ms < 120000) | "FAIL: E2E audit too fast: \(.duration_ms)ms"' .vrs/testing/reports/*.json
+```
+
+---
+
+### F3b: Maximum Duration Thresholds
+
+**Rule:** Tests exceeding maximum duration indicate hung processes, infinite loops, or broken workflows.
+
+**Maximum duration thresholds (from IMPROVEMENT-ROADMAP.md):**
+| Operation | Maximum Duration | Rationale |
+|-----------|------------------|-----------|
+| `smoke_test` | 60,000 ms (1 min) | Smoke tests should be quick |
+| `agent_unit` | 300,000 ms (5 min) | Agent runs have natural limits |
+| `integration` | 300,000 ms (5 min) | Multi-step flows should complete reasonably |
+| `e2e_audit` | 600,000 ms (10 min) | Full audits need time but not infinite |
+| `full_audit` | 600,000 ms (10 min) | Same as E2E |
+
+**Warning (not blocking):** Exceeding these thresholds triggers investigation but doesn't automatically fail:
+- Is the contract set unusually large?
+- Is there an infinite loop or hung process?
+- Is a tool timing out repeatedly?
+
+**Required:**
+```python
+def verify_max_duration(report: dict) -> list[str]:
+    """Duration should not exceed practical limits."""
+    warnings = []
+    duration_ms = report.get('duration_ms', 0)
+    operation = report.get('operation', 'unknown')
+
+    MAX_DURATIONS = {
+        'smoke_test': 60000,       # 1 minute max
+        'agent_unit': 300000,      # 5 minutes max
+        'integration': 300000,     # 5 minutes max
+        'e2e_audit': 600000,       # 10 minutes max
+        'full_audit': 600000,      # 10 minutes max
+    }
+
+    max_duration = MAX_DURATIONS.get(operation, 600000)
+    if duration_ms > max_duration:
+        warnings.append(
+            f"F3b WARNING: {operation} took {duration_ms}ms > {max_duration}ms max - investigate for hung process"
+        )
+    return warnings
+```
+
+**Enforcement:**
+```bash
+# Check for excessively long runs (warning, not failure)
+jq -r 'select(.operation == "smoke_test" and .duration_ms > 60000) | "WARN: Smoke test too slow: \(.duration_ms)ms > 60000ms"' .vrs/testing/reports/*.json
+```
+
+---
+
+### F4: Cross-Evidence Verification
+
+**Rule:** Findings MUST be traceable to multiple evidence sources.
+
+**Required evidence links:**
+| Evidence Type | Required Fields |
+|---------------|-----------------|
+| Graph nodes | `graph_nodes[]` with valid node IDs |
+| Pattern | `pattern_id` matching existing pattern |
+| Code location | `location` with `file:line` format |
+| Tool output | `tool_evidence[]` if tool was used |
+
+**Forbidden:**
+```python
+# FORBIDDEN - finding without evidence
+Finding(
+    id="finding-001",
+    description="Reentrancy vulnerability found",
+    severity="high",
+)
+```
+
+**Required:**
+```python
+# REQUIRED - finding with traceable evidence
+def verify_finding_evidence(finding: dict) -> bool:
+    """Every finding needs traceable evidence."""
+    return (
+        'graph_nodes' in finding and len(finding['graph_nodes']) > 0 and
+        'pattern_id' in finding and
+        'location' in finding and ':' in finding['location']
+    )
+
+# Example valid finding
+Finding(
+    id="finding-001",
+    description="Reentrancy vulnerability found",
+    severity="high",
+    graph_nodes=["node_vault_withdraw_0x1a2b", "node_vault_balance_0x3c4d"],
+    pattern_id="reentrancy-classic",
+    location="Vault.sol:145",
+    tool_evidence=["slither:HIGH:reentrancy-eth"],
+)
+```
+
+**Enforcement:**
+```python
+# Automated check for all findings
+def validate_findings(report_path: Path) -> list[str]:
+    errors = []
+    report = json.load(open(report_path))
+    for finding in report.get('findings', []):
+        if not finding.get('graph_nodes'):
+            errors.append(f"F4: Finding {finding['id']} has no graph_nodes")
+        if not finding.get('pattern_id'):
+            errors.append(f"F4: Finding {finding['id']} has no pattern_id")
+        if not finding.get('location') or ':' not in finding.get('location', ''):
+            errors.append(f"F4: Finding {finding['id']} has no valid location")
+    return errors
+```
+
+---
+
+### F5: Required Gate Test Integrity
+
+**Rule:** Tests referenced by active phase gates must be runnable quality gates, not placeholders.
+
+**Forbidden patterns in required gate tests:**
+- `@pytest.mark.skip`
+- `@pytest.mark.xfail`
+- empty placeholder test paths (`pass`) for final assertions
+
+**Required:**
+- Required gate tests execute in CI and can fail the run.
+- If a gate test is temporarily blocked, the phase must log drift + RCA and cannot claim completion.
+
+**Enforcement:**
+```bash
+# Example integrity checks for required gate tests
+rg -n "pytest\\.mark\\.(skip|xfail)|\\bpass\\b" tests/e2e tests/integration tests/workflow_harness
+```
+
+For planning-phase checks:
+- `/gsd-plan-phase` must emit derived checks and research artifacts per plan.
+- See `.planning/testing/PLAN-PHASE-GOVERNANCE.md`.
+
+---
+
+## CATEGORY G: ARTIFACT DEPENDENCY RULES
+
+These rules ensure plans produce required artifacts and subsequent plans verify their existence.
+
+### G1: Artifact Production Declaration
+
+**Rule:** Every plan MUST declare what artifacts it produces.
+
+**Required in plan header:**
+```yaml
+# 07.3-XX-v4-PLAN.md
+produces:
+  - path: ".vrs/testing/reports/smoke-test.json"
+    type: report
+    validation: json_schema
+  - path: ".vrs/corpus/ground-truth.yaml"
+    type: data
+    validation: yaml_schema
+```
+
+**Artifact registry (from COHERENCE.md):**
+| Plan | Produces | Required By |
+|------|----------|-------------|
+| 00-v4 | `blind_sandbox.py`, `supervision_loop.py`, `anti_lazy.py` | 01-v4, 02-v4 |
+| 00.5-v4 | `failure_catalog.py`, `fix_retest_loop.py` | All subsequent |
+| 00.8-v4 | `.vrs/testing/reports/tool-install-test.json` | 02-v4 |
+| 01-v4 | `.vrs/corpus/`, `ground-truth.yaml` | 05-v4, 06-v4, 07-v4 |
+| 01.5-v4 | `.vrs/testing/reports/production-workflow.json` | 02-v4 |
+| 02-v4 | `.vrs/testing/reports/smoke-test.json` | 03-v4, 04-v4 |
+| 03-v4 | `.vrs/testing/reports/agent-unit-tests.json` | 04-v4 |
+| 04-v4 | `.vrs/testing/reports/integration-tests.json` | 05-v4 |
+| 05-v4 | `.vrs/testing/reports/e2e-audit.json` | 05.5-v4, 08-v4 |
+| 05.5-v4 | `.vrs/testing/reports/advanced-tests.json` | 08-v4 |
+| 06-v4 | `.vrs/testing/reports/solo-vs-swarm.json` | 08-v4 |
+| 07-v4 | `.vrs/testing/reports/blind-validation.json` | 08-v4 |
+| 08-v4 | `.vrs/testing/dossier/ga-readiness.md` | Release decision |
+
+---
+
+### G2: Dependency Verification Before Execution
+
+**Rule:** Plans MUST verify required artifacts exist before starting execution.
+
+**Required in plan execution:**
+```python
+def verify_dependencies(plan_id: str) -> list[str]:
+    """Check all required artifacts exist before executing plan."""
+    DEPENDENCIES = {
+        "02-v4": [
+            ".vrs/testing/reports/tool-install-test.json",
+            "src/alphaswarm_sol/testing/blind_sandbox.py",
+        ],
+        "03-v4": [
+            ".vrs/testing/reports/smoke-test.json",
+        ],
+        "05-v4": [
+            ".vrs/testing/reports/integration-tests.json",
+            ".vrs/corpus/ground-truth.yaml",
+        ],
+        "08-v4": [
+            ".vrs/testing/reports/e2e-audit.json",
+            ".vrs/testing/reports/solo-vs-swarm.json",
+            ".vrs/testing/reports/blind-validation.json",
+        ],
+    }
+
+    missing = []
+    for artifact in DEPENDENCIES.get(plan_id, []):
+        if not Path(artifact).exists():
+            missing.append(artifact)
+    return missing
+```
+
+**Enforcement:**
+```bash
+# Before executing plan 08-v4
+for artifact in .vrs/testing/reports/e2e-audit.json .vrs/testing/reports/solo-vs-swarm.json .vrs/testing/reports/blind-validation.json; do
+    [ -f "$artifact" ] || { echo "FAIL: Missing dependency: $artifact"; exit 1; }
+done
+```
+
+---
+
+### G3: Wave Gate Enforcement
+
+**Rule:** Plans MUST NOT proceed to next wave until gate conditions are met.
+
+**Wave gates:**
+```yaml
+gate_1:  # Before Agent Tests (after Wave 1)
+  name: "Smoke Verification"
+  conditions:
+    - file_exists: ".vrs/testing/reports/smoke-test.json"
+    - json_field: ".vrs/testing/reports/smoke-test.json:.status == 'passed'"
+    - duration_check: ".vrs/testing/reports/smoke-test.json:.duration_ms >= 5000"
+  action_on_fail: "BLOCK - Fix smoke test before proceeding"
+
+gate_2:  # Before E2E Tests (after Wave 2)
+  name: "Agent Verification"
+  conditions:
+    - file_exists: ".vrs/testing/reports/agent-unit-tests.json"
+    - json_field: ".vrs/testing/reports/agent-unit-tests.json:.all_passed == true"
+  action_on_fail: "BLOCK - Fix agent issues before E2E"
+
+gate_3:  # Before Comparison Tests (after Wave 3)
+  name: "E2E Verification"
+  conditions:
+    - file_exists: ".vrs/testing/reports/e2e-audit.json"
+    - transcript_exists: ".vrs/testing/runs/e2e-*.txt"
+  action_on_fail: "WARN - Document limitations, proceed with caution"
+
+gate_4:  # Before GA Report (after Wave 4)
+  name: "Validation Complete"
+  conditions:
+    - all_files_exist:
+        - ".vrs/testing/reports/solo-vs-swarm.json"
+        - ".vrs/testing/reports/blind-validation.json"
+  action_on_fail: "BLOCK - Complete all validation before GA dossier"
+```
+
+**Enforcement:**
+```python
+def check_wave_gate(gate_id: int) -> tuple[bool, list[str]]:
+    """Check if wave gate conditions are met."""
+    GATES = {
+        1: {
+            "files": [".vrs/testing/reports/smoke-test.json"],
+            "checks": [
+                lambda: json.load(open(".vrs/testing/reports/smoke-test.json")).get("status") == "passed",
+                lambda: json.load(open(".vrs/testing/reports/smoke-test.json")).get("duration_ms", 0) >= 5000,
+            ],
+        },
+        2: {
+            "files": [".vrs/testing/reports/agent-unit-tests.json"],
+            "checks": [
+                lambda: json.load(open(".vrs/testing/reports/agent-unit-tests.json")).get("all_passed") == True,
+            ],
+        },
+        # ... gates 3, 4, 5
+    }
+
+    gate = GATES.get(gate_id, {})
+    failures = []
+
+    for f in gate.get("files", []):
+        if not Path(f).exists():
+            failures.append(f"Missing: {f}")
+
+    for check in gate.get("checks", []):
+        try:
+            if not check():
+                failures.append("Check failed")
+        except Exception as e:
+            failures.append(f"Check error: {e}")
+
+    return len(failures) == 0, failures
+```
+
+---
+
+## AUTOMATED ENFORCEMENT
+
+### Pre-Merge Check
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-merge or CI check
+
+set -e
+
+echo "=== VALIDATION RULES CHECK ==="
+
+# A1: No mock mode in validation
+if grep -r "mode.*mock\|mode.*simulated" scripts/run_*.py 2>/dev/null; then
+    echo "FAIL: Mock mode detected in validation scripts"
+    exit 1
+fi
+echo "✓ A1: No mock mode"
+
+# A2: No hardcoded tokens
+if grep -r "tokens_used.*+=" scripts/run_*.py 2>/dev/null; then
+    echo "FAIL: Hardcoded token counts detected"
+    exit 1
+fi
+echo "✓ A2: No hardcoded tokens"
+
+# B1: No fabricated ground truth
+if grep -r "is_true_positive.*=" scripts/run_*.py 2>/dev/null; then
+    echo "FAIL: Hardcoded ground truth labels detected"
+    exit 1
+fi
+echo "✓ B1: No fabricated ground truth"
+
+# C1: Check for zero duration
+for report in .vrs/testing/reports/*.json; do
+    if [ -f "$report" ]; then
+        if jq -e '.duration_ms == 0' "$report" > /dev/null 2>&1; then
+            echo "FAIL: Zero duration in $report"
+            exit 1
+        fi
+    fi
+done
+echo "✓ C1: Non-zero durations"
+
+# F1: Transcript length verification
+for transcript in .vrs/testing/runs/*/transcript.txt; do
+    if [ -f "$transcript" ]; then
+        lines=$(wc -l < "$transcript")
+        if [ "$lines" -lt 50 ]; then
+            echo "FAIL: F1 - Transcript too short ($lines lines): $transcript"
+            exit 1
+        fi
+    fi
+done
+echo "✓ F1: Transcript lengths valid"
+
+# F2: Tool invocation markers
+for transcript in .vrs/testing/runs/*/transcript.txt; do
+    if [ -f "$transcript" ]; then
+        if ! grep -qE "alphaswarm|slither|Attacker:|Defender:|Verifier:" "$transcript"; then
+            echo "FAIL: F2 - No tool invocations in: $transcript"
+            exit 1
+        fi
+    fi
+done
+echo "✓ F2: Tool invocations present"
+
+# F3: Duration thresholds by operation type
+for report in .vrs/testing/reports/*.json; do
+    if [ -f "$report" ]; then
+        operation=$(jq -r '.operation // "unknown"' "$report")
+        duration=$(jq -r '.duration_ms // 0' "$report")
+        case "$operation" in
+            e2e_audit)
+                if [ "$duration" -lt 120000 ]; then
+                    echo "FAIL: F3 - E2E audit too fast (${duration}ms < 120000ms): $report"
+                    exit 1
+                fi
+                ;;
+            agent_unit)
+                if [ "$duration" -lt 30000 ]; then
+                    echo "FAIL: F3 - Agent unit test too fast (${duration}ms < 30000ms): $report"
+                    exit 1
+                fi
+                ;;
+        esac
+    fi
+done
+echo "✓ F3: Duration thresholds met"
+
+# G2: Dependency verification for GA report
+if [ -f ".vrs/testing/reports/ga-readiness.json" ]; then
+    for dep in ".vrs/testing/reports/e2e-audit.json" ".vrs/testing/reports/solo-vs-swarm.json" ".vrs/testing/reports/blind-validation.json"; do
+        if [ ! -f "$dep" ]; then
+            echo "FAIL: G2 - Missing dependency for GA report: $dep"
+            exit 1
+        fi
+    done
+    echo "✓ G2: GA report dependencies exist"
+fi
+
+echo ""
+echo "=== ALL VALIDATION RULES PASSED ==="
+```
+
+### Report Validation Script
+
+```python
+#!/usr/bin/env python3
+"""scripts/validate_report_integrity.py"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+# F3: Minimum duration thresholds by operation type
+MIN_DURATIONS = {
+    'smoke_test': 5000,      # 5 seconds minimum
+    'agent_unit': 30000,     # 30 seconds minimum
+    'integration': 60000,    # 1 minute minimum
+    'e2e_audit': 120000,     # 2 minutes minimum
+    'full_audit': 180000,    # 3 minutes minimum
+}
+
+# F2: Required tool invocation markers
+REQUIRED_MARKERS = [
+    r"alphaswarm\s+build-kg",
+    r"Knowledge graph.*built",
+    r"Attacker:|Defender:|Verifier:",
+    r"\.sol\s*$|contracts/\w+\.sol",
+]
+
+
+def validate_report(path: Path) -> list[str]:
+    """Validate a report against integrity rules."""
+    errors = []
+
+    with open(path) as f:
+        report = json.load(f)
+
+    # Rule A3: Non-zero duration
+    if report.get("duration_ms", 0) < 1000:
+        errors.append(f"A3 VIOLATION: duration_ms={report.get('duration_ms')} < 1000")
+
+    # Rule C1: Suspicious perfect metrics
+    precision = report.get("precision", 0)
+    recall = report.get("recall", 0)
+    if precision >= 0.95 and recall >= 0.98:
+        errors.append(f"C1 WARNING: Suspiciously perfect metrics (P={precision}, R={recall})")
+
+    # Rule E1: Mode declaration
+    mode = report.get("mode") or report.get("metadata", {}).get("mode")
+    if mode in ["mock", "simulated"]:
+        errors.append(f"E1 VIOLATION: Report uses {mode} mode, not 'live'")
+
+    # Rule E2: Limitations required
+    if not report.get("limitations"):
+        errors.append("E2 VIOLATION: No limitations section")
+
+    # Rule F3: Duration threshold by operation type
+    operation = report.get("operation", "unknown")
+    duration = report.get("duration_ms", 0)
+    min_duration = MIN_DURATIONS.get(operation, 5000)
+    if duration < min_duration:
+        errors.append(f"F3 VIOLATION: {operation} duration {duration}ms < {min_duration}ms minimum")
+
+    # Rule F4: Cross-evidence verification for findings
+    for i, finding in enumerate(report.get("findings", [])):
+        finding_id = finding.get("id", f"finding-{i}")
+        if not finding.get("graph_nodes"):
+            errors.append(f"F4 VIOLATION: {finding_id} has no graph_nodes")
+        if not finding.get("pattern_id"):
+            errors.append(f"F4 VIOLATION: {finding_id} has no pattern_id")
+        location = finding.get("location", "")
+        if not location or ":" not in location:
+            errors.append(f"F4 VIOLATION: {finding_id} has no valid location (file:line)")
+
+    return errors
+
+
+def validate_transcript(path: Path) -> list[str]:
+    """Validate a transcript against anti-fabrication rules."""
+    errors = []
+    content = path.read_text()
+    lines = content.strip().split('\n')
+
+    # Rule F1: Transcript length
+    if len(lines) < 50:
+        errors.append(f"F1 VIOLATION: Transcript has {len(lines)} lines (< 50 minimum)")
+
+    # Rule F1: Claude prompt markers
+    if not any('>>>' in line for line in lines):
+        errors.append("F1 VIOLATION: No Claude prompt markers (>>>) found")
+
+    # Rule F2: Tool invocation markers
+    marker_matches = sum(1 for pattern in REQUIRED_MARKERS if re.search(pattern, content, re.IGNORECASE))
+    if marker_matches < 2:
+        errors.append(f"F2 VIOLATION: Only {marker_matches}/4 tool markers found (need >= 2)")
+
+    return errors
+
+
+if __name__ == "__main__":
+    all_errors = []
+
+    # Validate reports
+    reports_dir = Path(".vrs/testing/reports")
+    if reports_dir.exists():
+        for path in reports_dir.glob("*.json"):
+            errors = validate_report(path)
+            if errors:
+                all_errors.extend([f"{path.name}: {e}" for e in errors])
+
+    # Validate transcripts
+    transcripts_dir = Path(".vrs/testing/runs")
+    if transcripts_dir.exists():
+        for path in transcripts_dir.glob("*.txt"):
+            errors = validate_transcript(path)
+            if errors:
+                all_errors.extend([f"{path.name}: {e}" for e in errors])
+
+    if all_errors:
+        print("VALIDATION FAILURES:")
+        for e in all_errors:
+            print(f"  - {e}")
+        sys.exit(1)
+    else:
+        print("All reports and transcripts pass validation")
+```
+
+---
+
+## PHASE COMPLETION CHECKLIST
+
+Before marking ANY validation phase complete:
+
+### Execution Checks
+- [ ] All tests use LIVE mode (not mock/simulated)
+- [ ] Durations are non-zero and realistic
+- [ ] Token usage is measured from API (not hardcoded)
+- [ ] Agent Teams-based execution used for interactive tests
+
+### Ground Truth Checks
+- [ ] Ground truth comes from external source
+- [ ] Provenance documented for all labels
+- [ ] No `is_true_positive=True/False` in code
+
+### Metrics Checks
+- [ ] Metrics show variance across test cases
+- [ ] No suspiciously perfect results (100%/0%)
+- [ ] Error budget documented and realistic
+
+### Infrastructure Checks
+- [ ] `/vrs-test-workflow` used for workflow validation
+- [ ] Transcripts captured and stored
+- [ ] Test subject isolated from controller
+
+### Reporting Checks
+- [ ] Mode declared as "live"
+- [ ] Limitations documented honestly
+- [ ] No hidden mock acknowledgments
+
+### Anti-Fabrication Checks (Category F)
+- [ ] Transcripts have minimum line count (50+ for smoke, 200+ for E2E)
+- [ ] Transcripts contain tool invocation markers
+- [ ] Duration matches operation type thresholds
+- [ ] Findings have cross-evidence (graph nodes, pattern ID, location)
+
+### Artifact Dependency Checks (Category G)
+- [ ] Plan declares produced artifacts
+- [ ] Dependencies verified before execution
+- [ ] Wave gate conditions met before proceeding
+
+---
+
+## RETROACTIVE APPLICATION
+
+These rules apply RETROACTIVELY to Phase 07.3. The following must happen:
+
+1. **Invalidate** all existing 07.3 reports (mode=mock/simulated)
+2. **Archive** simulation scripts to `scripts/archive/simulations/`
+3. **Re-execute** validation using LIVE mode per redesign
+4. **Re-report** with measured metrics and honest limitations
+
+---
+
+## VERSIONING
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0 | 2026-01-30 | Initial rules based on 07.3 audit |
+| 1.1 | 2026-01-30 | Added Category F (Anti-Fabrication) and Category G (Artifact Dependency) |
+| 1.2 | 2026-02-03 | Added C0 (Metrics Interpretation by Detection Tier) and F3b (Maximum Duration Thresholds) per IMPROVEMENT-ROADMAP.md cross-cutting concerns |
+
+---
+
+**These rules are MANDATORY. Violations block phase completion.**

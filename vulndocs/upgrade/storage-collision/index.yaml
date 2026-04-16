@@ -1,0 +1,22 @@
+# Storage Collision - Subcategory Index
+
+id: storage-collision
+name: Storage Collision
+parent_category: upgrade
+
+description: |
+  Overlapping storage slots between proxy and implementation causing
+  state corruption when both write to the same slots.
+
+severity_range:
+  - high
+  - critical
+
+patterns:
+  - upg-001
+
+relevant_properties:
+  - is_proxy_like
+  - upgradeable_without_storage_gap
+
+token_estimate: 400

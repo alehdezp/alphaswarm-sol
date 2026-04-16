@@ -1,0 +1,16 @@
+id: ext-012
+vulndoc: access-control/external-call
+name: Single Source Oracle
+description: Critical logic relies on a single oracle source.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_multi_source_oracle
+    op: eq
+    value: false

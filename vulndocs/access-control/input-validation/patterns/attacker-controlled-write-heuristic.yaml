@@ -1,0 +1,13 @@
+id: attacker-controlled-write-heuristic
+vulndoc: access-control/input-validation
+name: Attacker-Controlled Input (Heuristic)
+description: Public/external state writes with user input when dataflow is unavailable.
+scope: Function
+lens:
+  - ExternalInfluence
+severity: medium
+match:
+  all:
+    - property: attacker_controlled_write_heuristic
+      op: eq
+      value: true

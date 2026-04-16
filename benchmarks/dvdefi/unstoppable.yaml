@@ -1,0 +1,49 @@
+# DVDeFi Challenge: Unstoppable
+# Vulnerability: Strict equality check allows DoS via donation
+
+id: dvd-unstoppable
+name: Unstoppable
+version: "4"
+difficulty: 1
+category: DoS
+
+source_path: examples/damm-vuln-defi/src/unstoppable
+
+vulnerability:
+  type: dos-strict-equality
+  description: |
+    The vault uses a strict equality check (balanceBefore == totalAssets()) that can
+    be broken by directly donating tokens to the contract, causing flashLoan to always revert.
+  cwe: CWE-703
+  severity: high
+
+expected_detections:
+  - pattern: dos-strict-equality
+    contract: UnstoppableVault
+    function: flashLoan
+    property: has_strict_equality_check
+    confidence: high
+
+  - pattern: dos-external-balance-dependency
+    contract: UnstoppableVault
+    function: flashLoan
+    property: reads_external_balance
+    confidence: medium
+
+expected_functions:
+  vulnerable:
+    - UnstoppableVault.flashLoan
+  safe:
+    - UnstoppableVault.deposit
+    - UnstoppableVault.withdraw
+
+false_positive_exclusions:
+  - description: "Strict equality in ERC4626 share calculation is not exploitable"
+    reason: Internal accounting, not external balance
+
+verification:
+  exploit_summary: "Donate tokens directly to vault to break balance invariant"
+  fix_summary: "Use >= instead of == or track internal balance separately"
+
+status: detected
+detection_date: "2025-12-31"

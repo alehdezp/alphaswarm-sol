@@ -1,0 +1,68 @@
+{
+  "description": "Expected BSKG graph properties for Vault.sol",
+  "fixture": "foundry-vault",
+  "contract": "Vault",
+
+  "required_nodes": {
+    "deposit": {
+      "visibility": "external",
+      "state_mutability": "payable",
+      "has_external_calls": false,
+      "operations": ["WRITES_USER_BALANCE"]
+    },
+    "withdraw": {
+      "visibility": "external",
+      "has_external_calls": true,
+      "has_reentrancy_guard": false,
+      "external_calls_before_state_writes": true,
+      "operations": ["TRANSFERS_VALUE_OUT", "WRITES_USER_BALANCE"],
+      "behavioral_signature": "R:bal→X:out→W:bal"
+    },
+    "safeWithdraw": {
+      "visibility": "external",
+      "has_reentrancy_guard": true,
+      "operations": ["TRANSFERS_VALUE_OUT", "WRITES_USER_BALANCE"]
+    },
+    "emergencyWithdraw": {
+      "visibility": "external",
+      "has_access_gate": true,
+      "access_gate_type": "onlyOwner"
+    },
+    "setOwner": {
+      "visibility": "external",
+      "has_access_gate": false,
+      "modifies_owner": true,
+      "operations": ["MODIFIES_OWNER"]
+    },
+    "transferOwnership": {
+      "visibility": "external",
+      "has_access_gate": true,
+      "modifies_owner": true
+    }
+  },
+
+  "validation_rules": [
+    {
+      "check": "node_count_min",
+      "value": 6,
+      "description": "At least 6 function nodes"
+    },
+    {
+      "check": "has_operations",
+      "required": ["TRANSFERS_VALUE_OUT", "WRITES_USER_BALANCE", "MODIFIES_OWNER"],
+      "description": "Key operations must be detected"
+    },
+    {
+      "check": "reentrancy_vulnerable_functions",
+      "expected": ["withdraw"],
+      "not_expected": ["safeWithdraw"],
+      "description": "Only withdraw should be flagged as vulnerable to reentrancy"
+    },
+    {
+      "check": "access_control_missing",
+      "expected": ["setOwner"],
+      "not_expected": ["emergencyWithdraw", "transferOwnership"],
+      "description": "Only setOwner should be flagged for missing access control"
+    }
+  ]
+}

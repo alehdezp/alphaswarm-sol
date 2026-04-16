@@ -1,0 +1,107 @@
+# Bridge Compromise - Subcategory Index
+# Direct exploitation of bridge contract vulnerabilities
+
+id: bridge-compromise
+name: Bridge Compromise
+parent_category: cross-chain
+
+description: |
+  Direct exploitation of vulnerabilities in cross-chain bridge contracts. These attacks
+  target flaws in message validation, relay mechanisms, or trust assumptions that allow
+  attackers to bypass normal bridge operations and move assets across chains without
+  proper authorization or verification. Attacks may involve message replay, signature
+  spoofing, or manipulation of bridge state.
+
+severity_range:
+  - high
+  - critical
+
+# Specifics (individual exploits/vulnerabilities)
+specifics:
+  - id: yala-layerzero
+    name: Yala Bridge LayerZero Exploit
+    date: 2025-09
+    loss_usd: 7640000
+
+# Associated detection patterns
+patterns:
+  - cc-001
+  - cc-002
+  - cc-003
+
+# VKG properties for detection
+relevant_properties:
+  - calls_external
+  - calls_untrusted
+  - reads_external_value
+  - validates_input
+  - has_access_gate
+  - state_variables_written
+  - writes_privileged_state
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: has_external_calls
+    expected: true
+    critical: true
+    description: Makes external calls to bridge infrastructure
+    confidence: 0.90
+
+  - property: reads_external_value
+    expected: true
+    critical: true
+    description: Reads values from external source (other chain)
+    confidence: 0.85
+
+  - property: validates_input
+    expected: false
+    critical: true
+    description: Insufficient validation of input data
+    confidence: 0.85
+
+  - property: has_access_gate
+    expected: false
+    critical: true
+    description: No proper access control on critical operations
+    confidence: 0.80
+
+  - property: writes_privileged_state
+    expected: true
+    critical: true
+    description: Writes critical state (balances, mint/burn)
+    confidence: 0.88
+
+# Behavioral signatures
+behavioral_signatures:
+  - "X:ext->W:crit"    # External call, write critical state
+  - "R:ext->X:unk"     # Read external, call untrusted
+  - "X:bridge->W:bal"  # Bridge call, write balance
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "R:ext -> X:bridge -> W:bal"  # Read external value, call bridge, write balance
+    - "X:unk -> W:crit"              # Untrusted call, write critical state
+    - "R:msg -> W:bal"               # Read message data, write balance (no validation)
+  safe:
+    - "V:sig -> V:nonce -> X:bridge -> W:crit"  # Verify signature, nonce, then call, then write
+    - "V:input -> C:perm -> R:ext -> V:proof -> W:bal"  # Validate, check perms, read, verify, write
+
+# False positive indicators
+false_positive_indicators:
+  - "Proper signature verification on cross-chain message"
+  - "Nonce tracking and replay protection implemented"
+  - "Source chain and destination chain validation"
+  - "Checks for message authenticity before state modification"
+  - "Function protected by access control modifiers"
+  - "Call is to trusted bridge contract (verified address)"
+  - "Proper event logging for bridge transactions"
+
+# Related real-world exploits
+related_exploits:
+  - yala-layerzero
+  - stargate-vulnerability
+  - wormhole-exploit
+
+# Token estimate for this subcategory
+token_estimate: 600

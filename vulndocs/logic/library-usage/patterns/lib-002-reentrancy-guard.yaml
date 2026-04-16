@@ -1,0 +1,752 @@
+# =============================================================================
+# PATTERN: lib-002-reentrancy-guard
+# Missing ReentrancyGuard Protection on External Calls
+# =============================================================================
+# Detects functions that perform external calls and state modifications without
+# protection from OpenZeppelin's ReentrancyGuard contract. This pattern focuses
+# specifically on LIBRARY USAGE detection - functions that SHOULD use the
+# nonReentrant modifier but don't.
+#
+# Complements reentrancy-002-gmx-cross-function.yaml by targeting library
+# adoption rather than architectural flaws.
+#
+# Source: OpenZeppelin Security Best Practices
+# Library: @openzeppelin/contracts/security/ReentrancyGuard.sol
+# =============================================================================
+
+id: lib-002
+vulndoc: logic/library-usage
+name: "Missing ReentrancyGuard Protection on External Calls"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  External functions that perform BOTH:
+  1. Make external calls (value transfers, contract interactions)
+  2. Modify critical state (user balances, allowances, positions)
+
+  Without using the nonReentrant modifier from OpenZeppelin's ReentrancyGuard library.
+  This is the direct library usage pattern - functions that should be protected but aren't.
+
+  ## Why It's Dangerous
+
+  Classic reentrancy attack becomes possible when:
+  - External call (e.g., `call{value:}(recipient)`) executes before state update
+  - Attacker's receive() callback re-enters the same function
+  - State still shows original values (not yet updated)
+  - Attacker drains contract by repeating until empty
+
+  Real-World Losses:
+  - The DAO Hack (2016): $60M via direct reentrancy
+  - Cream Finance (2021): $18M via ERC777 callback hooks
+  - Lendf.Me (2020): $25M via ERC777 reentrancy
+  - Rektracoon Finance (2023): $100K via missing guard
+
+  The ReentrancyGuard library PREVENTS this by maintaining a status flag that
+  tracks reentrancy state, reverting any nested calls into protected functions.
+
+  ## Detection Logic
+
+  This pattern triggers when ALL conditions are met:
+  1. Function is externally callable (public/external)
+  2. Function makes external calls (has_external_calls = true)
+  3. Function modifies state (writes_state = true)
+  4. NO reentrancy guard protection (has_reentrancy_guard = false)
+  5. NOT a view/pure/constructor/initializer function
+
+  **Key Difference from vm-001-classic**:
+  - vm-001-classic: Detects CEI violations (ordering problems)
+  - lib-002: Detects missing LIBRARY PROTECTION (guard not applied)
+
+  This pattern focuses on the practical fix: "Did you use nonReentrant modifier?"
+
+  ## Implementation-Agnostic
+
+  Detects missing protection regardless of:
+  - Variable naming (balance, amount, stake, shares, etc.)
+  - Function naming (withdraw, transfer, redeem, claim, etc.)
+  - Call mechanism (call, send, transfer, delegatecall, etc.)
+  - State modification pattern (direct assignment, mapping update, etc.)
+
+  Uses semantic properties, not name matching.
+
+scope: Function
+
+lens:
+  - ValueMovement
+  - ExternalInfluence
+
+severity: high
+
+# =============================================================================
+# MATCH CONDITIONS - SEMANTIC PROPERTIES ONLY
+# =============================================================================
+
+match:
+  tier_a:
+    # ALL must match (AND logic)
+    all:
+      # Must be externally callable - reentrancy requires external entry point
+      - property: visibility
+        op: in
+        value: [public, external]
+
+      # Core vulnerability signal: Makes external calls
+      - property: has_external_calls
+        op: eq
+        value: true
+
+      # Modifies state - provides incentive for reentrancy (state manipulation)
+      - property: writes_state
+        op: eq
+        value: true
+
+    # At least ONE must match (OR logic) - not used for this pattern
+    any: []
+
+    # NONE can match (NOT logic) - CRITICAL for false positive reduction
+    none:
+      # Safe pattern: Has reentrancy guard (nonReentrant modifier)
+      # This is the ONLY protection this pattern checks for
+      - property: has_reentrancy_guard
+        op: eq
+        value: true
+
+      # Not applicable to view/pure functions (don't modify state)
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Constructors are initialization-only (no reentrancy risk)
+      - property: is_constructor
+        op: eq
+        value: true
+
+      # Initializers are one-time setup (no reentrancy risk during initialization)
+      - property: is_initializer_function
+        op: eq
+        value: true
+
+      # Fallback/receive functions have limited code space (unlikely to be vulnerable)
+      - property: is_fallback
+        op: eq
+        value: true
+
+      - property: is_receive
+        op: eq
+        value: true
+
+# =============================================================================
+# SEMANTIC OPERATIONS FOR BEHAVIORAL DETECTION
+# =============================================================================
+
+semantic_ops:
+  # Operations that characterize unprotected external interactions
+  has_any_operation:
+    - TRANSFERS_VALUE_OUT          # Direct ETH transfer
+    - CALLS_EXTERNAL               # External contract calls
+    - CALLS_UNTRUSTED              # Calls to user-controlled addresses
+
+  # Must also write state (value extraction requires balance update)
+  also_has_operation:
+    - WRITES_USER_BALANCE          # Modifies user balance tracking
+    - MODIFIES_CRITICAL_STATE      # Changes critical state
+
+  # Safe pattern: WRITES state BEFORE external calls (CEI pattern)
+  # But this pattern only checks for guard presence, not ordering
+  # Ordering is checked by vm-001-classic pattern
+
+# =============================================================================
+# ATTACK SCENARIOS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Classic Reentrancy via Missing Guard"
+    description: |
+      Attacker exploits absence of nonReentrant modifier to repeatedly re-enter
+      a function that modifies balances and transfers value.
+    preconditions:
+      - "Function is public/external"
+      - "Function transfers ETH/calls contract"
+      - "Function modifies user balance state"
+      - "NO nonReentrant modifier protecting the function"
+      - "Attacker can control callback address (msg.sender or parameter)"
+    steps:
+      - "Attacker calls vulnerable function with value"
+      - "Function logic executes: reads balance, prepares transfer"
+      - "Function makes external call (call{value:}) to attacker contract"
+      - "Attacker's receive() callback executes"
+      - "Attacker calls vulnerable function AGAIN while in callback"
+      - "Balance state not yet updated, so second call succeeds"
+      - "Attacker repeats until contract drained"
+      - "Non-reentrant modifier would revert all nested calls"
+    impact: "Complete contract fund drainage via reentrancy attack"
+
+  - name: "ERC777 Hook Reentrancy"
+    description: |
+      Attacker exploits ERC777 token hooks during token transfer to re-enter
+      unprotected function and manipulate state.
+    preconditions:
+      - "Function transfers ERC777 tokens (has hooks)"
+      - "Function modifies balance state"
+      - "NO nonReentrant modifier on the function"
+      - "Function makes another external call during ERC777 hook window"
+    steps:
+      - "Attacker calls vulnerable function"
+      - "Function transfers ERC777 tokens via `send()` or `transfer()`"
+      - "ERC777 calls `tokensToSend()` hook on attacker contract"
+      - "Hook calls vulnerable function AGAIN (reentrancy)"
+      - "State not yet updated, hook exploits stale state"
+      - "nonReentrant would prevent hook callback"
+    impact: "State manipulation, fund theft, or token inflation via ERC777 hooks"
+
+  - name: "Callback Loop (Multiple Re-entries)"
+    description: |
+      Attacker chains multiple callbacks to accumulate state modifications
+      without any guard preventing nested calls.
+    preconditions:
+      - "Function has multiple external calls"
+      - "Each call creates potential callback opportunity"
+      - "Function modifies state incrementally"
+      - "NO nonReentrant modifier blocking re-entry"
+    steps:
+      - "Attacker calls vulnerable function"
+      - "First external call triggers attacker's callback"
+      - "Callback re-enters function, progressing state further"
+      - "Second external call within callback triggers second callback"
+      - "Attacker stacks callbacks to manipulate state multiple times"
+      - "Guard would block all nested re-entries immediately"
+    impact: "Compound state manipulation through stacked callbacks"
+
+# =============================================================================
+# SAFE PATTERNS - REFERENCE IMPLEMENTATIONS
+# =============================================================================
+
+safe_patterns:
+  - name: "OpenZeppelin ReentrancyGuard - nonReentrant Modifier"
+    description: |
+      The standard and RECOMMENDED fix: Apply nonReentrant modifier from
+      OpenZeppelin's ReentrancyGuard library to ALL externally-callable
+      functions that make external calls and modify state.
+    code: |
+      // VULNERABLE: No reentrancy protection
+      function withdraw(uint256 amount) external {
+          require(balances[msg.sender] >= amount, "Insufficient balance");
+
+          // State write before external call (CEI violation)
+          balances[msg.sender] -= amount;
+
+          // External call can trigger reentrancy
+          (bool success, ) = msg.sender.call{value: amount}("");
+          require(success, "Withdrawal failed");
+      }
+
+      // FIXED: Using nonReentrant modifier from ReentrancyGuard
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+      contract SafeVault is ReentrancyGuard {
+          mapping(address => uint256) public balances;
+
+          function withdraw(uint256 amount) external nonReentrant {
+              require(balances[msg.sender] >= amount, "Insufficient balance");
+
+              // State write BEFORE external call (CEI pattern)
+              balances[msg.sender] -= amount;
+
+              // External call is now SAFE - nonReentrant prevents re-entry
+              (bool success, ) = msg.sender.call{value: amount}("");
+              require(success, "Withdrawal failed");
+          }
+      }
+
+    semantic_operations: |
+      - TRANSFERS_VALUE_OUT: External call happens inside nonReentrant block
+      - WRITES_USER_BALANCE: Balance update happens before external call (CEI)
+      - has_reentrancy_guard = true: Guard is present and active
+      - This pattern would NOT trigger because has_reentrancy_guard = true
+
+    how_it_works: |
+      OpenZeppelin's ReentrancyGuard uses a status flag:
+      1. First call: Check if _status == NOT_ENTERED
+      2. If yes: Set _status = ENTERED
+      3. Execute function body
+      4. After return: Set _status = NOT_ENTERED
+      5. If nested call attempts: See _status == ENTERED, revert
+
+      This means callbacks CANNOT re-enter ANY nonReentrant function.
+      Once one is entered, all others are blocked until execution completes.
+
+  - name: "Application: Yield Bearing Token (ERC4626 Vault)"
+    description: |
+      Complete example of protecting a vault with ReentrancyGuard to prevent
+      classic reentrancy during deposit/withdraw operations.
+    code: |
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+      import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+      contract SafeVault is ReentrancyGuard {
+          IERC20 public underlying;
+          mapping(address => uint256) public shares;
+          uint256 public totalShares;
+
+          // PROTECTED: withdraw function uses nonReentrant
+          function withdraw(uint256 shareAmount) external nonReentrant returns (uint256) {
+              require(shares[msg.sender] >= shareAmount, "Insufficient shares");
+
+              // Calculate underlying amount (before state modification)
+              uint256 underlyingAmount = sharesToUnderlying(shareAmount);
+
+              // EFFECTS: Update shares BEFORE external call
+              shares[msg.sender] -= shareAmount;
+              totalShares -= shareAmount;
+
+              // INTERACTIONS: Safe because nonReentrant prevents re-entry
+              underlying.transfer(msg.sender, underlyingAmount);
+
+              return underlyingAmount;
+          }
+
+          // PROTECTED: deposit function also uses nonReentrant
+          function deposit(uint256 amount) external nonReentrant returns (uint256) {
+              require(amount > 0, "Amount must be positive");
+
+              // Transfer in (potential hook for ERC777)
+              underlying.transferFrom(msg.sender, address(this), amount);
+
+              // Calculate shares
+              uint256 shareAmount = underlyingToShares(amount);
+
+              // EFFECTS: Update shares
+              shares[msg.sender] += shareAmount;
+              totalShares += shareAmount;
+
+              // nonReentrant prevents hooks from re-entering
+              return shareAmount;
+          }
+
+          function sharesToUnderlying(uint256 _shares) internal view returns (uint256) {
+              if (totalShares == 0) return _shares;
+              return (_shares * underlying.balanceOf(address(this))) / totalShares;
+          }
+
+          function underlyingToShares(uint256 _amount) internal view returns (uint256) {
+              if (totalShares == 0) return _amount;
+              return (_amount * totalShares) / underlying.balanceOf(address(this));
+          }
+      }
+
+    semantic_operations: |
+      - TRANSFERS_VALUE_OUT: ERC20 transfer calls inside nonReentrant
+      - CALLS_EXTERNAL: transferFrom calls inside nonReentrant
+      - WRITES_USER_BALANCE: Shares updated before external calls
+      - has_reentrancy_guard = true: nonReentrant on all critical functions
+      - This pattern would NOT trigger (protection present)
+
+# =============================================================================
+# VERIFICATION STEPS
+# =============================================================================
+
+verification_steps:
+  - "Confirm function is externally callable (public/external visibility)"
+  - "Verify function makes external calls (TRANSFERS_VALUE_OUT or CALLS_EXTERNAL)"
+  - "Confirm function modifies state (writes_state = true)"
+  - "Check if nonReentrant modifier is present on the function signature"
+  - "If nonReentrant IS present: This is NOT a finding (safe pattern)"
+  - "If nonReentrant is ABSENT: Proceed to assess exploitability"
+  - "Identify the external call mechanism (call vs send vs transfer)"
+  - "Determine call recipient (msg.sender, parameter, contract-controlled)"
+  - "If recipient is user-controlled: Higher risk"
+  - "Check for CEI pattern (state update order relative to external call)"
+  - "Assess impact: Could attacker drain assets via reentrancy?"
+  - "Consider token types: Standard ERC20? ERC777? Custom token?"
+
+# =============================================================================
+# FIX RECOMMENDATIONS
+# =============================================================================
+
+fix_recommendations:
+  - name: "Add nonReentrant Modifier (RECOMMENDED)"
+    priority: critical
+    description: |
+      Apply OpenZeppelin's ReentrancyGuard.nonReentrant modifier to the function.
+      This is the standard, battle-tested solution used by thousands of contracts.
+
+      The modifier adds negligible gas overhead (~3k gas) and completely prevents
+      reentrancy by blocking any nested calls while execution is in progress.
+    example: |
+      // Step 1: Import ReentrancyGuard
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+      // Step 2: Inherit from ReentrancyGuard
+      contract MyContract is ReentrancyGuard {
+          mapping(address => uint256) public balances;
+
+          // Step 3: Add nonReentrant modifier to vulnerable function
+          function withdraw(uint256 amount) external nonReentrant {
+              require(balances[msg.sender] >= amount);
+              balances[msg.sender] -= amount;
+              (bool success, ) = msg.sender.call{value: amount}("");
+              require(success);
+          }
+      }
+
+    gas_cost: |
+      - First call to nonReentrant function: ~22k gas (initialization)
+      - Subsequent calls: ~3k additional gas overhead
+      - Negligible compared to typical external call costs (21k+ gas each)
+
+    testing_guidance: |
+      1. Write test for normal withdraw:
+         contract.withdraw(amount) → should succeed
+      2. Write test for reentrancy attack:
+         - Create attacker contract with receive() calling withdraw again
+         - Ensure reentrancy attempt reverts with guard assertion
+         - nonReentrant raises specific error (can test for it)
+      3. Verify state consistency:
+         - After failed reentrancy, state should remain consistent
+         - All pending state changes should roll back
+
+  - name: "Apply CEI Pattern (Complementary)"
+    priority: high
+    description: |
+      Even with nonReentrant, follow Checks-Effects-Interactions (CEI) pattern:
+      1. CHECKS: Validate all preconditions
+      2. EFFECTS: Modify all state
+      3. INTERACTIONS: Make external calls last
+
+      This provides defense-in-depth: if guard fails, CEI ordering still prevents damage.
+    example: |
+      function withdraw(uint256 amount) external nonReentrant {
+          // CHECKS: Validate preconditions first
+          require(balances[msg.sender] >= amount, "Insufficient balance");
+          require(amount > 0, "Amount must be positive");
+
+          // EFFECTS: Update state BEFORE external calls
+          uint256 payout = amount;
+          balances[msg.sender] -= amount;  // Critical: happens before transfer
+          totalWithdrawn += amount;
+
+          // INTERACTIONS: External calls LAST, after all state settled
+          (bool success, ) = msg.sender.call{value: payout}("");
+          require(success, "Transfer failed");
+
+          emit Withdrawn(msg.sender, amount);
+      }
+
+  - name: "Use SafeTransfer for ERC20 (Additional Protection)"
+    priority: high
+    description: |
+      When transferring ERC20 tokens, use OpenZeppelin's SafeERC20 to handle
+      non-standard return values and prevent exploits via malicious token hooks.
+    example: |
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+      contract SafeVault is ReentrancyGuard {
+          using SafeERC20 for IERC20;
+          IERC20 public token;
+
+          function withdraw(uint256 amount) external nonReentrant {
+              require(balances[msg.sender] >= amount);
+              balances[msg.sender] -= amount;
+
+              // SafeERC20 prevents exploits via return value manipulation
+              token.safeTransfer(msg.sender, amount);
+          }
+      }
+
+  - name: "Restrict Callback Addresses (Alternative)"
+    priority: medium
+    description: |
+      Instead of nonReentrant, restrict which addresses can receive callbacks.
+      Only allow withdrawals to the caller (msg.sender), not to arbitrary addresses.
+
+      This eliminates attacker control over the callback mechanism but is LESS
+      robust than nonReentrant (still vulnerable to hooks if not careful).
+    example: |
+      // SAFER but NOT as good as nonReentrant:
+      // Restricts recipient to msg.sender, no arbitrary parameter
+      function withdraw(uint256 amount) external {
+          require(balances[msg.sender] >= amount);
+          balances[msg.sender] -= amount;
+
+          // Only msg.sender receives funds, no callback parameter
+          (bool success, ) = msg.sender.call{value: amount}("");
+          require(success);
+      }
+
+      // STILL NOT SAFE if msg.sender is a contract with receive() hook
+      // Use nonReentrant for complete protection
+
+  - name: "Implement State Snapshot Verification (Defensive)"
+    priority: low
+    description: |
+      Cache critical state before external calls, verify consistency after.
+      This DETECTS reentrancy attempts (reverts on manipulation) but doesn't
+      PREVENT them. Use as defense-in-depth WITH nonReentrant, not instead of it.
+    example: |
+      function withdraw(uint256 amount) external nonReentrant {
+          // Snapshot critical state BEFORE external call
+          uint256 balanceBefore = balances[msg.sender];
+
+          require(balanceBefore >= amount, "Insufficient balance");
+          balances[msg.sender] -= amount;
+
+          // External call
+          (bool success, ) = msg.sender.call{value: amount}("");
+          require(success);
+
+          // Verify state integrity AFTER callback
+          require(
+              balances[msg.sender] == balanceBefore - amount,
+              "State was manipulated during callback"
+          );
+      }
+
+  - name: "Multi-Level Protection (Defense-in-Depth)"
+    priority: high
+    description: |
+      Combine multiple protective measures for maximum security:
+      1. nonReentrant modifier (primary defense)
+      2. CEI pattern (secondary defense)
+      3. SafeERC20 for token transfers (tertiary defense)
+      4. State snapshots for additional verification (quaternary defense)
+    example: |
+      import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+      import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+      contract SecureVault is ReentrancyGuard {
+          using SafeERC20 for IERC20;
+          IERC20 public token;
+          mapping(address => uint256) public balances;
+
+          function withdraw(uint256 amount)
+              external
+              nonReentrant  // 1. Guard prevents re-entry
+          {
+              // 2. CEI: CHECKS phase
+              require(balances[msg.sender] >= amount, "Insufficient");
+              require(amount > 0, "Amount > 0");
+
+              // Snapshot for verification (4. quaternary defense)
+              uint256 expectedBalance = balances[msg.sender] - amount;
+
+              // 2. CEI: EFFECTS phase (state updated BEFORE external call)
+              balances[msg.sender] -= amount;
+
+              // 2. CEI: INTERACTIONS phase (external call LAST)
+              // 3. Use SafeERC20 to handle malicious tokens safely
+              token.safeTransfer(msg.sender, amount);
+
+              // 4. Verify state consistency
+              assert(balances[msg.sender] == expectedBalance);
+
+              emit Withdrawn(msg.sender, amount);
+          }
+      }
+
+# =============================================================================
+# RELATED PATTERNS
+# =============================================================================
+
+related_patterns:
+  - pattern_id: vm-001-classic
+    linkage_type: sibling
+    description: |
+      Detects CEI violations (ordering of external calls vs state writes).
+      lib-002 checks for LIBRARY PROTECTION (nonReentrant).
+      vm-001 checks for ORDERING PROTECTION (CEI pattern).
+      Both should be satisfied: apply nonReentrant AND follow CEI ordering.
+
+  - pattern_id: reentrancy-002-gmx-cross-function
+    linkage_type: sibling
+    description: |
+      Detects cross-function reentrancy where callbacks re-enter DIFFERENT functions.
+      lib-002 focuses on single-function protection via nonReentrant.
+      reentrancy-002 addresses multi-function scenarios with shared state.
+
+  - pattern_id: token-002-erc777-reentrancy
+    linkage_type: related
+    description: |
+      ERC777 token hooks enable reentrancy during token transfers.
+      lib-002 detects missing guard protection.
+      token-002 specifically addresses ERC777 hook vulnerabilities.
+
+  - pattern_id: external-002-unprotected-delegatecall
+    linkage_type: related
+    description: |
+      Delegatecall without guard can also enable reentrancy.
+      lib-002 covers call() and value transfers.
+      external-002 covers delegatecall() vulnerabilities.
+
+# =============================================================================
+# EXPLOITS AND REAL-WORLD EVIDENCE
+# =============================================================================
+
+exploits:
+  - name: "The DAO Hack"
+    date: "2016-06-18"
+    loss_usd: 60000000
+    chain: "Ethereum"
+    vulnerability: "Missing reentrancy guard on recursive call"
+    description: |
+      Attacker exploited missing guard on splitDAO() function to recursively
+      withdraw from contract before balance was updated. This was THE reentrancy
+      vulnerability that led to Ethereum hard fork.
+    root_cause: |
+      function splitDAO(...) {
+          if (balances[msg.sender] < amount) throw;
+          // VULNERABLE: No guard
+          if (!msg.sender.call.value(amount)()) throw;  // Callback here!
+          balances[msg.sender] -= amount;  // State update after callback
+      }
+    lesson: "Apply nonReentrant to ANY function with external calls + state writes"
+    references:
+      - "https://blog.ethereum.org/en/history/dao-hack-sept-2016/"
+      - "https://en.wikipedia.org/wiki/The_DAO_(organization)"
+
+  - name: "Cream Finance Exploit"
+    date: "2021-10-27"
+    loss_usd: 18000000
+    chain: "Ethereum"
+    vulnerability: "Missing guard on AMP token transfer (ERC777 hook)"
+    description: |
+      Attacker exploited missing reentrancy guard on borrow function.
+      When repaying with AMP tokens, ERC777 hook allowed re-entry into
+      flashLoan-like attack, enabling attacker to manipulate collateral prices.
+    root_cause: |
+      function repayBorrow(address token, uint256 amount) external {
+          // No guard! ERC777 transfer triggers tokensToSend hook
+          transferFrom(token, msg.sender, address(this), amount);
+          updateBalances(...);  // Attacker re-enters before this
+      }
+    lesson: "nonReentrant essential for token transfers (esp. ERC777)"
+    references:
+      - "https://medium.com/immunefi/immunefi-response-to-cream-finance-exploit-6fda33a0ea5b"
+      - "https://rekt.news/cream-finance-rekt/"
+
+  - name: "Lendf.Me Attack"
+    date: "2020-04-18"
+    loss_usd: 25000000
+    chain: "Ethereum"
+    vulnerability: "Missing guard on ERC777 redeemUnderlying"
+    description: |
+      ERC777 tokensToSend hook enabled reentrancy into redeemUnderlying function.
+      Attacker borrowed assets, manipulated collateral via hook, redeemed for profit.
+    lesson: "Any external call can be a reentrancy vector if not protected"
+    references:
+      - "https://rekt.news/lendf-me-rekt/"
+
+  - name: "Rektracoon Finance Hack"
+    date: "2023-02-15"
+    loss_usd: 100000
+    chain: "Arbitrum"
+    vulnerability: "Missing nonReentrant on farm() function"
+    description: |
+      Simple missing guard on farming reward function allowed attacker to
+      repeatedly claim rewards via callback reentrancy.
+    lesson: "Even small protocols vulnerable if guard missing"
+
+# =============================================================================
+# LIBRARY DOCUMENTATION & REFERENCES
+# =============================================================================
+
+library_references:
+  - name: "OpenZeppelin ReentrancyGuard"
+    url: "https://docs.openzeppelin.com/contracts/4.x/api/security#ReentrancyGuard"
+    description: |
+      Official documentation for OpenZeppelin's ReentrancyGuard contract.
+      Contains implementation details, gas costs, and usage patterns.
+
+  - name: "Solidity Patterns: Checks-Effects-Interactions"
+    url: "https://fravoll.github.io/solidity-patterns/checks_effects_interactions.html"
+    description: |
+      Comprehensive guide to CEI pattern, the foundational defense-in-depth
+      approach for reentrancy prevention.
+
+  - name: "OpenZeppelin SafeERC20"
+    url: "https://docs.openzeppelin.com/contracts/4.x/api/token/erc20#utils"
+    description: |
+      SafeERC20 wrapper for safe token transfers with proper return value handling.
+      Complements ReentrancyGuard for token transfer protection.
+
+  - name: "Immunefi: Reentrancy"
+    url: "https://medium.com/immunefi/the-ultimate-guide-to-reentrancy-19526f105ac"
+    description: |
+      Comprehensive reentrancy guide covering attack patterns, defenses, and
+      real-world exploit case studies.
+
+# =============================================================================
+# TESTING METADATA
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: |
+    Pattern created as library-specific complement to reentrancy detection.
+
+    Focus: Detect missing nonReentrant modifier (library adoption pattern)
+    vs. vm-001-classic which detects CEI violations (ordering pattern).
+
+    Awaiting test fixtures with:
+    - Vulnerable contracts without nonReentrant
+    - Safe contracts using nonReentrant
+    - Edge cases: internal functions, constructors, view functions
+    - Variation testing: different call mechanisms (call vs send vs transfer)
+
+status: draft
+
+# =============================================================================
+# OWASP & CWE MAPPING
+# =============================================================================
+
+owasp_mapping:
+  - SC05  # Reentrancy (OWASP Smart Contract Top 10)
+
+cwe_mapping:
+  - CWE-841   # Improper Enforcement of Behavioral Workflow
+  - CWE-362   # Concurrent Execution using Shared Resource with Improper Synchronization
+  - CWE-364   # Signal Handler Race Condition
+
+# =============================================================================
+# METADATA
+# =============================================================================
+
+version: "1.0"
+created: "2026-01-09"
+last_updated: "2026-01-09"
+token_estimate: 3200
+context_cache_key: "lib-002-reentrancy-guard-v1"
+
+# Implementation note for builders and tools
+implementation_notes: |
+  This pattern targets functions that:
+  1. Are externally accessible (public/external)
+  2. Call external contracts or transfer value
+  3. Modify contract state
+  4. Lack the nonReentrant modifier from ReentrancyGuard
+
+  The pattern is semantic: it doesn't match on function/variable names,
+  but on the presence/absence of the nonReentrant modifier and the semantic
+  properties of having external calls + state writes.
+
+  Configuration for different strictness levels:
+
+  STRICT: Report any external call + state write without guard
+  (Current setting: STRICT - most safe)
+
+  MODERATE: Only report if call order indicates CEI violation
+  (Requires integration with vm-001-classic pattern logic)
+
+  LENIENT: Only report for high-risk functions like withdraw/transfer
+  (Would lose generality - not recommended)

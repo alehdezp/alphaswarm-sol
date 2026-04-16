@@ -1,0 +1,44 @@
+id: statemachine-pause-bypass
+vulndoc: logic/state-machine
+name: Pause State Bypass
+description: 'Function that should respect pause state doesn''t check it.
+
+  Emergency pause is ineffective if functions bypass it.
+
+
+  Risk: During security incidents, paused contracts can still be
+
+  exploited through functions that don''t check pause state.
+
+  '
+severity: high
+scope: Function
+lens:
+- AccessControl
+- StateIntegrity
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - property: writes_state
+      op: eq
+      value: true
+    none:
+    - property: has_pause_check
+      op: eq
+      value: true
+    - property: has_pause_check
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: temporal.respects_pause
+      min_confidence: medium
+required_labels:
+- temporal.respects_pause

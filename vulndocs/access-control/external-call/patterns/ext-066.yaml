@@ -1,0 +1,16 @@
+id: ext-066
+vulndoc: access-control/external-call
+name: Oracle Aggregation Circuit Breaker Missing
+description: Aggregation without circuit breaker or pause mechanism.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_circuit_breaker
+    op: eq
+    value: false

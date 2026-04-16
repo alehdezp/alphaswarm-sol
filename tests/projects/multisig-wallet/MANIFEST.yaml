@@ -1,0 +1,243 @@
+# tests/projects/multisig-wallet/MANIFEST.yaml
+project: multisig-wallet
+description: Multisig wallet test scenarios for transaction replay protection, signature validation, and low-level calls
+max_files: 30
+current_files: 5
+
+# Patterns tested in this project
+patterns:
+  multisig-001:
+    files: [ExecutionNonceTest.sol]
+    functions:
+      vulnerable:
+        - executeTransaction(address,uint256,bytes,bytes[])
+        - submitTransaction(address,uint256,bytes,bytes[])
+        - confirmAndExecute(uint256,bytes,bytes[])
+        - batchExecute(Transaction[],bytes[])
+        - executeAfterTimelock(bytes32,address,bytes,bytes[])
+        - exec(address,bytes,bytes[])
+        - performTransaction(address,bytes,bytes[])
+        - runMultisig(address,bytes,bytes[])
+        - executeEmergency(address,bytes)
+        - multicall(bytes[],bytes[])
+        - executeAction(address,bytes,bytes[]) # VAR1 - controller naming
+        - executeQueuedTransaction(bytes32,bytes[]) # VAR3 - timelock
+        - executeProposal(uint256,bytes[]) # VAR4 - governor
+        - execTransaction(...) # VAR5 - Gnosis Safe
+      safe:
+        - executeTransaction(...,uint256 nonce,...) # has nonce parameter
+        - submitTransaction with nonces[sender]++ # reads/writes nonce
+        - confirmAndExecute with executed flag # reads/writes executed
+        - executeSequential with executed tracking
+        - getTransactionHash (view function)
+        - verifySignatureFormat (pure function)
+        - _executeInternal (internal)
+        - execute (access control wrapper)
+    last_updated: "2025-12-31"
+
+  multisig-002:
+    files: [NonceNotUpdatedTest.sol]
+    functions:
+      vulnerable:
+        # Detected (TP - 10)
+        - executeTransaction(address,uint256,bytes,uint256,bytes[]) # Standard nonce, no update
+        - submitTransaction(address,uint256,bytes,uint256,bytes[]) # Only emits event
+        - confirmAndExecute(uint256,address,bytes,uint256) # Reads nonce only
+        - executeWithNonce(address,bytes,uint256) # Require check, no increment
+        - executeMultiNonce(address,bytes,uint256,uint256) # Multiple nonces, neither updated
+        - executeWithRequire(address,bytes,uint256) # Validates but doesn't update
+        - executeOnlyEvent(address,bytes,uint256) # Nonce only in event
+        - executeReturnNonce(address,bytes,uint256) # Nonce only returned
+        - executeWithModifier(address,bytes,uint256) # FP - nonce in modifier (builder limitation)
+        - executeWithAssembly(address,bytes,uint256) # FP - assembly update (builder limitation)
+        # Missed (FN - 4) - builder limitation: has_nonce_parameter only detects "nonce"
+        - executeSequential(address,bytes,uint256) # NOT DETECTED - "sequenceNumber" naming
+        - executeWithCounter(address,bytes,uint256) # NOT DETECTED - "counter" naming
+        - executeAtIndex(address,bytes,uint256) # NOT DETECTED - "index" naming
+        - batchExecute(Transaction[],bytes[]) # NOT DETECTED - nonce in struct
+      safe:
+        - NonceUpdatedSafe.executeTransaction(...) # usedNonces[nonce] = true
+        - NonceUpdatedSafe.executeSequential(...) # nonce++
+        - executeWithoutNonce(...) # No nonce parameter (multisig-001, not -002)
+        - executeWithFlag(...) # Hash-based tracking
+        - getNonceHash(...) # View function
+        - _executeInternal(...) # Internal function
+        - currentNonce() # View function
+        - executeWithDeadline(...) # Deadline, not nonce
+        - RegularContract.executeAction(...) # Non-multisig contract
+    last_updated: "2025-12-31"
+
+  multisig-003:
+    files: [SignatureValidationTest.sol]
+    functions:
+      vulnerable:
+        # All 10 TPs detected (100% recall)
+        - execute(address,uint256,bytes,bytes[]) # Standard signature array
+        - submitWithSignatures(address,bytes,bytes32,bytes32,uint8) # Split r,s,v
+        - multiSigExecute(address,uint256,Signature[]) # Signature struct
+        - executeWithApprovals(address,bytes,address[]) # Address array no proof
+        - batchExecuteWithSigs(address[],bytes[],bytes) # Batch execution
+        - executeEIP712(address,bytes,bytes32,bytes) # EIP-712 no validation
+        - multiSigCall(address,bytes,bytes[]) # Alternate naming
+        - executeCompact(address,uint256,bytes,bytes) # Compact 65-byte sig
+        - executeEIP2098(address,bytes,bytes32,bytes32) # EIP-2098 r,vs
+        - executeMultiple(address,bytes,bytes[]) # Only length check
+      safe:
+        - SafeWithEcrecover.execute(...) # Uses ecrecover (SAFE)
+        - SafeWithECDSALibrary.submitWithSignatures(...) # FP - ECDSA.recover library (builder limitation)
+        - SafeWithEIP1271.multiSigExecute(...) # EIP-1271 validation (SAFE)
+        - getTransactionHash(...) # View function (SAFE)
+        - _executeInternal(...) # Internal function (SAFE)
+        - SafeWithoutSignatureParams.execute(...) # No sig params (SAFE)
+        - SafeNonMultisigContract.executeAction(...) # Non-multisig (SAFE)
+        - initialize(...) # Initializer (SAFE)
+      edge_cases:
+        - EdgeSignatureInModifier.execute(...) # Modifier ecrecover (SAFE)
+        - EdgeSignatureInExternalContract.executeWithApprovals(...) # External validator (FP acceptable)
+        - EdgeSignatureInLibrary.execute(...) # Library ecrecover (SAFE)
+        - EdgeSignatureInAssembly.executeWithAssembly(...) # Assembly ecrecover (SAFE)
+        - EdgeMultipleSignatureTypes.execute(...) # EOA + EIP-1271 (SAFE)
+        - EdgeSignatureInStructField.batchExecute(...) # Struct signature (SAFE)
+        - EdgeNoExternalCallButHasSigs.validateOnly(...) # No external call (SAFE)
+      variations:
+        - VariationNamingConventions.executeAction(...) # controller naming (TP)
+        - VariationGnosisSafeStyle.execTransaction(...) # Gnosis Safe (TP)
+        - VariationTimelockStyle.executeQueuedTransaction(...) # Timelock (TP)
+        - VariationGovernorStyle.executeProposal(...) # Governor (TP)
+        - VariationCompactFormat.executeCompact(...) # Compact format (TP)
+        - VariationEIP2098Format.executeEIP2098Compact(...) # EIP-2098 (TP)
+    last_updated: "2025-12-31"
+
+notes: |
+  This project tests multisig transaction execution patterns with focus on
+  signature validation and replay protection detection. Tests cover:
+  - Various execution function naming patterns
+  - Different nonce mechanisms (parameter, mapping, executed flag)
+  - Multisig patterns (N-of-M, timelock, governor, Gnosis)
+  - Replay protection alternatives (signatures, EIP-712, chain ID, deadlines)
+  - Signature validation methods (ecrecover, ECDSA library, EIP-1271)
+
+  **multisig-002 Testing Notes:**
+  - Pattern achieves 83.3% precision, 71.4% recall, 40% variation score
+  - Status: DRAFT (variation score below 60% threshold)
+  - Critical limitation: Builder only detects "nonce" in parameter names
+  - Misses variations: counter, index, sequenceNumber (4 false negatives)
+  - Needs builder.py enhancement to reach READY/EXCELLENT status
+
+  **multisig-003 Testing Notes:**
+  - Pattern achieves 90.9% precision, 100% recall, 100% variation score
+  - Status: EXCELLENT (exceeds all thresholds for production use)
+  - One known FP: SafeWithECDSALibrary (builder limitation: ECDSA.recover not detected)
+  - Successfully detects all signature validation bypasses across:
+    * Standard signature formats (bytes[], r/s/v split, Signature struct)
+    * Alternative naming (controller, admin, approver, signer)
+    * Different patterns (Gnosis Safe, Timelock, Governor, multisig)
+    * Compact formats (65-byte, EIP-2098 64-byte r+vs)
+  - Edge cases handled: modifier, library, assembly ecrecover detection
+  - Zero false negatives: catches all vulnerable implementations
+
+  ext-003:
+    files: [LowLevelCallTest.sol]
+    functions:
+      vulnerable:
+        - forwardCall(address,bytes)
+        - executeCall(address,bytes)
+        - queryExternal(address,bytes)
+        - relayTransaction(address,bytes)
+        - proxyCall(address,bytes)
+        - execute(address,bytes)
+        - sendWithCall(address,uint256)
+        - unsafeCall(address,bytes)
+        - gasLimitedCall(address,bytes)
+        - callbackToSender(bytes)
+        - callWithUnusedReturn(address,bytes)
+        - sendValue(address)
+        - staticQuery(address,bytes4)
+        - execTransaction(address,uint256,bytes,uint8)
+        - processCallback(address,bytes)
+        - executeExpensive(address,bytes)
+        - criticalOperation(address,bytes)
+      safe:
+        - forwardCallProtected(address,bytes)
+        - executeCallWithCheck(address,bytes)
+        - callTrusted(address,bytes)
+        - callHardcodedTarget(bytes)
+        - executeAuthorized(address,bytes)
+        - callMultiAuth(address,bytes)
+        - timelockCall(address,bytes)
+        - forwardCallControllerProtected(address,bytes)
+        - executeAsAdmin(address,bytes)
+        - governanceCall(address,bytes)
+        - staticQueryProtected(address,bytes4)
+        - protectedCall(address,bytes)
+        - inlineProtectedCall(address,bytes)
+        - whitelistedCall(address,bytes)
+      edge_cases:
+        - callbackToSender(bytes)  # TP - caller controls their address
+        - executeAuthorized(address,bytes)  # TN - custom access control
+        - callMultiAuth(address,bytes)  # TN - OR logic access control
+        - timelockCall(address,bytes)  # TN - time-based access control
+      variations:
+        - relayTransaction(address,bytes)  # relay naming
+        - proxyCall(address,bytes)  # proxy naming
+        - execute(address,bytes)  # execute naming
+        - sendValue(address)  # value without data
+        - staticQuery(address,bytes4)  # staticcall
+    last_updated: "2025-12-31"
+
+  **ext-003 Testing Notes:**
+  - Pattern achieves 94.4% precision, 100% recall, 100% variation score
+  - Status: EXCELLENT (exceeds all thresholds for production use)
+  - One known FP: execTransactionProtected (builder limitation: custom checkSignatures not detected)
+  - Successfully detects unprotected low-level calls across:
+    * Different naming conventions (forward, relay, proxy, execute)
+    * Different call types (call, staticcall, call with value)
+    * Various attack scenarios (fund drainage, gas griefing, DoS, reentrancy)
+    * Real-world patterns (Gnosis Safe-style, multicall)
+  - Zero false negatives: catches all vulnerable unprotected calls
+  - HIGH severity: Low-level calls bypass Solidity safety checks
+
+  crypto-001:
+    files: [CryptoSignatureTest.sol]
+    functions:
+      vulnerable:
+        - executeWithSignature(address,bytes,uint8,bytes32,bytes32)  # Missing zero address check
+        - executeTransaction(address,bytes,uint8,bytes32,bytes32)  # Missing v-value check
+        - transferWithSignature(address,uint256,uint8,bytes32,bytes32)  # Missing nonce protection
+        - approveWithSignature(address,uint256,uint8,bytes32,bytes32)  # Missing deadline
+        - executeMultiVuln(address,uint8,bytes32,bytes32)  # Missing all checks
+        - executeUninitialized(address,uint8,bytes32,bytes32)  # Edge: zero address owner
+        - executeWithHashTracking(address,bytes,uint8,bytes32,bytes32)  # Edge: hash tracking
+        - permitEIP712Vulnerable(address,address,uint256,uint256,uint8,bytes32,bytes32)  # EIP-712 variation
+        - executeCompact(address,bytes,bytes)  # Compact signature variation
+        - executeEIP2098(address,bytes,bytes32,bytes32)  # EIP-2098 variation
+        - executeMultiSig(address,bytes,uint8[],bytes32[],bytes32[])  # Multi-sig variation
+        - executeMetaTx(address,address,uint256,bytes,uint8,bytes32,bytes32)  # Meta-tx variation
+        - recoverSignerPure(bytes32,uint8,bytes32,bytes32)  # FP - builder: is_pure=False
+      safe:
+        - executeSafe(address,bytes,uint256,uint8,bytes32,bytes32)  # All checks present
+        - executeWithECDSA(address,bytes,uint256,bytes)  # ECDSA library
+        - verifySignatureView(bytes32,uint8,bytes32,bytes32)  # View function
+        - _recoverInternal(bytes32,uint8,bytes32,bytes32)  # Internal function
+      false_negatives:
+        - permit(address,uint256,uint256,uint8,bytes32,bytes32)  # Builder: checks_sig_s=True
+        - executeOnChain(address,bytes,uint256,uint8,bytes32,bytes32)  # Builder: checks_sig_s=True
+        - executePartialChecks(address,bytes,uint256,uint8,bytes32,bytes32)  # Builder: checks_sig_s=True
+        - authorizeAction(address,bytes,uint256,uint8,bytes32,bytes32)  # Builder: checks_sig_s=True, nonce naming
+    last_updated: "2025-12-31"
+
+  **crypto-001 Testing Notes:**
+  - Pattern achieves 92.3% precision, 75% recall, 83.3% variation score
+  - Status: READY (exceeds all thresholds for production with human review)
+  - Known builder limitations affecting 5 tests:
+    * checks_sig_s incorrectly detected as True → 4 FNs
+    * is_pure incorrectly detected as False → 1 FP
+    * Nonce detection only for "nonce" naming → 1 FN
+  - With builder fixes, estimated metrics: precision ~100%, recall ~100%, variation ~100%
+  - Successfully detects missing signature checks:
+    * Zero address validation
+    * V-value validation (27 or 28)
+    * Nonce-based replay protection
+    * Deadline/expiration
+  - Tested variations: EIP-712, compact format, EIP-2098, multi-sig, different naming, meta-tx
+  - HIGH severity: Signature validation flaws enable authorization bypass, replay attacks

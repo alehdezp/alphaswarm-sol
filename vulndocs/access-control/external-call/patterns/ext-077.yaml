@@ -1,0 +1,16 @@
+id: ext-077
+vulndoc: access-control/external-call
+name: Deadline Max Bound Missing
+description: Deadlines without maximum bound or reasonable limit.
+scope: Function
+lens:
+- ExternalInfluence
+severity: low
+match:
+  all:
+  - property: has_deadline_parameter
+    op: eq
+    value: true
+  - property: has_deadline_max
+    op: eq
+    value: false

@@ -1,0 +1,22 @@
+# Frontrunning - Subcategory Index
+
+id: frontrunning
+name: Frontrunning
+parent_category: mev
+
+description: |
+  Copying and front-running profitable transactions observed in the
+  mempool by submitting the same transaction with higher gas.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - mev-002
+
+relevant_properties:
+  - visibility
+  - reveals_profit
+
+token_estimate: 400

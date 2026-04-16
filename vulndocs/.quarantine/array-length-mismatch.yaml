@@ -1,0 +1,16 @@
+id: array-length-mismatch
+vulndoc: logic/array-handling
+name: Array Length Mismatch Check Missing
+description: Multiple array parameters without length equality checks can cause misaligned accounting.
+scope: Function
+lens:
+  - DoS
+severity: medium
+match:
+  all:
+    - property: has_multi_array_parameter
+      op: eq
+      value: true
+    - property: has_array_length_match
+      op: eq
+      value: false

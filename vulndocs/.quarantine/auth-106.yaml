@@ -1,0 +1,13 @@
+id: auth-106
+vulndoc: access-control/general
+name: Access Gate Without Sender Source
+description: Access control does not reference msg.sender/tx.origin.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_gate_without_sender_source
+    op: eq
+    value: true

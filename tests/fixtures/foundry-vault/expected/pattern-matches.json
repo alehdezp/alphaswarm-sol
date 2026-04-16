@@ -1,0 +1,46 @@
+{
+  "description": "Expected pattern matches for Vault.sol",
+  "fixture": "foundry-vault",
+
+  "expected_matches": [
+    {
+      "pattern_id": "reentrancy-classic",
+      "tier": "A",
+      "function": "withdraw",
+      "confidence_min": 0.9,
+      "evidence": {
+        "operations": ["TRANSFERS_VALUE_OUT", "WRITES_USER_BALANCE"],
+        "order_violation": true,
+        "guard_missing": true
+      }
+    },
+    {
+      "pattern_id": "weak-access-control",
+      "tier": "A",
+      "function": "setOwner",
+      "confidence_min": 0.85,
+      "evidence": {
+        "modifies_privileged_state": true,
+        "has_access_gate": false
+      }
+    }
+  ],
+
+  "expected_no_match": [
+    {
+      "pattern_id": "reentrancy-classic",
+      "function": "safeWithdraw",
+      "reason": "Has nonReentrant guard"
+    },
+    {
+      "pattern_id": "weak-access-control",
+      "function": "emergencyWithdraw",
+      "reason": "Has onlyOwner modifier"
+    },
+    {
+      "pattern_id": "weak-access-control",
+      "function": "transferOwnership",
+      "reason": "Has onlyOwner modifier"
+    }
+  ]
+}

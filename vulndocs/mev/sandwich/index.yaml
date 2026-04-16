@@ -1,0 +1,22 @@
+# Sandwich Attack - Subcategory Index
+
+id: sandwich
+name: Sandwich Attack
+parent_category: mev
+
+description: |
+  Attacker places transactions before and after a victim swap to extract
+  value through price manipulation, capturing the spread.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - mev-001
+
+relevant_properties:
+  - swap_like
+  - risk_missing_slippage_parameter
+
+token_estimate: 400

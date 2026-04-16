@@ -1,0 +1,25 @@
+# account-abstraction Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: account-abstraction
+name: Account Abstraction
+description: |
+  Vulnerability subcategories for account-abstraction domain.
+  See individual subcategories for detection patterns and documentation.
+
+subcategories:
+  - id: bundler-manipulation
+    path: bundler-manipulation/
+  - id: entrypoint-issues
+    path: entrypoint-issues/
+  - id: erc4337-vulnerabilities
+    path: erc4337-vulnerabilities/
+  - id: paymaster-exploits
+    name: Paymaster Exploits
+    path: paymaster-exploits/
+  - id: userop-validation
+    path: userop-validation/
+
+statistics:
+  subcategory_count: 5
+  last_updated: "2026-01-23"

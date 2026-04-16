@@ -1,0 +1,47 @@
+# DVDeFi Challenge: Side Entrance
+# Vulnerability: Callback reentrancy via flash loan
+
+id: dvd-side-entrance
+name: Side Entrance
+version: "4"
+difficulty: 2
+category: Reentrancy
+
+source_path: examples/damm-vuln-defi/src/side-entrance
+
+vulnerability:
+  type: callback-reentrancy
+  description: |
+    The flash loan callback can be used to re-enter via deposit(),
+    allowing borrowed funds to be counted as user's deposit.
+  cwe: CWE-841
+  severity: critical
+
+expected_detections:
+  - pattern: reentrancy-callback
+    contract: SideEntranceLenderPool
+    function: flashLoan
+    property: callback_chain_surface
+    confidence: high
+
+  - pattern: reentrancy-basic
+    contract: SideEntranceLenderPool
+    function: flashLoan
+    property: state_write_after_external_call
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - SideEntranceLenderPool.flashLoan
+    - SideEntranceLenderPool.deposit
+  safe:
+    - SideEntranceLenderPool.withdraw
+
+false_positive_exclusions: []
+
+verification:
+  exploit_summary: "Flash loan ETH, deposit in callback, withdraw after loan repaid"
+  fix_summary: "Add reentrancy guard to flashLoan and deposit"
+
+status: detected
+detection_date: "2025-12-31"

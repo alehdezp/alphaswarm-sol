@@ -1,0 +1,16 @@
+id: ext-061
+vulndoc: access-control/external-call
+name: Oracle Aggregation Per-Source Staleness Missing
+description: Aggregation without per-source staleness validation.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_per_source_staleness
+    op: eq
+    value: false

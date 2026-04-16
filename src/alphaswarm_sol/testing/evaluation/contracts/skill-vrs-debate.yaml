@@ -1,0 +1,58 @@
+workflow_id: skill-vrs-debate
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+reasoning_dimensions:
+- coordination_quality
+- debate_coherence
+- evidence_flow
+- consensus_quality
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: agents_spawned
+  description: Debate agents were spawned
+  expected_behavior: Task tool calls spawn attacker and defender roles
+  grader_type: code
+- id: turns_exchanged
+  description: Multiple debate turns occurred
+  expected_behavior: SendMessage calls between agents in transcript
+  grader_type: code
+- id: session_completed
+  description: Debate completed with resolution
+  expected_behavior: session_completed is true and response contains debate outcome
+  grader_type: code
+evidence_requirements:
+- type: transcript
+  description: Inter-agent message transcripts
+- type: graph_nodes
+  description: Graph evidence cited in debate
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+ground_truth_rubric: Skill spawns debate agents with clear adversarial roles. Skill
+  ensures debate turns build on prior evidence rather than repeating claims. Skill
+  monitors for convergence or circular argumentation. Skill routes graph evidence
+  between turns to ground the debate. Skill produces a debate resolution with explicit
+  evidence for the winning position.
+active_dimensions:
+- coordination_quality
+- debate_coherence
+- evidence_flow
+- consensus_quality
+- task_delegation
+- rubric_coverage
+- evidence_quality
+- conclusion_support

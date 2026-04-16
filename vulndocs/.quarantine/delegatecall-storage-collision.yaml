@@ -1,0 +1,13 @@
+id: delegatecall-storage-collision
+vulndoc: access-control/delegatecall
+name: Delegatecall Storage Collision
+description: Delegatecall used outside proxy upgrade context.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: delegatecall_in_non_proxy
+    op: eq
+    value: true

@@ -1,0 +1,16 @@
+id: value-movement-flash-loan-sensitive-operation
+vulndoc: reentrancy/general
+name: Flash Loan Sensitive Operation
+description: Price-sensitive operations without flash loan guards.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: flash_loan_sensitive_operation
+    op: eq
+    value: true
+  - property: flash_loan_guard
+    op: eq
+    value: false

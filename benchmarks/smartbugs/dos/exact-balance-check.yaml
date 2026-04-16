@@ -1,0 +1,22 @@
+# Exact Balance Check
+id: smartbugs-exact-balance-check
+name: Exact Balance Check DoS
+category: dos
+source: examples/semgrep-smart-contracts/solidity/security/exact-balance-check.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: dos-strict-equality
+  description: Strict balance equality check can be broken by donations
+  severity: high
+  cwe: CWE-398
+
+expected_detections:
+  - pattern: dos-strict-equality
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: dos-strict-equality
+  secondary: [balance-check-strict]
+
+status: pending

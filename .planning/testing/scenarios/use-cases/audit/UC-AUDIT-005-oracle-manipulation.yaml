@@ -1,0 +1,79 @@
+id: UC-AUDIT-005
+name: "Detect missing staleness check on oracle price feed"
+workflow: vrs-audit
+category: audit
+tier: core
+
+input:
+  contract: "tests/contracts/OracleNoStaleness.sol"
+  command: "/vrs-audit tests/contracts/OracleNoStaleness.sol"
+  context: >
+    OracleNoStaleness.sol reads a Chainlink price feed via latestRoundData()
+    but does not check the updatedAt timestamp for staleness. A stale price
+    can be exploited to borrow at incorrect collateral ratios, drain lending
+    pools, or manipulate liquidation thresholds. This is a critical DeFi
+    vulnerability pattern.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build the graph, detect READS_ORACLE and
+    READS_EXTERNAL_VALUE operations associated with the Chainlink price
+    feed call, and identify that no staleness check (comparison of updatedAt
+    against a threshold) follows the oracle read. The finding should explain
+    the specific exploitation path via stale price data.
+  must_happen:
+    - "Build BSKG from OracleNoStaleness.sol via alphaswarm build-kg"
+    - "Query graph for READS_ORACLE or READS_EXTERNAL_VALUE operations"
+    - "Detect the latestRoundData() call to Chainlink price feed"
+    - "Identify absence of staleness check (no updatedAt comparison)"
+    - "Produce finding categorized as oracle or oracle-manipulation"
+    - "Finding severity is medium or high"
+    - "Finding explains the stale price exploitation scenario"
+  must_not_happen:
+    - "Miss the oracle vulnerability entirely"
+    - "Flag the oracle read itself as the problem (the read is fine, the missing check is the problem)"
+    - "Skip BSKG queries for oracle-related operations"
+    - "Produce findings without explaining the impact of stale prices"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+      - "Write"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "oracle"
+    severity: "medium"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: graph_utilization
+      description: "Did the workflow query for oracle-related semantic operations?"
+    - name: finding_accuracy
+      description: "Was the missing staleness check correctly identified (not just the oracle read)?"
+    - name: evidence_quality
+      description: "Does the finding reference the specific latestRoundData() call and missing check?"
+    - name: reasoning_depth
+      description: "Does the analysis explain how stale prices can be exploited?"
+  regression_signals:
+    - "Finding count drops to 0 -> CRITICAL REGRESSION: oracle detection broken"
+    - "Finding targets wrong issue (e.g., access control instead of staleness) -> REGRESSION: classification error"
+    - "Score drops below 60 -> REGRESSION: oracle analysis degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/OracleNoStaleness.sol"
+  related_scenarios:
+    - "UC-AUDIT-001"
+    - "UC-AUDIT-004"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Oracle manipulation is the third pillar of DeFi security after reentrancy
+  and access control. Core tier because oracle staleness is a common real-world
+  exploit vector (see Mango Markets, Cream Finance).

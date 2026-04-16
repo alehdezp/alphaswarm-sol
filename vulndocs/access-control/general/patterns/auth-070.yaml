@@ -1,0 +1,16 @@
+id: auth-070
+vulndoc: access-control/general
+name: Upgrade Without Access Control
+description: Upgrade functions without access control.
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

@@ -1,0 +1,499 @@
+# SWC Registry to VKG VulnDocs Mapping
+# Created: 2026-01-20
+# Source: https://swcregistry.io/
+# Purpose: Map all 37 SWC entries to VKG semantic operations and VulnDocs categories
+
+schema_version: "1.0"
+total_entries: 37
+mapped_entries: 37
+source_url: "https://swcregistry.io/"
+
+# Note: SWC Registry is no longer actively maintained (last update 2020)
+# However, it provides foundational vulnerability classification
+
+mappings:
+  # SWC-100: Function Default Visibility
+  SWC-100:
+    title: "Function Default Visibility"
+    cwe: "CWE-710"
+    vulndocs_category: "access-control"
+    vulndocs_subcategory: "missing-modifier"
+    vkg_operations:
+      - "MODIFIES_CRITICAL_STATE"
+    vkg_properties:
+      - "visibility: [public, external]"
+      - "has_access_gate: false"
+    relevance: "high"
+    note: "Pre-0.5.0 issue, functions defaulted to public"
+
+  # SWC-101: Integer Overflow and Underflow
+  SWC-101:
+    title: "Integer Overflow and Underflow"
+    cwe: "CWE-682"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "arithmetic"
+    vkg_operations:
+      - "MODIFIES_CRITICAL_STATE"
+    vkg_properties:
+      - "uses_unchecked_math: true"
+    relevance: "medium"
+    note: "Pre-0.8.0 issue, automatic overflow check in 0.8+"
+
+  # SWC-102: Outdated Compiler Version
+  SWC-102:
+    title: "Outdated Compiler Version"
+    cwe: "CWE-937"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Tooling issue, not runtime vulnerability"
+
+  # SWC-103: Floating Pragma
+  SWC-103:
+    title: "Floating Pragma"
+    cwe: "CWE-664"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Best practice, not security vulnerability"
+
+  # SWC-104: Unchecked Call Return Value
+  SWC-104:
+    title: "Unchecked Call Return Value"
+    cwe: "CWE-252"
+    vulndocs_category: "token"
+    vulndocs_subcategory: "missing-return"
+    vkg_operations:
+      - "CALLS_EXTERNAL"
+      - "TRANSFERS_VALUE_OUT"
+    vkg_properties:
+      - "checks_call_success: false"
+    relevance: "high"
+    note: "Maps to token/missing-return for ERC20 transfers"
+
+  # SWC-105: Unprotected Ether Withdrawal
+  SWC-105:
+    title: "Unprotected Ether Withdrawal"
+    cwe: "CWE-284"
+    vulndocs_category: "access-control"
+    vulndocs_subcategory: "missing-modifier"
+    vkg_operations:
+      - "TRANSFERS_VALUE_OUT"
+    vkg_properties:
+      - "has_access_gate: false"
+      - "visibility: [public, external]"
+    relevance: "critical"
+    note: "Direct fund theft via missing access control"
+
+  # SWC-106: Unprotected SELFDESTRUCT Instruction
+  SWC-106:
+    title: "Unprotected SELFDESTRUCT Instruction"
+    cwe: "CWE-284"
+    vulndocs_category: "upgrade"
+    vulndocs_subcategory: "selfdestruct"
+    vkg_operations:
+      - "USES_SELFDESTRUCT"
+    vkg_properties:
+      - "has_access_gate: false"
+    relevance: "critical"
+    note: "Contract destruction, deprecated post-Cancun"
+
+  # SWC-107: Reentrancy
+  SWC-107:
+    title: "Reentrancy"
+    cwe: "CWE-841"
+    vulndocs_category: "reentrancy"
+    vulndocs_subcategory: "classic"
+    vkg_operations:
+      - "CALLS_EXTERNAL"
+      - "WRITES_USER_BALANCE"
+      - "TRANSFERS_VALUE_OUT"
+    vkg_properties:
+      - "state_write_after_external_call: true"
+      - "has_reentrancy_guard: false"
+    behavioral_signature: "R:bal->X:out->W:bal"
+    relevance: "critical"
+    note: "Foundational vulnerability class"
+
+  # SWC-108: State Variable Default Visibility
+  SWC-108:
+    title: "State Variable Default Visibility"
+    cwe: "CWE-710"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Best practice, variables default to internal"
+
+  # SWC-109: Uninitialized Storage Pointer
+  SWC-109:
+    title: "Uninitialized Storage Pointer"
+    cwe: "CWE-824"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "state-inconsistency"
+    vkg_operations:
+      - "WRITES_USER_BALANCE"
+    vkg_properties:
+      - "has_uninitialized_storage: true"
+    relevance: "medium"
+    note: "Pre-0.5.0 issue, compiler error in modern Solidity"
+
+  # SWC-110: Assert Violation
+  SWC-110:
+    title: "Assert Violation"
+    cwe: "CWE-670"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "invariant-violation"
+    vkg_operations: []
+    vkg_properties:
+      - "uses_assert: true"
+    relevance: "medium"
+    note: "Indicates logic bug if assert can be violated"
+
+  # SWC-111: Use of Deprecated Solidity Functions
+  SWC-111:
+    title: "Use of Deprecated Solidity Functions"
+    cwe: "CWE-477"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "sha3, suicide, etc. - tooling issue"
+
+  # SWC-112: Delegatecall to Untrusted Callee
+  SWC-112:
+    title: "Delegatecall to Untrusted Callee"
+    cwe: "CWE-829"
+    vulndocs_category: "access-control"
+    vulndocs_subcategory: "delegatecall-control"
+    vkg_operations:
+      - "USES_DELEGATECALL"
+      - "CALLS_UNTRUSTED"
+    vkg_properties:
+      - "delegatecall_to_user_input: true"
+    relevance: "critical"
+    note: "Storage corruption via untrusted delegatecall"
+
+  # SWC-113: DoS with Failed Call
+  SWC-113:
+    title: "DoS with Failed Call"
+    cwe: "CWE-703"
+    vulndocs_category: "dos"
+    vulndocs_subcategory: "external-revert"
+    vkg_operations:
+      - "CALLS_EXTERNAL"
+    vkg_properties:
+      - "reverts_on_external_failure: true"
+    relevance: "high"
+    note: "Push pattern vulnerability, affects loops"
+
+  # SWC-114: Transaction Order Dependence
+  SWC-114:
+    title: "Transaction Order Dependence"
+    cwe: "CWE-362"
+    vulndocs_category: "mev"
+    vulndocs_subcategory: "frontrunning"
+    vkg_operations:
+      - "READS_EXTERNAL_VALUE"
+    vkg_properties:
+      - "order_dependent: true"
+    relevance: "high"
+    note: "MEV vulnerability, frontrunning opportunity"
+
+  # SWC-115: Authorization through tx.origin
+  SWC-115:
+    title: "Authorization through tx.origin"
+    cwe: "CWE-477"
+    vulndocs_category: "access-control"
+    vulndocs_subcategory: "tx-origin"
+    vkg_operations:
+      - "CHECKS_PERMISSION"
+    vkg_properties:
+      - "uses_tx_origin: true"
+    relevance: "high"
+    note: "Phishing vulnerability via tx.origin"
+
+  # SWC-116: Block values as a proxy for time
+  SWC-116:
+    title: "Block values as a proxy for time"
+    cwe: "CWE-829"
+    vulndocs_category: "crypto"
+    vulndocs_subcategory: "weak-randomness"
+    vkg_operations:
+      - "READS_EXTERNAL_VALUE"
+    vkg_properties:
+      - "uses_block_timestamp: true"
+    relevance: "medium"
+    note: "Minor manipulation possible by miners"
+
+  # SWC-117: Signature Malleability
+  SWC-117:
+    title: "Signature Malleability"
+    cwe: "CWE-347"
+    vulndocs_category: "crypto"
+    vulndocs_subcategory: "signature-malleability"
+    vkg_operations:
+      - "USES_ECRECOVER"
+    vkg_properties:
+      - "validates_signature_format: false"
+    relevance: "high"
+    note: "ECDSA s-value manipulation"
+
+  # SWC-118: Incorrect Constructor Name
+  SWC-118:
+    title: "Incorrect Constructor Name"
+    cwe: "CWE-665"
+    vulndocs_category: "access-control"
+    vulndocs_subcategory: "initialization"
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Pre-0.4.22 issue, constructor keyword required"
+
+  # SWC-119: Shadowing State Variables
+  SWC-119:
+    title: "Shadowing State Variables"
+    cwe: "CWE-710"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "state-inconsistency"
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "medium"
+    note: "Compiler warning in modern Solidity"
+
+  # SWC-120: Weak Sources of Randomness from Chain Attributes
+  SWC-120:
+    title: "Weak Sources of Randomness from Chain Attributes"
+    cwe: "CWE-330"
+    vulndocs_category: "crypto"
+    vulndocs_subcategory: "weak-randomness"
+    vkg_operations:
+      - "READS_EXTERNAL_VALUE"
+    vkg_properties:
+      - "uses_block_hash: true"
+      - "uses_block_timestamp: true"
+    relevance: "high"
+    note: "Predictable randomness from chain data"
+
+  # SWC-121: Missing Protection against Signature Replay Attacks
+  SWC-121:
+    title: "Missing Protection against Signature Replay Attacks"
+    cwe: "CWE-347"
+    vulndocs_category: "crypto"
+    vulndocs_subcategory: "replay"
+    vkg_operations:
+      - "USES_ECRECOVER"
+    vkg_properties:
+      - "has_nonce_check: false"
+      - "has_chain_id: false"
+    relevance: "critical"
+    note: "Signature reuse across chains/nonces"
+
+  # SWC-122: Lack of Proper Signature Verification
+  SWC-122:
+    title: "Lack of Proper Signature Verification"
+    cwe: "CWE-345"
+    vulndocs_category: "crypto"
+    vulndocs_subcategory: "ecrecover-zero"
+    vkg_operations:
+      - "USES_ECRECOVER"
+    vkg_properties:
+      - "checks_ecrecover_zero: false"
+    relevance: "critical"
+    note: "ecrecover returns zero on invalid signature"
+
+  # SWC-123: Requirement Violation
+  SWC-123:
+    title: "Requirement Violation"
+    cwe: "CWE-573"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "invariant-violation"
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Contract-specific invariant checking"
+
+  # SWC-124: Write to Arbitrary Storage Location
+  SWC-124:
+    title: "Write to Arbitrary Storage Location"
+    cwe: "CWE-123"
+    vulndocs_category: "upgrade"
+    vulndocs_subcategory: "storage-collision"
+    vkg_operations:
+      - "MODIFIES_CRITICAL_STATE"
+    vkg_properties:
+      - "writes_arbitrary_storage: true"
+    relevance: "critical"
+    note: "Array length manipulation to write anywhere"
+
+  # SWC-125: Incorrect Inheritance Order
+  SWC-125:
+    title: "Incorrect Inheritance Order"
+    cwe: "CWE-696"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "medium"
+    note: "C3 linearization, affects function resolution"
+
+  # SWC-126: Insufficient Gas Griefing
+  SWC-126:
+    title: "Insufficient Gas Griefing"
+    cwe: "CWE-691"
+    vulndocs_category: "dos"
+    vulndocs_subcategory: "block-gas-limit"
+    vkg_operations:
+      - "CALLS_EXTERNAL"
+    vkg_properties:
+      - "forwards_all_gas: false"
+    relevance: "medium"
+    note: "Relayer can provide insufficient gas"
+
+  # SWC-127: Arbitrary Jump with Function Type Variable
+  SWC-127:
+    title: "Arbitrary Jump with Function Type Variable"
+    cwe: "CWE-695"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "configuration"
+    vkg_operations: []
+    vkg_properties:
+      - "uses_function_pointer: true"
+    relevance: "low"
+    note: "Assembly-level vulnerability"
+
+  # SWC-128: DoS With Block Gas Limit
+  SWC-128:
+    title: "DoS With Block Gas Limit"
+    cwe: "CWE-400"
+    vulndocs_category: "dos"
+    vulndocs_subcategory: "unbounded-loop"
+    vkg_operations:
+      - "LOOPS_OVER_ARRAY"
+    vkg_properties:
+      - "unbounded_loop: true"
+    relevance: "high"
+    note: "Unbounded array iteration hits gas limit"
+
+  # SWC-129: Typographical Error
+  SWC-129:
+    title: "Typographical Error"
+    cwe: "CWE-480"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "arithmetic"
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "medium"
+    note: "=+ instead of += etc."
+
+  # SWC-130: Right-To-Left-Override control character
+  SWC-130:
+    title: "Right-To-Left-Override control character (U+202E)"
+    cwe: "CWE-451"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "UI/display issue, not runtime"
+
+  # SWC-131: Presence of unused variables
+  SWC-131:
+    title: "Presence of unused variables"
+    cwe: "CWE-1164"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Code quality, not security"
+
+  # SWC-132: Unexpected Ether balance
+  SWC-132:
+    title: "Unexpected Ether balance"
+    cwe: "CWE-667"
+    vulndocs_category: "logic"
+    vulndocs_subcategory: "balance-manipulation"
+    vkg_operations:
+      - "CHECKS_BALANCE"
+    vkg_properties:
+      - "relies_on_contract_balance: true"
+    relevance: "high"
+    note: "selfdestruct/coinbase can force ether"
+
+  # SWC-133: Hash Collisions With Multiple Variable Length Arguments
+  SWC-133:
+    title: "Hash Collisions With Multiple Variable Length Arguments"
+    cwe: "CWE-294"
+    vulndocs_category: "crypto"
+    vulndocs_subcategory: "hash-collision"
+    vkg_operations:
+      - "USES_KECCAK256"
+    vkg_properties:
+      - "packs_variable_length: true"
+    relevance: "high"
+    note: "abi.encodePacked collision with dynamic types"
+
+  # SWC-134: Message call with hardcoded gas amount
+  SWC-134:
+    title: "Message call with hardcoded gas amount"
+    cwe: "CWE-665"
+    vulndocs_category: "dos"
+    vulndocs_subcategory: "external-revert"
+    vkg_operations:
+      - "CALLS_EXTERNAL"
+    vkg_properties:
+      - "hardcoded_gas: true"
+    relevance: "medium"
+    note: "transfer/send with 2300 gas deprecated"
+
+  # SWC-135: Code With No Effects
+  SWC-135:
+    title: "Code With No Effects"
+    cwe: "CWE-1164"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "low"
+    note: "Dead code, quality issue"
+
+  # SWC-136: Unencrypted Private Data On-Chain
+  SWC-136:
+    title: "Unencrypted Private Data On-Chain"
+    cwe: "CWE-767"
+    vulndocs_category: null
+    vulndocs_subcategory: null
+    vkg_operations: []
+    vkg_properties: []
+    relevance: "medium"
+    note: "Private keyword doesn't hide data"
+
+# Summary statistics
+summary:
+  total_swc: 37
+  mapped_to_vulndocs: 26
+  no_mapping_needed: 11  # Quality/tooling issues, not runtime vulnerabilities
+
+  by_category:
+    access-control: 5
+    reentrancy: 1
+    logic: 7
+    crypto: 6
+    dos: 4
+    mev: 1
+    token: 1
+    upgrade: 2
+    null: 11  # Not runtime vulnerabilities
+
+  by_relevance:
+    critical: 7
+    high: 10
+    medium: 9
+    low: 11

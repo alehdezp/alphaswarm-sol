@@ -1,0 +1,77 @@
+# Access Control Investigation Template
+vulnerability_class: access_control
+version: "1.0"
+last_updated: 2026-01-07
+
+investigation_steps:
+  - step_number: 1
+    action: "Identify the privileged operation"
+    look_for: |
+      - Ownership changes (transferOwnership, setOwner)
+      - Administrative setters (setFee, setAdmin, pause)
+      - Fund movements (withdraw, sweep, emergencyWithdraw)
+      - Token minting/burning
+      - Upgrade functions
+    evidence_needed: "What sensitive operation does this function perform?"
+
+  - step_number: 2
+    action: "Check for access control mechanism"
+    look_for: |
+      - onlyOwner modifier
+      - onlyRole(ADMIN_ROLE)
+      - require(msg.sender == owner)
+      - require(hasRole(role, msg.sender))
+      - OpenZeppelin AccessControl or Ownable
+    evidence_needed: "Access control code or modifier name"
+    red_flag: "No access control check found"
+    safe_if: "Proper access control modifier/check exists"
+
+  - step_number: 3
+    action: "Verify access control is correctly implemented"
+    look_for: |
+      - Is the modifier actually checking permissions?
+      - Is the role/owner properly initialized?
+      - Can the access control be bypassed?
+    evidence_needed: "Modifier implementation code"
+    red_flag: "Modifier exists but doesn't actually restrict access"
+
+  - step_number: 4
+    action: "Check function visibility"
+    look_for: |
+      - public vs external vs internal
+      - Can this be called through another unprotected function?
+    evidence_needed: "Function visibility and call paths"
+
+  - step_number: 5
+    action: "Assess impact of unauthorized access"
+    look_for: |
+      - What can attacker do?
+      - What's the worst-case damage?
+      - Is there value at risk?
+    evidence_needed: "Impact description with severity"
+
+questions_to_answer:
+  - "What sensitive operation does this function perform?"
+  - "Who should be allowed to call this function?"
+  - "Is there any access control check?"
+  - "Is the access control correctly implemented?"
+  - "What's the impact if anyone can call this?"
+
+common_false_positives:
+  - "Function is intentionally public (e.g., user withdrawal)"
+  - "Access control is in a base contract not shown"
+  - "Function only reads state, doesn't modify"
+  - "The 'privileged' operation has no security impact"
+  - "Function is protected by a wrapper function"
+
+key_indicators:
+  - "public/external function modifies critical state"
+  - "No onlyOwner or role check"
+  - "Can change ownership or admin addresses"
+  - "Can move funds or mint tokens"
+
+safe_patterns:
+  - "onlyOwner modifier from OpenZeppelin"
+  - "AccessControl with proper role checks"
+  - "msg.sender validation against stored admin"
+  - "Multi-sig requirement"

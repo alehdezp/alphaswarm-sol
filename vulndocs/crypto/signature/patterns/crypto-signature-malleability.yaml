@@ -1,0 +1,21 @@
+id: crypto-signature-malleability
+vulndoc: crypto/signature
+name: ECDSA Signature Malleability - Missing S Value Check
+description: |
+  Detects signature verification without s-value validation, enabling signature malleability.
+  ECDSA signatures are malleable: for valid (r,s), (r, secp256k1_order - s) is also valid.
+  OpenZeppelin guidance: s must be in lower half of curve to prevent malleability.
+  Reference: s <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+  Impact: Alternative valid signatures can be crafted, potentially bypassing nonce-based replay protection.
+scope: Function
+lens:
+  - Crypto
+severity: medium
+match:
+  all:
+    - property: uses_ecrecover
+      op: eq
+      value: true
+    - property: checks_sig_s
+      op: eq
+      value: false

@@ -1,0 +1,22 @@
+# Strict Equality DoS - Subcategory Index
+
+id: strict-equality
+name: Strict Equality DoS
+parent_category: dos
+
+description: |
+  Balance checks using strict equality (==) that attackers can manipulate
+  by sending small amounts to shift contract balance.
+
+severity_range:
+  - low
+  - medium
+
+patterns:
+  - dos-004
+
+relevant_properties:
+  - has_strict_equality_check
+  - reads_contract_balance
+
+token_estimate: 400

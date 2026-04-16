@@ -1,0 +1,217 @@
+{
+  "timestamp": "2025-12-30T23:10:04.745908",
+  "total_contracts": 20,
+  "successful_builds": 20,
+  "failed_builds": 0,
+  "total_build_time_seconds": 25.183636538451537,
+  "average_build_time_seconds": 1.259181826922577,
+  "max_build_time_seconds": 2.820457125082612,
+  "min_build_time_seconds": 0.9858579590218142,
+  "total_peak_memory_mb": 22.40000820159912,
+  "average_peak_memory_mb": 1.120000410079956,
+  "max_peak_memory_mb": 5.918729782104492,
+  "total_nodes": 476,
+  "total_edges": 658,
+  "results": [
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/NonStandardTokens.sol",
+      "contract_name": "NonStandardTokens.sol",
+      "build_time_seconds": 2.820457125082612,
+      "peak_memory_mb": 5.918729782104492,
+      "node_count": 134,
+      "edge_count": 171,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/DelegatecallUntrusted.sol",
+      "contract_name": "DelegatecallUntrusted.sol",
+      "build_time_seconds": 1.6121735830092803,
+      "peak_memory_mb": 3.1970767974853516,
+      "node_count": 78,
+      "edge_count": 114,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/WeakAuthChainId.sol",
+      "contract_name": "WeakAuthChainId.sol",
+      "build_time_seconds": 1.0523429160239175,
+      "peak_memory_mb": 0.24285125732421875,
+      "node_count": 4,
+      "edge_count": 3,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/MulticallBatchingNoGuard.sol",
+      "contract_name": "MulticallBatchingNoGuard.sol",
+      "build_time_seconds": 1.0468299579806626,
+      "peak_memory_mb": 0.38407039642333984,
+      "node_count": 8,
+      "edge_count": 7,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/PermitIncorrectNonce.sol",
+      "contract_name": "PermitIncorrectNonce.sol",
+      "build_time_seconds": 1.1800764159997925,
+      "peak_memory_mb": 1.1502580642700195,
+      "node_count": 18,
+      "edge_count": 28,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/ValueMovementExternalCalls.sol",
+      "contract_name": "ValueMovementExternalCalls.sol",
+      "build_time_seconds": 1.0481397090479732,
+      "peak_memory_mb": 0.8706550598144531,
+      "node_count": 34,
+      "edge_count": 37,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/ValueMovementForcedEther.sol",
+      "contract_name": "ValueMovementForcedEther.sol",
+      "build_time_seconds": 1.448348000063561,
+      "peak_memory_mb": 2.5518875122070312,
+      "node_count": 57,
+      "edge_count": 92,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/TwapBoundsMissing.sol",
+      "contract_name": "TwapBoundsMissing.sol",
+      "build_time_seconds": 1.1155507079092786,
+      "peak_memory_mb": 0.3090677261352539,
+      "node_count": 9,
+      "edge_count": 12,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/MultisigExecuteNoSignatureValidation.sol",
+      "contract_name": "MultisigExecuteNoSignatureValidation.sol",
+      "build_time_seconds": 1.3901056250324473,
+      "peak_memory_mb": 0.41815757751464844,
+      "node_count": 13,
+      "edge_count": 13,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/TimelockParameterNoCheck.sol",
+      "contract_name": "TimelockParameterNoCheck.sol",
+      "build_time_seconds": 1.4311612910823897,
+      "peak_memory_mb": 0.34334468841552734,
+      "node_count": 10,
+      "edge_count": 10,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/SignatureWithNonce.sol",
+      "contract_name": "SignatureWithNonce.sol",
+      "build_time_seconds": 1.1779092500219122,
+      "peak_memory_mb": 0.6381502151489258,
+      "node_count": 14,
+      "edge_count": 19,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/UpgradeTimelockMissing.sol",
+      "contract_name": "UpgradeTimelockMissing.sol",
+      "build_time_seconds": 1.1489339580293745,
+      "peak_memory_mb": 0.26126575469970703,
+      "node_count": 8,
+      "edge_count": 16,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/CommitRevealRNG.sol",
+      "contract_name": "CommitRevealRNG.sol",
+      "build_time_seconds": 1.1961375829996541,
+      "peak_memory_mb": 1.4838495254516602,
+      "node_count": 17,
+      "edge_count": 29,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/PermitFrontrunnable.sol",
+      "contract_name": "PermitFrontrunnable.sol",
+      "build_time_seconds": 1.3119882500031963,
+      "peak_memory_mb": 1.2478466033935547,
+      "node_count": 22,
+      "edge_count": 33,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/WeakAuthBalanceCheck.sol",
+      "contract_name": "WeakAuthBalanceCheck.sol",
+      "build_time_seconds": 0.9858579590218142,
+      "peak_memory_mb": 0.24764537811279297,
+      "node_count": 4,
+      "edge_count": 3,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/TwapOracleRead.sol",
+      "contract_name": "TwapOracleRead.sol",
+      "build_time_seconds": 1.0137360830558464,
+      "peak_memory_mb": 0.30626964569091797,
+      "node_count": 9,
+      "edge_count": 12,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/TwapShortWindow.sol",
+      "contract_name": "TwapShortWindow.sol",
+      "build_time_seconds": 1.1269085000967607,
+      "peak_memory_mb": 1.2609739303588867,
+      "node_count": 11,
+      "edge_count": 21,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/OracleL2NoSequencerCheck.sol",
+      "contract_name": "OracleL2NoSequencerCheck.sol",
+      "build_time_seconds": 1.0000057079596445,
+      "peak_memory_mb": 0.6772489547729492,
+      "node_count": 11,
+      "edge_count": 16,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/MultiSourceNoDecimals.sol",
+      "contract_name": "MultiSourceNoDecimals.sol",
+      "build_time_seconds": 1.0600258329650387,
+      "peak_memory_mb": 0.4987764358520508,
+      "node_count": 9,
+      "edge_count": 16,
+      "success": true,
+      "error": null
+    },
+    {
+      "contract_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/contracts/AbiDecodeCalldataLength.sol",
+      "contract_name": "AbiDecodeCalldataLength.sol",
+      "build_time_seconds": 1.0169480830663815,
+      "peak_memory_mb": 0.39188289642333984,
+      "node_count": 6,
+      "edge_count": 6,
+      "success": true,
+      "error": null
+    }
+  ]
+}

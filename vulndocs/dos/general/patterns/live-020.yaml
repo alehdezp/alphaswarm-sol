@@ -1,0 +1,22 @@
+id: live-020
+vulndoc: dos/general
+name: Callback Griefing
+description: External callback targets can revert and block execution.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_low_level_calls
+    op: eq
+    value: true
+  - property: call_target_user_controlled
+    op: eq
+    value: true
+  - property: checks_low_level_call_success
+    op: eq
+    value: false
+  - property: has_try_catch
+    op: eq
+    value: false

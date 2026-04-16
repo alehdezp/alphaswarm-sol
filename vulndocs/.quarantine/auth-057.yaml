@@ -1,0 +1,13 @@
+id: auth-057
+vulndoc: access-control/general
+name: Weak Authentication Source Without Gate
+description: Access control relies on weak sources without explicit access gate.
+scope: Function
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: access_control_weak_source
+    op: eq
+    value: true

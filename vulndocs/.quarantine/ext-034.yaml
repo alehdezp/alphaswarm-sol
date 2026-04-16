@@ -1,0 +1,16 @@
+id: ext-034
+vulndoc: access-control/external-call
+name: L2 Finality Not Considered
+description: L2 oracle usage without finality or challenge period checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: l2_oracle_context
+    op: eq
+    value: true
+  - property: has_l2_finality_check
+    op: eq
+    value: false

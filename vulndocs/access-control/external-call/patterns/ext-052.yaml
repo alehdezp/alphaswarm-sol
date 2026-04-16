@@ -1,0 +1,16 @@
+id: ext-052
+vulndoc: access-control/external-call
+name: Multi-Source Oracle Without Decimals Normalization
+description: Aggregates multiple oracle sources without decimal normalization.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_decimals_normalized
+    op: eq
+    value: false

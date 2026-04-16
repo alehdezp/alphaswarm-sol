@@ -1,0 +1,25 @@
+id: value-movement-callback-chain-path
+vulndoc: reentrancy/general
+name: Callback Chain Path Surface
+description: Multi-hop contract call chain with post-call state writes.
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: state_write_after_external_call
+    op: eq
+    value: true
+paths:
+- steps:
+  - edge_type: CALLS_CONTRACT
+    direction: out
+    target_type: Contract
+  - edge_type: CONTAINS_FUNCTION
+    direction: out
+    target_type: Function
+  - edge_type: CALLS_CONTRACT
+    direction: out
+    target_type: Contract

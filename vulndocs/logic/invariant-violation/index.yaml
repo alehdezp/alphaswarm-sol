@@ -1,0 +1,22 @@
+# Invariant Violation - Subcategory Index
+
+id: invariant-violation
+name: Invariant Violation
+parent_category: logic
+
+description: |
+  Breaking protocol invariants (assumptions that should always hold)
+  through edge cases or accumulated errors.
+
+severity_range:
+  - medium
+  - critical
+
+patterns:
+  - logic-004
+
+relevant_properties:
+  - has_invariant_check
+  - edge_case_handling
+
+token_estimate: 400

@@ -1,0 +1,90 @@
+---
+id: arithmetic-incorrect-overflow-check
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Incorrect Overflow Check Constants
+category: arithmetic
+subcategory: incorrect-overflow-check
+severity: critical
+prevalence: low
+
+description: |
+  Vulnerabilities in checked arithmetic operations where the threshold constant used
+  to detect overflow is incorrect. Most commonly seen in bit-shift operations where
+  the comparison uses the wrong threshold (e.g., 0xFFFF...<<N instead of 0x1<<N),
+  allowing values that will overflow to pass the check. Often found in third-party
+  math libraries.
+
+impact:
+  - Integer overflow leading to value wrapping
+  - Liquidity manipulation (underdeposit, full withdrawal)
+  - Flash loan amplification
+  - Complete pool drainage
+  - Cross-pool exploitation
+
+root_cause:
+  - Wrong threshold constant in overflow check
+  - Incorrect understanding of overflow boundaries
+  - Language-specific overflow behavior (e.g., Move allows bit-shift overflow)
+  - Wrong test case accepted as correct
+  - Third-party library vulnerability
+
+affected_components:
+  - Fixed-point math libraries
+  - u256 arithmetic operations
+  - Bit-shift operations
+  - Concentrated liquidity pools (CLMM)
+  - Position management systems
+
+detection_difficulty: high
+exploit_difficulty: medium
+
+real_world_exploits:
+  - name: "Cetus Protocol Integer Overflow"
+    date: "2025-05-22"
+    loss: "$223M"
+    chains: 2
+    affected_chains:
+      - Sui
+      - Ethereum (bridged assets)
+    library: "integer-mate (third-party)"
+    language: "Move"
+
+sources:
+  - name: "Cetus Exploit Analysis"
+    url: "https://www.cyfrin.io/blog/inside-the-223m-cetus-exploit-root-cause-and-impact-analysis"
+    type: "exploit-postmortem"
+    date: "2025-05-22"
+
+  - name: "Move Language Overflow Behavior"
+    type: "language-documentation"
+
+  - name: "integer-mate Library Bug Report"
+    type: "bug-report"
+
+tags:
+  - overflow
+  - arithmetic
+  - bit-shift
+  - u256
+  - fixed-point
+  - third-party-library
+  - move-language
+  - clmm
+
+related_vulnerabilities:
+  - category: arithmetic
+    subcategory: integer-overflow
+    relationship: "Specific instance of integer overflow"
+
+  - category: logic
+    subcategory: incorrect-validation
+    relationship: "Validation logic error"
+
+  - category: supply-chain
+    subcategory: third-party-library
+    relationship: "Third-party library risk"
+
+pattern_id: arithmetic-overflow-check-001
+---

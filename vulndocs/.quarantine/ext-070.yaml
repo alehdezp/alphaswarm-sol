@@ -1,0 +1,16 @@
+id: ext-070
+vulndoc: access-control/external-call
+name: Bridge Source Chain Validation Missing
+description: Cross-chain oracle usage without source chain checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: has_bridge_source_chain_check
+    op: eq
+    value: false

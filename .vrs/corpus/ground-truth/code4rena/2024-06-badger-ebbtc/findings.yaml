@@ -1,0 +1,99 @@
+# Code4rena Contest: 2024-06-badger-ebbtc
+# Ground Truth Findings - External Source
+# DO NOT modify based on tool output
+
+contest:
+  id: "2024-06-badger-ebbtc"
+  name: "Badger eBTC"
+  report_url: "https://code4rena.com/reports/2024-06-badger-ebbtc"
+  findings_repo: "https://github.com/code-423n4/2024-06-badger-findings"
+  audit_period: "June 2024"
+  prize_pool: "$100,000"
+
+metadata:
+  imported_date: "2026-02-04"
+  source: "Code4rena"
+  trust_level: "high"
+  external_ground_truth: true
+
+statistics:
+  total_findings: 3
+  high: 1
+  medium: 2
+  vulnerability_classes:
+    - arithmetic
+    - oracle_manipulation
+    - flash_loan
+
+findings:
+  - id: "H-01"
+    title: "Incorrect fee accounting in liquidation leads to bad debt"
+    severity: "high"
+    vulnerability_class: "arithmetic"
+    swc_id: "SWC-101"
+    affected_contracts:
+      - "EbtcBorrowingManager.sol"
+    affected_functions:
+      - "_liquidate"
+      - "liquidateCdps"
+    ground_truth_verdict: "confirmed"
+    auditor: "Trust"
+    judge_confirmed: true
+    description: |
+      Fee calculation during liquidation uses incorrect order of operations,
+      leading to accumulated bad debt in the protocol.
+    exploit_requirements:
+      - "Trigger liquidation on underwater positions"
+      - "Exploit fee miscalculation"
+    code_location:
+      file: "EbtcBorrowingManager.sol"
+      line_start: 287
+      line_end: 312
+
+  - id: "M-01"
+    title: "Oracle staleness check can be bypassed during sequencer downtime"
+    severity: "medium"
+    vulnerability_class: "oracle_manipulation"
+    swc_id: "SWC-120"
+    affected_contracts:
+      - "PriceFeed.sol"
+    affected_functions:
+      - "fetchPrice"
+      - "_chainlinkIsFrozen"
+    ground_truth_verdict: "confirmed"
+    auditor: "rvierdiiev"
+    judge_confirmed: true
+    description: |
+      L2 sequencer downtime check does not properly handle edge cases,
+      allowing stale prices to be used during recovery periods.
+    exploit_requirements:
+      - "Wait for L2 sequencer downtime event"
+      - "Exploit stale oracle prices after recovery"
+    code_location:
+      file: "PriceFeed.sol"
+      line_start: 156
+      line_end: 189
+
+  - id: "M-02"
+    title: "Flash loan attack vector in redemption mechanism"
+    severity: "medium"
+    vulnerability_class: "flash_loan"
+    swc_id: "SWC-119"
+    affected_contracts:
+      - "CdpManager.sol"
+    affected_functions:
+      - "redeemCollateral"
+    ground_truth_verdict: "confirmed"
+    auditor: "IllIllI"
+    judge_confirmed: true
+    description: |
+      Flash loans can be used to manipulate the redemption ordering,
+      extracting value from legitimate CDP holders.
+    exploit_requirements:
+      - "Take flash loan for eBTC"
+      - "Manipulate redemption queue"
+      - "Repay flash loan with profit"
+    code_location:
+      file: "CdpManager.sol"
+      line_start: 378
+      line_end: 421

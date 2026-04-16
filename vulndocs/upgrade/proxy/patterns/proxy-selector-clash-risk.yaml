@@ -1,0 +1,14 @@
+id: proxy-selector-clash-risk
+vulndoc: upgrade/proxy
+name: Transparent Proxy Selector Clash Risk
+description: Transparent proxy pattern may have function selector collisions between proxy admin and implementation (CVE-2023-30541)
+scope: Contract
+lens:
+  - Upgradeability
+  - Authority
+severity: medium
+match:
+  all:
+    - property: proxy_type
+      op: eq
+      value: transparent

@@ -1,0 +1,19 @@
+id: auth-066
+vulndoc: access-control/general
+name: User Input State Write Without Access Control
+description: User input drives state writes without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_user_input
+    op: eq
+    value: true
+  - property: writes_state
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

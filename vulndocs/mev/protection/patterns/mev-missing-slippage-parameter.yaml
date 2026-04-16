@@ -1,0 +1,49 @@
+# =============================================================================
+# DEPRECATED PATTERN - Use mev-001 instead
+# =============================================================================
+#
+# This minimal pattern has been DEPRECATED and replaced by:
+#   patterns/semantic/mev/mev-001-missing-slippage-protection.yaml
+#
+# The new pattern provides:
+#   - Comprehensive detection of BOTH missing parameter AND missing check
+#   - Detailed attack scenarios and real-world exploit references
+#   - Complete fix recommendations with code examples
+#   - Better auditor guidance and verification steps
+#
+# MIGRATION: Update your pattern queries to use "mev-001" instead.
+#
+# =============================================================================
+
+id: mev-missing-slippage-parameter
+vulndoc: mev/protection
+name: MEV Risk (Missing Slippage Parameter) [DEPRECATED]
+description: |
+  ⚠️ DEPRECATED: This pattern has been replaced by mev-001.
+
+  Use patterns/semantic/mev/mev-001-missing-slippage-protection.yaml instead.
+
+  Swap-like functions without a slippage parameter are vulnerable to MEV
+  sandwich attacks. The new comprehensive pattern detects both missing
+  parameters AND unenforced parameters with detailed context.
+
+scope: Function
+lens:
+  - Ordering
+severity: medium
+status: deprecated
+
+match:
+  all:
+    - property: swap_like
+      op: eq
+      value: true
+    - property: risk_missing_slippage_parameter
+      op: eq
+      value: true
+
+# Deprecation metadata
+deprecated: true
+deprecated_date: "2025-12-31"
+replacement_pattern: mev-001
+replacement_path: patterns/semantic/mev/mev-001-missing-slippage-protection.yaml

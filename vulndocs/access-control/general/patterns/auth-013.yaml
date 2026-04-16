@@ -1,0 +1,13 @@
+id: auth-013
+vulndoc: access-control/general
+name: Inconsistent Access Control
+description: Contract mixes protected and unprotected privileged writes.
+scope: Contract
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: has_inconsistent_access_control
+    op: eq
+    value: true

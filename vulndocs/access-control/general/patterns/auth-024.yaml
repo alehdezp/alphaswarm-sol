@@ -1,0 +1,16 @@
+id: auth-024
+vulndoc: access-control/general
+name: Signature Missing ChainId
+description: Signature verification missing chainId binding.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: uses_ecrecover
+    op: eq
+    value: true
+  - property: uses_chainid
+    op: eq
+    value: false

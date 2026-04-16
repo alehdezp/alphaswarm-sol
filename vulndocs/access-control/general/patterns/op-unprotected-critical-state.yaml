@@ -1,0 +1,25 @@
+id: op-unprotected-critical-state
+vulndoc: access-control/general
+name: Unprotected Critical State Modification (Operation-Based)
+description: 'Public functions that modify critical state (owner, roles, fees) without permission.
+
+  Uses MODIFIES_CRITICAL_STATE operation to detect.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: critical
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: MODIFIES_CRITICAL_STATE
+    none:
+    - has_operation: CHECKS_PERMISSION
+aggregation:
+  mode: tier_a_only

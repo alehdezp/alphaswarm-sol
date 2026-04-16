@@ -1,0 +1,19 @@
+id: ext-035
+vulndoc: access-control/external-call
+name: Cross-Chain Replay Protection Missing
+description: Cross-chain oracle usage without replay or sequencing protection.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_bridge_replay_protection
+    op: eq
+    value: false

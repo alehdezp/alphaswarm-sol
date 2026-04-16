@@ -1,0 +1,22 @@
+# Missing Return Values - Subcategory Index
+
+id: missing-return
+name: Missing Return Values
+parent_category: token
+
+description: |
+  Tokens that dont return bool from transfer functions (like USDT),
+  causing silent failures without SafeERC20.
+
+severity_range:
+  - medium
+  - high
+
+patterns:
+  - tok-004
+
+relevant_properties:
+  - uses_safe_erc20
+  - token_return_guarded
+
+token_estimate: 400

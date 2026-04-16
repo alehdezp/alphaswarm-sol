@@ -1,0 +1,16 @@
+id: ext-068
+vulndoc: access-control/external-call
+name: Oracle Aggregation Min Agreement Missing
+description: Aggregation without minimum agreement or quorum checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: has_multi_source_oracle
+    op: eq
+    value: true
+  - property: has_oracle_min_agreement
+    op: eq
+    value: false

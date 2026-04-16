@@ -1,0 +1,157 @@
+# SmartBugs Benchmark Suite
+# Curated vulnerability dataset for VKG validation
+#
+# Source: Semgrep Smart Contracts + Additional curated vulnerabilities
+# Purpose: Prevent overfitting to DVDeFi by testing on diverse vulnerability types
+#
+# Target: >= 70% detection rate
+# Categories: reentrancy, access_control, oracle, arithmetic, unchecked_calls, bad_randomness
+
+name: smartbugs
+version: "1.0.0"
+description: Curated vulnerability benchmark for broad validation
+
+# Metrics targets
+targets:
+  detection_rate:
+    minimum: 60%
+    target: 70%
+    excellent: 80%
+  false_positive_rate:
+    maximum: 20%
+    target: 15%
+    excellent: 10%
+
+# Challenge categories
+categories:
+  reentrancy:
+    description: Reentrancy vulnerabilities across ERC standards
+    count: 8
+    challenges:
+      - id: erc721-reentrancy
+        file: reentrancy/erc721-reentrancy.yaml
+      - id: erc677-reentrancy
+        file: reentrancy/erc677-reentrancy.yaml
+      - id: erc777-reentrancy
+        file: reentrancy/erc777-reentrancy.yaml
+      - id: compound-borrowfresh-reentrancy
+        file: reentrancy/compound-borrowfresh-reentrancy.yaml
+      - id: curve-readonly-reentrancy
+        file: reentrancy/curve-readonly-reentrancy.yaml
+      - id: balancer-readonly-reentrancy-getrate
+        file: reentrancy/balancer-readonly-reentrancy-getrate.yaml
+      - id: balancer-readonly-reentrancy-getpooltokens
+        file: reentrancy/balancer-readonly-reentrancy-getpooltokens.yaml
+      - id: olympus-incorrect-call-order
+        file: reentrancy/olympus-incorrect-call-order.yaml
+
+  access_control:
+    description: Access control and authorization vulnerabilities
+    count: 8
+    challenges:
+      - id: accessible-selfdestruct
+        file: access_control/accessible-selfdestruct.yaml
+      - id: unrestricted-transferownership
+        file: access_control/unrestricted-transferownership.yaml
+      - id: rigoblock-missing-access-control
+        file: access_control/rigoblock-missing-access-control.yaml
+      - id: sense-missing-oracle-access-control
+        file: access_control/sense-missing-oracle-access-control.yaml
+      - id: compound-sweeptoken-not-restricted
+        file: access_control/compound-sweeptoken-not-restricted.yaml
+      - id: oracle-price-update-not-restricted
+        file: access_control/oracle-price-update-not-restricted.yaml
+      - id: bad-transferfrom-access-control
+        file: access_control/bad-transferfrom-access-control.yaml
+      - id: uniswap-callback-not-protected
+        file: access_control/uniswap-callback-not-protected.yaml
+
+  oracle:
+    description: Oracle manipulation and price feed vulnerabilities
+    count: 4
+    challenges:
+      - id: basic-oracle-manipulation
+        file: oracle/basic-oracle-manipulation.yaml
+      - id: keeper-network-oracle-manipulation
+        file: oracle/keeper-network-oracle-manipulation.yaml
+      - id: oracle-uses-curve-spot-price
+        file: oracle/oracle-uses-curve-spot-price.yaml
+      - id: no-slippage-check
+        file: oracle/no-slippage-check.yaml
+
+  arbitrary_calls:
+    description: Dangerous external calls with uncontrolled targets
+    count: 5
+    challenges:
+      - id: arbitrary-low-level-call
+        file: arbitrary_calls/arbitrary-low-level-call.yaml
+      - id: delegatecall-to-arbitrary-address
+        file: arbitrary_calls/delegatecall-to-arbitrary-address.yaml
+      - id: msg-value-multicall
+        file: arbitrary_calls/msg-value-multicall.yaml
+      - id: superfluid-ctx-injection
+        file: arbitrary_calls/superfluid-ctx-injection.yaml
+      - id: thirdweb-vulnerability
+        file: arbitrary_calls/thirdweb-vulnerability.yaml
+
+  token:
+    description: Token-specific vulnerabilities (ERC20, ERC721)
+    count: 6
+    challenges:
+      - id: erc20-public-burn
+        file: token/erc20-public-burn.yaml
+      - id: erc20-public-transfer
+        file: token/erc20-public-transfer.yaml
+      - id: erc721-arbitrary-transferfrom
+        file: token/erc721-arbitrary-transferfrom.yaml
+      - id: public-transfer-fees-supporting-tax-tokens
+        file: token/public-transfer-fees-supporting-tax-tokens.yaml
+      - id: tecra-coin-burnfrom-bug
+        file: token/tecra-coin-burnfrom-bug.yaml
+      - id: redacted-cartel-custom-approval-bug
+        file: token/redacted-cartel-custom-approval-bug.yaml
+
+  cryptography:
+    description: Cryptographic and randomness vulnerabilities
+    count: 3
+    challenges:
+      - id: incorrect-use-of-blockhash
+        file: cryptography/incorrect-use-of-blockhash.yaml
+      - id: openzeppelin-ecdsa-recover-malleable
+        file: cryptography/openzeppelin-ecdsa-recover-malleable.yaml
+      - id: encode-packed-collision
+        file: cryptography/encode-packed-collision.yaml
+
+  proxy:
+    description: Proxy and upgrade-related vulnerabilities
+    count: 1
+    challenges:
+      - id: proxy-storage-collision
+        file: proxy/proxy-storage-collision.yaml
+
+  dos:
+    description: Denial of service vulnerabilities
+    count: 2
+    challenges:
+      - id: exact-balance-check
+        file: dos/exact-balance-check.yaml
+      - id: compound-precision-loss
+        file: dos/compound-precision-loss.yaml
+
+  misc:
+    description: Other security issues
+    count: 3
+    challenges:
+      - id: no-bidi-characters
+        file: misc/no-bidi-characters.yaml
+      - id: missing-assignment
+        file: misc/missing-assignment.yaml
+      - id: gearbox-tokens-path-confusion
+        file: misc/gearbox-tokens-path-confusion.yaml
+
+# Total: 40 challenges across 9 categories
+total_challenges: 40
+
+# Source mapping
+sources:
+  semgrep: examples/semgrep-smart-contracts/solidity/security/

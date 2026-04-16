@@ -1,0 +1,63 @@
+workflow_id: skill-vrs-audit
+category: orchestrator
+grader_type: hybrid
+rule_refs:
+- EXEC-INTEGRITY
+- MULTI-AGENT
+- EVIDENCE-QUALITY
+- GRAPH-FIRST
+reasoning_dimensions:
+- coordination_quality
+- evidence_flow
+- graph_utilization
+- finding_quality
+- completeness
+evaluation_config:
+  run_gvs: true
+  run_reasoning: true
+  debrief: true
+  depth: deep
+capability_checks:
+- id: graph_built
+  description: BSKG was built from target contracts
+  expected_behavior: Tool sequence contains Bash with alphaswarm build-kg
+  grader_type: code
+- id: analysis_run
+  description: Pattern analysis was executed
+  expected_behavior: Tool sequence contains Bash with alphaswarm analyze or query
+  grader_type: code
+- id: session_completed
+  description: Audit completed with structured report
+  expected_behavior: session_completed is true and response contains structured findings
+  grader_type: code
+evidence_requirements:
+- type: graph_nodes
+  description: BSKG graph evidence
+- type: code_locations
+  description: Source code references for findings
+- type: tool_output
+  description: Analysis tool output
+hooks:
+- TeammateIdle
+- TaskCompleted
+- PreCompact
+- SessionEnd
+status: active
+coverage_axes: []
+metadata:
+  tier: core
+  model_tier: opus
+ground_truth_rubric: Skill builds BSKG as first step before any analysis. Skill executes
+  the 9-stage audit pipeline in correct order. Skill spawns investigation agents with
+  appropriate roles and context. Skill routes findings between stages for progressive
+  refinement. Skill produces a structured report with evidence-linked findings. Skill
+  performs completeness check by verifying all contract functions were analyzed.
+active_dimensions:
+- coordination_quality
+- evidence_flow
+- graph_utilization
+- finding_quality
+- completeness
+- task_delegation
+- rubric_coverage
+- verification_thoroughness

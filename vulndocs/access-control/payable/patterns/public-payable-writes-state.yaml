@@ -1,0 +1,19 @@
+id: public-payable-writes-state
+vulndoc: access-control/payable
+name: Public Payable State Mutation
+description: Public/external payable functions that write state.
+scope: Function
+lens:
+  - ValueMovement
+severity: medium
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: payable
+      op: eq
+      value: true
+    - property: writes_state
+      op: eq
+      value: true

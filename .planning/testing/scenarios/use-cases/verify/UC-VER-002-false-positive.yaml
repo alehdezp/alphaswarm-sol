@@ -1,0 +1,80 @@
+id: UC-VER-002
+name: "Verifier rejects false positive reentrancy with counter-evidence"
+workflow: vrs-verify
+category: verify
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyWithGuard.sol"
+  command: "/vrs-verify tests/contracts/ReentrancyWithGuard.sol --finding reentrancy"
+  context: >
+    ReentrancyWithGuard.sol is protected by a nonReentrant modifier. The
+    verifier receives a (false) reentrancy finding and must independently
+    investigate, discover the guard, and reject the finding with
+    counter-evidence. This tests the verifier's rejection path.
+
+expected_behavior:
+  summary: |
+    The verifier should independently investigate and reject the false finding:
+    1. Accept the reentrancy finding as input
+    2. Build or load the BSKG independently
+    3. Run graph queries to check for CEI violation AND guards
+    4. Discover the nonReentrant modifier via graph queries
+    5. Produce a verdict: REJECTED with counter-evidence citing the guard
+    6. Counter-evidence must explain why the reentrancy is not exploitable
+  must_happen:
+    - "Verifier receives the reentrancy finding as input"
+    - "Verifier runs independent BSKG queries for both vulnerability and guard"
+    - "Verifier discovers the nonReentrant modifier in graph results"
+    - "Verifier produces REJECTED verdict"
+    - "Verdict includes counter-evidence citing the nonReentrant guard"
+    - "Counter-evidence explains why the guard prevents exploitation"
+  must_not_happen:
+    - "Verifier confirms the false positive (rubber-stamp)"
+    - "Verifier rejects without providing counter-evidence"
+    - "Verifier rejects without finding the specific guard"
+    - "Verifier skips graph queries"
+    - "Verifier crashes or produces no verdict"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 0
+    must_include_category: ""
+    severity: ""
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: independent_verification
+      description: "Did the verifier run its own graph queries to find the guard?"
+    - name: counter_evidence_quality
+      description: "Does the rejection include specific counter-evidence (guard name, location)?"
+    - name: verdict_quality
+      description: "Is the verdict REJECTED with clear reasoning?"
+    - name: graph_utilization
+      description: "Did the verifier query for both vulnerability patterns and guard patterns?"
+  regression_signals:
+    - "Verifier confirms false positive -> CRITICAL REGRESSION: rubber-stamp verification"
+    - "Verifier rejects without counter-evidence -> REGRESSION: evidence quality degraded"
+    - "Graph queries absent -> REGRESSION: bypassing graph-first verification"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyWithGuard.sol"
+  related_scenarios:
+    - "UC-VER-001"
+    - "UC-ATK-002"
+    - "UC-AUDIT-002"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Tests the verifier's rejection path. The most important property of a
+  verifier is the ability to say "no" with evidence. A verifier that
+  confirms everything is useless.

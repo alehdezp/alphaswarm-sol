@@ -1,0 +1,24 @@
+id: crypto-signature-replay
+vulndoc: crypto/signature
+name: Signature Replay Vulnerability - Missing Nonce
+description: |
+  Detects signature verification functions that lack nonce tracking, enabling signature replay attacks.
+  Without nonce management, the same signature can be reused multiple times to execute the same action.
+  Real-world impact: Multichain bridge exploits, various DeFi protocol vulnerabilities.
+  Reference: EIP-2612 requires nonce parameter for permit functions.
+scope: Function
+lens:
+  - Crypto
+severity: high
+match:
+  all:
+    - property: uses_ecrecover
+      op: eq
+      value: true
+    - property: has_nonce_parameter
+      op: eq
+      value: false
+  none:
+    - property: writes_nonce_state
+      op: eq
+      value: true

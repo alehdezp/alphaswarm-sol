@@ -1,0 +1,19 @@
+id: ext-039
+vulndoc: access-control/external-call
+name: TWAP Window Minimum Not Enforced
+description: TWAP window parameters without minimum bound checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_twap
+    op: eq
+    value: true
+  - property: has_twap_window_parameter
+    op: eq
+    value: true
+  - property: has_twap_window_min_check
+    op: eq
+    value: false

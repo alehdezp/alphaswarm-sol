@@ -1,0 +1,16 @@
+id: auth-023
+vulndoc: access-control/general
+name: RBAC Without Timelock
+description: Role grants without timelock protection.
+scope: Contract
+lens:
+- Authority
+severity: medium
+match:
+  all:
+  - property: has_role_grant
+    op: eq
+    value: true
+  - property: has_timelock
+    op: eq
+    value: false

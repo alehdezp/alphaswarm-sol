@@ -1,0 +1,25 @@
+id: live-039
+vulndoc: dos/general
+name: Admin Recovery Risks
+description: Emergency recovery can drain user funds.
+scope: Function
+lens:
+- Liveness
+severity: high
+match:
+  all:
+  - property: is_emergency_function
+    op: eq
+    value: true
+  - property: can_affect_user_funds
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: true
+  - property: contract_has_timelock
+    op: eq
+    value: false
+  - property: contract_has_multisig
+    op: eq
+    value: false

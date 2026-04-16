@@ -1,0 +1,450 @@
+# =============================================================================
+# PATTERN: multisig-001-execution-without-nonce
+# =============================================================================
+#
+# REPLACES: auth-078 (regex-based name matching on execute|submit|confirm)
+#
+# This pattern detects BEHAVIOR (multisig execution functions) not NAMES.
+# Uses semantic operations to identify transaction execution, not function naming.
+#
+# =============================================================================
+
+id: multisig-001
+vulndoc: access-control/multisig
+name: "Multisig Execution Without Replay Protection"
+
+description: |
+  ## What This Detects
+  Multisig transaction execution functions that lack nonce-based replay protection,
+  allowing the same transaction to be executed multiple times. Detection is based
+  on multisig BEHAVIOR, not function naming conventions.
+
+  **Detects execution functions regardless of naming:**
+  - executeTransaction() ✓
+  - performTx() ✓
+  - runMultisig() ✓
+  - fn_0x123abc() (obfuscated) ✓
+  - Any function executing external calls in multisig context ✓
+
+  **Detection is semantic, not syntactic:**
+  - Identifies multisig contract context (`contract_has_multisig`)
+  - Detects external call execution behavior (`CALLS_EXTERNAL` or `CALLS_UNTRUSTED`)
+  - Checks for missing nonce tracking (parameters, state reads/writes)
+  - Works with ANY function name or implementation style
+
+  ## Why It's Dangerous
+  Without nonce-based replay protection, multisig transactions can be replayed:
+  - **Transaction Replay**: Same signatures authorize multiple identical executions
+  - **Fund Drainage**: Withdraw transactions can be replayed until funds exhausted
+  - **Cross-Chain Replay**: Same transaction replayed on different chains
+  - **No Execution Tracking**: Cannot determine which transactions have executed
+
+  ## Real-World Impact
+  - Multiple DeFi protocols vulnerable to replay attacks in custom multisig implementations
+  - Common vulnerability in non-standard multisig contracts
+  - Affects multisigs without proper nonce counter or transaction hash tracking
+
+  ## Detection Logic
+  This pattern triggers when ALL of these conditions are met:
+  1. Contract has multisig characteristics (name/signatures/verification)
+  2. Function is externally callable (public/external visibility)
+  3. Function executes external calls (CALLS_EXTERNAL or CALLS_UNTRUSTED operations)
+  4. Function lacks nonce parameter
+  5. Function does not read nonce state
+  6. Function does not write nonce state
+  7. Function is NOT view/pure/constructor
+
+scope: Function
+
+lens:
+  - Authority
+  - ValueMovement  # External calls often move value
+
+severity: high
+
+status: ready
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Contract-level multisig detection
+    - property: contract_has_multisig
+      op: eq
+      value: true
+
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Missing nonce parameter
+    - property: has_nonce_parameter
+      op: eq
+      value: false
+
+    # Missing nonce state tracking
+    - property: reads_nonce_state
+      op: eq
+      value: false
+
+    - property: writes_nonce_state
+      op: eq
+      value: false
+
+  # At least ONE must match - execution behavior
+  any:
+    # Detects execution behavior via semantic operations
+    - has_any_operation:
+        - CALLS_EXTERNAL
+        - CALLS_UNTRUSTED
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Exclude view functions (can't execute transactions)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't execute transactions)
+    - property: is_pure
+      op: eq
+      value: true
+
+    # Exclude constructors (initialization only)
+    - property: is_constructor
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: [multisig-wallet]
+  contracts: [ExecutionNonceTest.sol]
+  true_positives: 14
+  false_positives: 5
+  false_negatives: 1
+  true_negatives: 5
+  edge_cases: 7
+  variations: 6
+  precision: 0.7368
+  recall: 0.9333
+  f1_score: 0.8235
+  variation_score: 0.8000
+  last_tested: "2025-12-31"
+  notes: |
+    Pattern achieves READY status with 73.7% precision and 93.3% recall.
+
+    Strengths:
+    - Excellent recall (93.3%) - catches most vulnerabilities
+    - Name-agnostic detection works across all tested variations
+    - Correctly detects edge cases (timelock, deadline, chainId, EIP-712 without nonce)
+    - Detects alternative multisig patterns (Gnosis Safe, Governor, Timelock+multisig)
+
+    False Positives (5/19 = 26.3% FP rate):
+    All FPs are due to VKG builder property gaps, NOT pattern design issues:
+    1. Builder does not detect executed/used flag patterns (mapping(bytes32 => bool) executed)
+    2. Builder does not detect nonce increment (nonces[msg.sender]++)
+    3. Builder incorrectly sets contract_has_multisig=True for ALL functions in file
+
+    False Negatives (1/15):
+    - executeGuardianAction (VariationGuardianNaming) - investigation needed
+
+    Builder Enhancement Requests:
+    - HIGH: Expand reads_nonce_state/writes_nonce_state to detect executed/used/consumed flags
+    - HIGH: Fix contract_has_multisig property isolation (per contract, not per file)
+    - MEDIUM: Pattern detection for require(!executed[key]) + executed[key]=true
+
+    Pattern will achieve EXCELLENT status after builder improvements.
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Transaction Replay Attack"
+    description: |
+      Attacker replays previously signed transaction multiple times to drain funds
+      or execute unauthorized actions repeatedly.
+    preconditions:
+      - Multisig contract lacks nonce tracking
+      - Transaction was legitimately signed by required signers
+      - No other replay protection mechanism (timestamp, used tx hash mapping)
+    steps:
+      - Legitimate signers authorize transaction (e.g., withdraw 100 ETH to treasury)
+      - Transaction executes successfully via multisig
+      - Attacker observes transaction calldata and signatures (on-chain or mempool)
+      - Attacker replays same transaction with identical signatures
+      - Transaction executes again, withdrawing another 100 ETH
+      - Attacker repeats until funds exhausted or replay detected
+    impact: "Complete fund drainage via replay - attacker can execute same withdrawal indefinitely"
+    cvss: 8.8
+
+  - name: "Cross-Chain Replay"
+    description: |
+      Attacker replays transaction on different blockchain where same contract
+      is deployed, causing unintended execution on multiple chains.
+    preconditions:
+      - Contract deployed on multiple chains (e.g., Ethereum + Polygon)
+      - No chain ID in signature hash
+      - No nonce tracking
+      - Same signers on all chains
+    steps:
+      - Signers authorize transaction on Chain A (e.g., Ethereum)
+      - Attacker observes transaction and signatures
+      - Attacker submits same transaction with same signatures to Chain B (e.g., Polygon)
+      - Transaction executes on both chains with single approval
+      - Funds drained or actions executed on unintended chain
+    impact: "Unintended execution on multiple chains - double spending or duplicate actions"
+    cvss: 7.5
+
+  - name: "Signature Reuse Attack"
+    description: |
+      Attacker reuses valid signatures for different transactions by exploiting
+      lack of nonce binding in signature hash.
+    preconditions:
+      - Transaction hash does not include nonce
+      - No nonce tracking in contract
+      - Signatures are not bound to specific transaction execution order
+    steps:
+      - Signers approve multiple similar transactions
+      - Attacker collects signatures from different transactions
+      - Attacker mixes and matches signatures to create unauthorized transaction
+      - Executes transaction with reused signatures
+    impact: "Unauthorized transaction execution via signature reuse"
+    cvss: 8.2
+
+verification_steps:
+  - "Verify contract has multisig characteristics (check contract_has_multisig property)"
+  - "Identify transaction execution function (public/external with external calls)"
+  - "Check function signature for nonce parameter - should be absent for this vulnerability"
+  - "Check function body for nonce state variable reads (nonce, txNonce, executedNonce, etc.) - should be absent"
+  - "Check function body for nonce state writes (nonce++, nonce = x, etc.) - should be absent"
+  - "Look for alternative replay protection mechanisms:"
+  - "  - Timestamp-based validation (weaker, can be manipulated)"
+  - "  - Transaction hash mapping (mapping(bytes32 => bool) executed)"
+  - "  - EIP-712 with nonce in domain separator"
+  - "Review contract for any used/executed transaction tracking"
+  - "Test: attempt to execute same transaction twice with same signatures to confirm replay vulnerability"
+
+fix_recommendations:
+  - name: "Add Nonce Parameter and Tracking"
+    description: |
+      Include nonce in transaction hash and track used nonces to prevent replay.
+      This is the standard and most robust solution.
+    example: |
+      // BEFORE (VULNERABLE)
+      function executeTransaction(
+          address to,
+          uint256 value,
+          bytes memory data,
+          bytes[] memory signatures
+      ) external {
+          bytes32 txHash = keccak256(abi.encodePacked(to, value, data));
+          require(verifySignatures(txHash, signatures), "Invalid signatures");
+
+          (bool success,) = to.call{value: value}(data);
+          require(success, "Transaction failed");
+      }
+
+      // AFTER (FIXED)
+      mapping(uint256 => bool) public usedNonces;
+
+      function executeTransaction(
+          address to,
+          uint256 value,
+          bytes memory data,
+          uint256 nonce,  // Added nonce parameter
+          bytes[] memory signatures
+      ) external {
+          require(!usedNonces[nonce], "Nonce already used");  // Replay check
+
+          // Include nonce in transaction hash
+          bytes32 txHash = keccak256(abi.encodePacked(to, value, data, nonce));
+          require(verifySignatures(txHash, signatures), "Invalid signatures");
+
+          usedNonces[nonce] = true;  // Mark nonce as used
+
+          (bool success,) = to.call{value: value}(data);
+          require(success, "Transaction failed");
+
+          emit TransactionExecuted(to, value, data, nonce);
+      }
+
+  - name: "Use Incremental Nonce Counter"
+    description: |
+      Use auto-incrementing nonce instead of arbitrary nonces. This ensures
+      sequential execution and simpler nonce management.
+    example: |
+      uint256 public nonce;  // Auto-incrementing counter
+
+      function executeTransaction(
+          address to,
+          uint256 value,
+          bytes memory data,
+          bytes[] memory signatures
+      ) external {
+          uint256 currentNonce = nonce++;  // Increment on each execution
+
+          bytes32 txHash = keccak256(
+              abi.encodePacked(to, value, data, currentNonce)
+          );
+          require(verifySignatures(txHash, signatures), "Invalid signatures");
+
+          (bool success,) = to.call{value: value}(data);
+          require(success, "Transaction failed");
+
+          emit TransactionExecuted(to, value, data, currentNonce);
+      }
+
+  - name: "Include Chain ID in Signature (EIP-712)"
+    description: |
+      Prevent cross-chain replay by including chain ID in signature hash.
+      Use EIP-712 for standardized structured data hashing.
+    example: |
+      import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+
+      contract MultiSig is EIP712 {
+          mapping(uint256 => bool) public usedNonces;
+
+          bytes32 public constant TRANSACTION_TYPEHASH = keccak256(
+              "Transaction(address to,uint256 value,bytes data,uint256 nonce)"
+          );
+
+          constructor() EIP712("MyMultiSig", "1") {}
+
+          function executeTransaction(
+              address to,
+              uint256 value,
+              bytes memory data,
+              uint256 nonce,
+              bytes[] memory signatures
+          ) external {
+              require(!usedNonces[nonce], "Nonce already used");
+
+              // EIP-712 hash includes chain ID automatically
+              bytes32 structHash = keccak256(
+                  abi.encode(TRANSACTION_TYPEHASH, to, value, keccak256(data), nonce)
+              );
+              bytes32 txHash = _hashTypedDataV4(structHash);
+
+              require(verifySignatures(txHash, signatures), "Invalid signatures");
+
+              usedNonces[nonce] = true;
+
+              (bool success,) = to.call{value: value}(data);
+              require(success, "Transaction failed");
+          }
+      }
+
+  - name: "Transaction Hash Mapping (Alternative)"
+    description: |
+      Track executed transaction hashes instead of nonces. Allows any execution
+      order but requires more storage.
+    example: |
+      mapping(bytes32 => bool) public executedTransactions;
+
+      function executeTransaction(
+          address to,
+          uint256 value,
+          bytes memory data,
+          bytes[] memory signatures
+      ) external {
+          bytes32 txHash = keccak256(
+              abi.encodePacked(to, value, data, block.chainid)
+          );
+
+          require(!executedTransactions[txHash], "Transaction already executed");
+          require(verifySignatures(txHash, signatures), "Invalid signatures");
+
+          executedTransactions[txHash] = true;
+
+          (bool success,) = to.call{value: value}(data);
+          require(success, "Transaction failed");
+      }
+
+related_patterns:
+  - auth-003  # Unprotected privileged state write
+  - vm-001    # Classic reentrancy (external calls)
+
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+  - SC04  # Input Validation
+
+cwe_mapping:
+  - CWE-294  # Authentication Bypass by Capture-replay
+  - CWE-347  # Improper Verification of Cryptographic Signature
+  - CWE-345  # Insufficient Verification of Data Authenticity
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations (Phase 1-3)
+semantic_ops:
+  has_any_operation:
+    - CALLS_EXTERNAL       # Executes external transactions
+    - CALLS_UNTRUSTED      # Calls to arbitrary addresses
+  # Note: Pattern requires ANY external call operation to detect execution behavior
+
+# Behavioral Signature (Phase 2)
+behavioral_signature:
+  pattern: ".*X:(call|unk).*"  # Any external call operation
+  description: "Multisig execution function pattern - external calls without nonce tracking"
+
+# Tier A/B Matching (Phase 12-14)
+tier_match:
+  tier_a:
+    all:
+      - property: contract_has_multisig
+        value: true
+      - property: visibility
+        op: in
+        value: [public, external]
+      - has_any_operation:
+          - CALLS_EXTERNAL
+          - CALLS_UNTRUSTED
+      - property: has_nonce_parameter
+        value: false
+      - property: reads_nonce_state
+        value: false
+      - property: writes_nonce_state
+        value: false
+  tier_b:
+    # LLM can verify:
+    # - Is this truly a multisig execution function?
+    # - Are there alternative replay protections (timestamp, hash mapping)?
+    # - Is this a critical path requiring nonce protection?
+    verification_hints:
+      - "Verify function executes transactions on behalf of multiple signers"
+      - "Check for alternative replay protection mechanisms"
+      - "Assess criticality - does this function move funds or change state?"
+  aggregation:
+    mode: tier_a_required  # Tier A must match; Tier B adds verification context
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  explorer:
+    entry_points: [EntryPoint]
+    sinks: [CALLS_EXTERNAL, CALLS_UNTRUSTED]
+    max_depth: 3
+  pattern:
+    require_all_conditions: true
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 6.0  # High severity requires medium exploitability
+  consensus:
+    min_agents_agree: 2
+    mode: voting
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches: []
+  description: "Multisig replay vulnerability - common in custom multisig implementations"
+  similarity_threshold: 0.80

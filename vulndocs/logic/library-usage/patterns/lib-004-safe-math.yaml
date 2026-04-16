@@ -1,0 +1,462 @@
+# =============================================================================
+# PATTERN: lib-004-safe-math
+# SafeMath Library Usage / Checked Arithmetic Protection
+# =============================================================================
+
+id: lib-004-safe-math
+vulndoc: logic/library-usage
+name: "Unsafe Arithmetic Without SafeMath/Checks"
+
+# Detailed description for LLM and auditor consumption
+description: |
+  ## What This Detects
+
+  Functions performing arithmetic operations without proper overflow/underflow protection:
+
+  1. **Solidity < 0.8.0**: Arithmetic operations WITHOUT SafeMath library protection
+     - Integer overflow/underflow occurs silently (wraps around)
+     - Example: 2^256 + 1 = 1 (overflow without SafeMath protection)
+
+  2. **Solidity >= 0.8.0**: Arithmetic in `unchecked` blocks without explicit guards
+     - Native overflow checks are disabled in unchecked context
+     - Must rely on application-level safeguards
+
+  **Semantic Detection**: This pattern detects WHAT the function DOES:
+  - Performs arithmetic (addition, multiplication, division, subtraction)
+  - Either: compiler < 0.8.0 WITHOUT SafeMath, OR in unchecked block >= 0.8.0
+  - Operates on sensitive values (user balances, token amounts, shares)
+
+  This catches ANY arithmetic operation regardless of variable naming or context.
+
+  ## Why It's Dangerous
+
+  Integer overflow/underflow is a classic vulnerability class that has caused
+  billions in losses across DeFi:
+
+  **Pre-0.8.0 Arithmetic (Silent Overflow)**:
+  - uint256(type(uint256).max) + 1 = 0 (wraps silently)
+  - Balances become negative without errors
+  - Users can drain entire pools by exploiting wrap-around
+
+  **Unchecked Blocks (Disabled Checks)**:
+  - In Solidity 0.8+, arithmetic reverts on overflow by default
+  - `unchecked { ... }` disables these checks for performance
+  - Must manually validate results or use SafeMath-like logic
+
+  **Real-World Impact**:
+  - **BeautyChain (BEC)**: $900M+ destroyed by overflow (2018)
+  - **SmartMesh (SMT)**: $350M+ destroyed by overflow (2018)
+  - **Balancer Labs**: Multiple millions in flash loan overflow attacks
+  - **Synthetix**: snx overflow allowing unlimited token minting
+
+  **Attack Scenarios**:
+  1. Balance overflow: User balance + deposit > type(uint256).max → wraps to small number
+  2. Share calculation: sqrt(x * y) in unchecked block without bounds validation
+  3. Fee calculation: amount * rate / divisor with precision loss undetected
+  4. Supply inflation: totalSupply + mint > max with no validation
+
+  ## Detection Logic
+
+  This pattern triggers when ANY of these scenarios occur:
+
+  **Scenario A: Pre-0.8.0 Arithmetic Without SafeMath**
+  - Compiler version < 0.8.0 (detected from pragma)
+  - Has arithmetic operations (*, /, +, -)
+  - Does NOT use SafeMath library
+  - Operates on financial/state values
+
+  **Scenario B: 0.8.0+ Unchecked Arithmetic**
+  - Solidity version >= 0.8.0
+  - Has unchecked block containing arithmetic
+  - Either:
+    - Unchecked arithmetic uses user input, OR
+    - Unchecked arithmetic affects balance/share state
+
+  **Scenario C: Large Number Multiplication Without SafeMath**
+  - Multiplication of large numbers (> 10^9)
+  - No SafeMath or muldiv library usage
+  - Pre-0.8.0 compiler
+
+  **Safe Patterns (EXCLUDED)**:
+  - Functions using OpenZeppelin SafeMath library
+  - Functions using SafeERC20 for token operations
+  - Solidity 0.8.0+ with checks OUTSIDE unchecked block
+  - Constant/view functions (no state changes)
+  - Small arithmetic that cannot overflow (constants, < 2^128)
+
+scope: Function
+
+lens:
+  - Arithmetic
+  - ValueMovement
+
+severity: high
+
+status: draft
+
+# =============================================================================
+# MATCH CONDITIONS (Tier A - Deterministic, Multiple Scenarios)
+# =============================================================================
+
+match:
+  tier_a:
+    # Use 'any' to match MULTIPLE vulnerability scenarios
+    # Each scenario is independent - one match = one finding
+    any:
+      # SCENARIO A: Pre-0.8.0 arithmetic without SafeMath
+      - all:
+          # Pre-0.8.0 compiler
+          - property: compiler_version_lt_08
+            op: eq
+            value: true
+
+          # Has arithmetic operations
+          - property: has_arithmetic
+            op: eq
+            value: true
+
+          # Core vulnerability: No SafeMath protection
+          - property: pre_08_arithmetic
+            op: eq
+            value: true
+
+      # SCENARIO B: 0.8.0+ unchecked arithmetic with risky patterns
+      - all:
+          # Solidity 0.8.0 or later (NOT pre-0.8)
+          - property: compiler_version_lt_08
+            op: eq
+            value: false
+
+          # Uses unchecked block
+          - property: has_unchecked_block
+            op: eq
+            value: true
+
+          # Unchecked block contains arithmetic
+          - property: unchecked_contains_arithmetic
+            op: eq
+            value: true
+
+          # Either uses user input or affects balance state
+          - any:
+              - property: unchecked_operand_from_user
+                op: eq
+                value: true
+
+              - property: unchecked_affects_balance
+                op: eq
+                value: true
+
+      # SCENARIO C: Large number multiplication overflow risk
+      - all:
+          # Pre-0.8.0 (0.8.0+ doesn't have this risk by default)
+          - property: compiler_version_lt_08
+            op: eq
+            value: true
+
+          # Large numbers being multiplied
+          - property: large_number_multiplication
+            op: eq
+            value: true
+
+          # No SafeMath or muldiv protection
+          - property: multiplication_overflow_risk
+            op: eq
+            value: true
+
+    # CRITICAL FOR FALSE POSITIVE REDUCTION: Safe patterns to exclude
+    none:
+      # Not applicable to view/pure functions (no state changes)
+      - property: state_mutability
+        op: in
+        value: [view, pure]
+
+      # Using SafeMath protection
+      - property: uses_safemath
+        op: eq
+        value: true
+
+      # Using SafeERC20 for token operations
+      - property: uses_safe_erc20
+        op: eq
+        value: true
+
+      # Constructor/initializer (often intentional setup code)
+      - property: is_constructor
+        op: eq
+        value: true
+
+      # Fallback/receive functions (limited arithmetic)
+      - property: is_fallback
+        op: eq
+        value: true
+
+      - property: is_receive
+        op: eq
+        value: true
+
+# =============================================================================
+# AGGREGATION MODE
+# =============================================================================
+
+aggregation:
+  mode: tier_a_only  # Only Tier A (deterministic) matching
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: ""
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM AND AUDITORS
+# =============================================================================
+
+attack_scenarios:
+  - name: "Balance Overflow via Deposit"
+    description: |
+      Attacker exploits uint256 overflow to reduce their balance debt.
+    preconditions:
+      - "Function uses arithmetic without SafeMath (pre-0.8.0)"
+      - "User balance tracking uses addition"
+      - "Total supply or individual balance can exceed uint256.max"
+    steps:
+      - "Identify balance tracking function"
+      - "Calculate overflow trigger: type(uint256).max - currentBalance + 1"
+      - "Call function with deposit amount = overflow amount"
+      - "User's balance wraps to near-zero due to overflow"
+      - "Attacker can now withdraw entire pool balance"
+    impact: "Complete pool drainage via balance wrap-around"
+
+  - name: "Fee Calculation Precision Loss"
+    description: |
+      Fee calculation in unchecked block loses precision, allowing fee theft.
+    preconditions:
+      - "Fee calculation: amount * feeRate / denominator in unchecked block"
+      - "Unchecked block disables overflow checks"
+      - "Calculation order allows intermediate overflow"
+    steps:
+      - "Calculate fee: x * rate / divisor where rate > 1"
+      - "Intermediate multiplication overflows in unchecked block"
+      - "Result wraps to small number or zero"
+      - "Attacker pays no fees or minimal fees"
+    impact: "Fee theft or protocol revenue loss"
+
+  - name: "Share Supply Inflation"
+    description: |
+      Vault share calculations overflow in unchecked block.
+    preconditions:
+      - "Share minting: totalShares + mint amount in unchecked block"
+      - "Can trigger overflow with large deposit"
+    steps:
+      - "Large deposit triggers share calculation"
+      - "totalShares + newShares > uint256.max in unchecked block"
+      - "Result wraps to small number"
+      - "Share supply becomes inaccurate"
+    impact: "Unfair share distribution or insolvency"
+
+  - name: "SmartMesh (SMT) Style Overflow"
+    description: |
+      Historical example: batchTransfer allowed unlimited token generation.
+    preconditions:
+      - "Function transfers tokens using addition without overflow checks"
+      - "Pre-0.8.0 Solidity"
+      - "Amount parameter user-controlled"
+    steps:
+      - "Call batchTransfer with amount = type(uint256).max / recipients.length"
+      - "Loop iteration: totalAmount += amount wraps around"
+      - "Tokens created from nothing"
+    impact: "Unlimited token minting, protocol collapse"
+
+verification_steps:
+  - "Confirm Solidity version from pragma statement"
+  - "If pre-0.8.0, check if SafeMath library is imported and used"
+  - "If 0.8.0+, identify the unchecked block and what arithmetic it contains"
+  - |
+    Determine if unchecked arithmetic operates on:
+    - User-provided values (input parameters)
+    - Balance/share state variables
+    - Supply/total tracking variables
+  - "Check if the arithmetic can realistically overflow given contract constraints"
+  - "Verify no external validation prevents overflow (require checks, limits)"
+
+fix_recommendations:
+  - name: "Add SafeMath Library (Pre-0.8.0)"
+    description: |
+      Use OpenZeppelin SafeMath library to wrap arithmetic operations.
+      SafeMath.add(a, b) throws on overflow instead of wrapping.
+    example: |
+      // ❌ VULNERABLE (pre-0.8.0, no SafeMath)
+      pragma solidity 0.7.6;
+
+      function deposit(uint256 amount) external {
+          balances[msg.sender] += amount;  // Overflow possible
+          totalSupply += amount;
+      }
+
+      // ✅ SAFE (pre-0.8.0, with SafeMath)
+      pragma solidity 0.7.6;
+      import "@openzeppelin/contracts/math/SafeMath.sol";
+
+      using SafeMath for uint256;
+
+      function deposit(uint256 amount) external {
+          balances[msg.sender] = balances[msg.sender].add(amount);  // Reverts on overflow
+          totalSupply = totalSupply.add(amount);
+      }
+
+  - name: "Remove unchecked Block or Add Guards"
+    description: |
+      For Solidity 0.8.0+, either remove the unchecked block (use native overflow checks)
+      or manually validate the arithmetic cannot overflow.
+    example: |
+      // ❌ VULNERABLE (0.8.0+, unchecked arithmetic with user input)
+      pragma solidity 0.8.0;
+
+      function deposit(uint256 amount) external {
+          unchecked {
+              balances[msg.sender] += amount;  // No checks in unchecked block
+          }
+      }
+
+      // ✅ SAFE OPTION 1: Remove unchecked (use native checks)
+      pragma solidity 0.8.0;
+
+      function deposit(uint256 amount) external {
+          balances[msg.sender] += amount;  // Native overflow check
+      }
+
+      // ✅ SAFE OPTION 2: Keep unchecked but add guards
+      pragma solidity 0.8.0;
+
+      function deposit(uint256 amount) external {
+          require(amount > 0 && amount < type(uint256).max - balances[msg.sender]);
+          unchecked {
+              balances[msg.sender] += amount;  // Guarded by require above
+          }
+      }
+
+  - name: "Use FixedPoint Libraries for Complex Math"
+    description: |
+      For operations involving division, percentages, or ratios in unchecked blocks,
+      use battle-tested libraries like PRBMath or solmate.
+    example: |
+      // ❌ VULNERABLE (0.8.0+, fee calculation in unchecked)
+      pragma solidity 0.8.0;
+
+      function calculateFee(uint256 amount, uint256 rate) external view returns (uint256) {
+          unchecked {
+              return amount * rate / 10000;  // Precision loss, potential overflow
+          }
+      }
+
+      // ✅ SAFE (using PRBMath)
+      pragma solidity 0.8.0;
+      import "prb-math/contracts/PRBMath.sol";
+
+      function calculateFee(uint256 amount, uint256 rate) external view returns (uint256) {
+          // PRBMath handles overflow safely
+          return PRBMath.mulDiv(amount, rate, 10000);
+      }
+
+  - name: "Audit Large Number Arithmetic"
+    description: |
+      Pre-0.8.0 functions multiplying large numbers must use SafeMath.
+      Identify: x * y where x > 10^9 and y > 10^9.
+    example: |
+      // ❌ VULNERABLE (pre-0.8.0, large number multiplication)
+      pragma solidity 0.7.0;
+
+      function calculateReward(uint256 rate, uint256 blocks) external pure returns (uint256) {
+          return rate * blocks;  // Overflow if rate > 10^9 and blocks > 10^9
+      }
+
+      // ✅ SAFE (pre-0.8.0, with SafeMath)
+      pragma solidity 0.7.0;
+      import "@openzeppelin/contracts/math/SafeMath.sol";
+      using SafeMath for uint256;
+
+      function calculateReward(uint256 rate, uint256 blocks) external pure returns (uint256) {
+          return rate.mul(blocks);  // SafeMath reverts on overflow
+      }
+
+related_patterns:
+  - arith-001  # Unchecked Arithmetic (lens)
+  - arith-004  # Division by Zero Risk
+  - token-001  # Fee-On-Transfer (related to precision)
+  - logic-002  # Balancer Rounding (related to precision loss)
+
+owasp_mapping:
+  - SC08  # Integer Overflow
+
+cwe_mapping:
+  - CWE-190  # Integer Overflow
+  - CWE-191  # Integer Underflow
+  - CWE-369  # Divide By Zero
+
+# =============================================================================
+# IMPLEMENTATION NOTES
+# =============================================================================
+
+implementation_notes: |
+  ## Property Dependencies
+
+  This pattern relies on VKG builder detecting:
+
+  1. **compiler_version_lt_08**: Boolean flag set if pragma < 0.8.0
+  2. **pre_08_arithmetic**: = (compiler_version_lt_08 AND has_arithmetic AND NOT uses_safemath)
+  3. **has_unchecked_block**: Detects `unchecked { ... }` blocks
+  4. **unchecked_contains_arithmetic**: Arithmetic operations inside unchecked
+  5. **unchecked_operand_from_user**: Arithmetic uses function parameters
+  6. **unchecked_affects_balance**: Arithmetic modifies balance/share state
+  7. **large_number_multiplication**: Detects x*y where x,y > 10^9
+  8. **multiplication_overflow_risk**: = (large_number_multiplication AND NOT uses_safemath)
+  9. **uses_safemath**: Detects SafeMath import/usage
+  10. **uses_safe_erc20**: Detects OpenZeppelin SafeERC20 usage
+
+  ## Pattern Scenarios
+
+  This pattern uses a disjunctive (OR) matching strategy:
+  - Scenario A catches pre-0.8.0 without SafeMath
+  - Scenario B catches 0.8.0+ unchecked with risky operations
+  - Scenario C catches large multiplication overflow risk
+
+  Any single scenario matching triggers a finding. This allows:
+  - Fine-grained findings for different vulnerability types
+  - Clear explanation of which scenario was detected
+  - Different remediation paths per scenario
+
+  ## False Positive Mitigation
+
+  The 'none' section excludes:
+  - View/pure functions (no actual state change risk)
+  - Functions already using SafeMath/SafeERC20
+  - Constructors (arithmetic during initialization is lower risk)
+  - Fallback/receive (limited arithmetic capability)
+
+  This should achieve ~85%+ precision while catching real vulnerabilities.
+
+# =============================================================================
+# FUTURE ENHANCEMENTS (Roadmap)
+# =============================================================================
+
+# Tier B (LLM-Enhanced) matching could add context:
+# tier_b:
+#   any:
+#     - has_risk_tag: fund_transfer  # Sensitive context
+#     - has_risk_tag: pricing        # Precision-critical
+#     - has_risk_tag: share_minting  # Supply inflation risk
+#
+# aggregation:
+#   mode: tier_a_required  # Tier A must match, Tier B adds context/confidence

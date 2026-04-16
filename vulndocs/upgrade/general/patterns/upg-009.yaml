@@ -1,0 +1,30 @@
+id: upg-009
+vulndoc: upgrade/general
+name: Beacon Upgrade Unprotected
+description: Beacon proxy upgrade without access control.
+scope: Function
+lens:
+- Upgradeability
+severity: critical
+match:
+  all:
+  - property: is_upgrade_function
+    op: eq
+    value: true
+  - property: contract_is_beacon_proxy
+    op: eq
+    value: true
+  - property: contract_has_beacon_state
+    op: eq
+    value: true
+  - property: has_access_control
+    op: eq
+    value: false
+  - property: visibility
+    op: in
+    value:
+    - public
+    - external
+  - property: writes_state
+    op: eq
+    value: true

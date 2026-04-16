@@ -1,0 +1,13 @@
+id: auth-010
+vulndoc: access-control/general
+name: Cross-Contract Auth Confusion
+description: Authorization context confused across contract boundaries.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: cross_contract_auth_confusion
+    op: eq
+    value: true

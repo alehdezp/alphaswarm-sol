@@ -1,0 +1,22 @@
+# zk-rollup Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: zk-rollup
+name: Zk Rollup
+description: |
+  Vulnerability subcategories for zk-rollup domain.
+  See individual subcategories for detection patterns and documentation.
+
+subcategories:
+  - id: circuit-constraints
+    path: circuit-constraints/
+  - id: prover-exploits
+    path: prover-exploits/
+  - id: soundness-bugs
+    path: soundness-bugs/
+  - id: state-verification
+    path: state-verification/
+
+statistics:
+  subcategory_count: 4
+  last_updated: "2026-01-23"

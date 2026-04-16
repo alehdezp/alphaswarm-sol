@@ -1,0 +1,78 @@
+id: UC-AUDIT-004
+name: "Detect missing access control on state-changing function"
+workflow: vrs-audit
+category: audit
+tier: core
+
+input:
+  contract: "tests/contracts/NoAccessGate.sol"
+  command: "/vrs-audit tests/contracts/NoAccessGate.sol"
+  context: >
+    NoAccessGate.sol contains functions that modify critical state (owner,
+    balances, or configuration) without any access control modifiers. There
+    is no onlyOwner, require(msg.sender == ...), or role-based check. This
+    is one of the most common and dangerous vulnerability classes.
+
+expected_behavior:
+  summary: |
+    The audit workflow should build the graph, identify functions with
+    MODIFIES_CRITICAL_STATE or MODIFIES_OWNER operations that lack
+    CHECKS_PERMISSION guards, and flag them as missing access control.
+    The graph-first approach should detect the absence of permission checks
+    before any code reading occurs.
+  must_happen:
+    - "Build BSKG from NoAccessGate.sol via alphaswarm build-kg"
+    - "Query graph for functions with MODIFIES_CRITICAL_STATE operations"
+    - "Query graph for CHECKS_PERMISSION operations (expect none or insufficient)"
+    - "Detect that state-changing functions lack access control"
+    - "Produce at least one finding categorized as access-control"
+    - "Finding severity is high or critical"
+    - "Finding identifies the specific unprotected function(s)"
+  must_not_happen:
+    - "Miss the access control vulnerability entirely"
+    - "Flag properly guarded functions as vulnerable"
+    - "Skip graph queries and rely only on code pattern matching"
+    - "Produce findings without identifying which functions are unprotected"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+      - "Write"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "access-control"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: graph_utilization
+      description: "Did the workflow query for MODIFIES_CRITICAL_STATE and CHECKS_PERMISSION patterns?"
+    - name: finding_accuracy
+      description: "Was the missing access control correctly identified?"
+    - name: evidence_quality
+      description: "Does the finding name the specific unprotected function(s)?"
+    - name: reasoning_depth
+      description: "Does the analysis explain the impact of missing access control?"
+  regression_signals:
+    - "Finding count drops to 0 -> CRITICAL REGRESSION: access control detection broken"
+    - "Score drops below 60 on graph_utilization -> REGRESSION: graph-first bypassed"
+    - "Finding misidentifies the vulnerable function -> REGRESSION: precision degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/NoAccessGate.sol"
+  related_scenarios:
+    - "UC-AUDIT-001"
+    - "UC-AUDIT-005"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Access control is the second most critical vulnerability class after
+  reentrancy. Core tier because missing access control detection is
+  non-negotiable for a security tool.

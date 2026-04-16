@@ -1,0 +1,20 @@
+id: op-loop-with-external-call
+vulndoc: access-control/external-call
+name: Loop with External Call (Operation-Based)
+description: 'Array loops containing external calls - DoS via gas exhaustion.
+
+  Uses LOOPS_OVER_ARRAY and CALLS_EXTERNAL operations.
+
+  '
+scope: Function
+lens:
+- Liveness
+- ExternalInfluence
+severity: high
+match:
+  tier_a:
+    all:
+    - has_operation: LOOPS_OVER_ARRAY
+    - has_operation: CALLS_EXTERNAL
+aggregation:
+  mode: tier_a_only

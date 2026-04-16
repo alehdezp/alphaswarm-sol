@@ -1,0 +1,13 @@
+id: value-movement-read-only-reentrancy
+vulndoc: reentrancy/classic
+name: Read-Only Reentrancy Surface
+description: View function reads state modified after external call.
+scope: Function
+lens:
+- ValueMovement
+severity: high
+match:
+  all:
+  - property: read_only_reentrancy_surface
+    op: eq
+    value: true

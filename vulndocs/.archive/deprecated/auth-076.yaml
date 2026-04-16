@@ -1,0 +1,13 @@
+id: auth-076
+vulndoc: access-control/general
+name: Governance Execute Without Quorum Check
+description: Governance execution without quorum enforcement.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: governance_exec_without_quorum_check
+    op: eq
+    value: true

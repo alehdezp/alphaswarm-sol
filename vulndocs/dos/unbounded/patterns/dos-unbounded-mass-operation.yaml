@@ -1,0 +1,22 @@
+id: dos-unbounded-mass-operation
+vulndoc: dos/unbounded
+name: Unbounded Mass Operation
+description: |
+  Function performs operations over entire storage array without pagination, which will
+  eventually exceed block gas limit as array grows. Maps to SWC-128 and CWE-834 (Excessive Iteration).
+scope: Function
+lens:
+  - DoS
+severity: high
+match:
+  all:
+    - property: has_loops
+      op: eq
+      value: true
+    - property: writes_state
+      op: eq
+      value: true
+  any:
+    - property: loop_bound_sources
+      op: contains
+      value: storage_length

@@ -1,0 +1,40 @@
+id: policy-mismatch-oracle-untrusted
+vulndoc: access-control/policy
+name: Oracle Data Used Without Validation
+description: 'Function uses oracle data but doesn''t validate freshness or sanity.
+
+  Oracle manipulation attacks possible.
+
+
+  Risk: Stale or manipulated oracle data can lead to incorrect pricing,
+
+  enabling flash loan attacks, liquidation manipulation, or arbitrage.
+
+  '
+severity: high
+scope: Function
+lens:
+- Oracle
+- DataValidation
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: READS_ORACLE
+  tier_c:
+    all:
+    - type: has_label
+      value: external_interaction.uses_oracle
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: invariants.validates_oracle_staleness
+    - type: has_label
+      value: invariants.validates_oracle_bounds
+required_labels:
+- external_interaction.uses_oracle

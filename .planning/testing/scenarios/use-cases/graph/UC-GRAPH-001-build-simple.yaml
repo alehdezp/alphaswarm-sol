@@ -1,0 +1,71 @@
+id: UC-GRAPH-001
+name: "Build graph on single contract file"
+workflow: graph-build
+category: graph
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "alphaswarm build-kg tests/contracts/ReentrancyClassic.sol"
+  context: >
+    Build a BSKG from a single Solidity file. The graph should contain
+    contract nodes, function nodes, semantic operation labels (e.g.,
+    TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE), and edges representing
+    call relationships and data flow. After building, the graph should
+    be queryable via alphaswarm query.
+
+expected_behavior:
+  summary: |
+    The graph builder should parse the contract via Slither, construct
+    a BSKG with contract/function/operation nodes and edges, emit semantic
+    operation labels, and produce a queryable graph. The graph should be
+    usable for subsequent investigation queries.
+  must_happen:
+    - "Parse the Solidity file via Slither compilation"
+    - "Create contract-level and function-level nodes"
+    - "Emit semantic operation labels (TRANSFERS_VALUE_OUT, WRITES_USER_BALANCE)"
+    - "Create edges between functions for call relationships"
+    - "Graph is queryable after build (alphaswarm query returns results)"
+    - "Build completes without errors"
+  must_not_happen:
+    - "Build fails on valid Solidity file"
+    - "Graph produced without semantic operation labels"
+    - "Graph missing function nodes for public/external functions"
+    - "Build produces empty graph"
+    - "Crash during Slither parsing"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+    required:
+      - "Bash"
+
+evaluation:
+  pass_threshold: 70
+  key_dimensions:
+    - name: build_success
+      description: "Did the graph build complete without errors?"
+    - name: node_completeness
+      description: "Does the graph contain contract, function, and operation nodes?"
+    - name: semantic_labels
+      description: "Were semantic operation labels correctly emitted?"
+    - name: queryability
+      description: "Can the graph be queried after building?"
+  regression_signals:
+    - "Build fails on valid contract -> CRITICAL REGRESSION: graph builder broken"
+    - "No semantic labels emitted -> CRITICAL REGRESSION: labeling pipeline broken"
+    - "Graph not queryable after build -> REGRESSION: query integration broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-GRAPH-002"
+    - "UC-AUDIT-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Core tier. Graph building is the foundation of all other workflows. If
+  this fails, nothing else works. Higher threshold (70) because this is
+  a deterministic operation with clear success criteria.

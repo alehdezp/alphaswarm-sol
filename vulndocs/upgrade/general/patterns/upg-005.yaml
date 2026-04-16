@@ -1,0 +1,13 @@
+id: upg-005
+vulndoc: upgrade/general
+name: Function Selector Clash
+description: Transparent proxy selector clash risk.
+scope: Contract
+lens:
+- Upgradeability
+severity: medium
+match:
+  all:
+  - property: proxy_type
+    op: eq
+    value: transparent

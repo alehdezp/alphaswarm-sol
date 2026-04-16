@@ -1,0 +1,40 @@
+# Phase 3: Operation-Based Vulnerability Patterns
+# These patterns use semantic operations instead of name-based heuristics
+# for improved detection on renamed/obfuscated code.
+# =============================================================================
+# REENTRANCY PATTERNS (Operation-Based)
+# =============================================================================
+id: op-reentrancy-classic
+vulndoc: reentrancy/classic
+name: Classic Reentrancy (Operation-Based)
+description: 'Detects classic reentrancy where external calls occur before balance state updates.
+
+  Uses semantic operations to detect the pattern regardless of function/variable names.
+
+  Pattern: TRANSFERS_VALUE_OUT occurs before WRITES_USER_BALANCE without guard.
+
+  '
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: critical
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_all_operations:
+      - TRANSFERS_VALUE_OUT
+      - WRITES_USER_BALANCE
+    - sequence_order:
+        before: TRANSFERS_VALUE_OUT
+        after: WRITES_USER_BALANCE
+    none:
+    - property: has_reentrancy_guard
+      value: true
+aggregation:
+  mode: tier_a_only

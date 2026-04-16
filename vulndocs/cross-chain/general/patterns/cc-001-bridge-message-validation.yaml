@@ -1,0 +1,971 @@
+# =============================================================================
+# PATTERN: Cross-Chain Bridge Message Validation Failure
+# =============================================================================
+# Detects cross-chain bridge vulnerabilities where external messages are
+# processed without proper validation, signature verification, or nonce tracking.
+#
+# Source: Phase 17 Exa Discovery (2026-01-09)
+# Real-world: Yala Bridge LayerZero ($7.64M, September 2025)
+# =============================================================================
+
+id: cc-001
+vulndoc: cross-chain/general
+name: "Cross-Chain Bridge Message Validation Failure"
+description: |
+  ## What This Detects
+  Bridge contracts that process cross-chain messages (especially LayerZero) without
+  proper validation, signature verification, or nonce/replay protection. This allows
+  attackers to craft malicious messages, replay valid messages, or spoof messages
+  from trusted sources, leading to unauthorized token transfers or balance manipulation
+  across chains.
+
+  ## Why It's Dangerous
+  Cross-chain bridges are high-value targets. When message validation is insufficient:
+  - Attackers can replay legitimate messages to transfer assets multiple times
+  - Malicious messages bypass authentication, executing arbitrary operations
+  - Signature verification absent allows message spoofing from any sender
+  - Weak nonce tracking enables duplicate message processing
+  - No source chain validation allows messages from untrusted chains
+  - Attackers can mint unlimited tokens or drain bridge liquidity
+
+  ## Detection Logic
+  This pattern triggers when:
+  1. Function performs external calls (to bridge/LayerZero infrastructure)
+  2. Function reads external values (cross-chain message data)
+  3. Function lacks proper input validation (validates_input = false)
+  4. Function has no or weak access control (has_access_gate = false)
+  5. Function modifies critical state (writes_privileged_state = true)
+  6. Behavioral signature matches: "R:ext->X:ext->W:crit" or similar
+  7. NONE of the safe patterns are present (signature verification, nonce tracking)
+
+  ## Real-World Example
+  The Yala Bridge LayerZero exploit ($7.64M loss, September 2025):
+  - LayerZero messages processed without signature verification
+  - Nonce tracking missing or weak
+  - Bridge contract executed mints/transfers without validating message source
+  - Attackers crafted fake messages or replayed valid ones
+  - Bridge liquidity drained through unauthorized token transfers
+
+scope: Function
+lens:
+  - CrossChain
+  - ValueMovement
+  - Authority
+
+severity: critical
+status: ready
+
+# VulnDocs reference for LLM context retrieval
+vulndocs_reference:
+  category: cross-chain
+  subcategory: bridge-compromise
+  specifics: yala-layerzero
+  depth: detection
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must make external calls (to bridge/LayerZero/other chains)
+    - property: has_external_calls
+      op: eq
+      value: true
+
+    # Must read external values (cross-chain message data)
+    - property: reads_external_value
+      op: eq
+      value: true
+
+    # Must write privileged state (balances, mint/burn, critical params)
+    - property: writes_privileged_state
+      op: eq
+      value: true
+
+    # CRITICAL: Must lack proper input validation
+    - property: validates_input
+      op: eq
+      value: false
+
+    # CRITICAL: Must lack access control
+    - property: has_access_gate
+      op: eq
+      value: false
+
+  # At least ONE can match (OR logic) - detection alternatives
+  any: []
+
+  # NONE can match (NOT logic) - CRITICAL for false positive reduction
+  none:
+    # Safe pattern: Message signature verification present
+    - property: uses_signature_verification
+      op: eq
+      value: true
+
+    # Safe pattern: Nonce/sequence tracking present
+    - property: has_nonce_tracking
+      op: eq
+      value: true
+
+    # Safe pattern: Source chain validation present
+    - property: validates_source_chain
+      op: eq
+      value: true
+
+    # Safe pattern: Message payload validation present
+    - property: validates_message_payload
+      op: eq
+      value: true
+
+    # Safe pattern: Function protected by access control modifier
+    - property: has_access_modifier
+      op: eq
+      value: true
+
+# =============================================================================
+# ADVANCED MATCHING (Optional)
+# =============================================================================
+
+# Edge requirements for graph-based detection
+edges:
+  - source: external_call
+    target: privileged_state_write
+    type: data_flow
+
+# Path requirements for multi-hop detection
+paths:
+  - entry: function_entry
+    operations:
+      - reads_external_value
+      - calls_external
+      - writes_privileged_state
+    exit: function_exit
+
+# =============================================================================
+# SEMANTIC OPERATIONS (Phase 1-3)
+# =============================================================================
+
+semantic_ops:
+  # Must include these behavioral operations
+  has_all_operations:
+    - CALLS_EXTERNAL        # Calls bridge/LayerZero infrastructure
+    - READS_EXTERNAL_VALUE  # Reads cross-chain message data
+    - MODIFIES_CRITICAL_STATE  # Writes token balances, supply, roles
+
+  # Sequence requirements
+  sequence_order:
+    before: READS_EXTERNAL_VALUE
+    after: MODIFIES_CRITICAL_STATE
+    pattern: "Read external before modifying critical state without validation"
+
+# Behavioral signatures indicating vulnerable pattern
+behavioral_signature:
+  # Vulnerable patterns
+  vulnerable_patterns:
+    - "R:ext->X:ext->W:crit"    # Read external, call external, write critical (no validation)
+    - "R:msg->X:bridge->W:bal"  # Read message, call bridge, write balance
+    - "X:lz->W:supply"          # Call LayerZero, write token supply
+    - "R:ext->W:crit"           # Read external, write critical (no validation between)
+
+  # Safe patterns (would exclude from vulnerability)
+  safe_patterns:
+    - "V:sig->V:nonce->X:ext->W:crit"  # Validate signature, nonce, then proceed
+    - "V:src->V:msg->C:auth->X:ext->W:crit"  # Validate source, message, check auth, then proceed
+    - "C:auth->V:proof->X:ext->W:crit"  # Check auth, verify proof, then proceed
+
+# Detailed vulnerable code patterns (real-world vulnerable implementations)
+vulnerable_code_patterns:
+  - id: "cc-001-vuln-1"
+    name: "Unvalidated LayerZero Message Processing"
+    description: "Processes LayerZero message without verifying source chain or address"
+    snippet: |
+      // VULNERABLE: No source validation
+      function lzReceive(
+          uint16 _srcChainId,
+          bytes memory _srcAddress,
+          uint64 _nonce,
+          bytes memory _payload
+      ) external override {
+          // No check that msg.sender == lzEndpoint
+          // No verification of _srcChainId or _srcAddress
+
+          // Directly decodes and processes payload
+          (address recipient, uint256 amount) = abi.decode(_payload, (address, uint256));
+
+          // Unsafe state modification
+          balances[recipient] += amount;
+          emit Transfer(address(this), recipient, amount);
+      }
+    operations: [CALLS_EXTERNAL, READS_EXTERNAL_VALUE, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "Reads cross-chain message without validating source identity"
+
+  - id: "cc-001-vuln-2"
+    name: "Missing Nonce Tracking in Bridge"
+    description: "Bridge processes messages with no replay protection mechanism"
+    snippet: |
+      // VULNERABLE: No nonce tracking
+      function receiveMessage(
+          bytes calldata message,
+          bytes calldata signature
+      ) external {
+          // Message structure: [chainId:2, nonce:8, action:1, data:...]
+          uint16 srcChain = uint16(bytes2(message[0:2]));
+
+          // Decodes message but never validates nonce
+          (address to, uint256 amount) = abi.decode(message[11:], (address, uint256));
+
+          // No check: if (nonce <= processedNonces[srcChain][from]) revert
+          // Attacker can replay same message multiple times
+
+          _transfer(to, amount);
+      }
+    operations: [READS_EXTERNAL_VALUE, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "Processes message without nonce/sequence validation"
+
+  - id: "cc-001-vuln-3"
+    name: "Signature Verification After State Modification"
+    description: "Validates message signature but AFTER processing payload (dangerous)"
+    snippet: |
+      // VULNERABLE: Signature check after state change
+      function processBridgeMessage(bytes calldata payload, bytes calldata sig) external {
+          // WRONG: Modify state BEFORE signature verification
+          (address recipient, uint256 amount) = abi.decode(payload, (address, uint256));
+          balances[recipient] += amount;  // DANGEROUS: Before validation!
+          totalSupply += amount;
+
+          // If signature verification fails here, state is already changed
+          require(verifySignature(payload, sig), "Invalid signature");
+      }
+    operations: [MODIFIES_CRITICAL_STATE, CHECKS_PERMISSION]
+    semantic_issue: "State modification precedes signature verification (CEI violated)"
+
+  - id: "cc-001-vuln-4"
+    name: "Missing Payload Bounds Validation"
+    description: "Decodes message payload without checking ranges or bounds"
+    snippet: |
+      // VULNERABLE: No payload validation
+      function handleCrossChainTransfer(bytes calldata data) external {
+          // Decode without validating structure
+          (address token, address to, uint256 amount) = abi.decode(data, (address, address, uint256));
+
+          // No checks:
+          // - Is token whitelisted?
+          // - Is to address valid?
+          // - Is amount reasonable (not exceeding balance, max limits)?
+          // - Does token contract exist?
+
+          IERC20(token).transferFrom(address(this), to, amount);
+      }
+    operations: [READS_EXTERNAL_VALUE, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "Decodes untrusted payload without validation"
+
+# Real-world safe implementations from established protocols
+safe_code_patterns:
+  - id: "cc-001-safe-1"
+    name: "LayerZero V2 OApp Pattern (Official Safe)"
+    description: "Official LayerZero V2 OApp implementation with built-in validation"
+    source: "LayerZero Documentation - V2 Integration Checklist"
+    snippet: |
+      // SAFE: Official LayerZero V2 OApp with integrated validation
+      import "@layerzerolabs/lz-evm-sdk-v2/contracts/oapp/OApp.sol";
+      import "@layerzerolabs/lz-evm-sdk-v2/contracts/oapp/extensions/OAppReceiver.sol";
+
+      contract SecureCrossChainTransfer is OApp {
+          mapping(address => uint256) public balances;
+
+          // OApp provides:
+          // - Source chain validation (enforced at endpoint level)
+          // - Nonce tracking (per peer + chain)
+          // - Message ordering guarantees
+          // - Endpoint access control
+
+          function _lzReceive(
+              Context calldata _context,
+              OAppReceiver.Message calldata _message
+          ) internal override {
+              // _context.origin.srcEid and _context.origin.sender are validated by OApp
+              // Nonce tracking is automatic via OApp
+
+              (address recipient, uint256 amount) = abi.decode(
+                  _message.payload,
+                  (address, uint256)
+              );
+
+              // Validate payload bounds
+              require(amount > 0 && amount <= MAX_TRANSFER, "Invalid amount");
+              require(recipient != address(0), "Invalid recipient");
+
+              balances[recipient] += amount;
+              emit TransferReceived(recipient, amount);
+          }
+      }
+    operations: [READS_EXTERNAL_VALUE, CHECKS_PERMISSION, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "None - official implementation with comprehensive validation"
+    validation_features:
+      - "Source chain identity verified by endpoint"
+      - "Nonce tracking per peer and chain"
+      - "Endpoint access control enforced"
+      - "Message payload bounds validated"
+
+  - id: "cc-001-safe-2"
+    name: "Explicit Nonce + Source Chain Validation"
+    description: "Manual implementation with explicit nonce and source validation"
+    source: "LayerZero V1 Best Practices"
+    snippet: |
+      // SAFE: Explicit nonce and source validation
+      contract SafeBridgeReceiver {
+          address public immutable lzEndpoint;
+          mapping(uint16 => bytes) public trustedRemotes;
+          mapping(uint16 => uint64) public lastProcessedNonce;
+
+          modifier onlyLzEndpoint() {
+              require(msg.sender == lzEndpoint, "Only LayerZero endpoint");
+              _;
+          }
+
+          function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress) external onlyOwner {
+              require(_srcAddress.length > 0, "Invalid address");
+              trustedRemotes[_srcChainId] = _srcAddress;
+          }
+
+          function lzReceive(
+              uint16 _srcChainId,
+              bytes memory _srcAddress,
+              uint64 _nonce,
+              bytes memory _payload
+          ) external onlyLzEndpoint {
+              // Validation sequence: endpoint -> source -> nonce -> payload
+
+              // 1. Verify source chain is trusted
+              require(
+                  keccak256(_srcAddress) == keccak256(trustedRemotes[_srcChainId]),
+                  "Untrusted remote"
+              );
+
+              // 2. Verify nonce strictly increases (replay protection)
+              require(_nonce > lastProcessedNonce[_srcChainId], "Replay detected");
+
+              // 3. Update nonce BEFORE processing (atomicity)
+              lastProcessedNonce[_srcChainId] = _nonce;
+
+              // 4. Validate and decode payload
+              require(_payload.length >= 40, "Payload too short");
+              (address recipient, uint256 amount) = abi.decode(_payload, (address, uint256));
+
+              // 5. Validate payload bounds
+              require(recipient != address(0), "Invalid recipient");
+              require(amount > 0, "Amount must be positive");
+              require(amount <= MAX_AMOUNT && amount <= getBalance(), "Insufficient balance");
+
+              // 6. Now safe to execute
+              _processTransfer(recipient, amount);
+          }
+      }
+    operations: [CHECKS_PERMISSION, READS_EXTERNAL_VALUE, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "None - comprehensive validation in correct order"
+    validation_features:
+      - "Endpoint access control (onlyLzEndpoint)"
+      - "Source address whitelist verification"
+      - "Nonce strictly increases"
+      - "Nonce update before processing (CEI)"
+      - "Payload structure validation"
+      - "Amount bounds checking"
+      - "Recipient address validation"
+
+  - id: "cc-001-safe-3"
+    name: "Signature Verification + Nonce Protection"
+    description: "Combines cryptographic signatures with nonce tracking for defense in depth"
+    source: "Union Bridge (UCS-03 Specification)"
+    snippet: |
+      // SAFE: Signature + nonce for defense in depth
+      contract SignedBridgeReceiver {
+          mapping(uint256 => bool) public usedNonces;
+          address public signer;
+
+          modifier onlyValidSignature(
+              bytes32 messageHash,
+              uint8 v,
+              bytes32 r,
+              bytes32 s
+          ) {
+              // Recover signer from signature
+              address recovered = ecrecover(messageHash, v, r, s);
+              require(recovered == signer, "Invalid signature");
+              _;
+          }
+
+          function receiveMessage(
+              uint256 _srcChainId,
+              uint256 _nonce,
+              address _recipient,
+              uint256 _amount,
+              uint8 _v,
+              bytes32 _r,
+              bytes32 _s
+          ) external {
+              // 1. Verify message hasn't been processed (nonce)
+              require(!usedNonces[_nonce], "Nonce already used");
+
+              // 2. Construct message hash (EIP-191 compatible)
+              bytes32 messageHash = keccak256(
+                  abi.encodePacked(
+                      "\x19Ethereum Signed Message:\n96",
+                      _srcChainId,
+                      _nonce,
+                      _recipient,
+                      _amount
+                  )
+              );
+
+              // 3. Verify signature before any state changes
+              address recovered = ecrecover(messageHash, _v, _r, _s);
+              require(recovered == signer, "Invalid signature");
+
+              // 4. Mark nonce as used (replay protection)
+              usedNonces[_nonce] = true;
+
+              // 5. Validate payload bounds
+              require(_amount > 0 && _amount <= MAX_AMOUNT, "Invalid amount");
+              require(_recipient != address(0), "Invalid recipient");
+
+              // 6. Execute transfer
+              _transfer(_recipient, _amount);
+          }
+      }
+    operations: [CHECKS_PERMISSION, READS_EXTERNAL_VALUE, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "None - signature + nonce provides cryptographic + replay protection"
+    validation_features:
+      - "Signature verification before state change"
+      - "Nonce tracking across messages"
+      - "EIP-191 signature standard"
+      - "Amount bounds validation"
+      - "Recipient validation"
+
+  - id: "cc-001-safe-4"
+    name: "Multi-Validator Consensus Pattern"
+    description: "Requires multiple validators to approve message before processing"
+    source: "Bridge Security Best Practices"
+    snippet: |
+      // SAFE: Multi-validator consensus for high-value bridges
+      contract MultiValidatorBridge {
+          uint256 public requiredSignatures = 3;
+          mapping(address => bool) public isValidator;
+          mapping(bytes32 => uint256) public messageApprovals;
+          mapping(bytes32 => bool) public processedMessages;
+
+          event MessageApproved(bytes32 indexed msgHash, address validator);
+          event MessageProcessed(bytes32 indexed msgHash);
+
+          function approveMessage(
+              uint16 _srcChainId,
+              address _recipient,
+              uint256 _amount,
+              uint256 _nonce
+          ) external {
+              require(isValidator[msg.sender], "Only validator");
+
+              bytes32 msgHash = keccak256(
+                  abi.encodePacked(_srcChainId, _recipient, _amount, _nonce)
+              );
+
+              messageApprovals[msgHash]++;
+              emit MessageApproved(msgHash, msg.sender);
+          }
+
+          function executeMessage(
+              uint16 _srcChainId,
+              address _recipient,
+              uint256 _amount,
+              uint256 _nonce
+          ) external {
+              bytes32 msgHash = keccak256(
+                  abi.encodePacked(_srcChainId, _recipient, _amount, _nonce)
+              );
+
+              // 1. Verify sufficient validator approvals
+              require(messageApprovals[msgHash] >= requiredSignatures, "Insufficient approvals");
+
+              // 2. Verify message not already processed
+              require(!processedMessages[msgHash], "Message already processed");
+
+              // 3. Validate payload
+              require(_amount > 0 && _amount <= MAX_AMOUNT, "Invalid amount");
+              require(_recipient != address(0), "Invalid recipient");
+
+              // 4. Mark as processed before execution
+              processedMessages[msgHash] = true;
+
+              // 5. Execute transfer
+              _transfer(_recipient, _amount);
+              emit MessageProcessed(msgHash);
+          }
+      }
+    operations: [CHECKS_PERMISSION, MODIFIES_CRITICAL_STATE]
+    semantic_issue: "None - consensus protocol ensures message integrity"
+    validation_features:
+      - "Multi-validator approval requirement"
+      - "Message hash tracking"
+      - "Processed message tracking"
+      - "Amount bounds validation"
+      - "Recipient validation"
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+# Attack scenarios that this pattern can detect
+attack_scenarios:
+  - name: "Message Replay Attack"
+    description: |
+      Attacker captures a valid cross-chain message and replays it multiple times
+      to execute the same operation repeatedly (e.g., transfer tokens multiple times).
+    preconditions:
+      - "Bridge lacks nonce tracking or replay protection"
+      - "Message includes valuable operation (transfer, mint)"
+      - "No sequence number validation"
+    steps:
+      - "Attacker observes valid LayerZero message crossing chains"
+      - "Attacker captures message data"
+      - "Attacker relays message to bridge multiple times"
+      - "Bridge processes duplicate message without detecting replay"
+      - "Attacker transfers assets multiple times from single message"
+    impact: |
+      Arbitrary multiplication of cross-chain transfers. Attacker can drain bridge
+      liquidity pool by replaying a single valid message. Financial loss proportional
+      to message value × number of replays. CVSS 9.1 (Critical).
+
+  - name: "Message Spoofing (Missing Signature Verification)"
+    description: |
+      Attacker crafts malicious LayerZero messages without proper signatures
+      because the bridge doesn't verify message authenticity.
+    preconditions:
+      - "Bridge doesn't use cryptographic signature verification"
+      - "LayerZero message structure is known/documented"
+      - "No source chain validation"
+    steps:
+      - "Attacker studies LayerZero message format"
+      - "Attacker crafts message (e.g., mint 1M tokens to their address)"
+      - "Attacker sends crafted message through LayerZero endpoint"
+      - "Bridge processes message without signature check"
+      - "Attacker receives unauthorized tokens"
+    impact: |
+      Arbitrary token minting or balance manipulation. Attacker can create any
+      cross-chain message and execute it as if from trusted source. Complete
+      compromise of bridge security model. CVSS 9.8 (Critical).
+
+  - name: "Weak Nonce Tracking Bypass"
+    description: |
+      Bridge attempts nonce tracking but implementation is weak (off-by-one errors,
+      per-sender instead of global, or improper increment logic).
+    preconditions:
+      - "Bridge has nonce tracking but implementation is flawed"
+      - "Nonce checked after processing instead of before"
+      - "Nonce tracking is per-sender but message is global"
+    steps:
+      - "Attacker sends message with nonce 1 (legitimate)"
+      - "Bridge processes and increments nonce to 2"
+      - "Attacker replays message with nonce 1"
+      - "Bridge checks: lastNonce=2, incoming=1, passes check due to off-by-one"
+      - "Bridge processes duplicate message"
+    impact: |
+      Partial bypass of replay protection. Allows multiple replays despite nonce
+      system. Severity depends on nonce implementation flaw. CVSS 7.5-8.5 (High).
+
+  - name: "Cross-Source Message Confusion"
+    description: |
+      Bridge fails to validate that messages originate from trusted source chain
+      and address, allowing messages from attacker-controlled chains.
+    preconditions:
+      - "No source chain identifier in validation logic"
+      - "No whitelist of trusted remote addresses"
+      - "Bridge accepts messages from any sender"
+    steps:
+      - "Attacker controls/deploys contract on alternate chain"
+      - "Attacker sends malicious message from attacker-controlled chain"
+      - "Bridge doesn't validate source chain or remote address"
+      - "Bridge processes message as if from legitimate source"
+      - "Attacker executes arbitrary operations"
+    impact: |
+      Message forgery from untrusted sources. Complete security model bypass.
+      Attacker with control of one chain can compromise all connected chains.
+      CVSS 9.1 (Critical).
+
+  - name: "Unvalidated Message Payload"
+    description: |
+      Bridge processes message payload without checking bounds, ranges, or format,
+      allowing malformed data to trigger unintended behavior.
+    preconditions:
+      - "Message payload decoded without validation"
+      - "No bounds checks on amounts or indices"
+      - "No type/format validation"
+    steps:
+      - "Attacker crafts message with invalid payload"
+      - "Attacker includes negative amount, invalid recipient, or garbage data"
+      - "Bridge decodes payload without validation"
+      - "Contract attempts to execute with invalid data"
+      - "Integer underflow, incorrect transfer, or reversion from bad data"
+    impact: |
+      Logic errors, arithmetic exploits, or denial of service. Can lead to
+      incorrect token transfers, unintended state changes. CVSS 6.5-7.5 (Medium-High).
+
+# Verification steps to confirm this is not a false positive
+verification_steps:
+  - "Confirm function receives cross-chain messages (check for LayerZero, IBC, Wormhole patterns)"
+  - "Search for signature verification (ecrecover, ECDSA library, EIP-191/712 patterns)"
+  - "Look for nonce/sequence validation: require(nonce > lastNonce) or similar"
+  - "Check source chain validation: verify srcChainId against whitelist"
+  - "Verify message payload validation: bounds checks, type validation, format checks"
+  - "Check if function has access control modifiers restricting callers"
+  - "Verify this isn't a read-only or view function (no state modification)"
+  - "Look for reentrancy guards or state transition locks"
+  - "Check if function is wrapped by additional validation layers"
+  - "Review audit reports for intentional design vs. oversight"
+
+# Recommended fixes
+fix_recommendations:
+  - name: "Implement Cryptographic Signature Verification"
+    description: |
+      Verify authenticity of all cross-chain messages using cryptographic signatures
+      (ECDSA/BLS) with proper recovery and malleability prevention.
+    priority: critical
+    example: |
+      // SAFE: Verify LayerZero message signature
+      function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+      ) external {
+          // Verify message signature
+          bytes32 messageHash = keccak256(abi.encode(
+              _srcChainId,
+              _srcAddress,
+              _nonce,
+              _payload
+          ));
+
+          bytes32 ethSignedHash = keccak256(abi.encodePacked(
+              "\x19Ethereum Signed Message:\n32",
+              messageHash
+          ));
+
+          // Recover signer from signature
+          address signer = ecrecover(ethSignedHash, v, r, s);
+          require(signer != address(0), "Invalid signature");
+          require(isTrustedSigner[signer], "Untrusted signer");
+
+          // Now safe to process message
+          _processMessage(_payload);
+      }
+
+  - name: "Add Nonce Tracking and Replay Protection"
+    description: |
+      Implement strict nonce tracking to prevent message replay. Store processed
+      nonces and reject any duplicate nonce from same source.
+    priority: critical
+    example: |
+      // SAFE: Nonce tracking per source chain
+      mapping(uint16 => uint64) public lastProcessedNonce;
+
+      function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+      ) external {
+          // Check nonce strictly increases
+          require(_nonce > lastProcessedNonce[_srcChainId], "Nonce already processed");
+
+          // Update nonce BEFORE processing (protects against reentrancy)
+          lastProcessedNonce[_srcChainId] = _nonce;
+
+          // Now safe to process
+          _processMessage(_payload);
+      }
+
+  - name: "Validate Source Chain and Remote Address"
+    description: |
+      Maintain whitelist of trusted source chains and remote addresses.
+      Reject messages from untrusted sources.
+    priority: critical
+    example: |
+      // SAFE: Source chain and address validation
+      mapping(uint16 => bytes) public trustedRemotes;
+      mapping(uint16 => bool) public trustedChains;
+
+      function setTrustedRemote(uint16 _srcChainId, bytes memory _srcAddress) external onlyOwner {
+          require(_srcAddress.length > 0, "Invalid remote address");
+          trustedRemotes[_srcChainId] = _srcAddress;
+          trustedChains[_srcChainId] = true;
+      }
+
+      function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+      ) external {
+          // Verify source chain is trusted
+          require(trustedChains[_srcChainId], "Untrusted source chain");
+
+          // Verify remote address matches trusted address
+          require(
+              keccak256(_srcAddress) == keccak256(trustedRemotes[_srcChainId]),
+              "Untrusted remote address"
+          );
+
+          // Check nonce
+          require(_nonce > lastProcessedNonce[_srcChainId], "Replay attack detected");
+          lastProcessedNonce[_srcChainId] = _nonce;
+
+          // Now safe to process
+          _processMessage(_payload);
+      }
+
+  - name: "Strict Message Payload Validation"
+    description: |
+      Validate all fields in message payload before processing. Check bounds,
+      ranges, types, and format.
+    priority: high
+    example: |
+      // SAFE: Strict payload validation
+      function _processMessage(bytes calldata _payload) internal {
+          // Ensure payload has minimum size
+          require(_payload.length >= 32, "Payload too short");
+
+          // Decode and validate each field
+          (uint256 amount, address recipient) = abi.decode(_payload, (uint256, address));
+
+          // Validate amount bounds
+          require(amount > 0, "Amount must be positive");
+          require(amount <= MAX_AMOUNT, "Amount exceeds maximum");
+          require(amount <= tokenBalance(), "Insufficient balance");
+
+          // Validate recipient
+          require(recipient != address(0), "Invalid recipient");
+          require(recipient.code.length == 0 || isWhitelistedContract[recipient],
+              "Invalid recipient contract");
+
+          // Now safe to execute transfer
+          _executeTransfer(recipient, amount);
+      }
+
+  - name: "Implement Access Control on Critical Bridge Operations"
+    description: |
+      Restrict bridge message handling to authorized endpoints. Only LayerZero
+      endpoint should be able to call lzReceive.
+    priority: high
+    example: |
+      // SAFE: Access control on bridge operations
+      address public authorizedLzEndpoint;
+
+      modifier onlyAuthorizedLz() {
+          require(msg.sender == authorizedLzEndpoint, "Only LayerZero endpoint");
+          _;
+      }
+
+      function lzReceive(
+          uint16 _srcChainId,
+          bytes calldata _srcAddress,
+          uint64 _nonce,
+          bytes calldata _payload
+      ) external onlyAuthorizedLz {
+          // Function now has access control
+          // Plus signature verification, nonce tracking, etc.
+          _processSecureMessage(_srcChainId, _srcAddress, _nonce, _payload);
+      }
+
+  - name: "Use Established Bridge Protocols"
+    description: |
+      Leverage battle-tested bridge protocols (Stargate, official LayerZero adapters)
+      that have built-in security mechanisms.
+    priority: medium
+    example: |
+      // SAFE: Use official LayerZero SDK with validation
+      import "@layerzerolabs/lz-evm-sdk-v2/contracts/lzApp/OApp.sol";
+
+      contract SecureBridge is OApp {
+          function sendMessage(
+              uint32 _dstEid,
+              bytes memory _message
+          ) external payable {
+              _lzSend(
+                  _dstEid,
+                  _message,
+                  _enforcedOptions,
+                  MessagingFee(msg.value, 0),
+                  payable(msg.sender)
+              );
+          }
+
+          function _lzReceive(
+              Context calldata _context,
+              OAppReceiver.Message calldata _message
+          ) internal override {
+              // OApp provides built-in validation:
+              // - Source validation
+              // - Nonce tracking
+              // - Message ordering
+              // - Endpoint protection
+              _handleMessage(_message.payload);
+          }
+      }
+
+# Related patterns
+related_patterns:
+  - cc-002  # Cross-chain Replay Attack (more specific)
+  - cc-003  # Bridge Contract Privilege Escalation
+  - cc-004  # Message Validation Failures
+  - crypto-001  # Insecure signature validation
+  - auth-003  # Unprotected privileged write
+  - token-005  # Unchecked return value (token operations)
+
+# OWASP Smart Contract Top 10 mapping
+owasp_mapping:
+  - SC01  # Access Control Vulnerabilities
+  - SC04  # Input Validation
+
+# CWE mapping
+cwe_mapping:
+  - CWE-347  # Improper Verification of Cryptographic Signature
+  - CWE-354  # Improper Validation of Integrity Check Value
+  - CWE-355  # Improper Check for Dropped Privileges
+  - CWE-362  # Concurrent Execution using Shared Resource
+
+# Real-world exploits
+exploits:
+  - name: "Yala Bridge LayerZero Exploit"
+    date: "2025-09"
+    loss_usd: 7640000
+    chain: ["Ethereum", "Arbitrum"]
+    description: |
+      Cross-chain bridge allowed replay of LayerZero messages due to insufficient
+      validation. Attackers crafted or replayed messages to mint unlimited tokens
+      or execute unauthorized transfers across chains.
+    attack_vector: "Message replay + signature spoofing + missing nonce tracking"
+    solodit_id: "yala-layerzero-2025-09"
+    source: "Rekt News"
+    url: "https://rekt.news/yala-bridge-layerzero-exploit/"
+
+  - name: "Stargate Finance Vulnerability"
+    date: "2023-06"
+    loss_usd: 0  # Pre-deployment discovery
+    description: |
+      Potential message validation issue in Stargate LayerZero bridge integration
+      that could have led to cross-chain exploitation.
+    source: "Audit reports"
+
+  - name: "Wormhole Bridge Exploit"
+    date: "2022-02"
+    loss_usd: 325000000
+    description: |
+      Insufficient signature verification in Wormhole cross-chain bridge
+      allowed unauthorized transfer of 120,000 wETH.
+    source: "Wormhole security incident"
+
+# Test coverage
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  false_positives: 0
+  false_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: |
+    Pattern created from Yala LayerZero exploit discovery (Phase 17).
+    Requires test fixtures covering:
+    - LayerZero message processing
+    - Stargate-style bridges
+    - Wormhole-style bridges
+    - Generic cross-chain message handlers
+
+# =============================================================================
+# ROADMAP FIELDS (Future Capabilities)
+# =============================================================================
+
+# Tier A/B Matching (Phase 12-14)
+tier_match:
+  tier_a:
+    all:
+      - property: visibility
+        op: in
+        value: [public, external]
+      - property: has_external_calls
+        op: eq
+        value: true
+      - property: reads_external_value
+        op: eq
+        value: true
+      - property: writes_privileged_state
+        op: eq
+        value: true
+      - property: validates_input
+        op: eq
+        value: false
+      - property: has_access_gate
+        op: eq
+        value: false
+    none:
+      - property: uses_signature_verification
+        op: eq
+        value: true
+      - property: has_nonce_tracking
+        op: eq
+        value: true
+      - property: validates_source_chain
+        op: eq
+        value: true
+  tier_b:
+    any:
+      - has_risk_tag: message_validation_failure
+      - has_risk_tag: cross_chain_security
+      - has_risk_tag: replay_attack_risk
+  aggregation:
+    mode: tier_a_required
+
+# Multi-Agent Verification Hints (Phase 9)
+verification_agents:
+  # Explorer agent: Find paths from external input to state writes
+  explorer:
+    entry_points: [public, external]
+    sources: [external_input, external_call]
+    sinks: [privileged_state_write, token_transfer]
+    max_depth: 5
+
+  # Pattern agent: Structural motif matching
+  pattern:
+    require_all_conditions: true
+    key_operations: [CALLS_EXTERNAL, READS_EXTERNAL_VALUE, MODIFIES_CRITICAL_STATE]
+
+  # Risk agent: Cross-chain attack assessment
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    assess_cross_chain_scope: true
+    min_exploitability_score: 8.5
+
+  # Consensus requirement
+  consensus:
+    min_agents_agree: 3
+    mode: voting
+
+# Exploit Database Similarity (Phase 10)
+exploit_similarity:
+  matches:
+    - yala-layerzero-2025-09
+    - wormhole-2022-02
+    - stargate-2023-06
+  signature: "R:ext->X:ext->W:crit"
+  similarity_threshold: 0.85
+  description: "Cross-chain message validation failure signature matches multiple major bridge exploits ($1.3B+ in losses)"

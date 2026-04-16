@@ -1,0 +1,22 @@
+name: "safe-token-mechanics"
+generated: "2026-02-12T14:07:00Z"
+generator: "corpus-generator v1"
+theme: "token_sale"
+tier: 1
+adversarial_categories: ["C"]
+pattern_count: 0
+safe_pattern_count: 5
+solidity_version: "0.8.20"
+compilation_verified: true
+contracts:
+  vulnerable: ["contracts/core/GuardedToken.sol"]
+  safe: []
+files:
+  ground_truth: "ground-truth.yaml"
+  manifest: "project-manifest.yaml"
+  build_script: "build-verification.sh"
+contamination_check:
+  ethernaut: false
+  dvdefi: false
+  swc: false
+  ctf: false

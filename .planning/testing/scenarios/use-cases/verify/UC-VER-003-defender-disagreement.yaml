@@ -1,0 +1,74 @@
+id: UC-VER-003
+name: "Verify finding when defender disagrees"
+workflow: vrs-verify
+category: verify
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyWithGuard.sol"
+  command: "/vrs-verify tests/contracts/ReentrancyWithGuard.sol --finding reentrancy --with-defender"
+  context: >
+    ReentrancyWithGuard.sol has the external-call-before-state-update pattern
+    BUT also has a ReentrancyGuard (nonReentrant modifier). The attacker agent
+    flags reentrancy, but the defender argues the guard mitigates it. The
+    verifier must weigh both sides: the attacker's CEI violation evidence
+    versus the defender's guard evidence, and reach a justified verdict.
+
+expected_behavior:
+  summary: |
+    The verifier receives conflicting positions: the attacker claims reentrancy
+    and the defender claims the guard mitigates it. The verifier must
+    independently examine both arguments, verify the guard's completeness
+    (does nonReentrant cover all entry points?), and produce a verdict that
+    weighs both sides with evidence.
+  must_happen:
+    - "Verifier receives both attacker and defender positions"
+    - "Verifier runs independent BSKG queries for both CEI violation and guard"
+    - "Verifier checks if nonReentrant modifier covers all vulnerable entry points"
+    - "Verifier weighs attacker evidence against defender evidence"
+    - "Verdict explicitly addresses both sides with specific evidence"
+    - "Verdict includes confidence score reflecting the disagreement"
+  must_not_happen:
+    - "Verifier sides with attacker without examining the guard"
+    - "Verifier sides with defender without examining the CEI violation"
+    - "Verifier produces verdict without addressing both arguments"
+    - "Verifier skips graph queries and makes judgment from code alone"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: balanced_assessment
+      description: "Did the verifier examine both attacker and defender evidence?"
+    - name: guard_completeness_check
+      description: "Did the verifier check if the guard covers all entry points?"
+    - name: verdict_justification
+      description: "Is the verdict justified with specific evidence from both sides?"
+    - name: independent_verification
+      description: "Did the verifier run its own queries rather than just choosing a side?"
+  regression_signals:
+    - "Verifier ignores defender evidence -> CRITICAL REGRESSION: one-sided verification"
+    - "Verifier ignores attacker evidence -> CRITICAL REGRESSION: one-sided verification"
+    - "Verdict without evidence from both sides -> REGRESSION: verification depth degraded"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyWithGuard.sol"
+  related_scenarios:
+    - "UC-VER-001"
+    - "UC-VER-002"
+    - "UC-DEB-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Core tier because handling disagreement is the verifier's primary value
+  proposition. This tests the adversarial reasoning that distinguishes
+  multi-agent verification from single-pass analysis.

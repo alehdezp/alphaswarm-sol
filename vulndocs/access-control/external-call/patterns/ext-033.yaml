@@ -1,0 +1,24 @@
+id: ext-033
+vulndoc: access-control/external-call
+name: Flash Loan Collateralization Attack
+description: Collateral valuation uses balance/reserve data without flash loan or
+  snapshot protection.
+scope: Function
+lens:
+- ExternalInfluence
+severity: critical
+match:
+  all:
+  - property: reads_pool_reserves
+    op: eq
+    value: true
+  - property: balance_used_for_collateralization
+    op: eq
+    value: true
+  none:
+  - property: flash_loan_guard
+    op: eq
+    value: true
+  - property: uses_historical_snapshot
+    op: eq
+    value: true

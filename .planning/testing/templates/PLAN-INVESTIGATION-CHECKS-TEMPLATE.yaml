@@ -1,0 +1,56 @@
+phase_id: "3.1"
+plan_id: "3.1-01"
+generated_at: "2026-02-11T00:00:00Z"
+source_context: ".planning/phases/3.1-testing-audit-cleanup/context.md"
+
+preconditions:
+  - id: "P01"
+    description: "Required baseline artifact exists before implementation starts."
+    evidence_sources:
+      - "rg --files src tests"
+      - ".planning/phases/3.1-testing-audit-cleanup/context.md"
+    risk_if_unresolved: "Plan may execute against stale assumptions."
+
+investigation_checks:
+  - check_id: "CHK-01"
+    question: "What baseline value should be used for this plan's primary metric?"
+    check_type: "delta"
+    requires_research: true
+    evidence_sources:
+      - kind: "command"
+        source: "uv run pytest <target>"
+        why: "Measures current baseline from real execution."
+      - kind: "file"
+        source: ".planning/STATE.md"
+        why: "Anchors phase status and prior assumptions."
+    baseline_derivation:
+      strategy: "measure_current"
+      source_ref: ".vrs/debug/phase-3.1/plan-phase/research/3.1-01.md"
+      derivation_steps:
+        - "Run baseline command and capture raw output."
+        - "Extract metric directly from output/artifact."
+        - "Store extraction method for replay."
+    success_rule:
+      rule_type: "delta"
+      expression: "observed_value >= baseline_value + required_delta"
+      variables:
+        - "observed_value"
+        - "baseline_value"
+        - "required_delta"
+    anti_hardcode_assertion: "required_delta is derived from phase context + baseline, not prefilled."
+
+research_tasks:
+  - id: "R01"
+    question: "What is the most reliable baseline source for this plan?"
+    method: "Inspect existing artifacts, then run one real baseline measurement."
+    output_ref: ".vrs/debug/phase-3.1/plan-phase/research/3.1-01.md"
+
+hitl_runbook:
+  scenario_id: "HITL-3.1-01-import-graph"
+  runbook_path: ".vrs/debug/phase-3.1/plan-phase/hitl-runbooks/HITL-3.1-01-import-graph.md"
+  time_budget_minutes: 10
+
+hardcoding_guard:
+  requires_derived_thresholds: true
+  disallow_static_pass_fail: true
+  explanation: "Checks are generated from measured evidence and explicitly document derivation path."

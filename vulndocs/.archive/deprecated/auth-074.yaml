@@ -1,0 +1,13 @@
+id: auth-074
+vulndoc: access-control/general
+name: Multisig Threshold Change Without Validation
+description: Multisig threshold changes without validation.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: multisig_threshold_change_without_validation
+    op: eq
+    value: true

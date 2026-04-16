@@ -1,0 +1,15 @@
+id: logic-014
+vulndoc: logic/general
+name: Missing Return Value Check
+description: External calls or token transfers without return checks.
+scope: Function
+lens:
+- LogicState
+severity: medium
+cwe:
+- 252
+match:
+  all:
+  - property: missing_return_value_check
+    op: eq
+    value: true

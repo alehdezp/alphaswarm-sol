@@ -1,0 +1,174 @@
+{
+  "id": "grimoire-upgrade",
+  "name": "Upgrade Safety Verification Grimoire",
+  "category": "upgrade",
+  "subcategories": ["uninitialized-proxy", "storage-collision", "selfdestruct", "delegatecall", "implementation-takeover"],
+  "skill": "/test-upgrade",
+  "aliases": ["/verify-upgrade", "/check-upgrade", "/test-proxy"],
+  "description": "Expert procedure for verifying upgrade-related vulnerabilities. Tests for uninitialized proxies, storage slot collisions, implementation takeover, and unsafe delegatecall patterns.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["critical", "proxy", "upgradeable", "storage"],
+
+  "required_context": [
+    "contract_code",
+    "storage_layout",
+    "proxy_pattern"
+  ],
+  "optional_context": [
+    "implementation_address",
+    "initializer_calls",
+    "admin_functions"
+  ],
+
+  "graph_queries": [
+    "FIND contracts WHERE is_proxy_like = true",
+    "FIND functions WHERE uses_delegatecall = true",
+    "FIND functions WHERE is_initializer = true AND visibility IN [public, external]",
+    "FIND contracts WHERE upgradeable_without_storage_gap = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Identify Proxy Pattern",
+        "action": "check_graph",
+        "description": "Query VKG for proxy and upgrade indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["is_proxy", "proxy_type", "has_implementation_slot", "uses_delegatecall"],
+        "queries": [
+          "is_proxy_like",
+          "proxy_type",
+          "uses_delegatecall",
+          "is_initializer",
+          "upgradeable_without_storage_gap"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Check Initialization",
+        "action": "check_property",
+        "description": "Verify proxy is properly initialized and initializer is protected",
+        "inputs": ["contract_code", "initializer_calls"],
+        "outputs": ["has_initializer", "initializer_protected", "can_reinitialize", "uninitialized_risk"],
+        "timeout_seconds": 15
+      },
+      {
+        "step_number": 3,
+        "name": "Analyze Storage Layout",
+        "action": "check_property",
+        "description": "Check for storage slot collisions between proxy and implementation",
+        "inputs": ["storage_layout", "proxy_pattern"],
+        "outputs": ["storage_gap_present", "potential_collisions", "storage_safe"],
+        "timeout_seconds": 20
+      },
+      {
+        "step_number": 4,
+        "name": "Check Delegatecall Safety",
+        "action": "check_property",
+        "description": "Verify delegatecall targets are validated",
+        "inputs": ["contract_code", "uses_delegatecall"],
+        "outputs": ["delegatecall_to_trusted", "has_address_validation", "delegatecall_safe"],
+        "timeout_seconds": 15
+      },
+      {
+        "step_number": 5,
+        "name": "Check Implementation Security",
+        "action": "check_property",
+        "description": "Verify implementation cannot be destroyed or taken over",
+        "inputs": ["contract_code", "implementation_address"],
+        "outputs": ["implementation_has_selfdestruct", "implementation_takeover_possible", "implementation_safe"],
+        "timeout_seconds": 15
+      },
+      {
+        "step_number": 6,
+        "name": "Generate Upgrade Test",
+        "action": "generate_test",
+        "description": "Generate tests for upgrade vulnerabilities",
+        "inputs": ["contract_code", "contract_name", "proxy_pattern"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_upgrade",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 7,
+        "name": "Execute Upgrade Tests",
+        "action": "execute_test",
+        "description": "Run upgrade safety tests",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed"],
+        "tools": ["foundry"],
+        "command": "forge test --match-contract UpgradeTest -vvv",
+        "timeout_seconds": 120,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 8,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["uninitialized_risk", "potential_collisions", "implementation_takeover_possible", "test_output"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "uninitialized_risk && !initializer_protected",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Proxy initializer can be called by anyone - implementation takeover possible"
+      },
+      {
+        "condition": "implementation_takeover_possible && implementation_has_selfdestruct",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Implementation can be destroyed, bricking the proxy"
+      },
+      {
+        "condition": "potential_collisions && !storage_gap_present",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Storage slot collision detected between proxy and implementation"
+      },
+      {
+        "condition": "uses_delegatecall && !delegatecall_to_trusted && !has_address_validation",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Delegatecall to unvalidated address - arbitrary code execution risk"
+      },
+      {
+        "condition": "can_reinitialize",
+        "verdict": "likely_vulnerable",
+        "confidence": "high",
+        "explanation": "Initializer can be called multiple times"
+      },
+      {
+        "condition": "is_proxy && initializer_protected && storage_safe && delegatecall_safe",
+        "verdict": "likely_safe",
+        "confidence": "high",
+        "explanation": "Proxy follows secure upgrade patterns"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": false,
+    "echidna_enabled": false,
+    "fork_enabled": true,
+    "fork_rpc": "",
+    "fork_block": "latest"
+  },
+
+  "test_templates": {
+    "foundry_upgrade": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ncontract UpgradeTest is Test {\n    ${CONTRACT_NAME} public proxy;\n    address public attacker;\n    address public admin;\n\n    function setUp() public {\n        attacker = makeAddr(\"attacker\");\n        admin = makeAddr(\"admin\");\n        // Deploy proxy\n        proxy = new ${CONTRACT_NAME}();\n    }\n\n    function testUninitializedProxy() public {\n        // Try to initialize as attacker\n        vm.prank(attacker);\n        // proxy.initialize(attacker); // Should fail if already initialized\n    }\n\n    function testReinitialization() public {\n        // Try to call initialize again\n        // Should revert if properly protected\n    }\n\n    function testStorageCollision() public {\n        // Check that storage slots don't overlap\n        // Compare proxy admin slot with implementation variables\n    }\n\n    function testImplementationTakeover() public {\n        // Try to call initialize directly on implementation\n        // address impl = proxy.implementation();\n        // Should be protected\n    }\n\n    function testUpgradeAuth() public {\n        // Only admin should be able to upgrade\n        vm.prank(attacker);\n        // proxy.upgradeTo(maliciousImpl); // Should fail\n    }\n}"
+  }
+}

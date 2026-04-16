@@ -1,0 +1,80 @@
+id: UC-VER-001
+name: "Verifier confirms real reentrancy vulnerability"
+workflow: vrs-verify
+category: verify
+tier: core
+
+input:
+  contract: "tests/contracts/ReentrancyClassic.sol"
+  command: "/vrs-verify tests/contracts/ReentrancyClassic.sol --finding reentrancy"
+  context: >
+    ReentrancyClassic.sol has a confirmed reentrancy vulnerability. The
+    verifier agent receives a finding claiming reentrancy and must
+    independently verify it by cross-checking graph evidence, code locations,
+    and exploit feasibility. This tests the verifier's confirmation path.
+
+expected_behavior:
+  summary: |
+    The verifier should independently confirm the reentrancy finding:
+    1. Accept the attacker's finding as input
+    2. Build or load the BSKG independently
+    3. Run independent graph queries to verify CEI violation
+    4. Cross-check the cited code locations against the actual contract
+    5. Assess exploit feasibility (can the reentrancy actually be triggered?)
+    6. Produce a verdict: CONFIRMED with confidence score and evidence
+  must_happen:
+    - "Verifier receives the reentrancy finding as input"
+    - "Verifier runs independent BSKG queries (not just trusting the attacker)"
+    - "Verifier confirms the CEI violation via graph evidence"
+    - "Verifier cross-checks code locations cited in the finding"
+    - "Verifier assesses exploit feasibility"
+    - "Verifier produces CONFIRMED verdict with confidence >= 0.7"
+    - "Verdict includes independent evidence (not just repeating attacker's evidence)"
+  must_not_happen:
+    - "Verifier blindly confirms without running independent queries"
+    - "Verifier rejects a true positive"
+    - "Verifier produces verdict without independent evidence"
+    - "Verifier skips graph queries and only reads code"
+    - "Verifier crashes or produces no verdict"
+  expected_tools:
+    ordered:
+      - "Bash(alphaswarm build-kg)"
+      - "Bash(alphaswarm query)"
+      - "Read"
+    required:
+      - "Bash"
+      - "Read"
+  expected_findings:
+    min_count: 1
+    must_include_category: "reentrancy"
+    severity: "high"
+
+evaluation:
+  pass_threshold: 60
+  key_dimensions:
+    - name: independent_verification
+      description: "Did the verifier run its own graph queries, not just trust the attacker?"
+    - name: evidence_cross_check
+      description: "Did the verifier validate code locations against actual contract content?"
+    - name: verdict_quality
+      description: "Is the verdict CONFIRMED with appropriate confidence and evidence?"
+    - name: graph_utilization
+      description: "Did the verifier use BSKG queries as part of verification?"
+  regression_signals:
+    - "Verifier rejects true positive -> CRITICAL REGRESSION: false negative"
+    - "Verifier confirms without independent queries -> REGRESSION: rubber-stamp verification"
+    - "Confidence below 0.5 on true positive -> REGRESSION: confidence calibration broken"
+
+links:
+  workflow_doc: "docs/workflows/README.md"
+  test_contract: "tests/contracts/ReentrancyClassic.sol"
+  related_scenarios:
+    - "UC-VER-002"
+    - "UC-ATK-001"
+    - "UC-AUDIT-001"
+
+status: ready
+last_validated: "2026-02-18"
+notes: >
+  Tests the verifier's confirmation path. Paired with UC-VER-002 (rejection
+  path) to ensure the verifier can both confirm and reject correctly.

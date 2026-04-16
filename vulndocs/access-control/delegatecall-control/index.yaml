@@ -1,0 +1,63 @@
+---
+id: access-control-delegatecall-control
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Delegatecall Control Vulnerability
+category: access-control
+subcategory: delegatecall-control
+severity: high
+prevalence: medium
+
+description: |
+  Vulnerabilities arising from user-controlled delegatecall targets. When a contract allows
+  users to specify the target address for a delegatecall, attackers can execute arbitrary code
+  in the context of the vulnerable contract, gaining full control over storage, funds, and execution.
+
+impact:
+  - Complete storage manipulation
+  - Unauthorized fund withdrawal
+  - Contract self-destruction
+  - Privilege escalation
+  - Storage slot overwrites
+
+root_cause:
+  - User-controlled delegatecall target address
+  - Missing target address validation/whitelist
+  - Lack of access control on delegatecall functions
+
+affected_components:
+  - Proxy contracts
+  - Plugin systems
+  - Upgradeable contracts
+  - Multi-call aggregators
+
+detection_difficulty: medium
+exploit_difficulty: medium
+
+sources:
+  - name: "Slither Detector Documentation"
+    url: "https://github.com/crytic/slither/wiki/Detector-Documentation"
+    type: "tool-documentation"
+    date: "2026-01-09"
+    detector: "controlled-delegatecall"
+    confidence: "medium"
+
+tags:
+  - delegatecall
+  - access-control
+  - storage-manipulation
+  - proxy
+  - upgradeable
+
+related_vulnerabilities:
+  - category: upgrade
+    subcategory: storage-collision
+    relationship: "Delegatecall can overwrite storage slots"
+
+  - category: upgrade
+    subcategory: selfdestruct
+    relationship: "Delegatecall can trigger selfdestruct"
+
+pattern_id: external-002-unprotected-delegatecall
+---

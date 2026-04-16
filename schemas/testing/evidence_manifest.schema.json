@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlphaSwarm Testing Evidence Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "workflow",
+    "session_label",
+    "pane_id",
+    "timestamp_utc",
+    "git_commit",
+    "duration_ms",
+    "line_count",
+    "required_markers_present",
+    "marker_list"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{2,64}$"
+    },
+    "workflow": {
+      "type": "string",
+      "minLength": 2
+    },
+    "session_label": {
+      "type": "string",
+      "pattern": "^vrs-demo-[a-z0-9][a-z0-9-]*-\\d{8}-\\d{6}$"
+    },
+    "pane_id": {
+      "type": "string",
+      "pattern": "^\\d+:\\d+\\.\\d+$"
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$"
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "line_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "required_markers_present": {
+      "type": "boolean"
+    },
+    "marker_list": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "ground_truth_ref": {
+      "type": ["string", "null"]
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

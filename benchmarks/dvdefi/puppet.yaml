@@ -1,0 +1,46 @@
+# DVDeFi Challenge: Puppet
+# Vulnerability: DEX oracle manipulation
+
+id: dvd-puppet
+name: Puppet
+version: "4"
+difficulty: 3
+category: Oracle
+
+source_path: examples/damm-vuln-defi/src/puppet
+
+vulnerability:
+  type: dex-oracle-manipulation
+  description: |
+    The lending pool uses Uniswap V1 spot price as oracle,
+    which can be manipulated with a large swap to borrow at zero collateral.
+  cwe: CWE-829
+  severity: critical
+
+expected_detections:
+  - pattern: dex-oracle-manipulation
+    contract: PuppetPool
+    function: calculateDepositRequired
+    property: reads_external_value
+    confidence: high
+
+  - pattern: spot-price-oracle
+    contract: PuppetPool
+    function: borrow
+    property: reads_oracle_price
+    confidence: high
+
+expected_functions:
+  vulnerable:
+    - PuppetPool.borrow
+    - PuppetPool.calculateDepositRequired
+  safe: []
+
+false_positive_exclusions: []
+
+verification:
+  exploit_summary: "Dump tokens on Uniswap V1 to crash price, borrow all at near-zero collateral"
+  fix_summary: "Use TWAP oracle or Chainlink price feeds"
+
+status: detected
+detection_date: "2026-01-06"

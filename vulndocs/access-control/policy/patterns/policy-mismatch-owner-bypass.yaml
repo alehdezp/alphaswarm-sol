@@ -1,0 +1,40 @@
+id: policy-mismatch-owner-bypass
+vulndoc: access-control/policy
+name: Owner Check Bypass
+description: 'Function labeled as owner-only but code doesn''t actually check owner.
+
+  This detects when intent (owner restriction) doesn''t match implementation.
+
+
+  Risk: High-confidence labeling indicates function SHOULD be restricted,
+
+  but no actual restriction exists in code.
+
+  '
+severity: critical
+scope: Function
+lens:
+- AccessControl
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    none:
+    - property: has_onlyowner_modifier
+      op: eq
+      value: true
+    - property: checks_msg_sender_owner
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: access_control.owner_only
+      min_confidence: high
+required_labels:
+- access_control.owner_only

@@ -1,0 +1,208 @@
+- id: semgrep-performance-array-length-outside-loop
+  name: array-length-outside-loop
+  description: Caching the array length outside a loop saves reading it on each iteration,
+    as long as the array's length is not changed during the loop.
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - array-length-outside-loop
+- id: semgrep-performance-inefficient-state-variable-increment
+  name: inefficient-state-variable-increment
+  description: '<x> += <y> costs more gas than <x> = <x> + <y> for state variables.
+
+    '
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - inefficient-state-variable-increment
+- id: semgrep-performance-init-variables-with-default-value
+  name: init-variables-with-default-value
+  description: 'Uninitialized variables are assigned with the types default value.
+
+    Explicitly initializing a variable with its default value costs unnecessary gas.
+
+    '
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - init-variables-with-default-value
+- id: semgrep-performance-non-optimal-variables-swap
+  name: non-optimal-variables-swap
+  description: Consider swapping variables using `($VAR1, $VAR2) = ($VAR2, $VAR1)`
+    to save gas
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - non-optimal-variables-swap
+- id: semgrep-performance-non-payable-constructor
+  name: non-payable-constructor
+  description: Consider making costructor payable to save gas.
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - non-payable-constructor
+- id: semgrep-performance-state-variable-read-in-a-loop
+  name: state-variable-read-in-a-loop
+  description: Replace state variable reads and writes within loops with local variable
+    reads and writes.
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - state-variable-read-in-a-loop
+- id: semgrep-performance-unnecessary-checked-arithmetic-in-loop
+  name: unnecessary-checked-arithmetic-in-loop
+  description: "A lot of times there is no risk that the loop counter can overflow.\
+    \ \nUsing Solidity's unchecked block saves the overflow checks.\n"
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - unnecessary-checked-arithmetic-in-loop
+- id: semgrep-performance-use-custom-error-not-require
+  name: use-custom-error-not-require
+  description: "Consider using custom errors as they are more gas efficient while\
+    \ allowing developers \nto describe the error in detail using NatSpec.\n"
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - use-custom-error-not-require
+- id: semgrep-performance-use-multiple-require
+  name: use-multiple-require
+  description: "Using multiple require statements is cheaper than using && multiple\
+    \ check combinations. \nThere are more advantages, such as easier to read code\
+    \ and better coverage reports.\n"
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - use-multiple-require
+- id: semgrep-performance-use-nested-if
+  name: use-nested-if
+  description: "Using nested is cheaper than using && multiple check combinations.\
+    \ \nThere are more advantages, such as easier to read code and better coverage\
+    \ reports.\n"
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - use-nested-if
+- id: semgrep-performance-use-prefix-decrement-not-postfix
+  name: use-prefix-decrement-not-postfix
+  description: 'Consider using the prefix decrement expression whenever the return
+    value is not needed.
+
+    The prefix decrement expression is cheaper in terms of gas.
+
+    '
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - use-prefix-decrement-not-postfix
+- id: semgrep-performance-use-prefix-increment-not-postfix
+  name: use-prefix-increment-not-postfix
+  description: 'Consider using the prefix increment expression whenever the return
+    value is not needed.
+
+    The prefix increment expression is cheaper in terms of gas.
+
+    '
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - use-prefix-increment-not-postfix
+- id: semgrep-performance-use-short-revert-string
+  name: use-short-revert-string
+  description: "Shortening revert strings to fit in 32 bytes will decrease gas costs\
+    \ for deployment and \ngas costs when the revert condition has been met.\n"
+  scope: Function
+  lens:
+  - Semgrep
+  - Performance
+  severity: low
+  match:
+    all:
+    - property: semgrep_like_rules
+      op: contains_any
+      value:
+      - use-short-revert-string

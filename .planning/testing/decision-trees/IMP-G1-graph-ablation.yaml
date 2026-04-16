@@ -1,0 +1,160 @@
+# Decision Tree: IMP-G1 Graph Ablation Study
+# Purpose: Determine if knowledge graph adds value vs code-only analysis
+
+name: "Graph Ablation Decision Tree"
+version: "1.0"
+created: "2026-02-04"
+existential: true
+max_iterations: 3
+
+# Metric Collection
+metrics:
+  finding_delta:
+    formula: "(test_findings - control_findings) / max(control_findings, 1)"
+    description: "Relative improvement in finding count"
+
+  evidence_delta:
+    formula: "(test_evidence_depth - control_evidence_depth) / max(control_evidence_depth, 1)"
+    description: "Relative improvement in evidence quality"
+
+  graph_usage:
+    formula: "distinct_graph_nodes_cited / max(total_findings, 1)"
+    description: "Average graph nodes cited per finding"
+
+  cross_function_detection:
+    formula: "cross_function_vulns_detected"
+    description: "Number of cross-function vulnerabilities found (requires path analysis)"
+
+# Test Configuration
+test_contracts:
+  - path: "tests/contracts/CrossFunctionReentrancy.sol"
+    expected: "requires path analysis"
+  - path: "tests/contracts/semantic-test-set/AuthBypass.sol"
+    expected: "requires semantic ops"
+  - path: "tests/fixtures/dvd/side-entrance/"
+    expected: "requires economic context"
+
+# Decision Levels
+decision_tree:
+  L1_significant_improvement:
+    name: "GRAPH_ESSENTIAL"
+    conditions:
+      finding_delta: ">= 0.20"
+      evidence_delta: ">= 0.50"
+      graph_usage: ">= 5.0"
+    all_required: true
+    verdict: "GRAPH_ESSENTIAL"
+    confidence: "high"
+    action: |
+      Document success. The knowledge graph provides substantial value.
+      Proceed with graph-first architecture.
+      Update docs/PHILOSOPHY.md with ablation evidence.
+    next_steps:
+      - "Proceed to Wave 6 validations"
+      - "Document graph value in capability docs"
+
+  L2_moderate_improvement:
+    name: "GRAPH_HELPFUL"
+    conditions:
+      finding_delta: ">= 0.10"
+      evidence_delta: ">= 0.30"
+      graph_usage: ">= 3.0"
+    all_required: true
+    verdict: "GRAPH_HELPFUL"
+    confidence: "medium"
+    action: |
+      Graph adds measurable but not critical value.
+      Document trade-offs: graph overhead vs improvement.
+      Consider optional graph mode for performance-sensitive users.
+    next_steps:
+      - "Document trade-offs"
+      - "Consider making graph optional"
+      - "Proceed with caution"
+
+  L3_marginal_improvement:
+    name: "GRAPH_MARGINAL"
+    conditions:
+      finding_delta: "> 0"
+      evidence_delta: "> 0"
+    any_required: true
+    verdict: "GRAPH_MARGINAL"
+    confidence: "low"
+    action: |
+      HALT phase execution.
+      Graph shows minimal improvement over code-only.
+      Conduct architecture review before proceeding.
+    next_steps:
+      - "HALT current phase"
+      - "Schedule architecture review within 48h"
+      - "Investigate why graph underperforms"
+      - "Consider graph improvements or simplification"
+
+  L4_no_improvement:
+    name: "GRAPH_NOT_VALUABLE"
+    conditions:
+      finding_delta: "<= 0"
+      evidence_delta: "<= 0"
+    all_required: true
+    verdict: "GRAPH_NOT_VALUABLE"
+    confidence: "high"
+    action: |
+      CRITICAL: HALT phase immediately.
+      Knowledge graph does not improve outcomes.
+      Fundamental architecture redesign required.
+    next_steps:
+      - "HALT all phase work"
+      - "Document failure honestly"
+      - "Schedule architecture review within 24h"
+      - "Consider abandoning graph-first approach"
+      - "Evaluate simpler alternatives"
+
+# Abort Criteria
+abort_criteria:
+  max_iterations: 3
+
+  abort_conditions:
+    - condition: "Three consecutive runs show finding_delta < 0.05"
+      action: "ABORT"
+      reason: "Graph not providing value"
+      escalation: "Architecture review within 48h"
+
+    - condition: "Graph queries fail on >50% of test contracts"
+      action: "ABORT"
+      reason: "Graph implementation broken"
+      escalation: "Fix graph before continuing"
+
+    - condition: "L4 verdict on any iteration"
+      action: "ABORT"
+      reason: "No improvement detected"
+      escalation: "Immediate architecture review"
+
+# Execution Protocol
+execution:
+  control_run:
+    description: "Run audit without graph access"
+    method: "--no-graph flag or disable BSKG queries"
+    session_label: "vrs-demo-ablation-control-{timestamp}"
+    capture:
+      - finding_count
+      - evidence_nodes_cited
+      - cross_function_vulns
+      - duration_ms
+
+  test_run:
+    description: "Run audit with full graph access"
+    method: "Normal /vrs-audit execution"
+    session_label: "vrs-demo-ablation-test-{timestamp}"
+    capture:
+      - finding_count
+      - evidence_nodes_cited
+      - cross_function_vulns
+      - graph_queries_executed
+      - duration_ms
+
+# Evidence Requirements
+evidence_requirements:
+  - "Both runs use identical contracts"
+  - "Both runs use same model/temperature"
+  - "Transcripts captured for both"
+  - "Findings manually verified against ground truth"
+  - "Metrics computed programmatically (not eyeballed)"

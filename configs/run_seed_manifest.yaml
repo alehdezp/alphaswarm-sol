@@ -1,0 +1,120 @@
+# Run Seed Manifest for Variance Analysis
+# Phase 07.3.2 - Execution Evidence Protocol
+#
+# This manifest defines deterministic seeds for reproducible multi-run testing.
+# Seeds are used to ensure consistent randomness across variance analysis runs.
+#
+# Schema version: 1.0.0
+# Updated: 2026-01-30
+
+version: "1.0.0"
+
+# Default seeds for multi-run variance analysis
+# These 5 seeds provide sufficient statistical power for variance bounds
+seeds:
+  - id: seed-001
+    value: 42
+    description: "Base seed - canonical test"
+  - id: seed-002
+    value: 1337
+    description: "Secondary seed - edge cases"
+  - id: seed-003
+    value: 9876
+    description: "Tertiary seed - alternative paths"
+  - id: seed-004
+    value: 5555
+    description: "Fourth seed - verification"
+  - id: seed-005
+    value: 2024
+    description: "Fifth seed - final validation"
+
+# Variance thresholds (G5 gate criteria)
+thresholds:
+  # Maximum allowed variance coefficient (CV = std/mean)
+  max_variance_coefficient: 0.15  # 15% coefficient of variation
+
+  # Maximum allowed delta between runs for key metrics
+  max_findings_delta: 2           # findings count difference
+  max_token_delta_pct: 25.0       # 25% token usage variance
+  max_timing_delta_pct: 30.0      # 30% timing variance
+
+  # Agent consensus thresholds
+  min_agent_agreement_rate: 0.80  # 80% agreement between agents
+  max_disagreement_rate: 0.20     # Max 20% disagreement allowed
+
+# Metrics to track across runs
+tracked_metrics:
+  - name: findings_count
+    type: integer
+    aggregation: mean_stddev
+
+  - name: critical_findings
+    type: integer
+    aggregation: mean_stddev
+
+  - name: high_findings
+    type: integer
+    aggregation: mean_stddev
+
+  - name: medium_findings
+    type: integer
+    aggregation: mean_stddev
+
+  - name: total_tokens
+    type: integer
+    aggregation: mean_stddev
+
+  - name: duration_ms
+    type: integer
+    aggregation: mean_stddev
+
+  - name: attacker_confidence
+    type: float
+    aggregation: mean_stddev
+
+  - name: defender_confidence
+    type: float
+    aggregation: mean_stddev
+
+  - name: verifier_confidence
+    type: float
+    aggregation: mean_stddev
+
+# Agent consensus metrics
+consensus_metrics:
+  - name: attacker_defender_agreement
+    description: "Agreement between attacker and defender on findings"
+
+  - name: verifier_arbitration_rate
+    description: "Rate at which verifier arbitrates disputes"
+
+  - name: final_verdict_stability
+    description: "Stability of final verdicts across seeds"
+
+# Run configuration
+run_config:
+  # Minimum runs for statistical validity
+  min_runs: 3
+
+  # Recommended runs for production variance analysis
+  recommended_runs: 5
+
+  # Maximum parallel runs (resource constraint)
+  max_parallel: 2
+
+  # Timeout per run (ms)
+  timeout_ms: 300000  # 5 minutes per run
+
+  # Output directory pattern
+  output_pattern: ".vrs/validation/variance/{run_id}-seed-{seed_id}"
+
+# Evidence collection settings
+evidence:
+  # Collect evidence pack for each run
+  collect_evidence_packs: true
+
+  # Store aggregate metrics
+  store_aggregate_metrics: true
+
+  # Store run-by-run deltas
+  store_run_deltas: true

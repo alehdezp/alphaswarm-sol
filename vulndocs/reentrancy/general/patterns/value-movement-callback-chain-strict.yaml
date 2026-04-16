@@ -1,0 +1,28 @@
+id: value-movement-callback-chain-strict
+vulndoc: reentrancy/general
+name: Callback Chain Reentrancy (Strict)
+description: Multi-hop call chain plus callback-chain surface signals.
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: callback_chain_surface
+    op: eq
+    value: true
+  - property: calls_external_contract
+    op: eq
+    value: true
+paths:
+- steps:
+  - edge_type: CALLS_CONTRACT
+    direction: out
+    target_type: Contract
+  - edge_type: CONTAINS_FUNCTION
+    direction: out
+    target_type: Function
+  - edge_type: CALLS_CONTRACT
+    direction: out
+    target_type: Contract

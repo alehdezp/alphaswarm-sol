@@ -1,0 +1,41 @@
+id: governance-flash-loan
+vulndoc: governance/voting
+name: Flash Loan Governance Attack
+description: |
+  Governance or reward distribution functions vulnerable to flash loan attacks.
+  Functions that allow execution without proper quorum or voting period checks
+  can be exploited by flash-loaning tokens to gain temporary voting power.
+
+  Attack Pattern:
+  1. Attacker flash loans governance tokens
+  2. Uses tokens to queue/vote on malicious proposal
+  3. Executes proposal immediately (no delay enforcement)
+  4. Returns flash-loaned tokens
+
+  Real-world examples: DVDeFi selfie, the-rewarder challenges.
+
+scope: Function
+lens:
+  - Authority
+  - Ordering
+severity: critical
+
+match:
+  all:
+    - property: visibility
+      op: in
+      value: [public, external]
+    - property: governance_exec_without_quorum_check
+      op: eq
+      value: true
+  any:
+    - property: contract_has_governance
+      op: eq
+      value: true
+    - property: is_privileged_operation
+      op: eq
+      value: true
+
+references:
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/selfie"
+  - "https://github.com/tinchoabbate/damn-vulnerable-defi/tree/v3.0.0/contracts/the-rewarder"

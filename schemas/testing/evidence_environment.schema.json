@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlphaSwarm Testing Environment Metadata",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "collected_at", "os", "python", "git"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "collected_at": {"type": "string", "format": "date-time"},
+    "os": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "arch": {"type": "string"}
+      }
+    },
+    "python": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["version"],
+      "properties": {
+        "version": {"type": "string"},
+        "implementation": {"type": "string"}
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["commit", "status"],
+      "properties": {
+        "commit": {"type": "string"},
+        "status": {"type": "string"}
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["name", "version"],
+        "properties": {
+          "name": {"type": "string"},
+          "version": {"type": "string"}
+        }
+      }
+    }
+  }
+}

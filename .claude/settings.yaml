@@ -1,0 +1,298 @@
+# True VKG - Claude Code 2.1 Project Settings
+# This file configures Claude Code behavior for the alphaswarm project
+
+schema_version: "2.1"
+project: alphaswarm
+updated_at: "2026-01-09"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLAUDE CODE 2.1 FEATURES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ───────────────────────────────────────────────────────────────────────────────
+# GLOBAL HOOKS
+# ───────────────────────────────────────────────────────────────────────────────
+# These hooks run for all sessions in this project
+
+hooks:
+  # SessionStart hook - runs when a new session begins
+  # agent_type is populated if --agent is specified (Claude Code 2.1.2)
+  SessionStart:
+    - command: |
+        echo "=== True VKG Session Started ===" &&
+        echo "Project: alphaswarm" &&
+        echo "Agent: ${AGENT_TYPE:-main}" &&
+        date
+
+  # PreToolUse hooks - run before specific tools
+  PreToolUse:
+    # Log all pattern file writes
+    - tool: Write
+      match: "patterns/**/*.yaml"
+      command: "echo '[HOOK] Creating/updating pattern: $FILE'"
+
+    # Log all test file writes
+    - tool: Write
+      match: "tests/**/*.py"
+      command: "echo '[HOOK] Creating/updating test: $FILE'"
+
+    # Log VKG commands
+    - tool: Bash
+      match: "*alphaswarm*"
+      command: "echo '[HOOK] Running VKG command...'"
+
+  # PostToolUse hooks - run after specific tools
+  PostToolUse:
+    # Validate YAML after pattern writes
+    - tool: Write
+      match: "patterns/**/*.yaml"
+      command: |
+        python3 -c "import yaml; yaml.safe_load(open('$FILE'))" 2>/dev/null &&
+        echo '[HOOK] Pattern YAML valid: $FILE' ||
+        echo '[HOOK] WARNING: Invalid YAML in $FILE'
+
+    # Run tests after test file changes
+    - tool: Write
+      match: "tests/test_*.py"
+      command: "echo '[HOOK] Test file created. Consider running: uv run pytest $FILE -v'"
+
+    # Log knowledge updates
+    - tool: Write
+      match: "knowledge/vulndocs/**"
+      command: "echo '[HOOK] VulnDocs knowledge updated: $FILE'"
+
+    # Track discovery state changes
+    - tool: Write
+      match: ".vrs/discovery/**"
+      command: "echo '[HOOK] Discovery state updated'"
+
+  # Stop hook - runs when session ends
+  Stop:
+    - command: |
+        echo "=== True VKG Session Ended ===" &&
+        date
+
+# ───────────────────────────────────────────────────────────────────────────────
+# AGENT CONFIGURATION
+# ───────────────────────────────────────────────────────────────────────────────
+# Default configurations for agents in this project
+
+agents:
+  defaults:
+    # Default model for agents
+    model: sonnet
+
+    # Default tool permissions (can be overridden per agent)
+    tools:
+      - Read
+      - Edit
+      - Write
+      - Glob
+      - Grep
+      - Bash(uv run*)
+      - TodoWrite
+
+  # Agent-specific overrides
+  vkg-real-world-auditor:
+    model: opus  # Opus for deep critical analysis
+
+  crawl-filter-worker:
+    model: haiku  # Haiku for fast filtering
+
+  knowledge-aggregation-worker:
+    model: claude-sonnet-4-5-20241022  # Latest Sonnet for deep reasoning
+
+# ───────────────────────────────────────────────────────────────────────────────
+# SKILL CONFIGURATION
+# ───────────────────────────────────────────────────────────────────────────────
+# Default configurations for skills in this project
+
+skills:
+  defaults:
+    # Use forked context by default
+    context: fork
+
+    # Enable hot reload
+    hot_reload: true
+
+  # Available slash commands
+  slash_commands:
+    - pattern-forge        # /pattern-forge
+    - vkg-lens-tasker      # /vkg-lens-tasker
+    - vuln-discovery       # /vuln-discovery
+    - agent-skillcraft     # /agent-skillcraft
+    - gsd-research-context # /gsd-research-context
+
+# ───────────────────────────────────────────────────────────────────────────────
+# TOOL PERMISSIONS (WILDCARD PATTERNS)
+# ───────────────────────────────────────────────────────────────────────────────
+# Project-wide tool permission patterns
+
+permissions:
+  # Allowed Bash commands (wildcards)
+  bash_allow:
+    - "uv run*"           # VKG and Python commands
+    - "pytest*"           # Direct pytest
+    - "cat*"              # Read files
+    - "grep*"             # Search
+    - "find*"             # Find files
+    - "ls*"               # List directories
+    - "wc*"               # Word/line counts
+    - "mkdir -p*"         # Create directories
+    - "docker run*crawl4ai*"  # Crawl4ai Docker
+
+  # Restricted patterns (require explicit permission)
+  bash_restricted:
+    - "rm -rf*"           # Dangerous deletion
+    - "git push*"         # Pushing changes
+    - "pip install*"      # Installing packages
+
+# ───────────────────────────────────────────────────────────────────────────────
+# MCP TOOL INTEGRATION
+# ───────────────────────────────────────────────────────────────────────────────
+# MCP tools available in this project
+
+mcp_tools:
+  exa-search:
+    - mcp__exa-search__web_search_exa
+    - mcp__exa-search__get_code_context_exa
+
+  grep:
+    - mcp__grep__searchGitHub
+
+  sequential-thinking:
+    - mcp__sequential-thinking__sequentialthinking
+
+# ───────────────────────────────────────────────────────────────────────────────
+# PROJECT-SPECIFIC SETTINGS
+# ───────────────────────────────────────────────────────────────────────────────
+
+vkg:
+  # Graph storage
+  graph_dir: ".vrs"
+
+  # Crawl cache for VulnDocs
+  crawl_cache: ".vrs/crawl_cache"
+  filtered_cache: ".vrs/filtered_cache"
+
+  # Discovery state for vuln-discovery skill
+  discovery_state: ".vrs/discovery"
+
+  # Pattern directories
+  patterns:
+    - "patterns/"
+    - "patterns/core/"
+    - "patterns/lens/"
+
+  # Test directories
+  tests:
+    - "tests/"
+    - "tests/contracts/"
+    - "tests/projects/"
+
+# ───────────────────────────────────────────────────────────────────────────────
+# COST & TOKEN EFFICIENCY POLICIES
+# ───────────────────────────────────────────────────────────────────────────────
+
+cost_policy:
+  # Default per-run token budget (soft cap)
+  default_token_budget: 6000
+
+  # Per-stage budgets (override defaults)
+  stage_budgets:
+    detect: 4000
+    verify: 6000
+    debate: 7000
+    report: 3000
+
+  # Model tiering (cost-aware routing)
+  model_tiers:
+    fast: haiku
+    standard: sonnet
+    deep: opus
+
+  # Guardrail strategy: cheap model validates before expensive runs
+  guardrails:
+    enabled: true
+    validator_model: haiku
+    block_on_budget_exceeded: true
+    policy_file: "configs/skill_tool_policies.yaml"  # Role-based tool gating policies
+
+  # Context policy
+  context:
+    progressive_disclosure: true
+    retrieval_first: true
+    cache_graph_queries: true
+
+# ───────────────────────────────────────────────────────────────────────────────
+# AGENT AUTOMATION FEATURES (Phase 17)
+# ───────────────────────────────────────────────────────────────────────────────
+
+automation:
+  # VulnDocs Pipeline
+  vulndocs_pipeline:
+    enabled: true
+    stages:
+      - name: download
+        description: "Download web content via crawl4ai"
+        cache: ".vrs/crawl_cache"
+
+      - name: filter
+        description: "Filter non-Solidity content"
+        agent: crawl-filter-worker
+        model: haiku
+        parallel: true
+        max_parallel: 4
+
+      - name: discover
+        description: "Deep reasoning about vulnerabilities"
+        agent: knowledge-aggregation-worker
+        model: claude-sonnet-4-5-20241022
+        skill: vuln-discovery
+
+      - name: integrate
+        description: "Insert knowledge into VulnDocs"
+        output: "knowledge/vulndocs/"
+
+      - name: cleanup
+        description: "Delete cached content"
+        cache_cleanup: true
+
+  # Pattern Forge Configuration
+  pattern_forge:
+    enabled: true
+    target_quality: ready
+    max_iterations:
+      ready: 3
+      excellent: 5
+    min_test_cases:
+      true_positives: 5
+      true_negatives: 3
+      variations: 3
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NOTES
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Claude Code 2.1 Features Used:
+# - Hooks in frontmatter (PreToolUse, PostToolUse, Stop)
+# - Forked context for skills (context: fork)
+# - Hot reload for skills (hot_reload: true)
+# - Wildcard tool permissions (Bash(uv run*))
+# - agent_type in SessionStart hook
+# - Slash command invocation for skills (/skill-name)
+#
+# Agent Types Available:
+# - vkg-pattern-architect: Pattern design
+# - pattern-tester: Pattern testing
+# - vkg-docs-curator: Documentation
+# - vkg-security-research: Security research
+# - vkg-real-world-auditor: Real-world testing
+# - knowledge-aggregation-worker: VulnDocs knowledge (Sonnet 4.5)
+# - crawl-filter-worker: Content filtering (Haiku)
+#
+# Skills Available (via slash command):
+# - /pattern-forge: Iterative pattern development
+# - /vkg-lens-tasker: Lens document implementation
+# - /vuln-discovery: Self-improving vulnerability discovery
+#

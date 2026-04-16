@@ -1,0 +1,13 @@
+id: auth-047
+vulndoc: access-control/general
+name: Multisig Threshold Change Without Access Control
+description: Multisig threshold changes without access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: multisig_threshold_change_without_gate
+    op: eq
+    value: true

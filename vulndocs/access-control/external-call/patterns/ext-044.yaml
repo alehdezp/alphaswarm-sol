@@ -1,0 +1,19 @@
+id: ext-044
+vulndoc: access-control/external-call
+name: Oracle Staleness Threshold Missing
+description: Oracle freshness checks without a concrete staleness threshold.
+scope: Function
+lens:
+- ExternalInfluence
+severity: medium
+match:
+  all:
+  - property: reads_oracle_price
+    op: eq
+    value: true
+  - property: has_staleness_check
+    op: eq
+    value: true
+  - property: has_staleness_threshold
+    op: eq
+    value: false

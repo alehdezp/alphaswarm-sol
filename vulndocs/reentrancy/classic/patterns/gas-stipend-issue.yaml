@@ -1,0 +1,13 @@
+id: gas-stipend-issue
+vulndoc: reentrancy/classic
+name: Gas Stipend Risk
+description: Fixed gas stipend use in value transfer.
+scope: Function
+lens:
+- ValueMovement
+severity: medium
+match:
+  all:
+  - property: has_hardcoded_gas
+    op: eq
+    value: true

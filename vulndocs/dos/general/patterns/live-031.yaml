@@ -1,0 +1,19 @@
+id: live-031
+vulndoc: dos/general
+name: Pause Mechanism Issues
+description: Pause checks without recovery paths.
+scope: Function
+lens:
+- Liveness
+severity: medium
+match:
+  all:
+  - property: has_pause_check
+    op: eq
+    value: true
+  - property: contract_has_withdraw
+    op: eq
+    value: false
+  - property: contract_has_emergency_withdraw
+    op: eq
+    value: false

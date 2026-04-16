@@ -1,0 +1,22 @@
+id: arith-022
+vulndoc: arithmetic/general
+name: Duration Calculation Issue
+description: Duration calculations without bounds checks.
+scope: Function
+lens:
+- Arithmetic
+severity: medium
+cwe:
+- 682
+match:
+  all:
+  - property: has_duration_parameter
+    op: eq
+    value: true
+  - property: timestamp_arithmetic
+    op: eq
+    value: true
+  none:
+  - property: has_duration_bounds
+    op: eq
+    value: true

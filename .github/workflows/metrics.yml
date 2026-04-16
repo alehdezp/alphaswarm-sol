@@ -1,0 +1,144 @@
+name: Metrics Gate
+
+on:
+  pull_request:
+    paths:
+      - 'src/true_vkg/**'
+      - 'patterns/**'
+      - 'tests/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/true_vkg/**'
+      - 'patterns/**'
+
+jobs:
+  metrics-check:
+    name: Check Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Calculate current metrics
+        run: |
+          # Save current metrics snapshot
+          uv run alphaswarm metrics save --storage .vrs/metrics
+          uv run alphaswarm metrics show --storage .vrs/metrics --format json > current_metrics.json
+
+      - name: Check for critical alerts
+        run: |
+          # Run alert check with failure on critical
+          uv run alphaswarm metrics alerts --storage .vrs/metrics --fail-on-critical
+
+      - name: Upload metrics snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-snapshot
+          path: current_metrics.json
+
+  metrics-comparison:
+    name: Compare to Baseline
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout baseline from main
+        run: |
+          git show main:benchmarks/metrics_baseline.json > baseline_metrics.json 2>/dev/null || echo '{}' > baseline_metrics.json
+          if [ "$(cat baseline_metrics.json)" = "{}" ]; then
+            echo "No baseline found - first run"
+            echo "HAS_BASELINE=false" >> $GITHUB_ENV
+          else
+            echo "Baseline found"
+            echo "HAS_BASELINE=true" >> $GITHUB_ENV
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Calculate current metrics
+        run: |
+          uv run alphaswarm metrics save --storage .vrs/metrics
+          uv run alphaswarm metrics show --storage .vrs/metrics --format json > current_metrics.json
+
+      - name: Compare to baseline
+        if: env.HAS_BASELINE == 'true'
+        run: |
+          uv run python -c "
+          import json
+          import sys
+
+          from true_vkg.metrics import compare_snapshots, format_ci_summary
+
+          result = compare_snapshots('current_metrics.json', 'baseline_metrics.json')
+          print(format_ci_summary(result))
+
+          # Exit with appropriate code
+          sys.exit(result.exit_code)
+          "
+
+      - name: Post comparison summary
+        if: always() && env.HAS_BASELINE == 'true'
+        run: |
+          echo '### Metrics Comparison' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          uv run python -c "
+          import json
+
+          from true_vkg.metrics import compare_snapshots
+
+          result = compare_snapshots('current_metrics.json', 'baseline_metrics.json')
+          data = result.to_dict()
+
+          print(f\"**Status:** {data['exit_code_name']}\")
+          print(f\"**Message:** {data['message']}\")
+          print(f\"**Alerts:** {data['alert_count']}\")
+          print('')
+
+          if data['alerts']:
+              print('| Metric | Level | Message |')
+              print('|--------|-------|---------|')
+              for alert in data['alerts']:
+                  print(f\"| {alert['metric_name']} | {alert['level']} | {alert['message']} |\")
+          " >> $GITHUB_STEP_SUMMARY
+
+  update-baseline:
+    name: Update Baseline
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: metrics-check
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download metrics snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: metrics-snapshot
+
+      - name: Update baseline
+        run: |
+          mkdir -p benchmarks
+          cp current_metrics.json benchmarks/metrics_baseline.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add benchmarks/metrics_baseline.json
+          git diff --cached --quiet || git commit -m "Update metrics baseline [skip ci]"
+          git push

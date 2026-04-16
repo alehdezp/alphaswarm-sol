@@ -1,0 +1,22 @@
+# Oracle Uses Curve Spot Price
+id: smartbugs-oracle-uses-curve-spot-price
+name: Oracle Uses Curve Spot Price
+category: oracle
+source: examples/semgrep-smart-contracts/solidity/security/oracle-uses-curve-spot-price.sol
+solidity_version: "0.8.x"
+
+vulnerability:
+  type: oracle-manipulation
+  description: Using Curve pool spot price as oracle (easily manipulable)
+  severity: high
+  cwe: CWE-20
+
+expected_detections:
+  - pattern: dex-oracle-manipulation
+    confidence: high
+
+vkg_pattern_mapping:
+  primary: dex-oracle-manipulation
+  secondary: [oracle-curve-spot]
+
+status: pending

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "collected_at": "2026-02-04T12:00:05Z",
+  "os": {
+    "name": "macOS",
+    "version": "14.3",
+    "arch": "arm64"
+  },
+  "python": {
+    "version": "3.11.7",
+    "implementation": "CPython"
+  },
+  "git": {
+    "commit": "abc1234",
+    "status": "dirty"
+  },
+  "tools": [
+    {"name": "slither", "version": "0.10.4"},
+    {"name": "aderyn", "version": "0.4.1"}
+  ]
+}

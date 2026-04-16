@@ -1,0 +1,190 @@
+# Combination Rules for Multi-Pattern Adversarial Projects
+#
+# Defines which vulnerability patterns can realistically coexist in a single project,
+# which patterns interfere with each other, and target complexity levels.
+#
+# Used by: corpus-generator agent to select compatible pattern sets.
+
+# -----------------------------------------------------------------------------
+# Compatible Combinations
+# Patterns that commonly appear together in real-world contracts.
+# Each combination should produce a realistic multi-vulnerability project.
+# -----------------------------------------------------------------------------
+
+compatible_combinations:
+  - patterns: ["balance-update-after-transfer", "missing-access-control"]
+    notes: "Most common pairing in real exploits: reentrancy + missing auth"
+    example_protocol: "Unprotected lending pool"
+
+  - patterns: ["oracle-stale-price", "flash-loan-price-manipulation"]
+    notes: "Economic attack chain: stale oracle enables flash loan profit"
+    example_protocol: "DEX with oracle-dependent pricing"
+
+  - patterns: ["token-002-erc777-reentrancy", "missing-access-control"]
+    notes: "ERC-777 callback reentrancy with unprotected admin functions"
+    example_protocol: "Token wrapper with admin controls"
+
+  - patterns: ["delegatecall-to-untrusted", "missing-initializer-protection"]
+    notes: "Proxy vulnerability chain: delegatecall + uninitialized implementation"
+    example_protocol: "Upgradeable proxy without initializer guard"
+
+  - patterns: ["dos-unbounded-loop", "missing-access-control"]
+    notes: "DoS amplified by anyone being able to push items"
+    example_protocol: "Open registry with unbounded iteration"
+
+  - patterns: ["signature-replay", "missing-nonce-tracking"]
+    notes: "Signature-based exploit chain"
+    example_protocol: "Meta-transaction relayer"
+
+  - patterns: ["balance-update-after-transfer", "oracle-stale-price"]
+    notes: "Reentrancy during price-dependent operation"
+    example_protocol: "Lending pool with oracle feeds"
+
+  - patterns: ["flash-loan-price-manipulation", "vault-share-inflation"]
+    notes: "Flash loan to inflate vault shares"
+    example_protocol: "ERC-4626 vault with price oracle"
+
+  - patterns: ["state-machine-violation", "missing-access-control"]
+    notes: "Anyone can advance state machine to wrong phase"
+    example_protocol: "ICO with phase transitions"
+
+  - patterns: ["dos-gas-limit", "unbounded-array-iteration"]
+    notes: "Gas exhaustion through unbounded loops"
+    example_protocol: "Airdrop distributor with large recipient list"
+
+  - patterns: ["frontrunning-vulnerability", "oracle-stale-price"]
+    notes: "MEV extraction via oracle delay"
+    example_protocol: "AMM with block-delayed price updates"
+
+  - patterns: ["balance-update-after-transfer", "callback-chain-reentrancy", "missing-access-control"]
+    notes: "Triple-chain: cross-function reentrancy + missing auth + callback"
+    example_protocol: "Multi-pool lending protocol"
+
+  - patterns: ["integer-overflow", "precision-loss-rounding"]
+    notes: "Arithmetic chain: overflow amplified by rounding errors"
+    example_protocol: "Reward calculator with large multipliers"
+
+  - patterns: ["delegatecall-to-untrusted", "storage-collision"]
+    notes: "Proxy storage layout attack"
+    example_protocol: "Transparent proxy with misaligned storage"
+
+  - patterns: ["flash-loan-price-manipulation", "oracle-stale-price", "missing-access-control"]
+    notes: "Full economic exploit: flash loan + stale oracle + no auth"
+    example_protocol: "Lending protocol with governance token collateral"
+
+# -----------------------------------------------------------------------------
+# Interference Patterns
+# Patterns that conflict or make detection ambiguous when combined.
+# The generator should avoid these combinations or handle explicitly.
+# -----------------------------------------------------------------------------
+
+interference_patterns:
+  - patterns: ["balance-update-after-transfer", "callback-chain-reentrancy"]
+    conflict: "Both require the same external call entry point; detection may merge findings"
+    resolution: "Embed in different functions within the same contract"
+
+  - patterns: ["reentrancy-basic", "reentrancy-read-only"]
+    conflict: "Both are reentrancy variants targeting the same state; may be reported as one finding"
+    resolution: "Use separate state variables and entry points"
+
+  - patterns: ["dos-unbounded-loop", "dos-gas-limit"]
+    conflict: "Both are DoS variants; gas analysis may conflate the root causes"
+    resolution: "Place in different functions with distinct loop structures"
+
+  - patterns: ["oracle-stale-price", "oracle-manipulation"]
+    conflict: "Both target oracle data; staleness vs manipulation are different failure modes"
+    resolution: "Use different oracle feeds or price sources"
+
+  - patterns: ["signature-replay", "signature-malleability"]
+    conflict: "Both target signature verification; may be detected as same root cause"
+    resolution: "Use different signature schemes (ECDSA vs EIP-712)"
+
+  - patterns: ["missing-initializer-protection", "uninitialized-storage"]
+    conflict: "Both involve uninitialized state; different mechanisms but similar symptoms"
+    resolution: "Initializer is proxy-specific; uninitialized storage is general"
+
+  - patterns: ["delegatecall-to-untrusted", "arbitrary-call-target"]
+    conflict: "Both involve untrusted call targets; delegatecall is a specific case"
+    resolution: "Keep delegatecall in proxy context, arbitrary call in different function"
+
+  - patterns: ["frontrunning-vulnerability", "sandwich-attack"]
+    conflict: "Sandwich is a specific type of frontrunning; detection may overlap"
+    resolution: "Use distinct transaction types (approval vs swap)"
+
+# -----------------------------------------------------------------------------
+# Complexity Targets
+# Guidelines for how many patterns to embed per generated project.
+# -----------------------------------------------------------------------------
+
+complexity_targets:
+  minimum_per_project: 5
+  target_per_project: 7
+  maximum_per_project: 10
+  cross_function_minimum: 3     # At least 3 vulns in different functions
+  cross_contract_minimum: 1     # At least 1 vuln spanning multiple contracts
+  honeypot_minimum: 1           # At least 1 safe pattern that looks suspicious (Category C)
+
+# Tier-based defaults
+tier_defaults:
+  tier_1:
+    pattern_count: 5
+    categories: ["A"]           # Name obfuscation only
+    cross_contract: false
+    honeypots: 0
+  tier_2:
+    pattern_count: 7
+    categories: ["A", "B"]     # Name + protocol complexity
+    cross_contract: true
+    honeypots: 1
+  tier_3:
+    pattern_count: 10
+    categories: ["A", "B", "C"]  # All categories including honeypots
+    cross_contract: true
+    honeypots: 2
+
+# -----------------------------------------------------------------------------
+# Selection Strategy
+# How the generation agent should pick patterns for a project.
+# -----------------------------------------------------------------------------
+
+selection_strategy:
+  # 1. Pick a "theme" protocol type
+  protocol_themes:
+    - "lending"
+    - "dex"
+    - "staking"
+    - "governance"
+    - "bridge"
+    - "vault"
+    - "nft_marketplace"
+    - "token_sale"
+
+  # 2. Select patterns appropriate for the theme
+  theme_affinity:
+    lending:
+      high: ["balance-update-after-transfer", "oracle-stale-price", "flash-loan-price-manipulation"]
+      medium: ["missing-access-control", "integer-overflow", "precision-loss-rounding"]
+    dex:
+      high: ["frontrunning-vulnerability", "oracle-manipulation", "flash-loan-price-manipulation"]
+      medium: ["dos-gas-limit", "integer-overflow", "missing-access-control"]
+    staking:
+      high: ["balance-update-after-transfer", "precision-loss-rounding", "vault-share-inflation"]
+      medium: ["missing-access-control", "dos-unbounded-loop", "state-machine-violation"]
+    governance:
+      high: ["state-machine-violation", "frontrunning-vulnerability"]
+      medium: ["missing-access-control", "dos-gas-limit", "signature-replay"]
+    bridge:
+      high: ["signature-replay", "missing-access-control", "delegatecall-to-untrusted"]
+      medium: ["oracle-stale-price", "dos-gas-limit", "integer-overflow"]
+    vault:
+      high: ["vault-share-inflation", "flash-loan-price-manipulation", "precision-loss-rounding"]
+      medium: ["balance-update-after-transfer", "oracle-stale-price", "missing-access-control"]
+    nft_marketplace:
+      high: ["callback-chain-reentrancy", "signature-replay", "missing-access-control"]
+      medium: ["frontrunning-vulnerability", "integer-overflow", "dos-unbounded-loop"]
+    token_sale:
+      high: ["state-machine-violation", "integer-overflow", "missing-access-control"]
+      medium: ["dos-gas-limit", "frontrunning-vulnerability", "precision-loss-rounding"]
+
+  # 3. Fill remaining slots with compatible patterns from combination rules
+  fill_strategy: "compatible_first"  # Prefer patterns from compatible_combinations

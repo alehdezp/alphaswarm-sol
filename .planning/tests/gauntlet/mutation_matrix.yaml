@@ -1,0 +1,9 @@
+version: 1
+suite_id: gauntlet-mutation
+mutations:
+  - base_case: tests/contracts/reentrancy/Vault_01.sol  # TODO: add fixture
+    mutation_type: guard_removed
+    expected_detectable: true
+  - base_case: tests/contracts/reentrancy/Vault_01.sol  # TODO: add fixture
+    mutation_type: reordered_ops
+    expected_detectable: true

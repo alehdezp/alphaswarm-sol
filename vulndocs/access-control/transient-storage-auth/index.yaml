@@ -1,0 +1,80 @@
+# Transient Storage Authentication - Subcategory Index
+# EIP-1153 tload/tstore misuse for authentication
+
+id: transient-storage-auth
+name: Transient Storage Authentication Bypass
+parent_category: access-control
+
+description: |
+  Transient storage (EIP-1153) provides transaction-scoped storage that is cleared
+  after transaction execution. Using transient storage for authentication is vulnerable
+  because attackers can overwrite transient slots before authentication checks execute,
+  bypassing security controls within the same transaction.
+
+severity_range:
+  - critical
+  - high
+
+# Associated detection patterns
+patterns:
+  - ac-016
+
+# VKG properties for detection
+relevant_properties:
+  - uses_transient_storage
+  - checks_permission
+  - visibility
+  - state_write_before_check
+
+# Graph signals for this subcategory
+graph_signals:
+  - property: uses_transient_storage
+    expected: true
+    critical: true
+    description: Uses tload/tstore for authentication
+
+  - property: checks_permission
+    expected: true
+    critical: true
+    description: Performs authentication check
+
+  - property: visibility
+    expected:
+      - public
+      - external
+    critical: true
+    description: Function must be externally callable
+
+  - property: state_write_before_check
+    expected: true
+    critical: true
+    description: Transient storage can be written before check
+
+# Behavioral signatures
+behavioral_signatures:
+  - "W:tstore->R:tload->CHECK:auth"
+  - "CALL:external->W:tstore(slot)->R:tload(slot)->VALIDATES"
+
+# Operation sequences
+operation_sequences:
+  vulnerable:
+    - "WRITES_TRANSIENT_STORAGE -> READS_TRANSIENT_STORAGE -> CHECKS_PERMISSION"
+    - "CALLS_EXTERNAL -> OVERWRITES_TRANSIENT_SLOT -> BYPASSES_AUTH"
+  safe:
+    - "READS_STORAGE -> CHECKS_PERMISSION -> MODIFIES_STATE"
+    - "VALIDATES_SIGNATURE -> CHECKS_PERMISSION -> EXECUTES"
+
+# False positive indicators
+false_positive_indicators:
+  - "Transient storage used for non-authentication purposes"
+  - "Authentication via state variables instead of transient storage"
+  - "Signature-based authentication"
+  - "Immutable authentication addresses"
+  - "Reentrancy guards prevent slot manipulation"
+
+# Related real-world exploits
+related_exploits:
+  - sir-protocol-2025
+
+# Token estimate for this subcategory
+token_estimate: 450

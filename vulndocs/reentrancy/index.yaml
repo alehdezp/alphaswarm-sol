@@ -1,0 +1,43 @@
+# reentrancy Category Index
+# VulnDocs unified vulnerability knowledge base
+
+id: reentrancy
+name: Reentrancy
+description: 'Vulnerability subcategories for reentrancy domain.
+
+  See individual subcategories for detection patterns and documentation.
+
+  '
+subcategories:
+- id: batch-operations
+  name: Batch Operation Reentrancy
+  path: batch-operations/
+- id: callback
+  name: Callback
+  path: callback/
+- id: classic
+  name: Classic Reentrancy
+  path: classic/
+- id: cross-contract
+  path: cross-contract/
+- id: cross-function
+  name: Cross-Function Reentrancy
+  path: cross-function/
+- id: erc777
+  name: ERC777 Hooks Reentrancy
+  path: erc777/
+- id: general
+  name: General
+  path: general/
+- id: hook-callback
+  name: Hook Callback Reentrancy
+  path: hook-callback/
+- id: read-only
+  name: Read-Only Reentrancy
+  path: read-only/
+- id: value-transfer
+  name: Value Transfer
+  path: value-transfer/
+statistics:
+  subcategory_count: 10
+  last_updated: '2026-02-18'

@@ -1,0 +1,356 @@
+# UwU Lend Curve Spot Price Manipulation - Specific Vulnerability
+# Discovered via Task 17.3a: Solodit/Exploit DB Crawl (2024-2026)
+
+id: uwu-curve-spot-manipulation
+name: UwU Lend Oracle Manipulation via Curve get_p()
+parent_category: oracle
+parent_subcategory: price-manipulation
+
+description: |
+  Price oracle manipulation vulnerability where UwU Lend's sUSDe price oracle
+  used Curve Finance pool's get_p() function as a price source. The get_p()
+  function returns an instantaneous spot price that is easily manipulated
+  through large flash loan trades. The attacker suppressed the sUSDe price,
+  borrowed at artificially low rates, then reversed the manipulation to
+  liquidate positions at inflated prices.
+
+  Key insight: Median oracles with 11 sources are vulnerable when 5+ sources
+  can be manipulated via the same DEX (Curve pools in this case).
+
+severity: critical
+exploit_severity: critical
+confidence_score: 0.96
+
+# Related VKG Properties for Detection
+detection:
+  graph_signals:
+    - property: reads_oracle_price
+      expected: true
+      critical: true
+      description: "Function reads price from external oracle source"
+      confidence: 0.95
+
+    - property: uses_spot_price
+      expected: true
+      critical: true
+      description: "Uses instantaneous spot price instead of TWAP"
+      confidence: 0.95
+
+    - property: has_staleness_check
+      expected: false
+      critical: false
+      description: "Staleness check present but manipulation resistance absent"
+      confidence: 0.70
+
+    - property: oracle_sources_count
+      expected: ">1"
+      critical: false
+      description: "Multiple oracle sources (median of 11)"
+      confidence: 0.80
+
+    - property: dex_price_dependency
+      expected: true
+      critical: true
+      description: "Price derived from DEX pool state"
+      confidence: 0.95
+
+    - property: flash_loan_exposure
+      expected: true
+      critical: true
+      description: "Price can be manipulated within single transaction"
+      confidence: 0.90
+
+  semantic_operations:
+    - READS_ORACLE
+    - READS_EXTERNAL_VALUE
+    - MODIFIES_CRITICAL_STATE
+    - PERFORMS_LIQUIDATION
+    - CALLS_EXTERNAL
+
+  behavioral_signatures:
+    - vulnerable: "X:dex{get_p}->C:price->W:collateral"
+      description: "Read DEX spot price, calculate, write collateral state"
+
+    - vulnerable: "X:curve{spot}->C:median->W:borrow"
+      description: "Curve spot price to median calculation to borrow operation"
+
+  operation_sequences:
+    vulnerable:
+      - "X:curve.get_p() -> C:price{no_twap} -> W:liquidation_threshold"
+      - "L:sources(5_manipulable) -> C:median -> W:state"
+
+    safe:
+      - "X:chainlink.latestRoundData() -> V:stale -> C:price -> W:state"
+      - "X:curve.get_ema() -> V:manipulation_bounds -> C:price -> W:state"
+      - "X:twap{30min} -> C:price -> W:state"
+
+  false_positive_indicators:
+    - "Uses Chainlink or equivalent tamper-resistant oracle"
+    - "Implements TWAP with sufficient window (>= 30 minutes)"
+    - "Has manipulation bounds checking (deviation limits)"
+    - "Uses EMA price instead of instantaneous spot"
+    - "Multiple independent oracle sources (not same DEX)"
+    - "Circuit breaker on large price deviations"
+
+# Attack Mechanism Details
+attack_mechanism:
+  preconditions:
+    - "Access to large flash loans (~$4B available)"
+    - "Target protocol uses DEX-based price oracle"
+    - "Ability to manipulate 5+ of 11 median price sources"
+    - "Knowledge of Curve pool mechanics and get_p() behavior"
+
+  attack_steps:
+    - step: 1
+      phase: "Flash Loan Acquisition"
+      description: |
+        Obtain massive flash loans from multiple protocols.
+        Total capital: approximately $3.8-4 billion in assets.
+      operations:
+        - "Flash loan from Aave, Compound, Balancer"
+        - "Aggregate ETH, stablecoins, liquid staking tokens"
+        - "Prepare for coordinated manipulation"
+
+    - step: 2
+      phase: "Price Suppression"
+      description: |
+        Execute large swaps in Curve pools to suppress sUSDe price.
+        The get_p() function returns spot price based on pool ratios.
+        Large sells decrease the price significantly.
+      operations:
+        - "Swap large amounts in FRAXUSDe pool"
+        - "Swap large amounts in USDeUSDC pool"
+        - "Swap large amounts in USDeDAI pool"
+        - "Swap large amounts in USDecrvUSD pool"
+        - "Swap large amounts in GHOUSDe pool"
+        - "Result: 5/11 oracle sources now report suppressed price"
+        - "Median price drops ~4% below true value"
+
+    - step: 3
+      phase: "Borrow at Suppressed Price"
+      description: |
+        With sUSDe price artificially low, borrow sUSDe at
+        favorable rates. The protocol thinks collateral is worth
+        less than it is, allowing over-borrowing.
+      operations:
+        - "Deposit collateral to UwU Lend"
+        - "Borrow sUSDe at suppressed price (~$0.99)"
+        - "Acquire more sUSDe than fair value allows"
+
+    - step: 4
+      phase: "Price Inflation and Liquidation"
+      description: |
+        Reverse the swap positions to restore sUSDe price.
+        Now the borrowed sUSDe appears more valuable.
+        Liquidate positions profitably.
+      operations:
+        - "Reverse swaps in all 5 Curve pools"
+        - "sUSDe price returns to ~$1.03 (above starting)"
+        - "Liquidate own positions at inflated prices"
+        - "Extract profit from price differential"
+
+    - step: 5
+      phase: "Repay and Extract Profit"
+      description: |
+        Repay flash loans and keep extracted value.
+      operations:
+        - "Repay flash loan principal + fees"
+        - "Net profit: ~$19-23M"
+
+  exploitation_difficulty: "medium"
+  exploitation_notes: |
+    The attack was straightforward once the oracle weakness was identified:
+    1. Curve's get_p() is NOT designed as a secure oracle
+    2. UwU Lend used it anyway as a fallback price source
+    3. 5 of 11 sources could be manipulated through same DEX
+    4. Median calculation doesn't protect against coordinated manipulation
+
+    Michael Egorov (Curve founder) explicitly warned against using get_p()
+    as a price oracle. TWAP or EMA should be used instead.
+
+# Real-World Exploits
+exploits:
+  - id: uwu-lend-jun-2024
+    name: "UwU Lend Oracle Manipulation"
+    date: "2024-06-10"
+    loss_usd: 19400000
+    protocol: "UwU Lend"
+    chain: ethereum
+    category: oracle
+    subcategory: price-manipulation
+    description: |
+      Attacker manipulated sUSDe price on UwU Lend by exploiting the
+      protocol's use of Curve's get_p() as a price source. Using $4B
+      in flash loans, the attacker manipulated 5 of 11 median oracle
+      sources, borrowed at suppressed prices, then profited from
+      liquidations after restoring the price.
+    attack_flow: |
+      1. Flash loan ~$4B from multiple protocols
+      2. Swap in 5 Curve pools: FRAXUSDe, USDeUSDC, USDeDAI, USDecrvUSD, GHOUSDe
+      3. Suppress sUSDe price by ~4% (median affected due to 5/11 sources)
+      4. Borrow sUSDe at artificially low collateral requirements
+      5. Reverse swaps to restore/inflate sUSDe price
+      6. Liquidate positions at inflated prices
+      7. Repay flash loans, extract ~$19.4M profit
+    tx_hash: "0x..."
+    postmortem_url: "https://blog.solidityscan.com/uwulend-hack-analysis-77eb9181a717"
+    vulnerable_code_url: "sUSDePriceProviderBUniCatch contract"
+    pattern_ids:
+      - oracle-001
+      - oracle-002
+
+  - id: uwu-lend-jun-2024-second
+    name: "UwU Lend Second Exploit"
+    date: "2024-06-13"
+    loss_usd: 3700000
+    protocol: "UwU Lend"
+    chain: ethereum
+    category: oracle
+    subcategory: price-manipulation
+    description: |
+      Three days after the initial $19.4M exploit, a second attack
+      exploited remaining configuration issues in UwU Lend, stealing
+      an additional $3.7M. This was attributed to "erroneous configuration"
+      rather than the same oracle manipulation.
+    postmortem_url: "https://www.dlnews.com/articles/defi/0xsifu-protocol-uwu-lend-hacked-again-amid-payback-plan/"
+    pattern_ids:
+      - oracle-001
+
+# Remediation Guidance
+fixes:
+  root_cause:
+    description: |
+      UwU Lend used Curve's get_p() function as a price source in their
+      fallback oracle. This function returns instantaneous spot price
+      that can be manipulated within a single transaction via large swaps.
+
+      The median oracle (11 sources) provided false confidence because
+      5 sources (46%) could be manipulated through the same DEX.
+
+  recommended:
+    - fix_id: "use-twap-oracle"
+      name: "Use Time-Weighted Average Price (TWAP)"
+      priority: critical
+      description: |
+        Replace spot price oracles with TWAP oracles that average prices
+        over a time window (30 minutes to 24 hours). Flash loan attacks
+        cannot manipulate historical averages.
+      code_pattern: |
+        // VULNERABLE - Instantaneous spot price
+        uint price = curvePool.get_p();
+
+        // SAFE - TWAP with 30-minute window
+        uint price = twapOracle.consult(token, 1800);  // 30 min window
+      effectiveness: "Very High - Eliminates flash loan manipulation"
+
+    - fix_id: "use-ema-price"
+      name: "Use Exponential Moving Average (EMA)"
+      priority: critical
+      description: |
+        Curve provides get_price_oracle() which returns EMA price.
+        This is more manipulation-resistant than get_p().
+      code_pattern: |
+        // VULNERABLE - get_p() is spot price
+        uint price = curvePool.get_p();
+
+        // SAFE - get_price_oracle() is EMA
+        uint price = curvePool.get_price_oracle();
+      effectiveness: "High - EMA smooths manipulation spikes"
+
+    - fix_id: "diversify-oracle-sources"
+      name: "Use Independent Oracle Sources"
+      priority: critical
+      description: |
+        Ensure median oracle sources are truly independent. Multiple
+        Curve pools are NOT independent - they can all be manipulated
+        via the same DEX mechanics.
+      code_pattern: |
+        // VULNERABLE - 5 Curve pools (same DEX = not independent)
+        sources = [curveA.get_p(), curveB.get_p(), curveC.get_p(), curveD.get_p(), curveE.get_p(), ...]
+
+        // SAFE - Independent sources
+        sources = [chainlink.price(), uniswapTWAP.price(), curveEMA.price(), ...]
+      effectiveness: "High - True diversity prevents coordinated manipulation"
+
+    - fix_id: "manipulation-bounds"
+      name: "Implement Price Deviation Bounds"
+      priority: high
+      description: |
+        Reject prices that deviate significantly from a reference price
+        (e.g., previous block, Chainlink). Large deviations indicate
+        potential manipulation.
+      code_pattern: |
+        // SAFE - Reject large deviations
+        uint refPrice = chainlink.latestAnswer();
+        uint dexPrice = curvePool.get_p();
+
+        require(
+            dexPrice >= refPrice * 99 / 100 &&
+            dexPrice <= refPrice * 101 / 100,
+            "Price deviation too large"
+        );
+      effectiveness: "High - Detects manipulation in progress"
+
+    - fix_id: "circuit-breaker"
+      name: "Implement Circuit Breaker"
+      priority: high
+      description: |
+        Pause lending/borrowing when price volatility exceeds thresholds.
+        This prevents exploitation during manipulation windows.
+      code_pattern: |
+        // SAFE - Circuit breaker on volatility
+        uint currentPrice = getPrice();
+        uint lastPrice = lastRecordedPrice;
+
+        if (volatility(currentPrice, lastPrice) > MAX_VOLATILITY) {
+            _pause();
+            emit CircuitBreakerTriggered(currentPrice, lastPrice);
+        }
+      effectiveness: "Medium - Limits damage during attacks"
+
+# References and Sources
+references:
+  - title: "UwuLend Hack Analysis"
+    url: "https://blog.solidityscan.com/uwulend-hack-analysis-77eb9181a717"
+    source: "SolidityScan"
+    date: "2024-06-30"
+    type: "technical_analysis"
+
+  - title: "Analysis of the UwU Lend Hack"
+    url: "https://slowmist.medium.com/analysis-of-the-uwu-lend-hack-9502b2c06dbe"
+    source: "SlowMist"
+    date: "2024-06-11"
+    type: "technical_analysis"
+
+  - title: "Understanding the UwU Lend Exploit"
+    url: "https://medium.com/neptune-mutual/understanding-the-uwu-lend-exploit-b32ea552f030"
+    source: "Neptune Mutual"
+    date: "2024-06-11"
+    type: "technical_analysis"
+
+  - title: "UwU Lend $23M Exploit: Oracle Vulnerabilities Exposed"
+    url: "https://cyvers.ai/blog/uwu-lend-23m-exploit-oracle-vulnerabilities-exposed"
+    source: "Cyvers"
+    date: "2024-06-10"
+    type: "technical_analysis"
+
+# Metadata
+metadata:
+  version: "1.0"
+  created_date: "2026-01-09"
+  last_updated: "2026-01-09"
+  created_by: "knowledge-aggregation-worker"
+  source: "Task 17.3a Solodit Crawl"
+  token_estimate: 2100
+  context_cache_key: "uwu-curve-spot-manipulation-v1"
+
+  key_learnings:
+    - "Curve get_p() is NOT designed as a secure oracle"
+    - "Median oracles vulnerable when sources share manipulation vectors"
+    - "Flash loans enable manipulation of DEX-based price sources"
+    - "TWAP or EMA required for manipulation resistance"
+
+  novel_aspects:
+    - "5/11 median sources manipulated via single DEX"
+    - "get_p() vs get_price_oracle() distinction critical"
+    - "Multi-pool coordinated manipulation"

@@ -1,0 +1,25 @@
+id: op-unprotected-role-assignment
+vulndoc: access-control/general
+name: Unprotected Role Assignment (Operation-Based)
+description: 'Role modifications without permission checks.
+
+  Uses MODIFIES_ROLES operation for semantic detection.
+
+  '
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - has_operation: MODIFIES_ROLES
+    none:
+    - has_operation: CHECKS_PERMISSION
+aggregation:
+  mode: tier_a_only

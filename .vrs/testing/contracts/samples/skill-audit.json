@@ -1,0 +1,32 @@
+{
+  "workflow_id": "skill-vrs-audit",
+  "category": "skill",
+  "rule_refs": ["EXEC-INTEGRITY", "GROUND-TRUTH", "REPORT-INTEGRITY"],
+  "capability_checks": [
+    {
+      "id": "builds-kg-before-analysis",
+      "description": "Audit builds knowledge graph before any vulnerability analysis",
+      "expected_behavior": "build-kg CLI command appears in transcript before any finding is reported",
+      "grader_type": "code"
+    },
+    {
+      "id": "produces-evidence-findings",
+      "description": "Each finding includes graph node IDs and code locations",
+      "expected_behavior": "Every finding object has non-empty evidence_nodes[] and code_locations[]",
+      "grader_type": "code"
+    },
+    {
+      "id": "uses-vulndocs-patterns",
+      "description": "Analysis references VulnDocs patterns for known vulnerability types",
+      "expected_behavior": "At least one finding references a vulndoc pattern ID",
+      "grader_type": "model"
+    }
+  ],
+  "reasoning_dimensions": ["graph_utilization", "evidence_quality", "pattern_coverage"],
+  "evidence_requirements": [
+    {"type": "transcript", "description": "Full Claude Code session transcript"},
+    {"type": "graph_nodes", "description": "BSKG node IDs referenced in findings"},
+    {"type": "tool_output", "description": "build-kg and query command outputs"}
+  ],
+  "grader_type": "hybrid"
+}

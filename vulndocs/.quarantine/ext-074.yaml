@@ -1,0 +1,16 @@
+id: ext-074
+vulndoc: access-control/external-call
+name: Bridge Message Ordering Missing
+description: Bridge oracle usage without ordering or sequencing checks.
+scope: Function
+lens:
+- ExternalInfluence
+severity: high
+match:
+  all:
+  - property: has_cross_chain_context
+    op: eq
+    value: true
+  - property: has_bridge_ordering_check
+    op: eq
+    value: false

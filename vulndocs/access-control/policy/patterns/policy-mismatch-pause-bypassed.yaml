@@ -1,0 +1,47 @@
+id: policy-mismatch-pause-bypassed
+vulndoc: access-control/policy
+name: Pausable Function Without Pause Check
+description: 'Function should respect pause state but doesn''t check it.
+
+  Critical for emergency stop functionality.
+
+
+  Risk: Emergency pause mechanism ineffective if critical functions
+
+  don''t respect the paused state.
+
+  '
+severity: high
+scope: Function
+lens:
+- AccessControl
+- StateIntegrity
+aggregation_mode: tier_abc_all
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - property: writes_state
+      op: eq
+      value: true
+    none:
+    - property: has_pause_check
+      op: eq
+      value: true
+    - property: has_pause_check
+      op: eq
+      value: true
+  tier_c:
+    all:
+    - type: has_label
+      value: temporal.should_respect_pause
+      min_confidence: medium
+    none:
+    - type: has_label
+      value: access_control.pause_exempt
+required_labels:
+- temporal.should_respect_pause

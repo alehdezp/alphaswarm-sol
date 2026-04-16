@@ -1,0 +1,16 @@
+id: auth-019
+vulndoc: access-control/general
+name: Callback Without Authorization
+description: Callback functions missing access control.
+scope: Function
+lens:
+- Authority
+severity: high
+match:
+  all:
+  - property: is_callback
+    op: eq
+    value: true
+  - property: has_access_gate
+    op: eq
+    value: false

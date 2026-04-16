@@ -1,0 +1,20 @@
+id: live-010
+vulndoc: dos/general
+name: Permanent Fund Lock
+description: Funds can become permanently locked.
+scope: Function
+lens:
+- Liveness
+severity: critical
+match:
+  all:
+  - property: locks_funds
+    op: eq
+    value: true
+  any:
+  - property: unlock_condition_external_dependent
+    op: eq
+    value: true
+  - property: unlock_condition_potentially_impossible
+    op: eq
+    value: true

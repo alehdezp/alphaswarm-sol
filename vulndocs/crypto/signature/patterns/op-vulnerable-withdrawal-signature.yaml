@@ -1,0 +1,29 @@
+id: op-vulnerable-withdrawal-signature
+vulndoc: crypto/signature
+name: Vulnerable Withdrawal Signature
+description: 'Behavioral signature matching classic reentrancy:
+
+  R:bal (read balance) → X:out (external transfer) → W:bal (write balance)
+
+  This is the classic vulnerable pattern where state update happens after external call.
+
+  '
+scope: Function
+lens:
+- ValueMovement
+- ExternalInfluence
+severity: critical
+match:
+  tier_a:
+    all:
+    - property: visibility
+      op: in
+      value:
+      - public
+      - external
+    - signature_matches: R:bal.*X:out.*W:bal
+    none:
+    - property: has_reentrancy_guard
+      value: true
+aggregation:
+  mode: tier_a_only

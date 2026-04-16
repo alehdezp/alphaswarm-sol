@@ -1,0 +1,100 @@
+{
+  "finding_id": "reentrancy-vault-001",
+  "defense_analysis": {
+    "summary": "Multiple mitigation paths available: ReentrancyGuard, CEI pattern, or state locking",
+    "primary_mitigation": "Add OpenZeppelin ReentrancyGuard modifier",
+    "alternative_mitigations": [
+      "Refactor to CEI pattern (move balance update before transfer)",
+      "Implement state locking mechanism",
+      "Use pull-over-push pattern for withdrawals"
+    ]
+  },
+  "guards_found": [
+    {
+      "type": "access_control",
+      "location": "Vault.sol:L25",
+      "description": "onlyOwner modifier present on admin functions",
+      "effectiveness": "Not applicable to reentrancy",
+      "graph_node_id": "Vault.emergencyStop"
+    }
+  ],
+  "guards_missing": [
+    {
+      "type": "reentrancy_guard",
+      "location": "Vault.sol:L38",
+      "description": "No nonReentrant modifier on withdraw function",
+      "risk": "HIGH",
+      "recommendation": "Add OpenZeppelin ReentrancyGuard"
+    }
+  ],
+  "mitigations": [
+    {
+      "priority": "CRITICAL",
+      "strategy": "Add reentrancy guard",
+      "implementation": "import {ReentrancyGuard} from '@openzeppelin/contracts/security/ReentrancyGuard.sol'; then add nonReentrant modifier to withdraw",
+      "code_location": "Vault.sol:L38",
+      "trade_offs": "Minimal (small gas overhead ~2k per call)",
+      "effectiveness": 0.95,
+      "verification": "Check has_reentrancy_guard property becomes true"
+    },
+    {
+      "priority": "HIGH",
+      "strategy": "Implement CEI pattern",
+      "implementation": "Move balances[msg.sender] = 0 before (bool success,) = msg.sender.call{value: amount}(\"\")",
+      "code_location": "Vault.sol:L42-L43",
+      "trade_offs": "None (improves security and clarity)",
+      "effectiveness": 0.90,
+      "verification": "Check operation_sequence becomes W:bal→X:out pattern"
+    },
+    {
+      "priority": "MEDIUM",
+      "strategy": "Convert to pull pattern",
+      "implementation": "Separate withdrawal approval from execution using two-step process",
+      "code_location": "Vault.sol:L38-L45",
+      "trade_offs": "Requires significant refactor, UX impact",
+      "effectiveness": 0.99,
+      "verification": "Manual review of new withdrawal flow"
+    }
+  ],
+  "evidence": [
+    {
+      "type": "code_property",
+      "description": "OpenZeppelin ReentrancyGuard available in dependencies",
+      "code_location": "package.json:L12",
+      "confidence": 1.0,
+      "property": "has_dependency",
+      "value": "@openzeppelin/contracts@4.9.0"
+    },
+    {
+      "type": "missing_guard",
+      "description": "No reentrancy protection on vulnerable function",
+      "graph_node_id": "Vault.withdraw",
+      "confidence": 0.95,
+      "property": "has_reentrancy_guard",
+      "value": false
+    }
+  ],
+  "graph_queries": [
+    {
+      "query": "FIND functions WHERE has_reentrancy_guard = true",
+      "rationale": "Check if any functions already use guards",
+      "results": []
+    },
+    {
+      "query": "FIND functions WHERE modifiers CONTAINS 'nonReentrant'",
+      "rationale": "Verify guard implementation pattern",
+      "results": []
+    }
+  ],
+  "assumptions": [
+    "OpenZeppelin contracts are up to date",
+    "Solidity version supports modifiers",
+    "Gas overhead is acceptable"
+  ],
+  "verification_steps": [
+    "Apply ReentrancyGuard and rebuild graph",
+    "Query has_reentrancy_guard property",
+    "Run test suite to ensure no regressions",
+    "Verify gas cost increase is within acceptable range"
+  ]
+}

@@ -1,0 +1,94 @@
+---
+id: precision-loss-rounding-manipulation
+
+# Detection patterns (to be populated by Plan 03)
+patterns: []
+name: Rounding Direction Manipulation
+category: precision-loss
+subcategory: rounding-manipulation
+severity: critical
+prevalence: medium
+
+description: |
+  Vulnerabilities arising from inconsistent rounding directions in scaling operations.
+  When upscaling and downscaling use different rounding modes (down vs up), repeated
+  operations can compound errors, allowing attackers to manipulate invariants and
+  extract value through precision loss exploitation.
+
+impact:
+  - Protocol invariant manipulation
+  - Token price deflation
+  - Unauthorized value extraction
+  - Pool reserve imbalance
+  - Cross-chain amplification (single bug affects multiple chains)
+
+root_cause:
+  - Inconsistent rounding directions in scaling operations
+  - Violation of "always favor protocol" principle
+  - Compounding errors through repeated operations
+  - Deferred settlement allowing temporary manipulation
+
+affected_components:
+  - Automated Market Makers (AMMs)
+  - Stable pools with scaling factors
+  - Composable pools (BPT as tradeable token)
+  - Multi-token pools with different decimals
+
+detection_difficulty: high
+exploit_difficulty: high
+
+real_world_exploits:
+  - name: "Balancer V2 Composable Stable Pools"
+    date: "2025-11-03"
+    loss: "$128M"
+    chains: 8
+    affected_chains:
+      - Ethereum
+      - Base
+      - Avalanche
+      - Gnosis
+      - Polygon
+      - Arbitrum
+      - Optimism
+      - Fantom
+
+sources:
+  - name: "Balancer V2 Incident Analysis"
+    url: "https://medium.com/balancer-protocol/rate-manipulation-in-balancer-v2-pools-technical-postmortem-53db4b642492"
+    type: "exploit-postmortem"
+    date: "2025-11-03"
+
+  - name: "Coinspect Analysis"
+    type: "security-firm-analysis"
+    date: "2025-11-03"
+
+  - name: "OpenZeppelin Security Audit"
+    type: "audit-report"
+
+  - name: "Halborn Security Review"
+    type: "audit-report"
+
+tags:
+  - rounding
+  - precision-loss
+  - invariant-manipulation
+  - scaling
+  - stable-pool
+  - amm
+  - defi
+
+related_vulnerabilities:
+  - category: precision-loss
+    subcategory: rounding-error
+    relationship: "Parent category - general rounding errors"
+
+  - category: logic
+    subcategory: invariant-violation
+    relationship: "Enables invariant manipulation"
+
+  - category: reentrancy
+    subcategory: classic
+    relationship: "Similar to deferred settlement abuse pattern"
+
+pattern_id: precision-rounding-direction-001
+---

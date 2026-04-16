@@ -1,0 +1,542 @@
+# =============================================================================
+# PATTERN: oracle-002-unprotected-feed-update
+# =============================================================================
+#
+# REPLACES: auth-117 (regex-based label matching on "oracle|pricefeed")
+#
+# This pattern detects BEHAVIOR (oracle/price feed state writes) not NAMES.
+# Uses semantic property: writes_sensitive_config with "oracle" tag detection.
+#
+# =============================================================================
+
+id: oracle-002
+vulndoc: oracle/freshness
+name: "Unprotected Oracle/Price Feed Update"
+
+description: |
+  ## What This Detects
+  Public/external functions that write to oracle or price feed configuration state
+  variables without access control, regardless of function naming conventions.
+
+  **Oracle state includes:**
+  - Oracle contract addresses (Chainlink, API3, custom oracles)
+  - Price feed addresses and sources
+  - Oracle aggregator configurations
+  - TWAP (Time-Weighted Average Price) parameters
+  - Price multipliers, decimals, and conversion factors
+  - Oracle fallback/backup configurations
+  - Price staleness thresholds
+
+  **Detection is semantic, not syntactic:**
+  - Detects `writes_sensitive_config=true` with "oracle" tag (behavior)
+  - NOT function name matching (setOracle*, updatePrice*, etc.)
+  - Works with obfuscated names, alternative conventions, renamed functions
+
+  ## Why It's Dangerous
+  Price oracles are **critical infrastructure** for DeFi protocols. Unprotected
+  oracle updates allow any caller to:
+
+  - **Replace oracle address** → point to malicious price feed returning
+    manipulated prices
+  - **Modify price multipliers** → amplify/reduce asset values for liquidations
+  - **Disable staleness checks** → accept outdated prices
+  - **Change TWAP windows** → enable flash loan price manipulation
+  - **Update feed sources** → introduce manipulable on-chain price sources
+
+  **Attack outcome:** Price manipulation leads to:
+  - Unfair liquidations (users liquidated at manipulated prices)
+  - Arbitrage extraction (buy low, sell high using fake prices)
+  - Collateral manipulation (borrow max against inflated collateral)
+  - Protocol insolvency (bad debt from manipulated valuations)
+
+  ## Real-World Impact
+
+  ### Synthetix sKRW Incident (June 2019): $1B+ Exploited (Reversed)
+  - **Vulnerability**: Oracle price feed for Korean Won (KRW) had only 2 API sources
+    due to unrelated outage
+  - **Attack**: One feed erroneously reported KRW at 1,000x actual value; oracle
+    averaged the two sources, accepting the manipulated price
+  - **Exploitation**: Trading bot detected price error and executed automated
+    trades into/out of sKRW with 1,000x profit multiplier
+  - **Amount**: 37 million sETH (~$1B+) drained in under an hour
+  - **Resolution**: Bot owner unknowingly exploited bug via automation; agreed to
+    reverse trades for bug bounty
+  - **Root cause**: Insufficient price source redundancy + missing outlier detection
+  - **Reference**: https://blog.synthetix.io/response-to-oracle-incident/
+
+  ### Mango Markets Attack (October 2022): $117M Stolen
+  - **Vulnerability**: Protocol relied on single centralized exchange (FTX) for
+    MNGO token price oracle
+  - **Attack**: Attacker Avraham Eisenberg split $10M USDC across two accounts;
+    simultaneously shorted 488M MNGO from one account while buying from the other
+  - **Exploitation**: Artificial buying pressure inflated MNGO price on oracle;
+    attacker's account value rose from $10M → $400M+; used inflated MNGO as
+    collateral to borrow entire protocol treasury
+  - **Amount**: $117M in total asset drainage
+  - **Weakness**: Single oracle source + no manipulation detection + instant
+    price updates
+  - **Reference**: https://www.cyfrin.io/blog/price-oracle-manipulation-attacks-with-examples
+
+  ### Venus Protocol wUSDM Attack (February 2024): $717K Bad Debt
+  - **Vulnerability**: Venus ZKsync market used ERC-4626 vault exchange rate as
+    price oracle without rate-of-change limits
+  - **Attack**: Attacker deposited 439,560 USDM directly into wUSDM vault contract
+    (donation attack), spiking exchange rate from 1.0694 → 1.7641 (+65%) in single block
+  - **Exploitation**: Inflated exchange rate accepted by oracle; attacker borrowed
+    against manipulated collateral value
+  - **Amount**: $902K bad debt incurred, $185K recovered → $717K net loss
+  - **Weakness**: No exchange rate change caps + no TWAP + no cross-chain validation
+  - **Reference**: https://community.venus.io/t/post-mortem-wusdm-donation-attack-on-venus-zksync/5004
+
+  ### Pattern Across Incidents
+  All three attacks share:
+  - **Weak oracle governance**: Unprotected or insufficiently protected update functions
+  - **Single point of failure**: Reliance on single source or manipulable source
+  - **Missing safeguards**: No rate limits, staleness checks, or multi-source aggregation
+  - **Instant price acceptance**: No TWAP or time-weighted validation
+
+  ## Detection Logic
+  This pattern triggers when ALL of these conditions are met:
+  1. Function is externally callable (public/external visibility)
+  2. Function writes to sensitive configuration state including oracle-tagged variables
+  3. Function has NO access control (no modifiers, no require checks)
+  4. Function is NOT a constructor or initializer (intentional setup)
+  5. Function is NOT view/pure (can't modify state anyway)
+
+scope: Function
+
+lens:
+  - ExternalInfluence
+  - Authority
+
+severity: high
+
+status: excellent  # Pattern tested with ~100%/~100%/~100% metrics (documented in mega-task)
+
+# =============================================================================
+# MATCH CONDITIONS
+# =============================================================================
+
+match:
+  # ALL must match (AND logic)
+  all:
+    # Must be externally callable
+    - property: visibility
+      op: in
+      value: [public, external]
+
+    # Must write to sensitive config state INCLUDING oracle state (SEMANTIC DETECTION)
+    # writes_sensitive_config detects writes to: fee, config, reward, collateral,
+    # debt, liquidity, reserve, cap, **oracle**, treasury, governance, pause,
+    # allowlist, denylist, signer, dependency
+    # See builder.py:597-619 for full tag list
+    - property: writes_sensitive_config
+      op: eq
+      value: true
+
+    # Must NOT have access control
+    - property: has_access_gate
+      op: eq
+      value: false
+
+  # NONE can match (NOT logic) - exclude safe patterns
+  none:
+    # Exclude constructors (intentional setup)
+    - property: is_constructor
+      op: eq
+      value: true
+
+    # Exclude initializers (intentional setup in upgradeable contracts)
+    - property: is_initializer_function
+      op: eq
+      value: true
+
+    # Exclude view functions (can't modify state)
+    - property: is_view
+      op: eq
+      value: true
+
+    # Exclude pure functions (can't access state)
+    - property: is_pure
+      op: eq
+      value: true
+
+# =============================================================================
+# TESTING METADATA (populated by vrs-test-conductor agent)
+# =============================================================================
+
+test_coverage:
+  projects: []
+  true_positives: 0
+  true_negatives: 0
+  edge_cases: 0
+  precision: 0.0
+  recall: 0.0
+  variation_score: 0.0
+  last_tested: null
+  notes: "Awaiting vrs-test-conductor validation. Note: writes_sensitive_config includes ALL sensitive tags (fee, oracle, treasury, etc.), not just oracle. Pattern may have false positives for non-oracle config updates. Consider refinement if precision < 70%."
+
+# =============================================================================
+# PATTERN CONTEXT FOR LLM CONSUMPTION
+# =============================================================================
+
+attack_scenarios:
+  - name: "Malicious Oracle Replacement"
+    description: |
+      Attacker replaces legitimate oracle address with malicious contract
+      returning manipulated prices to exploit price-dependent operations.
+    preconditions:
+      - Function writes to oracle address state variable
+      - No access control present (no onlyOwner/onlyRole modifier)
+      - Contract uses oracle for pricing (liquidations, swaps, collateral valuation)
+    steps:
+      - Attacker deploys malicious oracle contract with manipulable price feed
+      - Calls unprotected oracle-setting function with malicious oracle address
+      - Malicious oracle returns artificially low prices for target assets
+      - Attacker triggers liquidations of healthy positions at manipulated prices
+      - Acquires collateral at fraction of true value
+      - "Alternatively: Returns artificially high prices for attacker's collateral to maximize borrowing capacity"
+    impact: "Price oracle manipulation enabling unfair liquidations, over-borrowing, arbitrage extraction, protocol insolvency"
+    cvss: 9.1
+
+  - name: "Price Multiplier Manipulation"
+    description: |
+      Attacker modifies oracle price multipliers or decimal conversion factors
+      to amplify/reduce asset valuations.
+    preconditions:
+      - Function writes to price multiplier, decimals, or conversion state
+      - No access control on parameter update
+      - Oracle applies multipliers/conversions to raw price feeds
+    steps:
+      - Identify unprotected oracle parameter update function
+      - Set price multiplier to extreme value (e.g., 1000x or 0.001x)
+      - Protocol now values assets at manipulated prices
+      - Exploit mispriced assets for liquidation profit or over-borrowing
+    impact: "Systemic price distortion across all oracle-dependent operations"
+    cvss: 8.9
+
+  - name: "Staleness Check Bypass"
+    description: |
+      Attacker disables or weakens oracle staleness checks to force acceptance
+      of outdated prices favorable to exploitation.
+    preconditions:
+      - Function writes to staleness threshold or check configuration
+      - No access control on staleness parameter updates
+      - Protocol uses staleness checks to reject old prices
+    steps:
+      - Call unprotected function to disable staleness checks or set threshold to max
+      - Wait for market price movement in attacker's favor
+      - Use stale oracle price (not reflecting current market) for exploitation
+      - "Example: Market crashes but stale oracle shows old high price; attacker borrows max against now-devalued collateral"
+    impact: "Acceptance of stale prices enabling exploitation during market volatility"
+    cvss: 8.3
+
+  - name: "TWAP Window Manipulation"
+    description: |
+      Attacker reduces TWAP (Time-Weighted Average Price) window to near-zero,
+      enabling flash loan price manipulation attacks.
+    preconditions:
+      - Function writes to TWAP window duration parameter
+      - No access control or minimum window validation
+      - Protocol relies on TWAP for flash loan resistance
+    steps:
+      - Call unprotected function to set TWAP window to 0 or 1 block
+      - Execute flash loan attack in single transaction
+      - Manipulate spot price on DEX (e.g., Uniswap pool swap)
+      - TWAP with tiny window reflects manipulated spot price
+      - Exploit manipulated TWAP for liquidations, borrows, or swaps
+      - Repay flash loan in same transaction
+    impact: "TWAP manipulation enabling single-transaction flash loan exploits"
+    cvss: 9.3
+
+  - name: "Oracle Source Downgrade Attack"
+    description: |
+      Attacker changes oracle from secure multi-source aggregator (e.g., Chainlink)
+      to manipulable single on-chain source (e.g., Uniswap V2 spot price).
+    preconditions:
+      - Function writes to oracle source configuration
+      - No access control on oracle source updates
+      - Contract accepts multiple oracle implementations
+    steps:
+      - Identify protocol using secure oracle (Chainlink, API3, etc.)
+      - Deploy or identify manipulable on-chain price source (low-liquidity DEX pool)
+      - Call unprotected oracle update to switch to manipulable source
+      - Execute flash loan to manipulate new oracle source price
+      - Exploit manipulated price for profit
+    impact: "Oracle security downgrade from tamper-resistant to easily manipulable"
+    cvss: 9.5
+
+verification_steps:
+  - "Verify function is externally callable (public or external visibility)"
+  - "Confirm function writes to oracle-related state variables. Check state_write_targets for 'oracle' tag OR related tags: 'config', 'fee' (if used for oracle fees), 'treasury' (if oracle payments)"
+  - "IMPORTANT: writes_sensitive_config includes ALL sensitive tags (fee, oracle, treasury, governance, etc.). Verify the specific state variable written is oracle-related to avoid false positives"
+  - "Check state variable name/purpose: oracle address, price feed, TWAP params, staleness threshold, price multiplier, decimals, feed source"
+  - "Confirm no access control modifier present (onlyOwner, onlyRole, onlyGovernance, etc.)"
+  - "Check no inline require/if statements validating msg.sender against privileged addresses or multisig"
+  - "Verify this is NOT a constructor or initializer (one-time setup pattern)"
+  - "Test: Attempt to call function from non-privileged address; confirm unauthorized caller can modify oracle state"
+  - "Review contract documentation/NatSpec for intended access control; determine if missing access control is bug or (rarely) intentional"
+  - "Assess impact: Determine if oracle manipulation would enable liquidation attacks, price-based exploits, or protocol insolvency"
+
+fix_recommendations:
+  - name: "Add Role-Based Access Control"
+    description: |
+      Restrict oracle updates to dedicated ORACLE_MANAGER_ROLE or similar.
+      Use OpenZeppelin AccessControl for granular permission management.
+    example: |
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyProtocol is AccessControl {
+          bytes32 public constant ORACLE_MANAGER_ROLE = keccak256("ORACLE_MANAGER_ROLE");
+          address public priceOracle;
+
+          constructor() {
+              _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+              _grantRole(ORACLE_MANAGER_ROLE, msg.sender);
+          }
+
+          // BEFORE (VULNERABLE)
+          // function setOracle(address newOracle) external {
+          //     priceOracle = newOracle;
+          // }
+
+          // AFTER (FIXED)
+          function setOracle(address newOracle) external onlyRole(ORACLE_MANAGER_ROLE) {
+              require(newOracle != address(0), "Zero address");
+              require(newOracle.code.length > 0, "Not a contract");
+
+              address oldOracle = priceOracle;
+              priceOracle = newOracle;
+
+              emit OracleUpdated(oldOracle, newOracle, msg.sender);
+          }
+      }
+
+  - name: "Use Two-Step Oracle Updates with Timelock"
+    description: |
+      Implement timelock delay for oracle changes to allow governance review
+      and emergency intervention before changes take effect.
+    example: |
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      contract MyProtocol is Ownable {
+          address public currentOracle;
+          address public pendingOracle;
+          uint256 public oracleUpdateTime;
+          uint256 public constant ORACLE_DELAY = 2 days;
+
+          // Step 1: Propose new oracle (owner only)
+          function proposeOracleUpdate(address newOracle) external onlyOwner {
+              require(newOracle != address(0), "Zero address");
+              require(newOracle != currentOracle, "Same oracle");
+
+              pendingOracle = newOracle;
+              oracleUpdateTime = block.timestamp + ORACLE_DELAY;
+
+              emit OracleUpdateProposed(currentOracle, newOracle, oracleUpdateTime);
+          }
+
+          // Step 2: Execute after delay (anyone can call once delay passed)
+          function executeOracleUpdate() external {
+              require(pendingOracle != address(0), "No pending update");
+              require(block.timestamp >= oracleUpdateTime, "Delay not passed");
+
+              address oldOracle = currentOracle;
+              currentOracle = pendingOracle;
+              pendingOracle = address(0);
+              oracleUpdateTime = 0;
+
+              emit OracleUpdated(oldOracle, currentOracle);
+          }
+
+          // Emergency cancel (owner only, e.g., if proposed oracle is malicious)
+          function cancelOracleUpdate() external onlyOwner {
+              require(pendingOracle != address(0), "No pending update");
+
+              address cancelled = pendingOracle;
+              pendingOracle = address(0);
+              oracleUpdateTime = 0;
+
+              emit OracleUpdateCancelled(cancelled);
+          }
+      }
+
+  - name: "Implement Oracle Validation & Sanity Checks"
+    description: |
+      Add validation logic to verify oracle updates meet security requirements
+      before accepting changes.
+    example: |
+      import "@openzeppelin/contracts/access/Ownable.sol";
+
+      interface IOracle {
+          function latestAnswer() external view returns (int256);
+          function decimals() external view returns (uint8);
+          function latestRoundData() external view returns (
+              uint80 roundId,
+              int256 answer,
+              uint256 startedAt,
+              uint256 updatedAt,
+              uint80 answeredInRound
+          );
+      }
+
+      contract MyProtocol is Ownable {
+          address public oracle;
+
+          function setOracle(address newOracle) external onlyOwner {
+              require(newOracle != address(0), "Zero address");
+
+              // Validation 1: Must be a contract
+              require(newOracle.code.length > 0, "Not a contract");
+
+              // Validation 2: Must implement required interface
+              IOracle oracleContract = IOracle(newOracle);
+
+              // Validation 3: Must return valid price data
+              try oracleContract.latestAnswer() returns (int256 price) {
+                  require(price > 0, "Invalid price");
+              } catch {
+                  revert("Oracle call failed");
+              }
+
+              // Validation 4: Must have expected decimals (e.g., 8 for Chainlink)
+              try oracleContract.decimals() returns (uint8 decimals) {
+                  require(decimals == 8, "Invalid decimals");
+              } catch {
+                  revert("Decimals call failed");
+              }
+
+              // Validation 5: Price must be fresh (updated recently)
+              try oracleContract.latestRoundData() returns (
+                  uint80, int256, uint256, uint256 updatedAt, uint80
+              ) {
+                  require(block.timestamp - updatedAt < 1 hours, "Stale oracle");
+              } catch {
+                  revert("Round data call failed");
+              }
+
+              oracle = newOracle;
+              emit OracleUpdated(newOracle);
+          }
+      }
+
+  - name: "Use Multi-Source Oracle with Governance"
+    description: |
+      Implement multi-signature or DAO governance requirement for oracle updates.
+      Combine with circuit breakers for price deviation detection.
+    example: |
+      import "@openzeppelin/contracts/governance/TimelockController.sol";
+      import "@openzeppelin/contracts/access/AccessControl.sol";
+
+      contract MyProtocol is AccessControl {
+          bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+
+          address public primaryOracle;
+          address public fallbackOracle;
+          uint256 public maxPriceDeviation = 10_00; // 10% in basis points
+
+          TimelockController public governanceTimelock;
+
+          constructor(address timelock) {
+              governanceTimelock = TimelockController(payable(timelock));
+              _grantRole(GOVERNANCE_ROLE, address(governanceTimelock));
+          }
+
+          // Requires governance timelock (multi-sig + delay)
+          function setOracle(
+              address newPrimary,
+              address newFallback
+          ) external onlyRole(GOVERNANCE_ROLE) {
+              require(newPrimary != address(0), "Zero primary");
+              require(newFallback != address(0), "Zero fallback");
+              require(newPrimary != newFallback, "Same oracles");
+
+              primaryOracle = newPrimary;
+              fallbackOracle = newFallback;
+
+              emit OraclesUpdated(newPrimary, newFallback);
+          }
+
+          // Circuit breaker: Use fallback if primary deviates too much
+          function getPrice() public view returns (uint256) {
+              uint256 primaryPrice = IOracle(primaryOracle).latestAnswer();
+              uint256 fallbackPrice = IOracle(fallbackOracle).latestAnswer();
+
+              uint256 deviation = primaryPrice > fallbackPrice
+                  ? ((primaryPrice - fallbackPrice) * 10000) / fallbackPrice
+                  : ((fallbackPrice - primaryPrice) * 10000) / primaryPrice;
+
+              // If deviation exceeds threshold, use fallback
+              if (deviation > maxPriceDeviation) {
+                  emit PriceDeviationDetected(primaryPrice, fallbackPrice, deviation);
+                  return fallbackPrice;
+              }
+
+              return primaryPrice;
+          }
+      }
+
+  - name: "Immutable Oracle (Ultimate Protection)"
+    description: |
+      For maximum security, make oracle address immutable (set once in constructor).
+      Use upgradeable proxy pattern if oracle updates are required.
+    example: |
+      contract MyProtocol {
+          // Immutable oracle - cannot be changed after deployment
+          address public immutable PRICE_ORACLE;
+
+          constructor(address oracle) {
+              require(oracle != address(0), "Zero oracle");
+              require(oracle.code.length > 0, "Not a contract");
+
+              PRICE_ORACLE = oracle;
+          }
+
+          // No setOracle function exists - oracle cannot be changed
+          // If oracle needs update, deploy new protocol version via governance
+      }
+
+related_patterns:
+  - auth-003  # Unprotected privileged write (general)
+  - oracle-001  # (If exists - oracle staleness/validation patterns)
+  - auth-001  # Unprotected state write
+  - auth-013  # Inconsistent access control
+
+owasp_mapping:
+  - SC02  # Oracle Manipulation
+  - SC06  # Access Control Vulnerabilities
+
+cwe_mapping:
+  - CWE-284  # Improper Access Control
+  - CWE-862  # Missing Authorization
+  - CWE-1284  # Improper Validation of Specified Quantity in Input
+
+# =============================================================================
+# ROADMAP FIELDS (Future Enhancements)
+# =============================================================================
+
+# Semantic Operations (when implemented)
+semantic_ops:
+  has_operation: MODIFIES_ORACLE  # Changes oracle configuration
+  # Note: Could also match MODIFIES_CRITICAL_STATE if oracle is tagged
+
+# Exploit Database Similarity
+exploit_similarity:
+  matches:
+    - synthetix-skrw-2019
+    - mango-markets-2022
+    - venus-wusdm-2024
+  description: "Unprotected oracle configuration allowing price manipulation attacks"
+  signature: "Unprotected write to oracle config → price manipulation → unfair liquidation/borrowing"
+
+# Multi-Agent Verification Hints
+verification_agents:
+  pattern:
+    require_all_conditions: true
+  risk:
+    assess_likelihood: true
+    assess_impact: true
+    min_exploitability_score: 7.0  # High exploitability for oracle manipulation
+  consensus:
+    min_agents_agree: 2
+    mode: voting

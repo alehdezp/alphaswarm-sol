@@ -1,0 +1,15 @@
+id: logic-022
+vulndoc: logic/general
+name: Diamond Inheritance Conflict
+description: Multiple inheritance with potential conflicts.
+scope: Contract
+lens:
+- LogicState
+severity: medium
+cwe:
+- 710
+match:
+  all:
+  - property: has_diamond_inheritance
+    op: eq
+    value: true
