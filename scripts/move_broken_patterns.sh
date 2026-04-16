@@ -3,7 +3,7 @@
 # All patterns here have ALL their tier_a conditions referencing non-existent builder properties.
 
 set -e
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+cd .
 
 QUARANTINE=vulndocs/.quarantine
 ARCHIVE=vulndocs/.archive/deprecated

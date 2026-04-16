@@ -1082,7 +1082,7 @@ references:
     type: "official_disclosure"
 
   - title: "VulnDocs: Balancer V2 Rounding Exploit"
-    url: "file:///Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/knowledge/vulndocs/categories/logic/subcategories/arithmetic/specifics/balancer-v2-rounding/"
+    url: "file://./knowledge/vulndocs/categories/logic/subcategories/arithmetic/specifics/balancer-v2-rounding/"
     source: "VKG Knowledge Base"
     type: "vulndocs_reference"
 

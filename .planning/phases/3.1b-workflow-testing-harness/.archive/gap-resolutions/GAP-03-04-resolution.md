@@ -185,7 +185,7 @@ If Companion is deferred to post-3.1b:
 
 ### Current State Analysis
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/lib/transcript_parser.py`
+**File:** `./tests/workflow_harness/lib/transcript_parser.py`
 
 **Class structure:**
 - `__init__` takes a `Path` to a JSONL file

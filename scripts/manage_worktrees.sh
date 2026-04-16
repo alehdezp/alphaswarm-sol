@@ -10,7 +10,7 @@
 
 set -e
 
-MAIN_REPO="/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg"
+MAIN_REPO="."
 WORKTREES_BASE="/tmp/vrs-worktrees"
 FIXTURES_DIR="$MAIN_REPO/tests/fixtures"
 

@@ -191,7 +191,7 @@ def _callsite_destination(self, call: Any) -> str | None:
 
 ```bash
 # After all fixes, run:
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm
+cd .
 
 # Rebuild Truster
 uv run alphaswarm build-kg examples/damm-vuln-defi/src/truster/
@@ -835,7 +835,7 @@ SelfiePool.flashLoan()
 
 ```bash
 # 1. Create branch for fixes
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm
+cd .
 git checkout -b fix/critical-detection-bugs
 
 # 2. Apply Bug #1 fix

@@ -928,7 +928,7 @@ class TestGVSIntegration:
     @pytest.fixture
     def real_session_dir(self) -> Path:
         return Path(
-            "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg"
+            "."
             "/tests/workflow_harness/fixtures/real_sessions"
         )
 

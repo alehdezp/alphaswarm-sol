@@ -22,7 +22,7 @@ from pathlib import Path
 class RenameResistanceTests(unittest.TestCase):
     """Tests for name-agnostic vulnerability detection."""
 
-    VKG_ROOT = Path("/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm")
+    VKG_ROOT = Path(".")
 
     def _build_graph(self, source_code: str, name: str) -> dict:
         """Build a VKG graph from source code."""
@@ -433,7 +433,7 @@ contract XYZ {
 class DVDeFiInvarianceTests(unittest.TestCase):
     """Test invariance across DVDeFi corpus renames."""
 
-    VKG_ROOT = Path("/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm")
+    VKG_ROOT = Path(".")
     DVDEFI_PATH = VKG_ROOT / "examples" / "damm-vuln-defi" / "src"
 
     def test_unstoppable_detection_invariant(self):

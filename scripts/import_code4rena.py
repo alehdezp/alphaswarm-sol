@@ -20,7 +20,7 @@ from pathlib import Path
 
 def main():
     """Import Code4rena judge-confirmed findings."""
-    corpus_dir = Path("/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/corpus")
+    corpus_dir = Path("./.vrs/corpus")
     contracts_dest = corpus_dir / "contracts" / "code4rena"
     ground_truth_dest = corpus_dir / "ground-truth" / "code4rena"
 

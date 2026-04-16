@@ -314,8 +314,8 @@ class EvidenceRef:
 
 ## Sources
 
-- [05.9-CONTEXT.md](/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.planning/phases/05.9-llm-graph-interface-improvements/05.9-CONTEXT.md)
-- [PHILOSOPHY.md](/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/docs/PHILOSOPHY.md)
+- [05.9-CONTEXT.md](./.planning/phases/05.9-llm-graph-interface-improvements/05.9-CONTEXT.md)
+- [PHILOSOPHY.md](./docs/PHILOSOPHY.md)
 - [A Simple, Fast Dominance Algorithm](https://www.cs.tufts.edu/comp/150FP/archive/keith-cooper/dom14.pdf)
 - [SARIF 2.1.0 Specification](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html)
 - [Knowledge Graph Incompleteness in RAG](https://arxiv.org/html/2508.08344v1)

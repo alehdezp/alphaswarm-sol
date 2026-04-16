@@ -320,7 +320,7 @@ Verified patterns from codebase:
 
 ### Storage Pattern (from beads/storage.py)
 ```python
-# Source: /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/beads/storage.py
+# Source: ./src/true_vkg/beads/storage.py
 class ContextPackStorage:
     """File-based storage for context packs."""
 
@@ -347,7 +347,7 @@ class ContextPackStorage:
 
 ### LLM JSON Extraction (from llm/client.py)
 ```python
-# Source: /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/llm/client.py
+# Source: ./src/true_vkg/llm/client.py
 async def extract_roles(self, doc_content: str) -> Dict[str, Any]:
     """Extract roles from documentation using LLM."""
     prompt = f"""Analyze this protocol documentation and extract all roles:
@@ -371,7 +371,7 @@ Return JSON with format:
 
 ### Schema with Serialization (from vulndocs/schema.py)
 ```python
-# Source: /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/vulndocs/schema.py
+# Source: ./src/true_vkg/vulndocs/schema.py
 @dataclass
 class Assumption:
     """A protocol assumption with metadata."""
@@ -403,7 +403,7 @@ class Assumption:
 
 ### CLI Command Pattern (from cli/main.py)
 ```python
-# Source: /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/cli/main.py
+# Source: ./src/true_vkg/cli/main.py
 @app.command("generate-context")
 def generate_context(
     path: str = typer.Argument(..., help="Path to Solidity project"),
@@ -470,17 +470,17 @@ Things that couldn't be fully resolved:
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/docs/PHILOSOPHY.md` - Pillar 8, Evidence Packet Contract
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/.planning/phases/03-protocol-context-pack/03-CONTEXT.md` - User decisions
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/beads/schema.py` - Bead schema patterns
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/vulndocs/schema.py` - VulnDocs schema patterns
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/llm/client.py` - LLM client abstraction
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/kg/schema.py` - Knowledge graph schema
+- `./docs/PHILOSOPHY.md` - Pillar 8, Evidence Packet Contract
+- `./.planning/phases/03-protocol-context-pack/03-CONTEXT.md` - User decisions
+- `./src/true_vkg/beads/schema.py` - Bead schema patterns
+- `./src/true_vkg/vulndocs/schema.py` - VulnDocs schema patterns
+- `./src/true_vkg/llm/client.py` - LLM client abstraction
+- `./src/true_vkg/kg/schema.py` - Knowledge graph schema
 
 ### Secondary (MEDIUM confidence)
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/test_beads_schema.py` - Testing patterns
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/test_llm_integration.py` - LLM testing patterns
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/cli/main.py` - CLI patterns
+- `./tests/test_beads_schema.py` - Testing patterns
+- `./tests/test_llm_integration.py` - LLM testing patterns
+- `./src/true_vkg/cli/main.py` - CLI patterns
 
 ### Tertiary (LOW confidence)
 - General YAML schema best practices from training data

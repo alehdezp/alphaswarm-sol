@@ -375,30 +375,30 @@ All new test contracts align with existing pattern packs:
 ### New Test Contracts (13 total)
 
 **Oracle contracts (7):**
-1. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/OracleCircuitBreaker.sol`
-2. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/OracleMultiSource.sol`
-3. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/OracleDeprecatedLatestAnswer.sol`
-4. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/OracleRoundIDStale.sol`
-5. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/TwapFlashLoanManipulation.sol`
-6. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/TwapShortWindow.sol`
-7. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/TwapSecureWindow.sol`
+1. `./tests/contracts/OracleCircuitBreaker.sol`
+2. `./tests/contracts/OracleMultiSource.sol`
+3. `./tests/contracts/OracleDeprecatedLatestAnswer.sol`
+4. `./tests/contracts/OracleRoundIDStale.sol`
+5. `./tests/contracts/TwapFlashLoanManipulation.sol`
+6. `./tests/contracts/TwapShortWindow.sol`
+7. `./tests/contracts/TwapSecureWindow.sol`
 
 **Misc contracts (6):**
-8. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/BlockhashWeakRNG.sol`
-9. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/BlockTimestampManipulation.sol`
-10. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/BlockNumberRNG.sol`
-11. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/DifficultyDeprecated.sol`
-12. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/SecureVRF.sol`
-13. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/CommitRevealRNG.sol`
+8. `./tests/contracts/BlockhashWeakRNG.sol`
+9. `./tests/contracts/BlockTimestampManipulation.sol`
+10. `./tests/contracts/BlockNumberRNG.sol`
+11. `./tests/contracts/DifficultyDeprecated.sol`
+12. `./tests/contracts/SecureVRF.sol`
+13. `./tests/contracts/CommitRevealRNG.sol`
 
 ### Updated Test Files (2)
 
-1. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/test_queries_oracle.py` (completely rewritten, 375 lines)
-2. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/test_queries_misc.py` (completely rewritten, 270 lines)
+1. `./tests/test_queries_oracle.py` (completely rewritten, 375 lines)
+2. `./tests/test_queries_misc.py` (completely rewritten, 270 lines)
 
 ### Documentation
 
-1. `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/ORACLE_AND_MISC_TEST_IMPROVEMENTS.md` (this file)
+1. `./tests/ORACLE_AND_MISC_TEST_IMPROVEMENTS.md` (this file)
 
 ## Impact
 

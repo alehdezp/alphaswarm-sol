@@ -1,6 +1,6 @@
 ============================= test session starts ==============================
 platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, asyncio-1.3.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -9066,43 +9066,43 @@ collected 7394 items
 
 =============================== warnings summary ===============================
 .venv/lib/python3.11/site-packages/httplib2/auth.py:19
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:19: DeprecationWarning: 'setName' deprecated - use 'set_name'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:19: DeprecationWarning: 'setName' deprecated - use 'set_name'
     token = pp.Word(tchar).setName("token")
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:20
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:20: DeprecationWarning: 'leaveWhitespace' deprecated - use 'leave_whitespace'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:20: DeprecationWarning: 'leaveWhitespace' deprecated - use 'leave_whitespace'
     token68 = pp.Combine(pp.Word("-._~+/" + pp.nums + pp.alphas) + pp.Optional(pp.Word("=").leaveWhitespace())).setName(
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:20
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:20: DeprecationWarning: 'setName' deprecated - use 'set_name'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:20: DeprecationWarning: 'setName' deprecated - use 'set_name'
     token68 = pp.Combine(pp.Word("-._~+/" + pp.nums + pp.alphas) + pp.Optional(pp.Word("=").leaveWhitespace())).setName(
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:24
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:24: DeprecationWarning: 'setName' deprecated - use 'set_name'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:24: DeprecationWarning: 'setName' deprecated - use 'set_name'
     quoted_string = pp.dblQuotedString.copy().setName("quoted-string").setParseAction(unquote)
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:24
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:24: DeprecationWarning: 'setParseAction' deprecated - use 'set_parse_action'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:24: DeprecationWarning: 'setParseAction' deprecated - use 'set_parse_action'
     quoted_string = pp.dblQuotedString.copy().setName("quoted-string").setParseAction(unquote)
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:25
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:25: DeprecationWarning: 'setName' deprecated - use 'set_name'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:25: DeprecationWarning: 'setName' deprecated - use 'set_name'
     auth_param_name = token.copy().setName("auth-param-name").addParseAction(downcaseTokens)
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:25
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:25: DeprecationWarning: 'addParseAction' deprecated - use 'add_parse_action'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:25: DeprecationWarning: 'addParseAction' deprecated - use 'add_parse_action'
     auth_param_name = token.copy().setName("auth-param-name").addParseAction(downcaseTokens)
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:27
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:27: DeprecationWarning: 'delimitedList' deprecated - use 'DelimitedList'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:27: DeprecationWarning: 'delimitedList' deprecated - use 'DelimitedList'
     params = pp.Dict(pp.delimitedList(pp.Group(auth_param)))
 
 .venv/lib/python3.11/site-packages/httplib2/auth.py:33
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/lib/python3.11/site-packages/httplib2/auth.py:33: DeprecationWarning: 'delimitedList' deprecated - use 'DelimitedList'
+  ./.venv/lib/python3.11/site-packages/httplib2/auth.py:33: DeprecationWarning: 'delimitedList' deprecated - use 'DelimitedList'
     www_authenticate = pp.delimitedList(pp.Group(challenge))
 
 src/true_vkg/llm/providers/google.py:7
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/llm/providers/google.py:7: FutureWarning: 
+  ./src/true_vkg/llm/providers/google.py:7: FutureWarning: 
   
   All support for the `google.generativeai` package has ended. It will no longer be receiving 
   updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
@@ -9113,71 +9113,71 @@ src/true_vkg/llm/providers/google.py:7
     import google.generativeai as genai
 
 src/true_vkg/beads/accuracy_test.py:46
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/accuracy_test.py:46: PytestCollectionWarning: cannot collect test class 'TestCase' because it has a __init__ constructor (from: tests/test_bead_llm_accuracy.py)
+  ./src/true_vkg/beads/accuracy_test.py:46: PytestCollectionWarning: cannot collect test class 'TestCase' because it has a __init__ constructor (from: tests/test_bead_llm_accuracy.py)
     @dataclass
 
 src/true_vkg/beads/accuracy_test.py:82
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/accuracy_test.py:82: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_bead_llm_accuracy.py)
+  ./src/true_vkg/beads/accuracy_test.py:82: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_bead_llm_accuracy.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_llm_accuracy.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_llm_accuracy.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_pool_integration.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_pool_integration.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_cli.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_cli.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
     @dataclass
 
 src/true_vkg/enterprise/reports.py:44
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/enterprise/reports.py:44: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_finding_schema.py)
+  ./src/true_vkg/enterprise/reports.py:44: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_finding_schema.py)
     class TestResult(str, Enum):
 
 src/true_vkg/agents/microagent.py:511
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/agents/microagent.py:511: PytestCollectionWarning: cannot collect test class 'TestGenMicroAgent' because it has a __init__ constructor (from: tests/test_microagents.py)
+  ./src/true_vkg/agents/microagent.py:511: PytestCollectionWarning: cannot collect test class 'TestGenMicroAgent' because it has a __init__ constructor (from: tests/test_microagents.py)
     class TestGenMicroAgent(MicroAgent):
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_microagents.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_microagents.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_post_bead_learning.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_post_bead_learning.py)
     @dataclass
 
 src/true_vkg/testing/generator.py:30
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/testing/generator.py:30: PytestCollectionWarning: cannot collect test class 'TestScaffold' because it has a __init__ constructor (from: tests/test_testing_generator.py)
+  ./src/true_vkg/testing/generator.py:30: PytestCollectionWarning: cannot collect test class 'TestScaffold' because it has a __init__ constructor (from: tests/test_testing_generator.py)
     @dataclass
 
 src/true_vkg/testing/tiers.py:23
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/testing/tiers.py:23: PytestCollectionWarning: cannot collect test class 'TestTier' because it has a __init__ constructor (from: tests/test_testing_generator.py)
+  ./src/true_vkg/testing/tiers.py:23: PytestCollectionWarning: cannot collect test class 'TestTier' because it has a __init__ constructor (from: tests/test_testing_generator.py)
     class TestTier(Enum):
 
 src/true_vkg/testing/generator.py:30
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/testing/generator.py:30: PytestCollectionWarning: cannot collect test class 'TestScaffold' because it has a __init__ constructor (from: tests/test_testing_quality.py)
+  ./src/true_vkg/testing/generator.py:30: PytestCollectionWarning: cannot collect test class 'TestScaffold' because it has a __init__ constructor (from: tests/test_testing_quality.py)
     @dataclass
 
 src/true_vkg/testing/tiers.py:23
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/testing/tiers.py:23: PytestCollectionWarning: cannot collect test class 'TestTier' because it has a __init__ constructor (from: tests/test_testing_quality.py)
+  ./src/true_vkg/testing/tiers.py:23: PytestCollectionWarning: cannot collect test class 'TestTier' because it has a __init__ constructor (from: tests/test_testing_quality.py)
     class TestTier(Enum):
 
 src/true_vkg/testing/tiers.py:23
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/testing/tiers.py:23: PytestCollectionWarning: cannot collect test class 'TestTier' because it has a __init__ constructor (from: tests/test_testing_tiers.py)
+  ./src/true_vkg/testing/tiers.py:23: PytestCollectionWarning: cannot collect test class 'TestTier' because it has a __init__ constructor (from: tests/test_testing_tiers.py)
     class TestTier(Enum):
 
 src/true_vkg/enterprise/reports.py:44
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/enterprise/reports.py:44: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_testing_verification.py)
+  ./src/true_vkg/enterprise/reports.py:44: PytestCollectionWarning: cannot collect test class 'TestResult' because it has a __init__ constructor (from: tests/test_testing_verification.py)
     class TestResult(str, Enum):
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

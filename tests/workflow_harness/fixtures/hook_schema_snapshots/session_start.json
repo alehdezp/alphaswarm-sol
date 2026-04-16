@@ -1,6 +1,6 @@
 {
   "session_id": "eeb93c51-cb2c-4594-a4d9-4a5e5c11600f",
-  "cwd": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg",
+  "cwd": ".",
   "model": "claude-sonnet-4-20250514",
   "source": "interactive",
   "agent_type": "main",

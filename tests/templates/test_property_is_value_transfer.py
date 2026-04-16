@@ -126,7 +126,7 @@ class TestIsValueTransfer(unittest.TestCase):
                 ["uv", "run", "alphaswarm", "build-kg", tmpdir, "--out", os.path.join(tmpdir, "graph.kg.json")],
                 capture_output=True,
                 text=True,
-                cwd="/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm"
+                cwd="."
             )
 
             if result.returncode != 0:

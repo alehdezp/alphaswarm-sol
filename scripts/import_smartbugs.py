@@ -19,7 +19,7 @@ def main():
     """Import SmartBugs-curated dataset."""
     # Paths
     smartbugs_repo = Path("/tmp/smartbugs-curated")
-    corpus_dir = Path("/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/corpus")
+    corpus_dir = Path("./.vrs/corpus")
     contracts_dest = corpus_dir / "contracts" / "smartbugs"
     ground_truth_dest = corpus_dir / "ground-truth" / "smartbugs"
 

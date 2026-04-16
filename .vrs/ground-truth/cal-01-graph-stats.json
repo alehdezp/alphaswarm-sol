@@ -6,7 +6,7 @@
   "identity": "271b6cf5c178",
   "nodes": 12,
   "edges": 17,
-  "graph_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/ground-truth/cal-01/graph.toon",
+  "graph_path": "./.vrs/ground-truth/cal-01/graph.toon",
   "expected_vulnerability_class": "reentrancy",
   "semantic_fingerprint": "CEI_violation_withdraw",
   "function_names": [

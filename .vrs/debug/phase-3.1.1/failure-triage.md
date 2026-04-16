@@ -74,7 +74,7 @@ The VulnDocs index format changed from dict to list, causing `AttributeError: 'l
 
 ### Template Tests - Missing Binary (15 tests)
 
-Templates tests reference alphaswarm binary at `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm` which does not exist.
+Templates tests reference alphaswarm binary at `.` which does not exist.
 
 | File | Failures | Error |
 |------|----------|-------|

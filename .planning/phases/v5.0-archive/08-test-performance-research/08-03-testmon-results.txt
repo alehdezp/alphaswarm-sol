@@ -36,11 +36,11 @@ tests/test_bead_storage.py::TestBeadStorageEdgeCases::test_multiple_save_overwri
 
 =============================== warnings summary ===============================
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
     @dataclass
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
@@ -49,10 +49,10 @@ End: Wed Jan 21 00:41:53 WET 2026
 
 === Incremental run (no changes - should skip all) ===
 Start: Wed Jan 21 00:42:06 WET 2026
-platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/bin/python3
+platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- ./.venv/bin/python3
 cachedir: .pytest_cache
 testmon: changed files: 0, unchanged files: 31, environment: default
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, xdist-3.8.0, asyncio-1.3.0, testmon-2.2.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -60,11 +60,11 @@ collecting ... collected 119 items / 119 deselected / 0 selected
 
 =============================== warnings summary ===============================
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
     @dataclass
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
@@ -75,10 +75,10 @@ End: Wed Jan 21 00:42:07 WET 2026
 Simulating change to beads/types.py...
 Change made. Running testmon to detect affected tests...
 ============================= test session starts ==============================
-platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/bin/python3
+platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- ./.venv/bin/python3
 cachedir: .pytest_cache
 testmon: changed files: 0, unchanged files: 31, environment: default
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, xdist-3.8.0, asyncio-1.3.0, testmon-2.2.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -86,11 +86,11 @@ collecting ... collected 119 items / 119 deselected / 0 selected
 
 =============================== warnings summary ===============================
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
     @dataclass
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
@@ -100,10 +100,10 @@ Restored original file.
 === Dependency tracking validation (retry) ===
 Simulating change to beads/schema.py (adding whitespace)...
 ============================= test session starts ==============================
-platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/bin/python3
+platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- ./.venv/bin/python3
 cachedir: .pytest_cache
 testmon: changed files: 0, unchanged files: 31, environment: default
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, xdist-3.8.0, asyncio-1.3.0, testmon-2.2.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -111,11 +111,11 @@ collecting ... collected 62 items / 62 deselected / 0 selected
 
 =============================== warnings summary ===============================
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_beads_schema.py)
     @dataclass
 
 src/true_vkg/beads/schema.py:64
-  /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
+  ./src/true_vkg/beads/schema.py:64: PytestCollectionWarning: cannot collect test class 'TestContext' because it has a __init__ constructor (from: tests/test_bead_storage.py)
     @dataclass
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
@@ -146,10 +146,10 @@ tests/test_beads_types.py::TestIntegrationWithAdversarialKG::test_exploit_refere
 === Re-testing dependency tracking with fresh database ===
 Running testmon with change...
 ============================= test session starts ==============================
-platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/bin/python3
+platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- ./.venv/bin/python3
 cachedir: .pytest_cache
 testmon: changed files: 0, unchanged files: 14, environment: default
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, xdist-3.8.0, asyncio-1.3.0, testmon-2.2.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -160,11 +160,11 @@ collecting ... collected 57 items / 57 deselected / 0 selected
 === Testing testmon with --testmon-forcerun and simulated change ===
 Modified types.py with explicit change
 ============================= test session starts ==============================
-platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/bin/python3
+platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- ./.venv/bin/python3
 cachedir: .pytest_cache
 testmon: new DB, environment: default
 We'd like to hear from testmon users! Please go to https://testmon.org/survey to leave feedback.
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, xdist-3.8.0, asyncio-1.3.0, testmon-2.2.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
@@ -177,10 +177,10 @@ __________________ ERROR collecting tests/test_beads_types.py __________________
 
 Now running again to test caching...
 ============================= test session starts ==============================
-platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.venv/bin/python3
+platform darwin -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- ./.venv/bin/python3
 cachedir: .pytest_cache
 testmon: changed files: 0, unchanged files: 0, environment: default
-rootdir: /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+rootdir: .
 configfile: pyproject.toml
 plugins: anyio-4.12.0, xdist-3.8.0, asyncio-1.3.0, testmon-2.2.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function

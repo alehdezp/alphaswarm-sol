@@ -206,7 +206,7 @@ except ImportError as e:
   </action>
   <verify>
 ```bash
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+cd .
 python -c "from tests.workflow_harness.lib.companion_bridge import CompanionSession, ClaudeOneShot, TurnResult, ToolCall; print('Import OK')"
 python -c "
 from tests.workflow_harness.lib.companion_bridge import TurnResult, ToolCall
@@ -320,7 +320,7 @@ to minimize cost. Expected total: ~$0.05-0.10 for full suite.
   </action>
   <verify>
 ```bash
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+cd .
 # Verify file exists and has test functions
 python -c "
 import ast, sys
@@ -377,14 +377,14 @@ Expected: "Sessions: N" (any number)
 
 Step 2 — Run smoke tests:
 ```bash
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+cd .
 uv run pytest tests/workflow_harness/test_companion_smoke.py -v --timeout=120
 ```
 Expected: All tests pass (or skip with clear reason if Companion not running)
 
 Step 3 — Verify import works:
 ```bash
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+cd .
 python -c "from tests.workflow_harness.lib.companion_bridge import CompanionSession; print('OK')"
 ```
 Expected: "OK"

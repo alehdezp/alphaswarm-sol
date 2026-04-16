@@ -199,7 +199,7 @@ Mistakes that cause annoyance but are fixable.
 
 ## Sources
 
-- [05.9-CONTEXT.md](/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.planning/phases/05.9-llm-graph-interface-improvements/05.9-CONTEXT.md)
+- [05.9-CONTEXT.md](./.planning/phases/05.9-llm-graph-interface-improvements/05.9-CONTEXT.md)
 - [Knowledge Graph Incompleteness in RAG](https://arxiv.org/html/2508.08344v1)
 - [How to Mitigate Information Loss in Knowledge Graphs](https://www.ijcai.org/proceedings/2025/0901.pdf)
 - [Static Program Analysis - Moller and Schwartzbach](https://cs.au.dk/~amoeller/spa/spa.pdf)

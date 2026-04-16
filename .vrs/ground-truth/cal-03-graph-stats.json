@@ -6,7 +6,7 @@
   "identity": "89b0dcf8f8fb",
   "nodes": 7,
   "edges": 10,
-  "graph_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/ground-truth/cal-03/graph.toon",
+  "graph_path": "./.vrs/ground-truth/cal-03/graph.toon",
   "expected_vulnerability_class": "oracle-manipulation",
   "semantic_fingerprint": "oracle_no_staleness_check",
   "function_names": [

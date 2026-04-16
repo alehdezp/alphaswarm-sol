@@ -1,6 +1,6 @@
 {
   "file": "3.1e-CONTEXT.md",
-  "phase_dir": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.planning/phases/3.1e-evaluation-zero-empirical-sprint",
+  "phase_dir": "./.planning/phases/3.1e-evaluation-zero-empirical-sprint",
   "checksum": "b36783410ce62183a79a22666dfde9abc48008498cd8e396763b4df9302f4bfc",
   "total_lines": 588,
   "sections": [

@@ -44,7 +44,7 @@ After exhaustive testing against Damn Vulnerable DeFi's 18 challenges with known
 
 ```bash
 # For each challenge:
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm
+cd .
 
 # 1. Build the graph
 uv run alphaswarm build-kg examples/damm-vuln-defi/src/<challenge>/
@@ -933,7 +933,7 @@ behavioral_signature = 'X:call→X:out→E:evt'
 ## Appendix C: Commands To Reproduce
 
 ```bash
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm
+cd .
 
 # 1. Build all graphs
 for c in unstoppable truster side-entrance free-rider climber; do

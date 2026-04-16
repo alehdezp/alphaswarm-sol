@@ -400,17 +400,17 @@ The pattern successfully detects critical real-world exploit patterns including 
 
 **Primary Test Contract**:
 ```
-/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/projects/governance-dao/PrivilegedStateTest.sol
+./tests/projects/governance-dao/PrivilegedStateTest.sol
 ```
 
 **Knowledge Graph**:
 ```
-/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/projects/governance-dao/PrivilegedStateTest.json/graph.json
+./tests/projects/governance-dao/PrivilegedStateTest.json/graph.json
 ```
 
 **Pattern Definition**:
 ```
-/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/patterns/semantic/authority/auth-003-unprotected-privileged-write.yaml
+./patterns/semantic/authority/auth-003-unprotected-privileged-write.yaml
 ```
 
 **Test Coverage Metadata**: Embedded in pattern YAML

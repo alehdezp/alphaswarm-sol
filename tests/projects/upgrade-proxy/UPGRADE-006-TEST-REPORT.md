@@ -420,12 +420,12 @@ Based on the test results and metrics:
 ## Test Files
 
 ### Test Contracts
-- **File**: `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/projects/upgrade-proxy/StorageGapTest.sol`
+- **File**: `./tests/projects/upgrade-proxy/StorageGapTest.sol`
 - **Contracts**: 49 (21 vulnerable, 22 safe, 6 variations)
 - **Self-Contained**: Yes (no external dependencies)
 
 ### Test Suite
-- **File**: `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/test_upgradeability_lens.py`
+- **File**: `./tests/test_upgradeability_lens.py`
 - **Class**: `TestUpgrade006MissingStorageGap`
 - **Tests**: 34 total
   - 10 TP tests (2 pass, 8 fail)

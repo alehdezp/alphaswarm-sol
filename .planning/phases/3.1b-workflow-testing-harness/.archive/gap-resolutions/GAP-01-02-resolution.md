@@ -9,7 +9,7 @@
 
 ### 1.1 EventStream (controller_events.py)
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/lib/controller_events.py`
+**File:** `./tests/workflow_harness/lib/controller_events.py`
 **LOC:** 160
 
 Key APIs relevant to multi-agent correlation:
@@ -31,7 +31,7 @@ The `ControllerEvent` dataclass (L17-33) has: `event_type`, `timestamp`, `agent_
 
 ### 1.2 WorkspaceManager (workspace.py)
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/lib/workspace.py`
+**File:** `./tests/workflow_harness/lib/workspace.py`
 **LOC:** 222
 
 Key APIs:
@@ -46,7 +46,7 @@ Key APIs:
 
 ### 1.3 TranscriptParser (transcript_parser.py)
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/lib/transcript_parser.py`
+**File:** `./tests/workflow_harness/lib/transcript_parser.py`
 **LOC:** 225
 
 Critical internals:
@@ -73,7 +73,7 @@ This is a basic string match. It detects the presence of a query but extracts no
 
 ### 1.4 ToolCall Dataclass
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/lib/transcript_parser.py`
+**File:** `./tests/workflow_harness/lib/transcript_parser.py`
 **Lines:** 26-39
 
 ```python
@@ -146,14 +146,14 @@ Tool results in user records:
 
 ### 1.7 Existing Test Coverage
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/test_workspace.py`
+**File:** `./tests/workflow_harness/test_workspace.py`
 **Tests:** 16 tests covering WorkspaceManager (all passing per context.md).
 
 No existing tests for OutputCollector (it doesn't exist yet). No tests for multi-agent observation correlation.
 
 ### 1.8 Assertions Module
 
-**File:** `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/tests/workflow_harness/lib/assertions.py`
+**File:** `./tests/workflow_harness/lib/assertions.py`
 **LOC:** 387, 9 categories.
 
 Relevant: `assert_graph_first()` (L121-136) uses `bskg_query_index()` and `first_conclusion_index()` -- exactly the kind of check that GAP-02's `graph_citation_rate()` would improve.

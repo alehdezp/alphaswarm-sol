@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-02-11T17:05:15.841138+00:00",
-  "root": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg",
+  "root": ".",
   "cli_symbols": [
     "QualityTracker",
     "TIER_DEFINITIONS",

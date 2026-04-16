@@ -53,7 +53,7 @@ The vulndocs directory is present at `/tmp/test-jj-workspace-verify/vulndocs/` b
 ### 3. BUT: editable install `__file__` does NOT point to the workspace
 
 **Critical finding:** This project uses `uv tool install -e .` (editable install). With an editable install:
-- `__file__` for `alphaswarm_sol.queries.patterns` resolves to: `/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/src/alphaswarm_sol/queries/patterns.py`
+- `__file__` for `alphaswarm_sol.queries.patterns` resolves to: `./src/alphaswarm_sol/queries/patterns.py`
 - This is the **original source tree**, NOT any workspace copy
 - Even when running Python from a workspace directory, imported modules resolve to the editable install location (the main project root)
 

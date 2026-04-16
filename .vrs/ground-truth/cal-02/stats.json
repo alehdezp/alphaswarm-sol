@@ -6,7 +6,7 @@
   "identity": "552b722c4b15",
   "nodes": 6,
   "edges": 9,
-  "graph_path": "/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/ground-truth/cal-02/graph.toon",
+  "graph_path": "./.vrs/ground-truth/cal-02/graph.toon",
   "expected_vulnerability_class": "access-control",
   "semantic_fingerprint": "missing_access_gate_setOwner",
   "function_names": [

@@ -23,7 +23,7 @@ The DoS test suite has been significantly enhanced from 2 basic tests to **17 co
 
 ### 1. Test Contracts
 
-#### `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/DosComprehensive.sol`
+#### `./tests/contracts/DosComprehensive.sol`
 Comprehensive 340-line test contract demonstrating:
 - ✅ 7 vulnerable DoS patterns
 - ✅ 7 safe alternative implementations
@@ -45,14 +45,14 @@ Comprehensive 340-line test contract demonstrating:
 - Failure handling (`becomeLeaderSafe`, `distributeFundsWithSendChecked`)
 - Inequality checks (`withdrawAllSafe`)
 
-#### `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/LoopDos.sol`
+#### `./tests/contracts/LoopDos.sol`
 Original test contract (maintained for backward compatibility):
 - 5 functions testing basic loop properties
 - Used by existing `tests/test_queries_dos.py`
 
 ### 2. Pattern YAML Files
 
-Created **6 new pattern files** in `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/patterns/core/`:
+Created **6 new pattern files** in `./patterns/core/`:
 
 | Pattern ID | File | Severity | CWE | SWC | Description |
 |------------|------|----------|-----|-----|-------------|
@@ -70,7 +70,7 @@ Created **6 new pattern files** in `/Volumes/ex_ssd/home/projects/python/vkg-sol
 
 ### 3. Test Suite
 
-#### `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/test_queries_dos_comprehensive.py`
+#### `./tests/test_queries_dos_comprehensive.py`
 Comprehensive 360-line test suite with **17 tests**:
 
 **DosComprehensiveTests (15 tests)**:
@@ -109,7 +109,7 @@ uv run python -m unittest tests.test_queries_dos -v
 
 ### 4. Documentation
 
-#### `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/tests/contracts/DOS_TAXONOMY.md`
+#### `./tests/contracts/DOS_TAXONOMY.md`
 Comprehensive 350-line taxonomy document covering:
 - ✅ 8 DoS vulnerability categories with detailed explanations
 - ✅ CWE, SWC, and OWASP mappings
@@ -176,7 +176,7 @@ Comprehensive 350-line taxonomy document covering:
 
 ## Proposed Core Enhancements
 
-The following enhancements to `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/kg/builder.py` would enable complete DoS detection:
+The following enhancements to `./src/true_vkg/kg/builder.py` would enable complete DoS detection:
 
 ### Priority 1 (High Impact)
 1. **Add `has_require_bounds` property**

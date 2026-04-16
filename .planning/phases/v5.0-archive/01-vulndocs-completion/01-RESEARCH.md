@@ -37,7 +37,7 @@ Location: `src/true_vkg/knowledge/vulndocs/schema.py`
 
 ### Key Files
 ```
-/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/
+./
 ├── knowledge/vulndocs/
 │   ├── index.yaml           # Navigation index (16 categories, 67 subcategories)
 │   ├── schema.yaml          # Document schema
@@ -403,15 +403,15 @@ Based on research findings and phase context:
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/.true_vkg/vulndocs_reference/sources.yaml` - Complete 87-source inventory
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/.true_vkg/vulndocs_reference/extraction_guide.md` - Extraction rules
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/knowledge/vulndocs/TEMPLATE.md` - Output format
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/kg/operations.py` - Semantic operations
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/src/true_vkg/vulndocs/validators/quality.py` - Quality scoring
+- `./.true_vkg/vulndocs_reference/sources.yaml` - Complete 87-source inventory
+- `./.true_vkg/vulndocs_reference/extraction_guide.md` - Extraction rules
+- `./knowledge/vulndocs/TEMPLATE.md` - Output format
+- `./src/true_vkg/kg/operations.py` - Semantic operations
+- `./src/true_vkg/vulndocs/validators/quality.py` - Quality scoring
 
 ### Secondary (MEDIUM confidence)
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/.true_vkg/discovery/state.yaml` - Current progress
-- `/Volumes/ex_ssd/home/projects/python/vkg-solidity/alphaswarm/.true_vkg/discovery/FINAL_REPORT.md` - Pipeline validation
+- `./.true_vkg/discovery/state.yaml` - Current progress
+- `./.true_vkg/discovery/FINAL_REPORT.md` - Pipeline validation
 
 ## Metadata
 

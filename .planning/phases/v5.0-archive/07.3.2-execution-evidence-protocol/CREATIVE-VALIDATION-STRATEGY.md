@@ -239,7 +239,7 @@ Not ready when:
 **First command to run:**
 
 ```bash
-cd /Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg
+cd .
 
 # Start Phase 7.3.2: Execute an audit and collect proofs
 ./scripts/run_with_proofs.sh tests/fixtures/simple/Vault.sol

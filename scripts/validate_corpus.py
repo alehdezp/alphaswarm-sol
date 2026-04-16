@@ -17,7 +17,7 @@ from pathlib import Path
 
 def main():
     """Validate corpus and create summary artifacts."""
-    corpus_dir = Path("/Volumes/ex_ssd/home/projects/python/vkg-solidity/true-vkg/.vrs/corpus")
+    corpus_dir = Path("./.vrs/corpus")
     contracts_dir = corpus_dir / "contracts"
     ground_truth_dir = corpus_dir / "ground-truth"
 
