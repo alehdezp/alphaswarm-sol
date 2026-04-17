@@ -5,7 +5,7 @@ milestone_name: milestone
 current_phase: 3.1c.3 — Evaluation Intelligence Bootstrap
 status: executing
 stopped_at: "Phase 3.1c.3: improvement pass 1 complete. 37 items (17 confirmed, 11 enhanced, 1 reframed, 1 created, 3 SYN, 4 CSC). 7 prerequisites, 2 research items. Convergence: 0% cosmetic — ACTIVE. Next: /msd:resolve-blockers 3.1c.3"
-last_updated: "2026-03-02T18:26:05.930Z"
+last_updated: "2026-04-17T00:00:00.000Z"
 progress:
   total_phases: 22
   completed_phases: 4
@@ -15,7 +15,7 @@ progress:
 
 # State: AlphaSwarm.sol Milestone 6.0
 
-**Last Updated:** 2026-03-02
+**Last Updated:** 2026-04-17
 **Current Phase:** 3.1c.3 — Evaluation Intelligence Bootstrap
 **Profile:** quality
 
@@ -215,6 +215,18 @@ Template source:
 ---
 
 ## Recently Completed
+
+### Documentation: README Case Study Refresh ✅
+
+**Status:** COMPLETE (2026-04-17) — Rewrote `README.md` as a professional case-study overview that foregrounds the novel behavioral-security ideas while preserving the project honesty policy.
+
+**Updated:**
+- Reframed the project as an evidence-grounded AI security auditing case study, not a finished commercial auditor.
+- Added an explicit honest-status table for implemented, partial, planned, and unknown capabilities.
+- Highlighted the 2026-relevant ideas: behavioral signatures, evidence-first agents, adversarial verification, and reasoning-quality evaluation.
+- Simplified the architecture and repository guide so non-specialist readers can understand the direction before diving into technical docs.
+
+**No phase status changed.**
 
 ### Phase 3.1b: Workflow Testing Harness & Test Corpus ✅
 
