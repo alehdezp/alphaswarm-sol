@@ -1,58 +1,59 @@
 # AlphaSwarm.sol
 
-A behavioral, multi-expert, self-testing security framework for Solidity.
+Smart-contract security framework built around a behavioral knowledge
+graph and role-locked agent debate. It audits Solidity code and produces
+findings whose every claim resolves to specific graph nodes and a full
+debate transcript.
 
-It rejects three premises most 2026 audit tools accept: that names mean
-things, that one model can judge its own work, and that your agent
-harness is somebody else's problem.
+## For non-technical readers
 
-## The bets
+Smart contracts hold large amounts of money and bugs in them are
+effectively irreversible. Two kinds of tool exist today: static
+analyzers that only catch simple syntax patterns, and LLM-based auditors
+that reason more broadly but fabricate evidence. This project takes a
+different approach. It first builds a structured map of what each
+function actually does — not what it is named — and then has three AI
+agents in different roles argue every suspicious finding using evidence
+from that map. A fourth role arbitrates. Unfounded claims are rejected
+by the system, not filtered afterwards.
 
-1. **Behavior beats names.** Detection runs on operation signatures, not identifiers.
-2. **Evidence beats assertion.** Findings without graph + location + transcript are structurally rejected.
-3. **Disagreement beats consensus.** Tool conflicts and agent dissent route to a verifier — they are signal.
-4. **Model divergence beats LLM-as-judge.** Three roles, three model families, role-locked prompts.
-5. **Lessons graduate to rules.** Recurring debate outcomes become deterministic Cypher queries in the graph.
-6. **The harness is replaceable.** Audit logic is harness-neutral; the same evaluator qualifies the replacement.
+The project is under active development. The end-to-end audit pipeline
+is not yet proven on real benchmarks; see
+[`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
-## The graph — BSKG
+## The knowledge graph — BSKG
 
-The Behavioral Security Knowledge Graph is not a RAG index over Solidity
-source. It is a typed, queryable model of what each function *does*,
-fused from multiple analyzers.
+The Behavioral Security Knowledge Graph is the substrate every other
+layer queries. It is not a vector index over source and not a plain call
+graph. It is a typed graph whose nodes carry around 200 security-relevant
+properties each, derived by fusing outputs from:
 
-```
-Slither IR · Mythril traces · Aderyn · Foundry/Halmos · Solodit
-                              │
-                              ▼
-                  ┌──────────────────────────┐
-                  │  BSKG                    │
-                  │  Functions × ~200 props  │
-                  │  Operations · Signatures │
-                  │  Dominators · Taint flow │
-                  │  Cross-contract edges    │
-                  └──────────────────────────┘
-```
+- Slither IR (AST, CFG, dataflow)
+- Mythril (symbolic traces, reachable paths)
+- Aderyn (Rust-based static diagnostics)
+- Foundry / Halmos (formal verification results)
+- Solodit (historical vulnerability findings)
 
-GraphRAG over source gives you adjacency. The BSKG gives you *semantic
-ordering* — what runs before what, under what guard, with what data
-flowing in. Every downstream claim resolves to a node ID, a code
-location, and a build hash.
+Each function node carries:
+- Semantic operations (20 defined — e.g. `TRANSFERS_VALUE_OUT`,
+  `READS_USER_BALANCE`, `CHECKS_PERMISSION`, `MODIFIES_CRITICAL_STATE`)
+- A behavioral signature — a compact opcode sequence over those
+  operations describing execution order
+- Dominator information — which guards control which paths to a sink
+- Taint flow — where attacker-controllable data reaches
+- Cross-contract edges — calls, inheritance, delegatecall, proxy
+- Deterministic IDs (SHA-256 of node properties) so evidence references
+  stay stable across builds
 
-## The query language — behavioral signatures
+Queries run in VQL (Vulnerability Query Language) as graph traversals,
+not similarity search. Every finding's evidence is a specific set of
+node IDs and edge traversals that can be resolved back to source at a
+given build hash.
 
-Every function compiles to a compact opcode sequence over semantic
-operations. Patterns query the sequence, not the source.
+## Behavioral signatures
 
-```
-R:bal   READS_USER_BALANCE          X:out   CALLS_EXTERNAL
-W:bal   WRITES_USER_BALANCE         X:un    CALLS_UNTRUSTED
-C:auth  CHECKS_PERMISSION           M:crit  MODIFIES_CRITICAL_STATE
-                                                        (40+ ops total)
-```
-
-Two functions, identical signatures, no name-based tool can tell them
-apart:
+Each function compiles to a compact sequence over the operations
+vocabulary. Patterns match the sequence, not the source.
 
 ```
 function withdraw(uint a) {              function process(uint a) {
@@ -62,16 +63,21 @@ function withdraw(uint a) {              function process(uint a) {
 }                                            bal[msg.sender] -= a;
                                          }
         ╲                                ╱
-         ╲ R:bal -> X:out -> W:bal ◄─── reentrancy candidate
+         ╲ R:bal -> X:out -> W:bal ◄─── same signature
           ╲   (CEI inverted)              guard dominance: NONE
 ```
 
-The query language is **path-qualified, dominance-aware, and taint-aware**.
-It distinguishes "guard exists" from "guard dominates every path to the
-sink". That distinction is the difference between a true positive and a
-false negative.
+Queries are path-qualified (always-before vs sometimes-before vs
+never-before), dominance-aware (guard dominates sink vs bypassable),
+and taint-aware (sink reachable from attacker-controllable source).
+These distinctions come from the project's own
+[`docs/PITFALLS.md`](docs/PITFALLS.md) and are what separates a true
+positive from a false negative.
 
-## The experts — role-locked, model-divergent debate
+## Role-locked agent debate
+
+Each candidate finding goes through three role-locked agents with
+different models:
 
 ```
                   Candidate finding
@@ -83,112 +89,146 @@ false negative.
 │    (Opus)     │  graph evidence  │    (Sonnet)   │
 │ Build exploit │                  │ Prove guard   │
 │ path. Cite    │                  │ DOMINATES the │
-│ graph nodes.  │                  │ path — not    │
-│               │                  │ just exists.  │
+│ graph nodes.  │                  │ vulnerable    │
+│               │                  │ path.         │
 └──────┬────────┘                  └────────┬──────┘
        └─────────────┬───────────────────────┘
                      ▼
               ┌──────────────┐
               │   VERIFIER   │      ┌──────────────────┐
               │    (Opus)    │ ───► │ confirmed │      │
-              │ Both         │      │ likely    │      │
+              │ Reads both   │      │ likely    │      │
               │ transcripts. │      │ uncertain │      │
               │ Confidence.  │      │ rejected  │      │
               └──────────────┘      └──────────────────┘
 ```
 
-Inter-model adversarial debate (iMAD-style, 2025) hardened with two
-non-standard constraints: (a) the Defender must prove *guard dominance*,
-not just guard presence; (b) `inconclusive` verdicts route back to
-retrieval, never to a coin flip. **Rejected findings feed the Pattern
-Miner.** Wrong is signal too.
+The protocol is inspired by iMAD (Fan et al., 2025) and is documented
+in the project's paper draft (`docs/.archive/paper/`). `inconclusive`
+verdicts route back to retrieval, never to a coin flip. Rejected
+findings are retained for pattern curation.
 
-## The pattern lifecycle — lessons graduate to rules
+## Pattern catalog and tiering
 
-```
-   Cluster findings (HDBSCAN) ──► Extract pattern (LLM → VQL)
-   ──► Validate on held-out set (P ≥ 0.8, R ≥ 0.5)
-   ──► Promote to KG as deterministic Cypher rule
+The catalog holds 466 active patterns across 18 vulnerability categories
+(39 archived, 57 quarantined). Patterns carry a status determined by
+measured precision and recall on real contracts:
 
-   Observed → Framed → Usable → Trusted → Governed
-```
+| Status | Precision | Recall |
+|---|---|---|
+| draft | < 70% | < 50% |
+| ready | ≥ 70% | ≥ 50% |
+| excellent | ≥ 90% | ≥ 85% |
 
-Most agent systems remember lessons as fuzzy embeddings retrieved at
-inference. Here, patterns are first-class, versioned, scored, and
-governed. A pattern starts as a recurring debate outcome and ends as a
-Cypher rule the Scanner matches without an LLM call. **Knowledge
-graduates** — closer to how compliance tracks regulations than to how
-RAG stores embeddings.
+Three detection tiers, in order of cost:
+- **Tier A** — deterministic graph-only queries (no LLM call)
+- **Tier B** — LLM-verified, for logic bugs that require reasoning over
+  graph context
+- **Tier C** — label-dependent, requires upstream semantic role labeling
 
-## The orchestration — audit logic outlives the harness
+Triage rules (active / archived / quarantined) live in
+[`docs/guides/patterns-basics.md`](docs/guides/patterns-basics.md).
 
-```
-   Surface 1 ──►  Claude Code as orchestrator
-                   (skills · subagents · hooks · Bash → CLI)
-                       │
-                       │  structural limits: subagents can't nest,
-                       │  MCP latency per tool, skills are prompts
-                       │  not programs, hooks block via exit code,
-                       │  no native session-tree control
-                       ▼
-   Surface 2 ──►  pi-mono as harness
-                   ctx.fork() (Challenger + Defender as parallel
-                   siblings) · ctx.newSession() · native in-process
-                   tools · first-class event handlers · skills on demand
-```
+## Why target Solidity specifically
 
-The audit logic does not change between Surface 1 and Surface 2 — only
-the runtime does. Most agent frameworks do not make this bet: **own your
-orchestration primitives** so debate, fork, and evidence capture are not
-external scaffolding. When the next harness comes, the audit logic moves
-with it.
+- Losses are irreversible — no patch-and-redeploy after an exploit.
+- Contracts are short in code but long in composition; most serious
+  bugs appear at interaction boundaries between contracts, not inside
+  a single one.
+- Function names in DeFi are near-universal (every protocol has
+  `withdraw`, `swap`, `claim`); security properties live in behavior
+  and ordering, not naming.
+- Attack viability depends on economic context (oracle depth, flash-loan
+  liquidity, governance token distribution), not on code alone.
 
-## The meta-loop — the framework qualifies its own runtime
+A graph model captures composition, ordering, and dataflow. An operation
+vocabulary captures behavior independent of naming. A protocol-context
+layer supplies the economic dimension. None of the three alone is
+enough.
 
-```
-   Same corpus (DVDeFi + adversarial fixtures)
-            │
-   ┌────────┴────────┐
-   ▼                 ▼
-Claude Code        pi-mono       ◄── two harnesses, one audit logic
-   │                 │
-   └────────┬────────┘
-            ▼
-   cmux (isolated contexts, no leak, full transcripts)
-            ▼
-   Reasoning Evaluator
-     • dual-Opus (>15pt disagreement = unreliable)
-     • 7-move reasoning breakdown, scored independently
-     • Graph-Value Scorer (checkbox <30 vs genuine >70)
-     • anti-fabrication signals (perfect score, identical
-       output, sub-5s duration)
-            ▼
-   Pi ≥ Claude → migrate
-   Pi <  Claude → improve, re-test
-```
+## The harness — Pi-mono
 
-Self-testing is not a feature on top of the testing pyramid. **It is a
-tier of the pyramid.** The product harness qualifies its own replacement
-candidate using the product's own evaluation infrastructure.
+Production orchestration is moving to the Pi-mono coding-agent package
+(`@mariozechner/pi-coding-agent`,
+[GitHub](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent)).
+Implementation specifics are not fully settled; the direction is
+committed, the shape is being worked out. Relevant Pi primitives:
 
-## Why this might be good
+- **Native tool registration** via `pi.registerTool`. BSKG queries,
+  Slither / Mythril / Aderyn / Halmos adapters, pattern matcher,
+  evidence builder, proof-token issuer, and `/web-research` all become
+  first-class in-process tools. No MCP boundary.
+- **Per-agent tool scoping.** Pi ships no permission popup system;
+  scoping is composed from `pi.setActiveTools`, `allowed-tools` in skill
+  frontmatter, and `tool_call` event handlers that can return
+  `{block: true, reason}`. Each agent definition can be given a distinct
+  tool set, file-write scope, and command allow-list.
+- **Session control.** `ctx.newSession({parentSession, setup})`,
+  `ctx.fork(entryId)`, `ctx.navigateTree`, `ctx.waitForIdle`. Challenger
+  and Defender can be spawned as sibling forks; the Verifier reads both.
+- **Middleware hooks.** `before_provider_request` can rewrite the system
+  prompt per call (per-agent prompt surgery); `tool_result` middleware
+  post-processes raw tool output; `session_before_compact` can gate long
+  audits.
+- **Cross-session messaging** through the event bus and injected
+  messages (`pi.sendMessage`, `pi.sendUserMessage` with
+  `deliverAs: "steer" | "followUp" | "nextTurn"`).
+- **RPC mode** — stdin/stdout JSONL, LF-delimited. Lets an outer harness
+  drive Pi sessions programmatically without a network surface.
 
-The graph is what the agents query. The agents are what the patterns
-govern. The patterns are what the evaluator scores. The evaluator is
-what qualifies the harness. **Pull any one layer and the chain
-collapses.** The contemporary alternative — single-LLM auditor + RAG +
-LLM-as-judge — is faster to demonstrate and is also a yes-loop wrapped
-in a vector index. The bet here: auditing requires evidence, debate
-requires divergence, learning requires governance — and the cost of
-building those into the substrate pays back the moment the system has
-to defend a finding to a human reviewer.
+Pi's explicit non-goals (from its README): no MCP, no sub-agents, no
+permission popups, no plan mode, no background bash. Each absence is
+something this project builds as an extension or deliberately leaves
+out.
+
+## Multiple orchestrators
+
+The architecture is not a single Pi session running audits. It assumes
+several orchestrators, each a Pi session with a distinct system prompt,
+tool scope, and termination condition:
+
+- **Audit orchestrator** — runs the 9-stage pipeline on a target contract
+- **Dataset-population orchestrator** — mines real contracts, extracts
+  ground-truth labels, grows the corpus
+- **Dataset-improvement orchestrator** — re-labels low-confidence
+  entries, rebalances coverage, detects drift
+- **Static-checker orchestrator** — runs Slither / Aderyn / Mythril /
+  Halmos against the corpus on a schedule and normalizes outputs
+- **Work-unit orchestrator** — splits long audits into trackable
+  subtasks (beads) and coordinates recovery across sessions
+- **Testing orchestrator** — drives the self-testing meta-loop below
+
+Orchestrators are Pi extensions, not hardcoded flows in a monolithic
+runtime.
+
+## Claude Code's role
+
+Claude Code is not the production runtime under the new direction. It
+is kept for three dev-time responsibilities:
+
+1. **IDE-level assistance** for writing and maintaining Pi agent
+   definitions, skills, prompts, and tool adapters.
+2. **Driving the self-testing meta-loop** during development: running
+   the current Pi orchestrator and any prior Claude-Code orchestrator
+   against the same corpus under identical conditions, capturing both
+   transcripts.
+3. **Quality assessment** of Pi audit outputs. The Reasoning Evaluator
+   runs under Claude Code and scores Pi runs — dual-Opus scoring,
+   7-move reasoning decomposition (HYPOTHESIS_FORMATION, QUERY_
+   FORMULATION, RESULT_INTERPRETATION, EVIDENCE_INTEGRATION,
+   CONTRADICTION_HANDLING, CONCLUSION_SYNTHESIS, SELF_CRITIQUE),
+   Graph-Value Scorer distinguishing checkbox use from genuine use,
+   and anti-fabrication signals.
 
 ## Read further
 
-- [`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) — execution model and pillars
+- [`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) — system philosophy and 9-stage pipeline
 - [`docs/architecture.md`](docs/architecture.md) — modules and data flow
-- [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) — what it does not do
+- [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) — explicit limits
+- [`docs/PITFALLS.md`](docs/PITFALLS.md) — domain pitfalls
+- [`.planning/ROADMAP.md`](.planning/ROADMAP.md) — phase plan
 - [`vulndocs/`](vulndocs/) — pattern catalog (18 categories)
 - [`src/alphaswarm_sol/`](src/alphaswarm_sol/) — implementation
+- Pi-mono coding-agent: https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent
 
 License: MIT.
