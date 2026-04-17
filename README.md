@@ -16,22 +16,6 @@ The project combines three ideas:
 
 The current principle is strict: **nothing ships until proven**. The repository contains substantial implemented infrastructure, many designed workflows, and some intentionally unfinished pieces. The point of this README is to make the ideas understandable without pretending the system is already a benchmark-proven auditor.
 
-## Honest Status
-
-| Area | Current state |
-|---|---|
-| BSKG graph builder | Implemented; builds Solidity behavior graphs from Slither-derived analysis |
-| Semantic operations | Implemented; 20 operation types for behavior-level reasoning |
-| VulnDocs pattern catalog | Implemented; 466 active YAML patterns across 18 categories |
-| Claude Code skills and agent definitions | Implemented as workflow specs; 51 skills and 24 agent definitions |
-| `/vrs-audit` end-to-end pipeline | Partial; not yet proven on real benchmark runs |
-| Multi-agent debate | Designed and partially implemented; not yet proven end-to-end on real audit candidates |
-| Benchmarks | Not claimed; precision, recall, and F1 are intentionally unknown |
-| Evaluation intelligence layer | In progress; Tier 1 exists, Tier 2 modules are planned/partial |
-
-Authoritative state: [`.planning/STATE.md`](.planning/STATE.md).
-Known limits and non-goals: [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
-
 ## What Makes This A Case Study
 
 Most agent demos are linear:
@@ -376,6 +360,28 @@ AlphaSwarm.sol is not:
 - a scanner whose output should be trusted blindly.
 
 It is a serious case study in building graph-grounded, role-separated, self-observing agent workflows for a domain where evidence quality matters.
+
+## Research Ledger
+
+This is the current reality map. It is here because the project is more interesting when the boundary between built, designed, and unproven work is visible.
+
+| Thread | What exists now | Why it matters |
+|---|---|---|
+| BSKG graph builder | Implemented; builds Solidity behavior graphs from Slither-derived analysis | Gives agents a shared evidence substrate instead of relying only on chat context |
+| Semantic operations | Implemented; 20 operation types for behavior-level reasoning | Lets the system reason about behavior such as value transfer, balance writes, oracle reads, and permission checks |
+| VulnDocs pattern catalog | Implemented; 466 active YAML patterns across 18 categories | Turns known vulnerability knowledge into queryable graph/pattern work |
+| Claude Code skills | Implemented as workflow specs; 51 skills in the registry | Treats prompts as workflow contracts, not loose instructions |
+| Agent catalog | Implemented as role specs; 24 agent definitions | Encodes attacker, defender, verifier, reviewer, pattern, tool, and evaluation responsibilities |
+| Beads, pools, evidence schemas | Implemented/partial | Makes long-running agent work resumable, inspectable, and less dependent on one transcript |
+| `/vrs-audit` pipeline | Partial; not yet proven end-to-end on real benchmark runs | This is the main proof gap before the system can claim complete audit execution |
+| Multi-agent debate | Designed and partially implemented; not yet proven end-to-end on real audit candidates | The orchestration idea is compelling, but still needs live evidence |
+| Benchmarks | Not claimed; precision, recall, and F1 are intentionally unknown | No inflated detection numbers; benchmark reality is still ahead |
+| Evaluation intelligence | In progress; Tier 1 exists, Tier 2 modules are planned/partial | The self-testing harness is the major research frontier of the repo |
+
+The shortest honest summary: **real graph and orchestration infrastructure, serious research design, incomplete proof loop.**
+
+Authoritative state: [`.planning/STATE.md`](.planning/STATE.md).
+Known limits and non-goals: [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md).
 
 ## License
 

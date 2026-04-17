@@ -222,7 +222,7 @@ Template source:
 
 **Updated:**
 - Reframed the project as a case study in graph-grounded agent orchestration, not a finished commercial auditor.
-- Added an explicit honest-status table for implemented, partial, planned, and unknown capabilities.
+- Moved the honest-status content to a closing Research Ledger so the README leads with the orchestration case study while still making implemented, partial, planned, and unknown capabilities visible.
 - Highlighted the 2026-relevant ideas: Claude Code skills as workflow contracts, role-scoped agents, beads/pools, BSKG as shared evidence substrate, adversarial verification, transcript/hook-based evaluation, and reasoning-quality scoring.
 - Simplified the architecture and repository guide so non-specialist readers can understand the direction before diving into technical docs.
 
