@@ -216,14 +216,14 @@ Template source:
 
 ## Recently Completed
 
-### Documentation: README Case Study Refresh ✅
+### Documentation: README Agent-Orchestration Case Study Refresh ✅
 
-**Status:** COMPLETE (2026-04-17) — Rewrote `README.md` as a professional case-study overview that foregrounds the novel behavioral-security ideas while preserving the project honesty policy.
+**Status:** COMPLETE (2026-04-17) — Rewrote `README.md` as a professional case-study overview that foregrounds Claude Code agent orchestration, BSKG-grounded reasoning, self-testing harness ideas, and Solidity-specific security value while preserving the project honesty policy.
 
 **Updated:**
-- Reframed the project as an evidence-grounded AI security auditing case study, not a finished commercial auditor.
+- Reframed the project as a case study in graph-grounded agent orchestration, not a finished commercial auditor.
 - Added an explicit honest-status table for implemented, partial, planned, and unknown capabilities.
-- Highlighted the 2026-relevant ideas: behavioral signatures, evidence-first agents, adversarial verification, and reasoning-quality evaluation.
+- Highlighted the 2026-relevant ideas: Claude Code skills as workflow contracts, role-scoped agents, beads/pools, BSKG as shared evidence substrate, adversarial verification, transcript/hook-based evaluation, and reasoning-quality scoring.
 - Simplified the architecture and repository guide so non-specialist readers can understand the direction before diving into technical docs.
 
 **No phase status changed.**
